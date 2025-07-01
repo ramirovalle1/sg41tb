@@ -1,0 +1,611 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src="/static/js/smoke.min.js"></script>
+    <link rel='stylesheet' type='text/css' href="/static/css/modules.css"/>
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript">
+        $(function() {
+            var ids=0;
+            var idresol=0;
+            var accion = '';
+            var opcion='';
+            $(".descarga").click(function() {
+                location.href = $(this).attr('url');
+            });
+            $("#id_fechadeposito").datepicker({format:"dd-mm-yyyy"});
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/revisionsolicitudpagos?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+            $('#id_deposito').change(function(){
+                if ($("#id_deposito").is(':checked')) {
+                    $("#id_transferencia").attr('checked',false);
+                }else{
+                    $("#id_transferencia").attr('checked',true);
+                }
+            });
+            bloquea =  function(){
+                $("#id_referencia").attr("disabled",true);
+                $("#id_cuentabanco").val("");
+                $("#id_cuentabanco").attr("disabled",true);
+                $("#id_valor").val("");
+                $("#id_referencia").val("");
+                $("#id_valor").attr("disabled",true);
+                $("#id_deposito").attr("disabled",true);
+                $("#id_transferencia").attr("disabled",true);
+            };
+            desbloquea =  function(){
+                $("#id_referencia").attr("disabled",false);
+                $("#id_cuentabanco").val("");
+                $("#id_cuentabanco").attr("disabled",false);
+                $("#id_valor").val("");
+                $("#id_referencia").val("");
+                $("#id_valor").attr("disabled",false);
+                $("#id_deposito").attr("disabled",false);
+                $("#id_transferencia").attr("disabled",false);
+            };
+            $('#id_autorizado').change(function(){
+                $("#id_deposito").attr('checked',false);
+                $("#id_transferencia").attr('checked',false);
+                if ($("#id_autorizado").is(':checked')) {
+                    desbloquea();
+                }else{
+                    bloquea();
+
+                }
+            });
+
+             $('#id_transferencia').change(function(){
+                if ($("#id_transferencia").is(':checked')) {
+                    $("#id_deposito").attr('checked',false);
+                }else{
+                    $("#id_deposito").attr('checked',true);
+                }
+            });
+
+             $(".autorizar").click(function(){
+                bloquea();
+                accion = $(this).attr("accion");
+                ids = $(this).attr("idsoli");
+                var nom = $(this).attr("non");
+                $("#resolucionmodal").modal({width: '600px', backdrop: 'static'});
+                $("#resolucionmodal").modal("show");
+                $("#id_referencia").val("");
+                $("#id_cuentabanco").val("");
+                $("#id_valor").val("");
+                $("#id_deposito").attr('checked',false);
+                $("#id_transferencia").attr('checked',false);
+
+               return false;
+        });
+            $(".ver").click(function(){
+                 bloquea();
+
+                $("#id_autorizado").attr("disabled",true);
+                $("#id_motivoautoriza").attr("disabled",true);
+                $("#id_fechadeposito").attr("disabled",true);
+                if(($(this).attr("autorizado")) == 'True'){
+                    $("#id_autorizado").attr('checked',true);
+
+                }else{
+                    $("#id_autorizado").attr('checked',false);
+
+                }
+
+                ids = $(this).attr("idsoli");
+                var nom = $(this).attr("non");
+                $("#resolucionmodal").modal({width: '600px', backdrop: 'static'});
+                $("#resolucionmodal").modal("show");
+                $("#id_referencia").val($(this).attr("refer"));
+                $("#id_cuentabanco").val($(this).attr("cta"));
+                $("#id_motivoautoriza").val($(this).attr("desc"));
+                $("#id_fechadeposito").val($(this).attr("fechadeposito"));
+                $("#id_valor").val($(this).attr("valor"));
+                if(($(this).attr("deposito")) == 'True'){
+                    $("#id_deposito").attr('checked',true);
+
+                }else{
+                    $("#id_deposito").attr('checked',false);
+
+                }
+                if(($(this).attr("deposito")) == 'False'){
+                    $("#id_transferencia").attr('checked',true);
+                }else{
+                    $("#id_transferencia").attr('checked',false);
+
+                }
+
+
+               return false;
+        });
+
+           $(".editar").click(function(){
+                accion = $(this).attr("accion");
+                var op = $(this).attr("opt");
+                opcion=op;
+                if (opcion == '1') {
+                    $("#id_autorizado").attr("disabled",false);
+                    $("#id_motivoautoriza").attr("disabled",false);
+                    $("#id_fechadeposito").attr("disabled",false);
+                    if(($(this).attr("autorizado")) == 'True'){
+                        $("#id_autorizado").attr('checked',true);
+
+                    }else{
+                        $("#id_autorizado").attr('checked',false);
+
+                    }
+                    idresol = $(this).attr("ids");
+                    ids = $(this).attr("idsoli");
+                    var nom = $(this).attr("non");
+                    $("#resolucionmodal").modal({width: '600px', backdrop: 'static'});
+                    $("#resolucionmodal").modal("show");
+                    $("#id_referencia").val($(this).attr("refer"));
+                    $("#id_cuentabanco").val($(this).attr("cta"));
+                    $("#id_motivoautoriza").val($(this).attr("desc"));
+                    $("#id_fechadeposito").val($(this).attr("fechadeposito"));
+                    $("#id_valor").val($(this).attr("valor"));
+                    if(($(this).attr("deposito")) == 'True'){
+                        $("#id_deposito").attr('checked',true);
+
+                    }else{
+                        $("#id_deposito").attr('checked',false);
+
+                    }
+                    if(($(this).attr("deposito")) == 'False'){
+                        $("#id_transferencia").attr('checked',true);
+                    }else{
+                        $("#id_transferencia").attr('checked',false);
+
+                    }
+                }else{
+                    $("#id_autorizado").attr("disabled",true);
+                    $("#id_motivoautoriza").attr("disabled",true);
+                    $("#id_fechadeposito").attr("disabled",true);
+                    $("#id_transferencia").attr('disabled',true);
+                    $("#id_deposito").attr('disabled',true);
+                    $("#id_cuentabanco").attr('disabled',true);
+                    if(($(this).attr("autorizado")) == 'True'){
+                        $("#id_autorizado").attr('checked',true);
+
+                    }else{
+                        $("#id_autorizado").attr('checked',false);
+
+                    }
+                    idresol = $(this).attr("ids");
+                    ids = $(this).attr("idsoli");
+                    var nom = $(this).attr("non");
+                    $("#resolucionmodal").modal({width: '600px', backdrop: 'static'});
+                    $("#resolucionmodal").modal("show");
+                    $("#id_referencia").val($(this).attr("refer"));
+                    $("#id_cuentabanco").val($(this).attr("cta"));
+                    $("#id_motivoautoriza").val($(this).attr("desc"));
+                    $("#id_fechadeposito").val($(this).attr("fechadeposito"));
+                    $("#id_valor").val($(this).attr("valor"));
+                    if(($(this).attr("deposito")) == 'True'){
+                        $("#id_deposito").attr('checked',true);
+
+                    }else{
+                        $("#id_deposito").attr('checked',false);
+
+                    }
+                    if(($(this).attr("deposito")) == 'False'){
+                        $("#id_transferencia").attr('checked',true);
+                    }else{
+                        $("#id_transferencia").attr('checked',false);
+
+                    }
+                }
+
+               return false;
+        });
+
+          $("#resolucionmodal #ingresardato").click(function() {
+
+            if ($("#id_autorizado").is(':checked')){
+                autorizado = 1;
+            }
+            else{
+                autorizado = 0;
+            }
+            if ($("#id_deposito").is(':checked')){
+                deposito = 1;
+            }
+            else{
+                deposito = 0;
+            }
+            if ($("#id_transferencia").is(':checked')){
+                transferencia = 1;
+            }
+            else{
+                transferencia = 0;
+            }
+              if ($('#id_motivoautoriza').val() != '')
+              {
+                  if (((autorizado == 1 && deposito !=0 || autorizado == 1 && transferencia !=0 ) && ($.trim($("#id_referencia").val()) != '' &&  $('#id_cuentabanco').val() >0 && $('#id_valor').val() >0  )) || autorizado == 0)
+                  {
+                      $("#resolucionmodal").modal("hide");
+                     $.post("/revisionsolicitudpagos",{"action": "autorizar",  "idresol":idresol,'opcion':accion, "ids":ids,"fechadeposito": $("#id_fechadeposito").val(),"autorizado":autorizado,"motivoautoriza":$('#id_motivoautoriza').val(),"referencia": $('#id_referencia').val(),"cuentabanco": $('#id_cuentabanco').val(),"valor": $('#id_valor').val(),"deposito": deposito ,"transferencia":transferencia },function(data) {
+                      if(data.result=='ok'){
+                           alert('REGISTRO GUARDADO');
+                           location.href="/revisionsolicitudpagos?s="+data.solicitud;
+                      }else{
+                           smoke.alert('OCURRIO UN ERROR: ' + (data.error));
+                      }
+                      },"json");
+                  }else{
+                      $($("#id_deposito").get(0).parentNode).find(".help-text").html("<a style='font-size: 14px;float: left;color: red'>Seleccionar el tipo de pago deposito o transferencia</a>");
+                      $($("#id_transferencia").get(0).parentNode).find(".help-text").html("<a style='font-size: 14px;float: left;color: red'>Seleccionar el tipo de pago deposito o transferencia</a>");
+                      $($("#id_referencia").get(0).parentNode).find(".help-text").html("<a style='font-size: 14px;float: left;color: red'>La referencia es obligatora</a>");
+                      $($("#id_cuentabanco").get(0).parentNode).find(".help-text").html("<a style='font-size: 14px;float: left;color: red'>Debe seleccionar una cuenta</a>");
+                      $($("#id_valor").get(0).parentNode).find(".help-text").html("<a style='font-size: 14px;float: left;color: red'>El valor debe ser mayor a 0</a>");
+                  }
+
+
+              }else{
+                  $("#resolucionmodal").modal("show");
+                  $($("#id_motivoautoriza").get(0).parentNode).find(".help-text").html("<a style='font-size: 14px;float: left;color: red'>Debe ingresar una observacion, seleccionar el tipo de pago deposito o transferencia</a>");
+              }
+
+        });
+
+            $("#id_referencia").blur(function(){
+                 $.post("/revisionsolicitudpagos", {'action': 'verificareferencia','numero': $.trim($("#id_referencia").val()),'ctabanco':$("#id_cuentabanco").val(),"ids":ids}, function(data) {
+                        if (data.result=='ok') {
+                        $($("#id_referencia").get(0).parentNode).find(".help-text").html("");
+                        $("#ingresardato").attr("disabled",false);
+                         } else {
+                            if (data.result == 'bad2'){
+                            $($("#id_referencia").get(0).parentNode).find(".help-text").html("");
+                            $("#ingresardato").attr("disabled",true);
+
+                            }else{
+                                $($("#id_referencia").get(0).parentNode).find(".help-text").html("<a style='font-size: 14px;float: left;color: red'>Referencia Ingresada ya Existe</a>");
+                                $("#ingresardato").attr("disabled",true);
+                                $("#id_referencia").val('')
+                            }
+
+                        }
+                     }, "json");
+
+            });
+
+            $("#id_cuentabanco").blur(function(){
+                 $.post("/revisionsolicitudpagos", {'action': 'verificareferencia', 'numero': $.trim($("#id_referencia").val()),'ctabanco':$("#id_cuentabanco").val(),"ids":ids}, function(data) {
+                        if (data.result=='ok') {
+
+                        $("#ingresardato").attr("disabled",false);
+                            $($("#id_referencia").get(0).parentNode).find(".help-text").html("");
+                         } else {
+                            if (data.result == 'bad2'){
+                            $($("#id_referencia").get(0).parentNode).find(".help-text").html("");
+                            $("#ingresardato").attr("disabled",true);
+
+                            }else{
+                                $($("#id_referencia").get(0).parentNode).find(".help-text").html("<a style='font-size: 14px;float: left;color: red'>Referencia Ingresada ya Existe</a>");
+                                $("#ingresardato").attr("disabled",true);
+                                $("#id_referencia").val('')
+                            }
+
+                        }
+                     }, "json");
+
+            });
+
+
+            $("#id_valor,#id_referencia").addClass("input-small");
+            $("#resolucionmodal .btn-cerrar").click(function() {
+                $("#resolucionmodal").modal('hide');
+            });
+
+            $("#asist").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = "/solicitudes?op=buscar&asist="+id;
+                }else{
+                    location.href = "/solicitudes";
+                }
+
+            });
+
+        });
+    </script>
+    <style type="text/css">
+        .oculta{
+            display: none;
+        }
+        .aparece{
+            display: block;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span9'>
+
+        </div>
+        <div class='span3' style="float: right">
+{#            <a href="/{% if departa  or asistente %}incidenciaadministrativa{% else %}seguimiento{% endif %}" class='btn'><i class="icon-arrow-left"></i> Atras</a>#}
+            <a href="/revisionsolicitudpagos?op=p" class='btn btn-danger'> Pendientes</a>
+            <a href="/revisionsolicitudpagos?op=pf" class='btn btn-danger'> Pendientes Facturar</a>
+            <a href="/revisionsolicitudpagos?op=c" class='btn btn-success'> Cerradas</a>
+{#            <a href="/revisionsolicitudpagos?op=g" class='btn btn-warning'> Gestionadas</a>#}
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid' >
+        <div class='span6'>
+
+                 <h4> Solicitudes Pago de Rubros {% if op == 'p' %} - PENDIENTES {%  endif %} {% if op == 'c' %} - CERRADAS {%  endif %} {% if op == 'g' %} - GESTIONADAS {%  endif %} </h4>
+
+        </div>
+
+    </div>
+     <div class='row-fluid'>
+        <div class='span7'><br>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search or op%}
+                <a href="/revisionsolicitudpagos" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+
+    </div>
+
+
+{#    </div>#}
+    <div class='row-fluid' >
+        <div class='span12'><br>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th style="text-align: center">#</th>
+                <th>Estudiante</th>
+                <th>Grupo</th>
+                <th>Fecha Transacci&oacute;n</th>
+                <th>Fecha Solicitud</th>
+                <th>Hora Solicitud</th>
+                <th>Tipo</th>
+                <th>Descripci&oacute;n</th>
+                <th>Observaci&oacute;n</th>
+                <th>Departamento Actual</th>
+                <th>Fecha Asignado</th>
+                <th>Hora Asignado</th>
+                <th>Asignado</th>
+                <th>Soporte</th>
+                <th >Finalizado</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for solicitud in solicitudes %}
+                <tr class='{% cycle "odd" "even" %}'>
+                    <td>{{ solicitud.id }} </td>
+                    <td>{{ solicitud.persona }}
+
+                        {% if not  solicitud.asistenteautoriza  and not solicitud.cerrada %}
+                            <span class="label label-info "> Pendiente </span>
+                        {% else %}
+                            {% if solicitud.autorizado   %}
+                                <span class="label label-success ">  Autorizado:  {{ solicitud.asistenteautoriza.persona.usuario }}</span>
+                            {% else %}
+                                {% if  not solicitud.autorizado  and  solicitud.asistenteautoriza %}
+                                    <span class="label label-warning "> No Autorizado </span>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+
+                    </td>
+                    <td>{{ solicitud.persona.inscripcion.grupo.nombre }}</td>
+
+                    {% if  solicitud.solicitudestudiante %}
+                        <td>{{ solicitud.datosaprobacion.fechadeposito|date:"d-m-Y" }} </td>
+                        <td>{{ solicitud.solicitudestudiante.fecha|date:"d-m-Y" }}</td>
+                        <td>{{ solicitud.solicitudestudiante.fecha|time:"h:i a" }}</td>
+                    {% endif %}
+
+                    <td>{{ solicitud.tipo }}</td>
+                    <td>
+                        {{ solicitud.descripcion }} {% if solicitud.ctabanco %} <br> <b>{{ solicitud.ctabanco  }}</b>{% endif %}
+                        {% if solicitud.referencia %}<b>Ref. {{ solicitud.referencia  }}</b>{% endif %}<br/>
+                        {% if not solicitud.cerrada %}
+{#                            <a href="/solicitudes?action=comentar&id={{ solicitud.id }}" class='btn btn-info btn-mini'><i class="icon-envelope icon-white"></i> Responder</a>#}
+{#                            <a href="/solicitudes?action=cerrar&id={{ solicitud.id }}" class="btn btn-danger btn-mini"><i class="icon-remove icon-white"></i> Cerrar</a>#}
+                        {% endif %}
+                    </td>
+
+                    <td>{% if solicitud.observacion %} {{ solicitud.observacion }}{% endif %}</td>
+                    <td> {{ solicitud.departamento }}</td>
+                    {% if  solicitud.tienegestion %}
+                            <td>{{ solicitud.ultima_gestion.fecha|date:"d-m-Y" }}</td>
+                            <td>{{ solicitud.ultima_gestion.fecha|time:"h:i a" }}</td>
+                        {% else %}
+
+                            <td>{{ solicitud.fechaasignacion|date:"d-m-Y" }}</td>
+                            <td>{{ solicitud.fechaasignacion|time:"h:i a" }}</td>
+                        {% endif %}
+                    <td>{% if solicitud.personaasignada %} {{ solicitud.personaasignada.usuario }}
+                    {% if solicitud.tiene_horario %}
+                       <br><b>Turno Actual: {%  if  solicitud.tiene_horario.nolabora %} NO LABORA{% else %} {{  solicitud.tiene_horario.horainicio|time:'H:i' }} - {{  solicitud.tiene_horario.horafin|time:'H:i' }} {% endif %}</b>
+                    {% endif %}{% endif %}
+
+                    </td>
+                    <td style="text-align: center"> {% if solicitud.comprobante %}<a href='{{ solicitud.descargar }}' class='descarga' style="cursor: pointer"> Descargar</a> {% endif %}
+
+                    </td>
+                    <td style="text-align: center">
+                        {% if solicitud.cerrada %}
+                            <img src='/static/images/16/true.png' border='0'/>
+                        {% else %}
+                            <img src='/static/images/16/false.png' border='0'/>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+                                {% if not  solicitud.asistenteautoriza %}
+                                    <li><a href="#" class="autorizar" idsoli="{{ solicitud.id }}"  accion='adicionar' non="{{solicitud.descripcion }}" ><i class="icon-eye-open"></i> Resoluci&oacute;n/Autorizaci&oacute;n </a></li>
+                                {% else %}
+                                    <li><a href="#" class="ver" idsoli="{{ solicitud.id }}"  non="{{solicitud.descripcion }}" fechadeposito="{{solicitud.datosaprobacion.fechadeposito|date:"d-m-Y"  }}"  autorizado="{{solicitud.autorizado }}" desc="{{solicitud.motivoautoriza }}" refer="{{ solicitud.datosaprobacion.referencia }}" valor="{{ solicitud.datosaprobacion.valor }}" cta="{{ solicitud.datosaprobacion.cuentabanco.id }}"  deposito="{{ solicitud.datosaprobacion.deposito }}" ><i class="icon-eye-open"></i> Ver Aprobacion </a></li>
+                                {% endif %}
+                                {% if   solicitud.autorizado and not solicitud.cerrada   and perms.sga.change_datostransfereciadeposito  %}
+{#                                {% if not  solicitud.asistenteautoriza and not solicitud.cerrada %}#}
+                                    <li><a href="#" class="editar" opt="1" idsoli="{{ solicitud.id }}" fechadeposito="{{solicitud.datosaprobacion.fechadeposito|date:"d-m-Y"  }}"  ids = "{{ solicitud.datosaprobacion.id }}" accion='editar'  non="{{solicitud.descripcion }}"  autorizado="{{solicitud.autorizado }}" desc="{{solicitud.motivoautoriza }}" refer="{{ solicitud.datosaprobacion.referencia }}" valor="{{ solicitud.datosaprobacion.valor }}" cta="{{ solicitud.datosaprobacion.cuentabanco.id }}"  deposito="{{ solicitud.datosaprobacion.deposito }}" ><i class="icon-edit"></i> Editar Aprobacion </a></li>
+                                {% endif %}
+                                {% if  solicitud.personaasignada.usuario == usuario and  solicitud.autorizado %}
+{#                                {% if not  solicitud.asistenteautoriza and not solicitud.cerrada %}#}
+                                    <li><a href="/finanzas?action=rubros&id={{ solicitud.inscripcion.id }}&solicitud={{ solicitud.id }}" ><i class="icon-money"></i> Facturar </a></li>
+                                {% endif %}
+                                {% if  solicitud.autorizado and solicitud.cerrada   and persona.usuario.is_superuser  %}
+                                    <li><a href="#" class="editar" idsoli="{{ solicitud.id }}" fechadeposito="{{solicitud.datosaprobacion.fechadeposito|date:"d-m-Y"  }}"  ids = "{{ solicitud.datosaprobacion.id }}" accion='editar'  non="{{solicitud.descripcion }}"  autorizado="{{solicitud.autorizado }}" desc="{{solicitud.motivoautoriza }}" refer="{{ solicitud.datosaprobacion.referencia }}" valor="{{ solicitud.datosaprobacion.valor }}" cta="{{ solicitud.datosaprobacion.cuentabanco.id }}"  deposito="{{ solicitud.datosaprobacion.deposito }}" ><i class="icon-edit"></i> Editar Valor/Ref. </a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not solicitudes %}
+                <tr><td colspan="5">NO EXISTEN SOLICITUDES</td></tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+
+                {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+{#                            <li><a href="/{% if departa  or asistente %}incidenciaadministrativa?{% else %}seguimiento?{% endif %}action=solicitudes&page=1{% if cerrado %}&cerra=cerrada{% endif %}">1</a></li>#}
+{#                            <li><a href="/{% if departa  or asistente %}incidenciaadministrativa?{% else %}seguimiento?{% endif %}action=solicitudes&page={{ paging.ellipsis_izquierda }}{% if cerrado %}&cerra=cerrada{% endif %}" class="active">...</a></li>#}
+                            <li><a href="/revisionsolicitudpagos?&page={{ paging.ellipsis_izquierda }}{% if cerrado %}&cerra=cerrada{% endif %}{% if op %}&op={{ op }}{% endif %}{% if tipo %}&t={{ tipoid }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+{#                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/{% if departa  or asistente %}incidenciaadministrativa?{% else %}seguimiento?{% endif %}action=solicitudes&page={{ pagenumber }}{% if cerrado %}&cerra=cerrada{% endif %}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>#}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/revisionsolicitudpagos?&page={{ pagenumber }}{% if cerrado %}&cerra=cerrada{% endif %}{% if tipo %}&t={{ tipoid }}{% endif %}{% if op %}&op={{ op }}{% endif %}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+{#                            <li><a href="/{% if departa  or asistente %}incidenciaadministrativa?{% else %}seguimiento?{% endif %}action=solicitudes&page={{ paging.ellipsis_derecha }}{% if cerrado %}&cerra=cerrada{% endif %}" class="active">...</a></li>#}
+{#                            <li><a href="/{% if departa  or asistente %}incidenciaadministrativa?{% else %}seguimiento?{% endif %}action=solicitudes&page={{ paging.num_pages }}{% if cerrado %}&cerra=cerrada{% endif %}">{{ paging.num_pages }}</a></li>#}
+                            <li><a href="/revisionsolicitudpagos?&page={{ paging.num_pages }}{% if cerrado %}&cerra=cerrada{% endif %}{% if op %}&op={{ op }}{% endif %}{% if tipo %}&t={{ tipoid }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+{#                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/{% if departa  or asistente %}incidenciaadministrativa?{% else %}seguimiento?{% endif %}action=solicitudes&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if cerrado %}&cerra=cerrada{% endif %}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>#}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/revisionsolicitudpagos?&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if cerrado %}&cerra=cerrada{% endif %}{% if op %}&op={{ op }}{% endif %}{% if tipo %}&t={{ tipoid }}{% endif %}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="modal fade static" id="seguimintcorreopanel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4 id='paneltitle1' >Ingrese Respuesta</h4><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <h5 id='paneltitle3' ></h5>
+           {#  <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/{% if not departa  and not asistente %}seguimiento{% else %}incidenciaadministrativa{% endif %}" method="POST"  >#}
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/solicitudes" method="POST"  >
+           {#  <input type='hidden' name='action' id='action' value='respuestasolicitud'/>#}
+                <input type='hidden' name='action' id='action' value='finalizasol'/>
+                <input type='hidden' id='idsolici' name='idsolici' />
+                <input type='hidden' id='idgrupo' name='idgrupo' />
+                    <div class="controls" style="margin-left: 1%">
+                        <label id="labelobservacionresp" style="display: none"><b>Respuesta:</b></label><textarea type='text' id='observacionresp' style="width:98%;text-transform: uppercase" rows="6" cols="50" name='observacionresp'> </textarea>
+                        <p class="help-text">{{ field.help_text }} </p>
+                        <br/><br/><label id="labelresolucion" style="display: none"><b>Resolucion:</b></label> <textarea type='text' id='resolucion'  style="width:98%;text-transform: uppercase;display: none" rows="6" cols="50" name='resolucion' > </textarea>
+                        <p class="help-text2">{{ field.help_text }} </p><br/>
+                        {# aqui agregar los departamentos para que el dpto de origen o de donde proviene la solicitud sea notificado #}
+{#                        DEPARTAMENTO ORIGEN:#}
+{#                        <select id='grupos' />#}
+{#                            <option value=''>-----</option>#}
+{#                            {% for g in grupos %}#}
+{#                                <option value="{{ g.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ g.name }}</option>#}
+{#                            {% endfor %}#}
+{#                        </select>#}
+{#                        <br/><br/>#}
+                        {# hasta aqui los  departamentos             #}
+                    </div>
+                <br/><br/><button type="submit" class="btn btn-success" id="formbutton" style="float: right">Guardar</button>
+                <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="verfinalizadopanel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4 ></h4><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer" >
+            <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+        </div>
+
+    </div>
+
+
+
+    <div class="modal fade static" id="resolucionmodal">
+        <div class="modal-header">
+            <h3 class="paneltitle">Resoluci&oacute;n / Autorizaci&oacute;n</h3>
+        </div>
+        <div class="modal-body">
+            <form id="formulario" class='form-horizontal' action="" method="POST" style="text-align:  left;">
+{#                <input type='hidden' id='idsolici' name='idsolici' />#}
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+             <a href="#" id="ingresardato" class="btn btn-success"><i class=""></i> Guardar</a>
+             <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+        </div>
+    </div>
+
+
+{% endblock %}

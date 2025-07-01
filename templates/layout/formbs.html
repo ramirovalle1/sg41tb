@@ -1,0 +1,218 @@
+{% extends "layout/basebs.html" %}
+{% block more_css %}
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css?v={{ version }}"/>
+{% endblock %}
+{% block more_js %}
+    <script src='/static/js/jquery.validationEngine.js?v={{ version }}' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js?v={{ version }}' type="text/javascript"></script>
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        const url_destionation = `{% block form_destination %}{{ request.path }}{% endblock %}`
+        const actionFormSubmission =() => {
+            //var valid = $("#frmDefaultLayout").validationEngine('validate');
+            const valid = true;
+            {% block form_validaciones %}
+            {% endblock %}
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Cargando...</div>`,
+            });
+            try {
+                for ( instance in CKEDITOR.instances ) {
+                    CKEDITOR.instances[instance].updateElement();
+                }
+            } catch (err){
+                console.log(err.message);
+            }
+
+            let formdata = new FormData($("#frmDefaultLayout")[0]);
+            try {
+                formdata.append("lista_items1", JSON.stringify(lista_items1));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items2", JSON.stringify(lista_items2));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items3", JSON.stringify(lista_items3));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items4", JSON.stringify(lista_items4));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items5", JSON.stringify(lista_items5));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items6", JSON.stringify(lista_items6));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items7", JSON.stringify(lista_items7));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items8", JSON.stringify(lista_items8));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items9", JSON.stringify(lista_items9));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items10", JSON.stringify(lista_items10));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items11", JSON.stringify(lista_items11));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items12", JSON.stringify(lista_items12));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items13", JSON.stringify(lista_items13));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items14", JSON.stringify(lista_items14));
+            } catch (err){
+                console.log(err.message);
+            }
+            try {
+                formdata.append("lista_items15", JSON.stringify(lista_items15));
+            } catch (err){
+                console.log(err.message);
+            }
+            AjaxLayout.multipart('POST', '{% block form_action %}{{ request.path }}{% endblock %}', formdata, (response) => {
+                if (response.isSuccess) {
+                    if (response.message) {
+                        LoadingLayout.hide();
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: `${response.message}`,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.href = `${url_destionation}${response.id ? '?' + response.id : ''}`
+                        });
+                    } else {
+                        LoadingLayout.show();
+                        location.href = `${url_destionation}${response.id ? '?' + response.id : ''}`
+                    }
+                } else {
+                    LoadingLayout.hide();
+                    NotificationLayout.danger(response.message);
+                    if (response.forms) {
+                        $(".field_error").empty()
+                        $(".field_error").hide()
+                        const errors = response.forms.errors || {};
+                        const fields = response.forms.fields || {};
+                        Object.keys(fields).forEach(function (field) {
+                            const $field = $("#id_" + field);
+                            if ($field.hasClass("is-invalid")) {
+                                $field.removeClass("is-invalid");
+                            }
+                            $field.addClass("is-valid");
+                        });
+                        Object.keys(errors).forEach(function (field) {
+                            const error = errors[field];
+                            if (error){
+                                const message = error[0]['message'];
+                                //console.log(message);
+                                if (message){
+                                    $("#id_" + field).addClass("is-invalid"); // Añadir clase de error al campo
+                                    $("#error_field_" + field).html('* ' + message); // Mostrar mensaje de error
+                                    $("#error_field_" + field).show(); // Mostrar mensaje de error
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        };
+
+        $(function() {
+            {% block form_javascript %}
+            {% endblock %}
+            //$("#frmDefaultLayout").validationEngine();
+            $("#frmActionSave", $("#frmDefaultLayout")).click(function(){
+                {% block before_saving %}
+                    actionFormSubmission();
+                {% endblock %}
+            })
+        });
+    </script>
+    {% block form_more_javascript %}
+    {% endblock %}
+{% endblock %}
+{% block atras %}/{% endblock %}
+{% block canvas %}
+    <div class="container-xxl">
+        <div class="row justify-content-center">
+            <div class="col-lg-9 col-md-10 col-sm-12">
+                <form id="frmDefaultLayout" class='' {% block form_extra_tag %}{% endblock %} onsubmit="return false">
+                    <div class='card w-100 border'>
+                        <div class='card-header bg-danger' style="background-color: #e55918 !important;">
+                            <h5 class="mb-0 text-white card-title">{% block frm_title %}{% endblock %}</h5>
+                            <h6 class="text-white">{% block frm_subtitle %}{% endblock %}</h6>
+                        </div>
+
+                        <div class="card-body p-4">
+                            <div class="alert alert-danger hide" role="alert">
+                                <h4 class="alert-heading">Error de Datos!</h4>
+                            </div>
+
+                            {% block form_extra %}
+                            {% endblock %}
+                            {% for field in form %}
+                                <div class="form-group row align-items-center mb-0 {% if not forloop.last %}border-bottom{% endif %}">
+                                    <div class="col-sm-3 col-form-label text-sm-end text-start ">
+                                        <label class="form-label fw-semibold w-100" for="id_{{ field.name }}">{{ field.label }}</label>
+                                    </div>
+                                    <div class="col-sm-9 border-start pb-2 pt-2">
+                                        {{ field }}
+                                        {% if field.help_text %}
+                                            <p class="help-text">{{ field.help_text }} </p>
+                                        {% endif %}
+                                        <p id="error_field_{{ field.name }}" class="text-danger field_error hide"></p>
+                                    </div>
+                                </div>
+
+                            {% endfor %}
+                            {% block form_suffix %}
+                            {% endblock %}
+                        </div>
+                        <div class="card-footer">
+                            <div class="form-group mb-0 text-md-end text-sm-center">
+                                <a href="javascript:void(0);" class="btn btn-primary" id="frmActionSave">{% block form_button_name %}Guardar{% endblock %}</a>
+                                <a href="{% block form_action_cancel %}/{% endblock %}" class="btn btn-danger lock_screen">Cancelar</a>
+                                {% block form_buttons_extra %}
+                                {% endblock %}
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+

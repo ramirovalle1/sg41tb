@@ -1,0 +1,294 @@
+{% extends "basenueva.html" %}
+
+{% block heading %}
+
+<style>
+    body {
+        background-color: #eee
+    }
+    .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+      color: #fff;
+      background-color:  #184679; }
+
+
+    .custom-control-input:checked ~ .custom-control-label::before {
+      color: #fff;
+      border-color:#184679;
+      background-color: #184679;
+    }
+
+     .modal-body-agregar-respuesta  {
+      position: relative;
+      -ms-flex: 1 1 auto;
+      -webkit-box-flex: 1;
+      flex: 1 1 auto;
+      padding: 1rem;
+    }
+
+
+</style>
+
+<script>
+    $(function () {
+
+
+        $("#search").click(function() {
+            var term = $("#txtbusqueda").val();
+            location.href = "/respuestatest?idpregunta={{ preguntatest.id }}&s="+term;
+        });
+
+        $('#txtbusqueda').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+
+         $("#btnagregar").click(function() {
+              Loader.open();
+             $.get("/respuestatestingreso", {'action':'agregarespuesta', idpregunta:'{{ preguntatest.id }}'}, function(data) {
+                         $("#addrespuesta .modal-body").html(data);
+                         $("#addrespuesta").modal({backdrop: 'static', keyboard: false});
+                 Loader.close();
+             }, "html");
+             return false;
+
+         });
+
+
+         editarespuestas=function (idregistrorespuesta) {
+             Loader.open();
+             $.get("/respuestatestingreso", {'action':'editrespuesta',"idrespuesta":idregistrorespuesta ,idpregunta:'{{ preguntatest.id }}'}, function(data) {
+
+
+                         $("#editrespuesta .modal-body-agregar-respuesta").html(data);
+                         $("#editrespuesta").modal({backdrop: 'static', keyboard: false});
+
+              Loader.close();
+
+             }, "html");
+             return false;
+
+         }
+
+         eliminar=function (idprespuesta,nombre) {
+            swal({
+                title: 'Confirma eliminar la respuesta?',
+                text: "Nombre: "+nombre,
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si,Eliminar!',
+                cancelButtonText: 'Cancel',
+                confirmButtonClass: 'btn btn-success margin-5',
+                cancelButtonClass: 'btn btn-danger margin-5',
+                buttonsStyling: false,
+                allowOutsideClick: false,
+            }).then(function (isConfirm) {
+
+                if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss'] != 'esc') {
+
+                     Loader.open();
+                     var formData = new FormData();
+                     formData.append('action', 'eliminar');
+                     formData.append('idrespuesta', idprespuesta);
+
+                     $.ajax({
+                             url: '/respuestatestingreso',
+                             type: "POST",
+                             contentType: false,
+                             data: formData,
+                             processData: false,
+                             cache: false,
+                             success: function (data) {
+                                 if (data.result == "ok") {
+                                     swal("! Respuesta", "Se elimino correctamente la respuesta", "success");
+                                     location.href = "/respuestatestingreso?idpregunta={{ preguntatest.id }}";
+                                 } else {
+                                     swal("Error", data.message, "error");
+                                    Loader.close();
+                                 }
+                             },
+                             error: function (xhr, ajaxOptions, thrownError) {
+                                 swal("Error", "Error Conexion en el Servidor", "error");
+                                Loader.close();
+                             },
+                             complete: function () {
+                                Loader.close();
+                             }
+                     });
+                }
+            })
+          }
+
+
+
+
+
+
+    });
+</script>
+
+{% endblock %}
+{% block canvas %}
+
+
+ <div class="mobile-menu-overlay"></div>
+
+ <div class="main-container">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-8 col-sm-12">
+                    <div class="title">
+                        <h4>Listado de Respuesta</h4>
+                        <h4> Pregunta : <strong>{{ preguntatest.pregunta }}</strong></h4>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-2 col-sm-2">
+                        <div class="title">
+                            <a href="/preguntatestingreso?idtest={{ preguntatest.testingreso.id }}"  style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                        </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card-box mb-30">
+					<div class="pd-20">
+                        <div class="row">
+                            <div class="col-md-4" style="margin-top: 5px">
+                                <div class="form-group" >
+                                    <label > <a style="color: #d92550"></a></label>
+                                    <input id="txtbusqueda" type="text" class="form-control" value='{{ search }}' >
+                                </div>
+                            </div>
+                            <div class="col-md-4" style="margin-top: 5px">
+                                <label > <a style="color: #d92550"></a></label>
+                                <div class="form-group">
+                                    <button type="button" id="search" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+                                    <button type="button" id="btnagregar" class="btn" title="Agregar Test" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-plus"></i></button>
+                                </div>
+                            </div>
+
+                        </div>
+					</div>
+					<div class="pb-20">
+						<table class="table table-striped">
+							<thead>
+								<tr>
+                                    <th>Orden</th>
+									<th>Respuesta</th>
+                                    <th>Pregunta</th>
+                                    <th>Puntaje</th>
+                                    <th>Imagen</th>
+                                    <th style="text-align: center">Correcta</th>
+                                    <th style="text-align: center">Estado</th>
+
+									<th style="text-align: center">Acciones</th>
+								</tr>
+							</thead>
+							<tbody>
+                               {% for p in listadorespuesta %}
+                                    <tr>
+                                        <td >{{ p.orden }}</td>
+                                        <td >{{ p.respuesta }}</td>
+                                        <td >{{ p.pregunta }}</td>
+                                        <td >{{ p.puntaje }}</td>
+                                        <td> {% if p.imagen %}
+                                               <img style="text-align: center" src="../media/{{ p.imagen }}" alt="Esta es una descripcion alternativa de la imagen para cuando no se pueda mostrar" width="70" height="70" align="center"/>
+                                            {% endif %}
+                                        </td>
+                                        <td style="text-align: center;">
+                                            {% if p.respuestacorrecta %}
+                                                <span class="badge badge-success">SI</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">NO</span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td style="text-align: center;">
+                                            {% if p.estado %}
+                                                <span class="badge badge-success">ACTIVO</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">INACTIVO</span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td style="text-align: center">
+                                            <div class="dropdown">
+                                                <a class="btn btn-link font-24 p-0 line-height-1 no-arrow dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                                                    <i class="dw dw-more"></i>
+                                                </a>
+                                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-icon-list">
+
+                                                     <a class="dropdown-item" style="cursor:pointer" onclick="editarespuestas('{{ p.id }}')" ><i class="dw dw-edit2"></i> Editar</a>
+                                                     <a class="dropdown-item" style="cursor:pointer" onclick="eliminar('{{ p.id }}','{{ p.respuesta }}')" ><i class="dw dw-delete-3"></i> Eliminar</a>
+
+
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                               {% endfor %}
+                                {% if not listadorespuesta %}
+                                    <tr>
+                                        <td colspan="12">
+                                            NO EXISTEN REGISTROS
+                                        </td>
+                                    </tr>
+                                {% endif %}
+							</tbody>
+						</table>
+					</div>
+        </div>
+
+
+
+ </div>
+
+
+ <div  class="modal fade " id="addrespuesta"  role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Agregar Respuesta</h4>
+                </div>
+
+                <div class="modal-body">
+                </div>
+
+            </div>
+        </div>
+ </div>
+
+
+ <div  class="modal fade " id="editrespuesta" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Editar Respuesta</h4>
+                </div>
+
+                <div class="modal-body-agregar-respuesta">
+                </div>
+
+            </div>
+        </div>
+ </div>
+
+
+
+
+ <div class="modal fade" id="login-modal2"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="row">
+                <div id="content" class="col-lg-12">
+
+                </div>
+            </div>
+        </div>
+    </div>
+ </div>
+
+{% endblock %}

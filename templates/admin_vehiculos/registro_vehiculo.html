@@ -1,0 +1,205 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript" src="/static/js/jquery.editinplace.js"></script>
+    <script type="text/javascript">
+
+        $(function() {
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+
+            $("#detalle_venta #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_venta").modal("hide");
+            });
+
+
+            $(".editregvehiculo").click(function() {
+               var id = $(this).attr("id");
+               location.href = "/admin_vehiculos?action=registro&editregistro&id="+id;
+              });
+            $(".delregvehiculo").click(function() {
+               var id = $(this).attr("id");
+               smoke.confirm("Esta seguro de eliminar el registro", function(e){
+                    if (e){
+                        location.href = "/admin_vehiculos?action=registro&delregvehiculo&id="+id;
+                        }
+                        }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+
+            });
+
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/admin_vehiculos?action=registro&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+
+
+
+        });
+        Shadowbox.init({
+        overlayColor: "#000",
+        overlayOpacity: "0.6",
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+              Registro de Uso de  Vehiculo
+            </h3>
+
+            <br>
+        </div>
+
+        <div class='span1'>
+            <div class='atright'>
+                {% if grupo %}
+                    <a href="/admin_vehiculos" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+                {% else %}
+                    <a href="/admin_vehiculos" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row-fluid">
+        <div class='span10'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+              {% if search %}
+                <a href="/admin_vehiculos?action=registro" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class='span2' style="text-align: right">
+            <a href="/admin_vehiculos?action=registro&addregistro" class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Registro</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Vehiculo</th>
+                <th>Chofer</th>
+                <th>Solicitante</th>
+                <th>Beneficiario</th>
+                <th>Origen</th>
+                <th>Salida</th>
+                <th>Km Salida</th>
+                <th>Destino</th>
+                <th>Regreso</th>
+                <th>km Llegada</th>
+                <th>km Recorrido</th>
+                <th>Combustible </th>
+                <th>Foto</th>
+                <th>Observaci&oacute;n</th>
+
+                <th style="width: 20px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for rv in regvehiculo %}
+                    <tr>
+                        <td>{{ rv.vehiculo }}</td>
+                        <td>{{ rv.chofervehiculo }}</td>
+                        <td>{{ rv.solicitante }}</td>
+                        <td>{{ rv.beneficiario }}</td>
+                        <td>{{ rv.origen }}</td>
+                        <td style="text-align: center">{{ rv.fsalida|date:"d-m-Y" }}  {% if rv.hsalida %} <br> {{ rv.hsalida }} {% endif %}</td>
+                        <td>{{ rv.kmsalida }}</td>
+                        <td>{{ rv.destino }}</td>
+                        <td style="text-align: center">{% if rv.fllegada %}{{ rv.fllegada|date:"d-m-Y"  }}{% endif %} {% if rv.hllegada %} <br> {{ rv.hllegada }}{% endif %}</td>
+                        <td style="text-align: right">{{ rv.kmllegada  }}</td>
+                        <td style="text-align: right">{{ rv.consumo }}</td>
+
+                        <td style="text-align: right">{{ rv.consumocomb }} GL <br>${{ rv.costocomb }}</td>
+                        <td style="text-align: center">{% if rv.salida %}<a href="media/{{ rv.salida }}" rel="shadowbox, width=350;height=300;z-index=1000;float=left  " title="Salida" >Salida</a>{% endif %}<br>
+                        {% if rv.llegada %}<a href="media/{{ rv.llegada }}" rel="shadowbox, width=350;height=300;z-index=1000;float=left  " title="Regreso" >Regreso</a>{% endif   %}</td>
+                        <td>{{ rv.observacion }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    <li><a class="editregvehiculo" id="{{ rv.id }}" href='#'> <i class='icon-edit'></i> Editar</a></li>
+                                    <li><a class="delregvehiculo"  id="{{ rv.id }}" href='#'> <i class='icon-remove'></i> Eliminar </a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            {% if not regvehiculo %}
+                <tr>
+                    <td colspan="17">NO HAY REGISTROS</td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+   <div class='row-fluid'>
+        <div class="span12" style="text-align: right">
+            <a href="/admin_vehiculos?action=registro&addregistro" class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Registro</a>
+        </div>
+    </div></br>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/admin_vehiculos?action=registro?&page=1">1</a></li>
+                            <li><a href="/admin_vehiculos?action=registro?&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_vehiculos?action=registro&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/admin_vehiculos?action=registro&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/admin_vehiculos?action=registro&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_vehiculos?action=registro&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+{% endblock %}

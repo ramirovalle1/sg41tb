@@ -1,0 +1,376 @@
+{% extends "basebs.html" %}
+{% load humanize %}
+{% load sga_extras %}
+{% block heading %}
+    <link type="text/css" rel="stylesheet" href="/static/css/jquery.flexbox.css"/>
+    <script type='text/javascript' src='/static/js/jquery.flexbox.js'></script>
+    <script type="text/javascript">
+        $(function() {
+            $(".btn-cerrar").click(function() {
+                $("#rubrospanel").modal('hide');
+            });
+
+            {% if err %}
+                smoke.alert('{{ err }}');
+            {% endif %}
+
+            {% if info %}
+                smoke.alert('{{ info }}');
+            {% endif %}
+
+            buscar_alumno = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#searchinput").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#searchinput').typeahead({source: buscar_alumno, updater: function(item) {
+                var results = $("#searchinput").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        //$("#searchinput").attr("myval",datos.id);
+                        location.href = "/finanzas?action=rubros&id="+datos.id;
+                    }
+                }
+
+                return item;
+            }});
+
+
+            $(".selectorrubro").change(function() {
+                var seleccionados = $(".selectorrubro:checked");
+                var suma = 0;
+                seleccionados.each(function() {
+                    suma += parseFloat($(this).attr('deuda'));
+                });
+                $("#porpagar").html("$"+suma.toFixed(2));
+
+            });
+
+            $("#ingresarpago").click(function() {
+                var seleccionados = $(".selectorrubro:checked");
+                var ids = '';
+                seleccionados.each(function() {
+                    if (ids.length>0) {
+                        ids += ",";
+                    }
+                    ids += $(this).attr('rid');
+                });
+                if (ids.length>0) {
+                    location.href = "/finanzas?action=pagartrico&ids="+ids;
+                } else {
+                    smoke.alert("Debe seleccionar al menos un rubro de cobro");
+                }
+            });
+
+            buscar_rubro = function(query, process) {
+                    $.get("/reportes", {'action':'data', 'model': 'RubroOtro',
+                        'p': 1, 'q': query, 's': 10}, function(data) {
+                        if (data.results) {
+                            $("#rubro").get(0).results = data.results;
+                            listing = [];
+                            for (var i in data.results) {
+                                var dato = data.results[i];
+                                listing.push(dato.name);
+                            }
+                            process(listing);
+                        }
+                        else{
+                             $("#rubro").attr("myval","");
+                        }
+                    }, 'json');
+                };
+
+            $('#rubro').typeahead({source: buscar_rubro, updater: function(item) {
+                var results = $("#rubro").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#rubro").attr("myval",datos.id);
+                    }
+                }
+                return item;
+            }});
+
+
+
+            convierteAInputFecha = function() {
+                var rid = $(this).attr("rid");
+                var fecha = $(this).html();
+                $(this.parentNode).html("<input type='text' class='inputfecha' id='if"+rid+"' value='"+fecha+"' rid='"+rid+"'>").find(".inputfecha").datepicker({format:"dd-mm-yyyy"}).on('changeDate', function(ev){
+                    $.post("/finanzas", {action: 'actualizafecha', rid: $(this).attr("rid"), fecha: this.value}, function(data) {
+                        if (data.result=="ok") {
+                            var fecha = data.fecha;
+                            var vencido = data.vencido;
+                            var rid = data.rid;
+                            $($("#if"+rid).get(0).parentNode).html("<a href='#' class='updatefecha' rid='"+rid+"'>"+fecha+"</a>"+
+                                    ((vencido)?"<br/><span class='label label-important'>VENCIDO</span>":"")).find(".updatefecha").click(convierteAInputFecha);
+                        }
+                    }, "json");
+                });
+                return false;
+
+            };
+
+            $(".updatefecha").click(convierteAInputFecha);
+
+
+
+{#        //////////////////////////////////////////////////////////////////////////////////////#}
+{#        ////////////////////////////////TRICOLOGIA//////////////////////////////////////////#}
+            $("#checktrico").click(function(){
+                if($("#checktrico").is(':checked'))
+                {
+                    $("#searchinputtrico").hide();
+                    $("#searchinput").show();
+                    $("#labeleti").html('Buscar Estudiantes');
+                }
+                else{
+                    $("#searchinputtrico").show();
+                    $("#searchinput").hide();
+                    $("#labeleti").html('Buscar Paciente');
+
+                }
+            });
+
+            buscar_paciente = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'FichaMedica',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#searchinputtrico").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#searchinputtrico').typeahead({source: buscar_paciente, updater: function(item) {
+                var results = $("#searchinputtrico").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        //$("#searchinput").attr("myval",datos.id);
+                        location.href = "/finanzas?action=rubros&id="+datos.id;
+                    }
+                }
+
+                return item;
+            }});
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+
+    <div class='row-fluid'>
+
+        <div class='span11'>
+            <h3>Listado de Rubros del Paciente: {{ fichamedica }} </h3>
+        </div>
+        <div class='atright'>
+            <a href="/finanzas" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <br/>
+
+    <div class='row-fluid'>
+        <div class="span7">
+        </div>
+        <div class="span5 atright">
+            Cobrar Estudiantes <input type="checkbox" id='checktrico'/><br/><br/>
+
+            <b id="labeleti">Buscar Paciente</b><!-- <div id='searchbox'></div> -->
+            <input type="text" id="searchinputtrico" class="input-xxlarge" placeholder="Ingrese número de documento o Nombres" data-provide="typeahead"/>
+            <input type="text" id="searchinput" style='display: none'  class="input-xxlarge" data-provide="typeahead"/>
+        </div>
+
+    </div>
+
+
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>[x]</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Fecha</th>
+                    <th>Vence</th>
+                    <th>Valor</th>
+                    <th>Abono</th>
+                    <th>Saldo</th>
+                    <th>Cancelado</th>
+                    <th>Pagos</th>
+{#                    <th> </th>#}
+                </tr>
+
+                </thead>
+                <tbody>
+                {% for rubro in rubros %}
+                    <tr>
+                        <td width='20px'>
+                            {% if puede_pagar %}
+                                {% if not rubro.cancelado and perms.sga.change_pago %}
+                                    <input type="checkbox" class="selectorrubro" tipo="{{ rubro.tipo }}" num="{{ forloop.counter }}" id="check{{ forloop.counter }}" rid="{{ rubro.id }}" deuda='{{ rubro.adeudado }}'/>
+
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href='/finanzas?action=pagos&id={{ rubro.id }}' >{{ rubro.nombre }} </a>
+                            {% if rubro.pago_nota_credito_inst %}
+                                <br/><span class="label label-info">Pago con NC #{{ rubro.pago_nota_credito_inst.es_notacreditoinst.notacredito.numero }} - valor: ${{ rubro.pago_nota_credito_inst.valor|floatformat:2|intcomma }} ({{ rubro.pago_nota_credito_inst.fecha|date:'d-m-Y' }})</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ rubro.tipo }}</td>
+                        <td>{{ rubro.fecha|date:"d-m-Y"  }}</td>
+                        <td>
+{#                            {% if not rubro.cancelado %}#}
+{#                                {% if perms.sga.add_rubro %}#}
+{#                                    <a href="#" {% if not inscripcion.suspension %} class='updatefecha' {% endif %} rid='{{ rubro.id }}'>{{ rubro.fechavence|date:"d-m-Y" }}</a>#}
+{#                                {% else %}#}
+                                {{ rubro.fechavence|date:"d-m-Y" }}
+{#                                {% endif %}#}
+                                {% if rubro.vencido %}
+                                <br/><span class="label label-important">VENCIDO</span>
+                                {% endif %}
+{#                            {% endif %}#}
+                        </td>
+                        <td>${{ rubro.valor|floatformat:2 }}</td>
+                        <td>${{ rubro.total_pagado|floatformat:2 }}</td>
+                        <td><b>${{ rubro.adeudado|floatformat:2 }}</b></td>
+                        <td>
+                            {% if rubro.cancelado %}
+                            <span class="label label-success">Si</span>
+                            {% else %}
+                            <span class='label label-important'>No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a {% if not inscripcion.suspension %} href="/finanzas?action=pagos&id={{ rubro.id }}" {% endif %} class="btn btn-mini btn-info">{{ rubro.pago_set.all.count }} Pagos</a>
+                        </td>
+{#                        <td>                            #}
+{#                            {% if not rubro.cancelado and not rubro.es_especie %}#}
+{#                                    <div class="btn-group">#}
+{#                                        <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">#}
+{#                                            Acciones#}
+{#                                            <span class="caret"></span>#}
+{#                                        </a>#}
+{#                                        <ul class="dropdown-menu pull-right">#}
+{##}
+{#                                            {% if rubro.puede_eliminarse and not perms.sga.change_rubro %}#}
+{#                                                <li><a href="/finanzas?action=editrubro&id={{ rubro.id }}"><i class="icon-edit icon-white"></i> Editar</a></li>#}
+{#                                                <li><a href="/finanzas?action=delrubro&id={{ rubro.id }}"><i class="icon-remove icon-white"></i> Eliminar</a></li>#}
+{#                                                #}
+{#                                            #}
+{#                                            {% endif %}#}
+{##}
+{#                                            {% if rubro.adeudado and perms.sga.change_rubro and not rubro.puede_eliminarse %}#}
+{#                                                <li><a href="/finanzas?action=liquidar&id={{ rubro.id }}"><i class="icon-money icon-white"></i> Liquidar</a></li>#}
+{#                                            {% endif %}#}
+{##}
+{#                                        </ul>#}
+{##}
+{#                                    </div>#}
+{##}
+{#                                {% endif %}        #}
+{#                         </td>#}
+                    </tr>
+
+                {% endfor %}
+
+                {% if not rubros %}
+                    <tr>
+                        <td colspan="12">NO EXISTEN RUBROS</td>
+                    </tr>
+                {% endif %}
+                </tbody>
+                <tfoot>
+
+                    <tr>
+                        <td colspan="5">
+                            {% if puede_pagar %}
+                                {% if FACTURACION_ELECTRONICA %}
+                                    {% if lugarrecaudacion != '' and lugarrecaudacion|args:client_address|call:"iprecaudexist" or not VALIDA_IP_CAJA %}
+                                        <a href="#" id="ingresarpago" class="btn btn-warning btn-huge"><i class="icon-plus icon-white"></i> INGRESAR PAGO</a>
+                                        <span id='porpagar' class="label label-inverse bigger">$0.00</span>
+                                    {% else %}
+                                        <a class="alert alert-danger">NO SE PERMITE INGRESAR PAGO DESDE ESTE EQUIPO.</a>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="#" id="ingresarpago" class="btn btn-warning btn-huge"><i class="icon-plus icon-white"></i> INGRESAR PAGO</a>
+                                    <span id='porpagar' class="label label-inverse bigger">$0.00</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>${{ fichamedica.total_rubros|floatformat:2 }}</td>
+                        <td>${{ fichamedica.total_pagado|floatformat:2 }}</td>
+                        <td><b>${{ fichamedica.total_adeudado|floatformat:2 }}</b></td>
+                        <td colspan="3"> </td>
+
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+
+    <div class="row-fluid">
+        <div class="span8">
+            <table class="table table-condensed table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th colspan="6">NOTAS DE CREDITO A FAVOR DEL ESTUDIANTE</th>
+                    </tr>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Numero</th>
+                        <th>Valor</th>
+                        <th>Motivo</th>
+                        <th>Proviene</th>
+                        <th style="width: 8%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for nc in notascredito %}
+                        <tr>
+                            <td>{{ nc.fecha|date:'d-m-Y' }}</td>
+                            <td>{{ nc.numero }}</td>
+                            <td>${{ nc.valor|floatformat:2 }}</td>
+                            <td>{{ nc.motivo }}</td>
+                            <td>{{ nc.fichamedica }}</td>
+                            <td style="text-align: center">
+                                <a href="/reportes?action=run&direct=true&n=nc_sri_comprobante&nc={{ nc.id }}&rt=pdf" class="btn btn-mini btn-info"><i class="icon-print"></i> Imprimir</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not notascredito %}
+                        <tr>
+                            <td colspan="6">NO EXISTEN NOTAS DE CREDITO</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+
+            </table>
+            <br/>
+        </div>
+
+    </div>
+
+
+{% endblock %}

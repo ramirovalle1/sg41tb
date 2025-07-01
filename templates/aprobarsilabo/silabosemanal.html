@@ -1,0 +1,197 @@
+{% extends "layout/basebs.html" %}
+{% load sga_extras %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+    <style>
+        .select_semana {
+            background-color: #099fcb !important;
+            color: white!important;
+            font-weight: bold;
+        }
+        
+        .sidenav li{
+            padding: 2px 4px;
+        }
+        .sidenav ul li a {
+            border-radius: 5px;
+            background-color: rgba(255, 191, 89, 0.71);
+        }
+        
+    </style>
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        $(function() {
+            $(".apro_rec_silabo").click(function () {
+                const id = $(this).attr('id');
+                const asignatura = $(this).attr('asig');
+                aprobarRecharSilabo('apro_rec_silabo', id, asignatura)
+            })
+        });
+
+        function aprobarRecharSilabo(action, id, asignatura) {
+            $.get("/aprobarsilabo", {'action': action, 'id': id}, function (data) {
+                if (data.result === 'ok') {
+                    $.unblockUI();
+                    $(".guardar_modal").attr('ids', id).attr('name', asignatura);
+                    $(".panelbodyAprobacion").html(data.html);
+                    $(".detalleAprobacion").modal({backdrop: 'static', width: '1000px'}).modal('show');
+                    $(".detalleAprobacion").modal("show").off('shown.bs.modal').on('shown.bs.modal', function () {
+                        $(".guardar_modal").off('click').on('click', function () {
+                            const id = $(this).attr('ids');
+                            const name = $(this).attr('name');
+                            const action = 'apro_rec_silabo';
+                            const idestado = $("#selectestado").val();
+                            const obs = $("#observacion").val();
+                            console.log(idestado)
+                            let question = `¿Está seguro de cambiar el estado de silabo de la asignatura <span class="badge bg-info">${name}</span>?`;
+                            QuestionLayout(question, ()=> {
+                                LoadingLayout.show({
+                                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                                });
+                                AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id, 'idest': idestado, 'obs': obs}, (response) => {
+                                    LoadingLayout.hide();
+                                    if (response.isSuccess) {
+                                        $(this).closest('.modal').modal('hide');
+                                        Swal.fire({
+                                            title: 'Operación Exitosa',
+                                            text: `${response.message}`,
+                                            icon: 'success'
+                                        }).then(function() {
+                                            LoadingLayout.show();
+                                            location.reload();
+                                        });
+                                    } else {
+                                        AlertLayout.danger(`${response.message}`);
+                                    }
+                                });
+                            }, ()=>{})
+                            
+                        });
+
+                        $(".cerrar_modal").off('click').on('click', function () {
+                            $(this).closest('.modal').modal('hide');
+                        });
+                    });
+                }
+            }, 'json');
+        }
+    </script>
+{% endblock %}
+{% block atras %}{{ request.path }}?&id={{ silabo.materia_id }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid ">
+        <div class='row mb-12'>
+            <div class="col-lg-12 col-md-12 col-12">
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                        <h6>Facultad: {{ materia.nivel.carrera.coordinacion }} Carrera: {{ materia.nivel.carrera }} <br>
+                        Materia: {{ materia.asignatura }} | Nivel: {{ materia.nivel.nivelmalla }} | Paralelo: {{ materia.nivel.paralelo }}<br>
+                        Cronograma: {{ materia.nivel.periodo }}
+                    </h6>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class='row'>
+        <div class="col-lg-4 col-md-12 col-12">
+            <div class="card mb-3">
+                <div class="card-header" style="height: 50px;">
+                    <h4><i class="fa fa-list-alt"></i> Detalle Planificación</h4>
+                </div>
+                <div class="card-body">
+                    <div class="border-top row border-bottom mb-2 g-0">
+                        <div class="col">
+                            <div class="pe-1 ps-2 py-3 text-center">
+                                <h5 class="mb-0">v{{ silabo.versionsilabo }}</h5>
+                                <span>Versión</span>
+                            </div>
+                        </div>
+                        <div class="col border-start">
+                            <div class="pe-1 ps-3 py-3 text-center">
+                                <h5 class="mb-0 {% if porcentaje_planificacion_silabo >= 100 %}text-success{% else %}text-danger{% endif %}">
+                                    {% if not tienesemanas %}
+                                        0.00
+                                    {% else %}
+                                        {{ porcentaje_planificacion_silabo }}
+                                    {% endif %}%
+                                </h5>
+                                <span>Planificado</span>
+                            </div>
+                        </div>
+                        <div class="col border-start">
+                            <div class="pe-1 ps-3 py-3 text-center">
+                                {% with idestado=silabo.estado %}
+                                    <h5 class="mb-0 text-{% if idestado == 1 %}warning{% elif idestado == 2 %}success{% else %}danger{% endif %}">
+                                        {{ silabo.get_estado_display }}
+                                    </h5>
+                                {% endwith %}
+                                <span>Estado</span>
+                            </div>
+                        </div>
+                    </div>
+                    <a class="btn waves-effect waves-light btn-rounded btn-outline-info btn-sm " id="addSilabo" href="javascript:;"><i class="fa fa-print"></i> Imprimir Sílabo</a>
+                    <a class="btn btn-rounded btn-default btn-sm lock_screen apro_rec_silabo tu" title="Aprobar o rechazar Sílabo" id="{{ silabo.id }}" asig="{{ materia.asignatura }}"><i class="fa fa-list"></i> Aprobar o rechazar sílabo</a>
+                    <br>
+                    <span><i class="fa fa-exclamation-circle"></i> Los temas planificados comprenden {{ porcentaje_planificacion_silabo }}% del Plan Analítico 
+                </span>
+                </div>
+            </div>
+            <div class="card mb-3">
+                {#                <div class="card-body">#}
+                <nav class="navbar navbar-expand-md navbar-light shadow-sm mb-4 mb-lg-0 sidenav">
+                    <a class="d-xl-none d-lg-none d-md-none text-inherit fw-bold" href="#">Menu</a>
+                    <button class="navbar-toggler d-md-none icon-shape icon-sm rounded bg-primary text-light collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#sidenav" aria-controls="sidenav" aria-expanded="false">
+                        <span class="fa fa-list"></span>
+                    </button>
+                    <div class="navbar-collapse collapse" id="sidenav">
+                        <div class="navbar-nav flex-column">
+                            <span class="navbar-header" style="margin-left: 25px; padding: 10px;  background-color: aliceblue; border-radius: 5px;"><i class="fa fa-calendar"></i> Semanas</span>
+                            <ul class="list-unstyled ms-n2 mb-4">
+                                {% for cro in cronogramasemanal %}
+                                    <li id="nav{{ forloop.counter }}" class="menusemanas nav-item ">
+                                        <a class="nav-link bloqueo_pantalla {% if cro.id == ids_sel %}select_semana{% endif %}" href="{{ request.path }}?action=planificacionsilabo&id={{ materia.id }}&ids={{ silabo.id }}&idsen={{ cro.id }}">
+{#                                            <span><i class="fa fa-calendar-check"></i> {{ cro.descripcion }} {{ cro.numsemana }} <span class="text-muted">({{ cro.inicio|date:'d-m-Y' }}-{{ cro.fin|date:'d-m-Y' }}) {% if cro.examen %}(Examen parcial){% endif %} </span></span>#}
+                                            <span><i class="fa fa-calendar-check"></i> {{ cro.descripcion }} <span class="text-muted">({{ cro.inicio|date:'d-m-Y' }}-{{ cro.fin|date:'d-m-Y' }}) {% if cro.examen %}(Examen parcial){% endif %} </span></span>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+        <div class="col-lg-8 col-md-12 col-12">
+            <div class="card rounded-3">
+                <div class="card-body detallesemana">
+                    {% include 'pro_aulavirtual/semanadetalle.html' with semana_crono=semana_crono sin_edicion=False %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="modal fade static detalleAprobacion" id="detalleAprobacion" style="display: none;">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="paneltitle">Aprobar o rechazar sílabo</h3>
+                </div>
+                <div class="modal-body panelbodyAprobacion"></div>
+                <div class="modal-footer">
+                    <table class="pull-right">
+                        <tr>
+                            <td>
+                                <a href="javascript:;" class="btn btn-danger cerrar_modal">Cerrar</a>
+                                <a href="javascript:;" class="btn btn-primary guardar_modal">Guardar</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

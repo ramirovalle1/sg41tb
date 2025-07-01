@@ -1,0 +1,66 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_fechagraduado").datepicker({format:"dd-mm-yyyy"});
+    $("#id_fechagraduado, #id_tematesis, #id_notatesis, #id_notafinal,#id_tesis").addClass("validate[required]");
+    $("#id_tematesis").focus();
+    $($("#id_archivo").get(0).parentNode.parentNode).hide();
+
+    {% if graduado.documentoexiste %}
+       $("#id_tesis").val('{{graduado.documentoexiste.documento }}');
+        ins='{{graduado.documentoexiste.documento.id }}';
+    {% endif %}
+
+
+
+    buscar_tesis_individual = function(query, process) {
+            $.get("/reportes", {'action':'databiblio2', 'model': 'Documento:inscripcion__id={{ graduado.inscripcion.id }}',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_tesis").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+
+                    process(listing);
+                }
+            }, 'json');
+    };
+
+
+     $('#id_tesis').typeahead({source: buscar_tesis_individual, updater: function(item) {
+            var results = $("#id_tesis").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_tesis").attr("myval",datos.id);
+                    ins=datos.id;
+                    $("#id_tesis").val(ins);
+                }
+            }
+            return item;
+     }});
+
+
+     $("#formbutton").click(function(){
+
+            $("#id_tesis").val(ins);
+     });
+
+
+
+{% endblock %}
+{% block titulo %}Editar Estudiante Graduado {{ graduado.inscripcion }} {% endblock %}
+{% block formaction %}/graduados{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='edit'/>
+    <input type='hidden' name='id' value="{{ graduado.id }}"/>
+{% endblock %}
+{% block formback %}/graduados{% endblock %}
+{% block buttonname %}Guardar Cambios{% endblock %}

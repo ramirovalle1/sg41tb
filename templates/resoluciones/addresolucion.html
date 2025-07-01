@@ -1,0 +1,74 @@
+{% extends "practicasadmin/formvehic.html" %}
+{% block extraheading %}
+
+    <script type="text/javascript">
+        $(function(){
+
+            $("#id_fecharesolucion").datepicker({format:"dd-mm-yyyy"});
+            $("#id_fecharesolucion,#id_motivo,#id_inscripcion,#id_asunto,#id_resumen").addClass('validate[required]');
+            {% if resolucion %}
+                $("#atras").removeClass('linkback');
+                $("#inscrip").val('{{ resolucion.inscripcion.id }}');
+                $("#id_inscripcion").val('{{ resolucion.inscripcion.persona }}');
+                $($("#id_numero").get(0).parentNode.parentNode).hide();
+                $($("#id_archivo").get(0).parentNode.parentNode).hide();
+            {% else %}
+                $("#atras").addClass('linkback');
+            {% endif %}
+
+            buscar_alumno = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_inscripcion").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#id_inscripcion').typeahead({source: buscar_alumno, updater: function(item) {
+                var results = $("#id_inscripcion").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_inscripcion").attr("myval",datos.id);
+                        $("#inscrip").val(datos.id);
+                    }
+                }
+
+                return item;
+            }});
+            $("#atras").click(function(){
+                {% if resolucion %}
+                    location.href= '/resoluciones?action=resolucion&id='+{{ resolucion.inscripcion.id }};
+                {% else %}
+                    location.href='/resoluciones';
+                {% endif %}
+            });
+        });
+    </script>
+{% endblock %}
+{% block javascript %}
+
+{% endblock %}
+{% block titulo %}
+{{ title }}
+{% endblock %}
+
+{% block formaction %}/resoluciones{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='addresolucion'/>
+    <input type='hidden' name='inscrip' id='inscrip' />
+    {% if resolucion %}
+        <input type='hidden' name='edit' value='{{ resolucion.id }}'/>
+    {% endif %}
+{% endblock %}
+
+{% block formback %}#{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

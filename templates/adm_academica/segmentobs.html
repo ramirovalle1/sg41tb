@@ -1,0 +1,198 @@
+{% load sga_extras %}
+<tr><td>
+{% if materia.cerrado %}
+    <div class="alert alert-error">
+        MATERIA CERRADA EL {{ materia.fechacierre|date:'d-m-Y' }}
+    </div>
+{% endif %}
+{% if materia.nueva_acta_buck %}
+    <a id="rep" href="/reportes?action=run&direct=true&n=nueva_acta_notas&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Notas</a>
+{% else %}
+    <a id="rep" href="/reportes?action=run&direct=true&n=acta_notas&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Notas</a>
+{% endif %}
+<table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+<thead>
+    <tr>
+        <th>Alumnos</th>
+        {# IAVQ #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+            {% include "calificaciones/iavq/encabezado.html" %}
+       {% endif %}
+        {# ITB / ITF / IGAD #}
+        {%  if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+            {% if materia.nueva_acta_buck %}
+                {% include "calificaciones/bucki/encabezado.html" %}
+            {% else %}
+                {% if materia.nivel.carrera.recuperacion  %}
+                    {% include "calificaciones/conduce_recuperacion/encabezado.html" %}
+                {% else %}
+                    {%  if DEFAULT_PASSWORD == 'itb' %}
+                        {% include "calificaciones/itb_itf_igad/encabezado.html" %}
+                    {% else %}
+                        {% include "calificaciones/itf/encabezado.html" %}
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        {% endif %}
+        {# ITS #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+            {% include "calificaciones/its/encabezado.html" %}
+       {% endif %}
+        {# TES #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.4 %}
+            {% include "calificaciones/tes/encabezado.html" %}
+       {% endif %}
+        {# CASADE #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+            {% include "calificaciones/casade/encabezado.html" %}
+       {% endif %}
+        {% if not materia.nueva_acta_buck %}
+            {% if materia.nivel.carrera.recuperacion  %}
+                <th>Asistencia</th>
+            {% else %}
+                <th>Asiste.</th>
+                <th>Actuac.</th>
+            {% endif %}
+        {% endif %}
+            <th>Estado</th>
+        {% if puede_cambiar_nota %}
+            <th>Cierre</th>
+        {% endif %}
+    </tr>
+
+    {# ITB / ITS / IGAD #}
+    {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+       {% if materia.nueva_acta_buck %}
+            {% include "calificaciones/bucki/codigos_ce.html" %}
+       {% else %}
+            {% if materia.nivel.carrera.recuperacion  %}
+                {% include "calificaciones/conduce_recuperacion/codigos_ce.html" %}
+            {% else %}
+                {% include "calificaciones/itb_itf_igad/codigos_ce.html" %}
+            {% endif %}
+       {% endif %}
+    {% endif %}
+
+</thead>
+<tbody>
+{% for asignadomateria in materia.asignados_a_esta_materia %}
+   {% if not asignadomateria.matricula.esta_retirado %}
+        <tr id='materiaasignadarow{{ asignadomateria.id }}'>
+            <td title="{% if asignadomateria.matricula.inscripcion.persona.email %}{{ asignadomateria.matricula.inscripcion.persona.email }}{% else %}No tiene Email{% endif %}">{{ asignadomateria.matricula.inscripcion }}</td>
+   {% endif %}
+
+{#  FILA NOTAS - NOTAS Y PROMEDIOS #}
+
+        {# IAVQ #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+            {% include "calificaciones/iavq/filanotas_ce.html" %}
+       {% endif %}
+
+        {# ITB / ITF / IGAD #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+            {% if materia.nueva_acta_buck %}
+                {% include "calificaciones/bucki/filanota_ce.html" %}
+            {% else %}
+                 {% if materia.nivel.carrera.recuperacion %}
+                    {% include "calificaciones/conduce_recuperacion/filanota_ce.html" %}
+                {% else %}
+                    {% include "calificaciones/itb_itf_igad/filanota_ce.html" %}
+                {% endif %}
+            {% endif %}
+
+        {% endif %}
+
+        {# ITS #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+            {% include "calificaciones/its/filanota_ce.html" %}
+       {% endif %}
+
+        {# TES #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.4 %}
+            {% include "calificaciones/tes/filanota_ce.html" %}
+       {% endif %}
+
+        {# CASADE #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+            {% include "calificaciones/casade/filanota_ce.html" %}
+       {% endif %}
+
+{#  EXTRADATA - ASISTENCIAS Y ESTADOS  #}
+
+        {# IAVQ #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+            {% include "calificaciones/iavq/extradata_ce.html" %}
+       {% endif %}
+
+        {# ITB / ITF / ITS #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+           {% if materia.nueva_acta_buck %}
+                 {% include "calificaciones/bucki/extradata_ce.html" %}
+           {% else %}
+                {% if materia.nivel.carrera.recuperacion %}
+                     {% include "calificaciones/conduce_recuperacion/extradata_ce.html" %}
+                {% else %}
+                    {% include "calificaciones/itb_itf_igad/extradata_ce.html" %}
+                {% endif %}
+           {% endif %}
+
+        {% endif %}
+
+        {#  IGAD  #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+            {% include "calificaciones/itb_itf_igad/extradata_igad_ce.html" %}
+        {% endif %}
+
+        {# TES #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.4 %}
+            {% include "calificaciones/tes/extradata_ce.html" %}
+        {% endif %}
+
+        {# CASADE #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+            {% include "calificaciones/casade/extradata_ce.html" %}
+        {% endif %}
+
+        {% if not materia.cerrado and puede_cambiar_nota %}
+            <td>
+                <a href="#" maid='{{ asignadomateria.id }}' class="cierremateriaasignada btn btn-mini {% if asignadomateria.cerrado %}btn-danger{% endif %}">
+                    {% if asignadomateria.cerrado %}Abrir{% else %}Cerrar{% endif %}
+                </a>
+            </td>
+        {% endif %}
+
+    </tr>
+{% endfor %}
+</tbody>
+
+<tfoot>
+<tr>
+    <td colspan='11'>
+{#        <a href="/reportes?action=run&direct=true&n=acta_notas&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Notas</a>#}
+        {% if materia.nueva_acta_buck %}
+            <a id="rep" href="/reportes?action=run&direct=true&n=nueva_acta_notas&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Notas</a>
+        {% else %}
+            <a id="rep" href="/reportes?action=run&direct=true&n=acta_notas&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Notas</a>
+        {% endif %}
+
+        {% if not materia.nivel.cerrado %}
+            {% if materia.cerrado %}
+{#                <a href="#" mid='{{ materia.id }}' id='abrirmateria' class="btn btn-warning">Abrir Materia</a>#}
+            {% else %}
+                {% if DEFAULT_PASSWORD != 'itb' %}
+                    {% if materia|args:periodo|call:"cerrar_disponible"  %}
+                        <a href="#" mid='{{ materia.id }}' id="cierremateria" class="btn btn-danger">Cerrar Materia</a>
+                    {% else %}
+                        <a href="#" mid='{{ materia.id }}' id="cierremateria" class="btn btn-danger" style="display: none" >Cerrar Materia</a>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    </td>
+</tr>
+
+
+</tfoot>
+
+</table>
+</td></tr>

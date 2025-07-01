@@ -1,0 +1,140 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    //$("#id_inicio").date_input();
+    $("#id_dia, #id_aula, #id_profesor, #id_materia, #id_turno, #id_profesormateria").addClass("validate[required]");
+
+    $("#formpanel .btn-cerrar").click(function() {
+        $("#formpanel").modal("hide");
+    });
+
+    $("#formpanel .btn-ejecutar").click(function() {
+        adicionar('SI');
+    });
+
+    $("#id_turno").change(function(){
+        var materia = $("#id_materia").val();
+        var html='';
+        $.post("/horarios",{"action": "consulta_profesor", "id":$("#id_turno").val(),"materia":materia },function(data) {
+         if(data.result == "ok"){
+            for (var n in data.docente){
+                 html = html + '<option value='+ data.docente[n].id +'>' + data.docente[n].nombre  + ' ' +  data.docente[n].materia  +' ' + data.docente[n].segmento  +' del ' + data.docente[n].desde  +' al ' + data.docente[n].hasta  +'  </option>'
+            }
+            $("#id_profesormateria").html(html)
+            }
+        },"json");
+    });
+
+    $("#id_materia").change(function(){
+        var materia = $("#id_materia").val();
+        var turno = $("#id_turno").val();
+        var html='';
+        $.post("/horarios",{"action": "consulta_materia", "id":materia,"turno":turno },function(data) {
+         if(data.result == "ok"){
+            for (var n in data.docente){
+                 html = html + '<option value='+ data.docente[n].id +'>' + data.docente[n].nombre  + ' ' +  data.docente[n].materia  +' ' + data.docente[n].segmento  +' del ' + data.docente[n].desde  +' al ' + data.docente[n].hasta  +'  </option>'
+            }
+            $("#id_profesormateria").html(html)
+            }
+        },"json");
+    });
+
+    adicionar = function(force) {
+        var materia = $("#id_materia").val();
+        var turno = $("#id_turno").val();
+        var aula = $("#id_aula").val();
+        var dia = $("#id_dia").val();
+        var profesormateria = $("#id_profesormateria").val();
+        if ($("#id_virtual").is(':checked')){
+           virtual = 'SI'
+        }else{
+            virtual = 'NO'
+        }
+        $.blockUI({message: null});
+        $.post("/horarios", {'action': 'addclase', 'id_materia': materia, 'id_turno': turno,
+                             'id_aula': aula, 'id_dia': dia,'id_profesormateria':profesormateria, 'force': force,'virtual':virtual}, function (data) {
+            $.unblockUI();
+            if (data.result=='bad') {
+                if (data.otros_horarios || data.otros_horarios_externo) {
+                    var tab = "<table width='100%'>";
+                    if (data.otros_horarios){
+                        var otros = data.otros_horarios;
+                        for (var i in otros) {
+                            var otro = otros[i];
+                            tab += "<tr><td><b>"+otro[0]+"</b><ul>";
+                            var clases = otro[1];
+                            for (var j in clases) {
+                                tab += "<li>"+clases[j]+"</li>";
+                            }
+                            tab += "</ul></td></tr>";
+                        }
+                    }
+
+                    if(data.otros_horarios_externo){
+                        var otros_externo = data.otros_horarios_externo;
+                        for (var i in otros_externo) {
+                            console.log(otros_externo[i])
+                            tab += "<hr><tr><td><b>"+otros_externo[i][0]+"</b><ul>";
+                            tab += "<li>"+otros_externo[i][1]+"</li>";
+                            tab += "</ul></td></tr>";
+                        }
+                    }
+                    tab += "</table>";
+                    $("#formpanelbody").html(tab);
+                    $("#formpanel").modal("show");
+                }
+            }
+            if (data.result=='clase') {
+                    smoke.alert("se ha programado a " + data.horasclase + "en el periodo " + data.inicio + " / " + data.fin);
+            }if (data.result=='claseok') {
+                 setInterval(function(){
+                            location.href = "/horarios?action=horario&id={{ nivel.id }}";
+                                }, 1500);
+                            smoke.alert("se ha programado a " + data.horasclase + "en el periodo " + data.inicio + " / " + data.fin);
+            }if (data.result=='ok') {
+
+                location.href = "/horarios?action=horario&id={{ nivel.id }}";
+            }
+
+
+        }, "json");
+
+    };
+
+
+    $("#formbutton").click(function() {
+        adicionar('NO');
+    });
+
+{% endblock %}
+{% block titulo %}Adicionar Materia a Horario del Grupo: {{ nivel.grupo.nombre }}{% endblock %}
+{% block formaction %}{% endblock %}
+{% block formextra %}
+    <!-- <input type='hidden' name='action' value='addclase'/> -->
+{% endblock %}
+{% block formback %}/horarios?action=horario&id={{ nivel.id }}{% endblock %}
+{% block buttontype %}button{% endblock %}
+{% block buttonname %}Adicionar Clase{% endblock %}
+
+{% block moreblock %}
+<div class="modal fade static" id="formpanel" style="display: none;">
+    <div class="modal-header">
+        <h3 id="formpaneltitle">Colisi&oacute;n de Horarios</h3>
+    </div>
+    <div class="modal-body">
+        <p id="formpanelbody">
+
+
+        </p>
+
+    </div>
+    <div class="modal-footer">
+        <p style="float: left;">
+{#            <b style='text-transform: uppercase;'>Desea adicionar en este mismo horario?</b>#}
+            <b style='text-transform: uppercase;'>No puede asignar en este mismo horario</b>
+        </p>
+        <a href="#" class="btn btn-cerrar">Cerrar</a>
+{#        <a href="#" class="btn btn-primary btn-ejecutar">Adicionar</a>#}
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,180 @@
+{% extends "basebs.html" %}
+{% load func_extras %}
+{% block heading %}
+    <script src="../../ube/static/src/scripts/bootstrap3-typeahead.js"></script>
+    <script>
+        $(function () {
+
+            function cambiarTab(tab,div){
+                $("#tabpanelprospecto a").removeClass('active');
+                $("#tabpanelcontenido div").removeClass('active');
+                $('#'+tab).addClass('active');
+                $('#'+div).addClass('active');
+            }
+            reporteexcel = function(id){
+         var acc = '{{ acc }}'
+        $.post("/areasevaluacion", {"action":"generarexceldirectivo", "acc":acc, 'id':id}, function(data) {
+                if (data.result=='ok'){
+
+                    location.href=data.url;
+                    swal("Notificación",'Reporte Ejecutado','success');
+
+                }else{
+                    swal("Error", data.result, "error");
+                    $("#login-modal7").remove();//ocultamos el modal
+                    $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                    $('.modal-backdrop').remove();
+                    location.href = '/maestria?acc={{ acc }}';
+                }
+            }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                    console.log(errorThrown);
+                    console.log('getJSON request failed! ' + textStatus+ ' eroro jqk'+jqXHR.responseText);
+                    swal("Error", "ERROR DE CONEXION", "error");
+                    $("#login-modal7").remove();//ocultamos el modal
+                    $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                    $('.modal-backdrop').remove();
+                    location.href = '/maestria?acc={{ acc }}';
+            });
+    }
+
+
+
+        });
+    </script>
+{% endblock %}
+{% block containertype %}{% endblock %}
+{% block canvas %}
+    <div class="pd-ltr-20 xs-pd-20-10">
+        <div class="min-height-200px">
+            <div class="page-header">
+                <div class="row">
+                    <div class="col-lg-8 col-md-8 col-sm-8">
+                        <div class="title">
+                            <h4 class="card-title" id="basic-layout-colored-form-control">Autoevaluacion del Docente {{ profesor.persona.nombre_completo }} </br> Calificación: {{ evaluaciondirectivo.resultadodirectivo.nombre}}</h4>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-2 col-sm-2">
+                        <div class="title">
+                            <a href="/evaluacionesdirectivo?periodo={{ periodo.id }}&acc={{ acc }}" style="float: right;color: white;background: #0b132b" class="btn btn-black"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-2 col-sm-2">
+                        <div class="title">
+{#                            <a class="dropdown-item" onclick="Verreportealumno('{{ e.profesor.id }}',{{ e.periodo.id }})"><i class="dw dw-list"></i>Reporte Evaluacion Alumno</a>#}
+                            <a class="float-md-right float-lg-right btn btn-success" onclick="reporteexcel('{{ evaluaciondirectivo.id }}')"><i class="fa fa-file-excel-o"></i>Generar excel Calificacion</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-box mb-30">
+                <div class="pd-20">
+                    <form id="frmprospecto"  class="form" enctype="multipart/form-data">
+                        <div class="form-body">
+                            <ul class="nav nav-tabs" id="tabpanelprospecto">
+                                {% for e in ejes %}
+                                    <li class="nav-item">
+                                        <a class="nav-link  {% if forloop.first %}active {% endif %}" alt="tabedit{{e.id }}" id="base-tab{{e.id }}" style="font-size: 15px;color:black;" data-toggle="tab" aria-controls="tabedit{{e.id }}" href="#tab{{ e.id }}edit" aria-expanded="true"><b>{{ e.descripcion }}</b></a>
+                                    </li>
+                                {% endfor %}
+{#                                <li class="nav-item">#}
+{#                                    <a class="nav-link" alt="tabedit2" id="base-tab2" style="font-size: 15px;color:black;" data-toggle="tab" aria-controls="tabedit2" href="#tab2edit" aria-expanded="false">Información Personal</a>#}
+{#                                </li>#}
+                            </ul>
+                            <div class="tab-content px-1 pt-1" id="tabpanelcontenido" >
+                                {% for e in ejes %}
+
+                                    <div class="tab-pane {% if forloop.first %}active {% endif %}" id="tab{{ e.id }}edit" aria-labelledby="base-tab{{ e.id }}" aria-expanded="true">
+                                         <div class="pb-20">
+                                             <div id="DataTables_Table_0_wrapper" class="dataTables_wrapper dt-bootstrap4 no-footer">
+                                                <div class="row">
+                                                    <div class="col-lg-12">
+                                                        <table  class="data-table table stripe hover nowrap">
+
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td ></td>
+                                                                    <td colspan="6" style="padding: 20px">
+                                                                        <table class="table">
+                                                                            <thead>
+                                                                                <tr>
+                                                                                    <td colspan="3" style="text-align: center;border-top: 0"> Desacuerdo </td>
+                                                                                    <td colspan="3" style="text-align: center;border-top: 0">Acuerdo</td>
+                                                                                </tr>
+
+                                                                                <tr>
+                    {#                                                                <td  style="border-top: 0;padding: 0.2em;height: 2px" ></td>#}
+                                                                                    {% for r in e.respuestas  %}
+                                                                                        <td  {% if forloop.last  %}colspan="2"{% endif %} style="padding: 0em  0.1em 0em 0em;border-top: 0;"  >
+                                                                                            <h3 style="background-color: #1F4C{{ forloop.counter }}{{ e.respuestas.count }};width: 100%;height: 0.{{ forloop.counter }}{{ e.respuestas.count }}em;">&nbsp;</h3>
+                                                                                        </td>
+
+                                                                                    {% endfor %}
+                                                                                </tr>
+                                                                            </thead>
+                                                                        </table>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td ><b>{{  e.descripcion }}</b></td>
+                                                                    {% for r in e.respuestas  %}
+                                                                            <td style="text-align: center"> <b>{{ r.respuesta.nombre }}</b></td>
+                                                                    {% endfor %}
+                                                                </tr>
+                                                                {% for p in e.preguntas_directivo  %}
+                                                                    <tr>
+                                                                        <td {% if p.area %} style="background: {{ p.area.color }}" {% endif %}> {{ p.nombre }}</td>
+                                                                         {% for r in e.respuestas  %}
+                                                                            <td style="text-align: center {% if p.area %} ;background: {{ p.area.color }} {% endif %}">
+                                                                                <div class="custom-control custom-checkbox mb-5">
+                                                                                {% with respuesta=p|args:evaluaciondirectivo|call:'tiene_respuesta_directivo' %}
+{#                                                                                    {% if   evaluacionprofesor.finalizado %}#}
+                                                                                        {% if respuesta and  respuesta.respuesta == r %}<img src='../../ube/static/vendors/images/check-mark-green.png' width="14px" alt='' border="0"/>{% else %}<img src='../../ube/static/vendors/images/cross.png' width="14px"  alt='' border="0"/>{% endif %}
+{#                                                                                    {% else %}#}
+{#                                                                                        <input type="checkbox" class="custom-control-input chk{{ p.id }}" {% if respuesta and  respuesta.respuesta == r %}checked="true"{% endif %}  onclick="Responder('{{ p.id }}','{{ r.id }}')"  id='check{{ p.id }}{{ r.id }}'>#}
+{#                                                                                        <label class="custom-control-label" for='check{{ p.id }}{{ r.id }}'></label>#}
+{#                                                                                    {% endif %}#}
+                                                                                {% endwith %}
+                                                                     </div>
+                                                                            </td>
+                                                                        {% endfor %}
+
+                                                                    </tr>
+                                                                {% endfor %}
+
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                              </div>
+                                          </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="form-actions left">
+                            {% if  not evaluacionprofesor.finalizado %}
+                            {% else %}
+                                <h4> Evaluacion finalizada el {{  evaluacionprofesor.fecha|date:'d-m-Y' }}</h4    >
+                            {% endif %}
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <div class="modal fade" id="login-modal4"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="row">
+                    <div id="content" class="col-lg-12">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

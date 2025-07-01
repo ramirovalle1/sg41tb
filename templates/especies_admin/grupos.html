@@ -1,0 +1,70 @@
+<script type="text/javascript">
+    $(".eliminagrupo").click(function(){
+         $("#detalle_tipo").modal("hide");
+        var gid = $(this).attr("gid");
+        var teid = $(this).attr("teid");
+        var especien = $(this).attr("especien");
+        smoke.confirm("Esta seguro de eliminar el grupo", function(e){
+        if (e){
+            $.post("/especies_admin",{"action": "eliminagrupo","gid":gid},function(data) {
+                       if(data.result=='ok'){
+                           alert("Registro Eliminado");
+                            $.get("/especies_admin",{"action": "vergrupos","tid":teid},function(data) {
+                                    $("#detalle_tipo .modal-body").html(data);
+                                    $("#detalle_tipo #paneltitle1").html(especien + "<br> GRUPOS" );
+                                    $("#detalle_tipo").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                                    $("#detalle_tipo").modal("show");
+                           }, "html");
+                       }else{
+                           alert(data.result);
+                       }
+                    },"json");
+
+            }else{
+            }
+            }, {
+            ok: "Si",
+            cancel: "No",
+            classname: "custom-class",
+            reverseButtons: true
+        });
+    });
+</script>
+<div class="row-fluid">
+<div class="span12 ">
+    <table class="table table-condensed ">
+        <thead>
+            <th>Grupo</th>
+{#            <th  style="text-align: center">Todas las Carreras</th>#}
+            <th></th>
+            <th></th>
+        </thead>
+    <tbody>
+        {% for g in grupos %}
+            <tr>
+                <td > {{ g.departamento }}</td>
+                <td style="text-align: center">{% if g.todas_carreras %}
+                    <img src='/static/images/16/true.png' width="14px" alt='' border="0"/>
+                {% else %}
+                    <img src='/static/images/16/false.png' width="14px" alt='' border="0"/>
+                {% endif %}</td>
+                <td>
+                    {% if not persona.pertenece_soporte %}
+                        <a  style="float: right" href="#" class="btn  btn-danger eliminagrupo" gid="{{ g.id }}" teid="{{ g.tipoe.id }}" especien="{{ g.tipoe }}">  <i  class="icon-remove icon-white"></i></a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        {% if not grupos %}
+            <tr>
+                <td > NO EXISTEN REGISTROS
+
+                </td>
+            </tr>
+        {% endif %}
+
+    </tbody>
+</table>
+</div>
+</div>
+

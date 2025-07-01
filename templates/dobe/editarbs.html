@@ -1,0 +1,109 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block javascript %}
+    $("#id_inscripcion").addClass("validate[required]");
+    $("#id_valoracion,#id_mediostecnicos").attr({rows:3 , style:'width:58%;font-size:12px'});
+    $("#id_fechaemision,#id_fechamatricula,#id_fecharesumen,#id_fechavaloracion").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+    $("#id_tutor,#id_contacto,#id_raza").addClass("input-xxlarge");
+    $("#id_porcientodiscapacidad,#id_carnetdiscapacidad,#id_tipodiscapacidad,#id_estrato").addClass("input-large");
+
+    chequeaDiscapacidad = function() {
+    if (!$("#id_tienediscapacidad").is(':checked')) {
+        $("#id_tutor,#id_informe,#id_mediostecnicos, #id_fechavaloracion,#id_fechaemision,#id_fechamatricula,#id_contacto,#id_fecharesumen,#id_resumen").each(function() {
+                $($(this).get(0).parentNode.parentNode).hide();
+            });
+        $("#id_tipodiscapacidad").attr("disabled", true);
+        $("#id_tipodiscapacidad").val("");
+        $("#id_porcientodiscapacidad").attr("disabled", true);
+        $("#id_porcientodiscapacidad").val("");
+        $("#id_carnetdiscapacidad").attr("disabled", true);
+        $("#id_carnetdiscapacidad").val("");
+        } else {
+
+        {% if perms.sga.delete_perfilinscripcion %}
+               $("#id_tutor,#id_informe,#id_mediostecnicos, #id_fechaemision, #id_fechavaloracion,#id_valoracion,#id_fechamatricula,#id_contacto,#id_fecharesumen,#id_resumen").each(function(){
+                $($(this).get(0).parentNode.parentNode).show();
+            });
+        {% endif %}
+        $("#id_tipodiscapacidad").attr("disabled", false);
+        $("#id_porcientodiscapacidad").attr("disabled", false);
+        $("#id_carnetdiscapacidad").attr("disabled", false);
+    }
+    }
+    {% if not perms.sga.delete_perfilinscripcion %}
+         $($("#id_tienenee").get(0).parentNode.parentNode).hide();
+            $("#id_tutor,#id_informe,#id_mediostecnicos, #id_fechaemision, #id_fechavaloracion,#id_valoracion,#id_fechamatricula,#id_contacto,#id_fecharesumen,#id_resumen").each(function() {
+                $($(this).get(0).parentNode.parentNode).hide();
+            });
+    {% endif %}
+    chequeaNee = function() {
+        if (($("#id_tienenee").is(':checked')) || ($("#id_tienediscapacidad").is(':checked'))) {
+               {% if perms.sga.delete_perfilinscripcion %}
+{#                   if ($("#id_tienenee").is(':checked')){#}
+{#                   $($("#id_fechamatricula").get(0).parentNode.parentNode).hide();#}
+{#                   }else{#}
+{#                   $($("#id_fechamatricula").get(0).parentNode.parentNode).show();#}
+{#                   }#}
+                   $("#id_tutor,#id_informe,#id_mediostecnicos, #id_fechaemision,#id_fechavaloracion, #id_valoracion,#id_contacto,#id_fecharesumen,#id_resumen").each(function(){
+                    $($(this).get(0).parentNode.parentNode).show();
+
+            });
+            {% endif %}
+
+        }else{
+              $("#id_tutor,#id_informe,#id_mediostecnicos, #id_fechaemision,#id_fechavaloracion, #id_valoracion,#id_fechamatricula,#id_contacto,#id_fecharesumen,#id_resumen").each(function() {
+                $($(this).get(0).parentNode.parentNode).hide();
+            });
+        }
+    }
+
+    {%  if perfil.tienenee %}
+        $("#id_tienenee").attr('disabled',true);
+    {%  else %}
+        $("#id_tienenee").attr('disabled',false);
+    {%  endif %}
+
+{#    {% if proceso %}#}
+{#        {%  if proceso.resumen %}#}
+{##}
+{#           $("#id_fecharesumen,#id_resumen").attr('disabled',true);#}
+{#        {% else %}#}
+{#           $("#id_fecharesumen,#id_resumen").attr('disabled',false);#}
+{#        {% endif %}#}
+{##}
+{#        {%  if proceso.informe %}#}
+{##}
+{#           $("#id_informe,#id_fechaemision").attr('disabled',true);#}
+{#        {% else %}#}
+{#           $("#id_informe,#id_fechaemision").attr('disabled',false);#}
+{#        {% endif %}#}
+{##}
+{#         {%  if proceso.fechamatricula %}#}
+{##}
+{#           $("#id_fechamatricula").attr('disabled',true);#}
+{#         {% else %}#}
+{#           $("#id_fechamatricula").attr('disabled',false);#}
+{#         {% endif %}#}
+{#    {% endif %}#}
+    $("#id_tienediscapacidad").click(chequeaDiscapacidad);
+    $("#id_tienediscapacidad").click(chequeaNee);
+    $("#id_tienenee").click(chequeaNee);
+    chequeaDiscapacidad();
+    chequeaNee();
+
+{% endblock %}
+{% block titulo %}Editar Perfil del Alumno: {{ perfil.inscripcion }}{% endblock %}
+{% block formaction %}/dobe{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='edit'/>
+    <input type='hidden' name='id' value="{{ perfil.id }}"/>
+    <input type='hidden' name='tienediscapacidad' value="{{ perfil.tienediscapacidad }}"/>
+    <input type='hidden' name='inscripcion' value="{{ perfil.inscripcion.id }}"/>
+{% endblock %}
+{% block formback %}/dobe{% endblock %}
+{% block buttonname %}Guardar Datos{% endblock %}

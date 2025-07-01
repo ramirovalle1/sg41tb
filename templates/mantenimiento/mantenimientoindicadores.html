@@ -1,0 +1,211 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/mantenimiento?action=adminexamencomplexivo&s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+        $("form").validationEngine();
+        $("#id_descripcion, #id_escala").addClass("validate[required]");
+        $("#id_escala").prop("type","number");
+        $("#id_escala").attr("max","100");
+        $("#id_escala").addClass('input-small');
+
+
+
+    {#------------------------------------------------------ ADD INDICADOR----------------------------------------------------------------#}
+    $('.nuevo_indicador').click(function(){
+        $("#id_descripcion").val('');
+        $("#id_carrera").val('');
+        $("#id_escala").val('');
+        $("#id_estado").attr('checked',true);
+        $("#agregar_indicador #paneltitle2").html('Nuevo Indicador Evaluaci&oacute;n Complexivo ');
+        $("#agregar_indicador").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_indicador").modal("show");
+    });
+
+    {#------------------------------------------------------ MODIFICAR INDICADOR----------------------------------------------------------------#}
+    $('.modificar_indicador').click(function(){
+        $("#id_descripcion").val($(this).attr('descripcion'));
+        $("#id_escala").val($(this).attr('escala'));
+        $("#id_carrera").val($(this).attr('carrera'));
+        if (($(this).attr('estado')) == "True"){
+            $("#id_estado").attr('checked',true);
+        }else{
+            $("#id_estado").attr('checked',false);
+        }
+
+        $("#agregar_indicador #idindicador").val($(this).attr('idindicador'));
+        $("#agregar_indicador #paneltitle2").html('Modificar Indicador Complexivo ');
+        $("#agregar_indicador").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_indicador").modal("show");
+    });
+
+    $("#agregar_indicador .btn-cerrar").click(function(){
+        $("#agregar_indicador").modal("hide");
+    });
+
+    $("#formbutton").click(function(){
+        $(".formError").removeClass('oculta');
+        $(".formError").addClass('aparece');
+    });
+
+    $($("#id_carcord").get(0).parentNode.parentNode).hide();
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+        setInterval(function(){
+        }, 5000);
+    {% endif %}
+
+
+    });
+</script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span7"  >
+            <h3 >Indicadores de Evaluaci&oacute;n Ex&aacute;menes Complexivos </h3></br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/mantenimiento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span2'>
+            <a href="#" class='btn btn-success nuevo_indicador'><i class="icon-plus icon-white"></i> Nuevo Indicador</a>
+        </div>
+        <div class='span5'>
+            <form class="form-search"> <input class='searchinput input-large search-query' type='text' id='searchfield' placeholder="CARRERA" value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/mantenimiento?action=adminexamencomplexivo" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Limpiar </a>
+                {% endif %}
+            </form>
+        </div>
+    </div><br>
+    <div class='row-fluid'>
+        <div class='span10'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th> Descripci&oacute;n</th>
+                        <th style="text-align: center"> Escala </th>
+                        <th> Carrera </th>
+                        <th style="text-align: center"> Estado</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for i in indicadores %}
+                        <tr>
+                            <td> {{ i.descripcion|upper }} </td>
+                            <td style=" text-align: center"> {{ i.escala }} </td>
+                            <td> {% if i.carrera %}{{ i.carrera|upper }} {% endif %} </td>
+                            <td style="text-align: center">
+                                {% if i.estado %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a style="cursor: pointer" class="modificar_indicador" descripcion="{{ i.descripcion }}" escala="{{ i.escala }}" estado="{{ i.estado }}" carrera="{{ i.carrera.id }}" idindicador="{{ i.id }}"><i class="icon-edit"></i>  Editar Indicador</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not indicadores %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class="span8">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/mantenimiento?action=adminexamencomplexivo?page=1">1</a></li>
+                            <li><a href="/mantenimiento?action=adminexamencomplexivo?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/mantenimiento?action=adminexamencomplexivo?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/mantenimiento?action=adminexamencomplexivo?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/mantenimiento?action=adminexamencomplexivo?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/mantenimiento?action=adminexamencomplexivo&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_indicador">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/mantenimiento" method="POST">
+                <input type='hidden' name='action' value='add_indicador' />
+                <input type='hidden' name='idindicador' id='idindicador' />
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+            $(".eliminar").click(function() {
+                var pro = $(this).attr("pro");
+                $(".btn-eliminar").attr("pro",pro);
+                $("#eliminar").modal("show");
+            });
+
+            $(".btn-eliminar").click(function() {
+                var id = $(this).attr("pro");
+                $("#resetear").modal("hide");
+                location.href = '/becas_matricula?action=eliminarbeca&id='+id;
+            });
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+                $("#eliminar").modal('hide');
+
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Estudios Realizados por el Alumno: {{ inscripcion.persona }}</h3>
+            <h4>Carrera: {{ inscripcion.carrera }}</h4>
+            <br>
+        </div>
+
+        <div class='atright'>
+            <a ><i ></i>                          </a>
+            {% if grupo %}
+                <a href="/adm_grupos" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% else %}
+                <a href="/becas_matricula" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <!-- <th>[x]</th> -->
+                    <th>Fecha Matr&iacute;cula</th>
+                    <th>Periodo</th>
+                    <th>Nivel</th>
+                    <th>Grupo</th>
+                    <th>Sesion</th>
+                    <th>Beca?</th>
+                    <th>Beca</th>
+                    <th>FechaBeca</th>
+                    <th>Beneficio</th>
+                    <th>Tipo</th>
+                    <th>Motivo</th>
+
+{#                    <th>INSCRIP</th>#}
+
+                    <th style="width: 100px"></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for matricula in matriculas %}
+                    <tr>
+                        <td>{{ matricula.fecha }}</td>
+                        <td>{{ matricula.nivel.periodo.nombre }}</td>
+                        <td>{{ matricula.nivel.nivelmalla }}</td>
+                        <td>{{ matricula.nivel.grupo.nombre }}</td>
+                        <td>{{ matricula.nivel.sesion.nombre }}</td>
+                        <td>{% if matricula.becado %}
+                                <img src='/static/images/16/true.png'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png'/>
+                            {% endif %}</td>
+                        {% if matriculalibre %}
+                        <td>
+                            {% if matricula.inscripcion.beca_asignada %}
+                                {{ matricula.inscripcion.beca_asignada_obj.tipobeca.nombre }}
+                                ({{ matricula.inscripcion.beca_asignada_obj.porciento|floatformat:1 }}%)
+                            {% endif %}
+                        </td>
+                        {% endif %}
+
+                        <td style="text-align: center" class="smaller2">
+                            {% if matricula.becado %}
+                                {{ matricula.porcientobeca }}%
+                            {% endif %}
+                        </td>
+
+                        <td style="text-align: center" class="smaller2">
+                            {{ matricula.fechabeca|date:'d-m-Y' }}
+                        </td>
+
+                        <td style="text-align: center" class="smaller2">
+                            {% if matricula.becado %}
+                                {% if matricula.tipobeneficio %}{{ matricula.tipobeneficio.nombre }}{% endif %}
+                            {% endif %}
+                        </td>
+
+
+                        <td style="text-align: center" class="smaller2">
+                            {% if matricula.becado %}
+                                {% if matricula.tipobeca %}{{ matricula.tipobeca.nombre }}{% endif %}
+                            {% endif %}
+                        </td>
+
+                        <td style="text-align: center" class="smaller2">
+                            {% if matricula.becado %}
+                                {% if matricula.motivobeca %}{{ matricula.motivobeca.nombre }}{% endif %}
+                            {% endif %}
+                        </td>
+{#                        <td>{{ estudio.inscripcion_id }}</td>#}
+
+                        <td>
+                             <div class="btn-group">
+                                {% if not centroexterno %}
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                                {% if not matricula.becado %}
+                                                    {% if not persona.pertenece_soporte %}
+                                                        <li><a href="/becas_matricula?action=asignarbeca&id={{ matricula.id }}">
+
+                                                        <i class="icon-plus"></i> Asignar Beca </a></li>
+                                                    {% endif %}
+                                                {% else %}
+                                                    {% if perms.sga.change_tipobeca %}
+                                                        <li><a href="/becas_matricula?action=agregarrubros&id={{ matricula.id }}">
+                                                        <i class="icon-arrow-up"></i> Agregar Rubros </a></li>
+
+
+                                                        <li><a href="/becas_matricula?action=asignarbeca&id={{ matricula.id }}">
+                                                        <i class="icon-plus"></i> Editar Beca </a></li>
+
+                                                        <li><a href="#" pro='{{ matricula.id }}' class="eliminar" >
+                                                        {% if perms.sga.delete_tipobeca %}
+                                                            <i class="icon-cut"></i>Eliminar Beca </a></li>
+                                                        {% endif %}
+
+                                                        {%if matricula.detalle_rubros%}
+                                                            <li><a href="/becas_matricula?action=verrubros&id={{ matricula.id }}">
+                                                            <i class="icon-edit"></i> Ver Rubros </a></li>
+                                                        {% endif %}
+
+                                                    {% endif %}
+                                                {% endif %}
+                                    </ul>
+                                {% endif %}
+                             </div>
+                        </td>
+                    </tr>
+
+                {% endfor %}
+                {% if not matriculas %}
+                    <tr>
+                        <td colspan="9">
+                            NO HAY DATOS DE ESTUDIOS REALIZADOS DEL ALUMNO
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="eliminar" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle1"> ¿Esta seguro de eliminar el registros de la beca?</h3>
+        </div>
+        <div class="modal-body">
+            <p> Se eliminara unicamente los registros de la beca</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-primary btn-eliminar"> eliminar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+{% endblock %}

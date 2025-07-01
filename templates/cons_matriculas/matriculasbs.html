@@ -1,0 +1,286 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            niveles = [{% for nivel in niveles %}
+                {"id":"{{ nivel.id }}","cerrado": {% if nivel.cerrado %}true{% else %}false{% endif %}, "fechacierre": "{{ nivel.fechacierre|date:'d-m-Y' }}","modalidad": "{{ nivel.grupo.modalidad.nombre }}",  "matriculados": {{ nivel.mat_nivel }}, "carrera": "{{ nivel.carrera_id }}", "sede": "{{ nivel.sede.id }}","sesion": "{{ nivel.sesion }}","annomalla": "{{ nivel.malla.inicio_anno }}","nivelmalla":"{{ nivel.nivelmalla }}","paralelo": "{{ nivel.paralelo }}","inicio":"{{ nivel.inicio_repr }}","fin":"{{ nivel.fin_repr }}"}{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+
+            niveles_abiertos = { {% for nivel in niveles_abiertos %}
+                "{{ nivel.id }}": {{ nivel.mat_nivel }} {% if not forloop.last %},{% endif %}{% endfor %}
+            };
+
+            findNiveles = function(s, c) {
+                var l = [];
+                for (i in niveles) {
+                    var am = niveles[i];
+                    if (am.sede==s && am.carrera==c) {
+                        l.push(am);
+                    }
+                }
+                return l;
+            };
+
+            matricula_nivel_abierto = function(id) {
+                if (id in niveles_abiertos) {
+                    return niveles_abiertos[id];
+                }
+                return 0;
+            };
+
+            mostrar_nivel = function() {
+                var id = $(this).attr("id");
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").hide();
+                $("."+id).show();
+            };
+
+            mostrar_todos = function() {
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").show();
+            };
+
+            $(".niveltodos").click(mostrar_todos);
+            mostrar_ninguno = function() {
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").hide();
+            };
+            $(".nivelninguno").click(mostrar_ninguno);
+
+            sedes = {};
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var carrera = $this.attr('carrera');
+                var sede = $this.attr('sede');
+                var sesion = $this.attr('sesion');
+                var nivelmalla = $this.attr('nivelmalla');
+                var paralelo = $this.attr('paralelo');
+                var matricula = $this.attr('matriculas');
+
+                var niveles = findNiveles(sede, carrera);
+                var sum = 0;
+                for (i in niveles) {
+                    var nivel = niveles[i];
+                    var nivelmalla = nivel.nivelmalla;
+
+                    var idboton = "bot"+nivelmalla.replace(' ','').toLowerCase()+"_"+carrera+"_"+sede;
+                    var $boton = $(this).find("#"+idboton);
+                    if ($boton.length==0) {
+                        var botones = $this.find(".niveles button");
+                        var insertado = false;
+                        for (var ii=0; ii<botones.length; ii++) {
+                            var boton2 = botones.get(ii);
+                            if ($(boton2).html()>nivelmalla) {
+                                $(boton2).before("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                                insertado = true;
+                                break;
+                            }
+                        }
+                        if (!insertado) {
+                            $this.find(".niveles").append("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                        }
+//                        $this.find(".niveles").append("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                        $this.find("#"+idboton).click(mostrar_nivel);
+                    }
+
+                    $(this).append("<tr style='display: none' class='nivelrow "+idboton+"'><td><b>"+((nivel.cerrado)?"<span class='label label-important'>CERRADO</span> ":"")+nivel.paralelo+" - "+nivel.nivelmalla+ " (Del " + nivel.inicio +" al "+ nivel.fin + ") - "+nivel.modalidad+" "+nivel.sesion+ " - Malla("+nivel.annomalla+")</b></td><td>"+
+                            "<a href='/cons_matriculas?action=matricula&id="+nivel.id+"' class='btn btn-info btn-mini'><i class='icon-user icon-white'></i> Matr&iacute;cula</a>" +
+                            " "+ "<span class='badge "+((nivel.matriculados==0)?"badge-error":"")+"'>" + nivel.matriculados+
+                            "</span></td></tr>");
+
+                    sum += matricula_nivel_abierto(nivel.id);
+
+                }
+                $("#ca_"+carrera+"_"+sede).append("<br/></br>"+ "<span class='badge "+((sum==0)?"badge-error":"")+"'>" + sum + "</span>" + " Matriculados");
+                if (sedes[sede]!=undefined) {
+                    sedes[sede] = sedes[sede]+sum;
+                } else {
+                    sedes[sede] = sum;
+                }
+            });
+            var sumT = 0;
+            for (i in sedes) {
+                var sedesum = sedes[i];
+                $("#totalsede_"+i).append("<b>"+sedesum+"</b>");
+                sumT += sedesum;
+            }
+            $("#totalgeneral").append("<b>"+sumT+"</b>");
+
+            buscar_nivel = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Nivel',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_nivel").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+            };
+            $('#id_nivel').typeahead({source: buscar_nivel, updater: function(item) {
+                var results = $("#id_nivel").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_nivel").attr("myval",datos.id);
+                    }
+                }
+                return item;
+            }});
+
+
+            $(".btn-generar").click(function() {
+                $("#id_nivel").val('');
+                $("#grupo_panel").modal({width: '500px', backdrop: 'static'});
+                $("#grupo_panel").modal("show");
+            });
+
+            $("#grupo_panel .btn-cerrar").click(function() {
+                $("#grupo_panel").modal('hide');
+            });
+
+            $("#grupo_panel .btn-grupo").click(function() {
+                var dato = $("#id_nivel").attr("myval");
+                if (dato){
+                    $("#grupo_panel").modal("hide");
+                     $.post("/datos_estudiantes", {"action":'generar',"exportar":1,"g":dato}, function(data) {
+                        if (data.result=='ok'){
+                            $("#waitpanel").modal("hide");
+                            location.href=data.url;
+                        }else{
+                            $("#waitpanel").modal("hide");
+                            smoke.alert("Error Intente Nuevamente");
+                        }
+                     }, "json");
+                 return false;
+                }
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span5'>
+            <h3>Matr&iacute;culas de Niveles Acad&eacute;micos</h3>
+            <h4>Periodo: {{ periodo.nombre }}</h4>
+        </div>
+        <div class="span5">
+            <table class="table table-condensed table-bordered">
+                <thead>
+                    <tr>
+                       <th colspan="7" style="text-align: center">ESTADISTICA GENERAL DE ESTUDIANTES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+{#                        <td style="text-align: center; font-weight: bold">Inscritos</td>#}
+                        <td style="text-align: center; font-weight: bold">Matriculados</td>
+                        <td style="text-align: center; font-weight: bold">Becados</td>
+                        <td style="text-align: center; font-weight: bold">Egresados</td>
+                        <td style="text-align: center; font-weight: bold">Graduados</td>
+                        <td style="text-align: center; font-weight: bold">Inactivos</td>
+                        <td style="text-align: center; font-weight: bold">Retirados</td>
+                    </tr>
+                    <tr>
+{#                        <td style="text-align: center">{{ inscritos }}</td>#}
+                        <td style="text-align: center">{{ matriculados }}</td>
+                        <td style="text-align: center">{{ becados }}</td>
+                        <td style="text-align: center">{{ egresados }}</td>
+                        <td style="text-align: center">{{ graduados }}</td>
+                        <td style="text-align: center">{{ inactivos }}</td>
+                        <td style="text-align: center">{{ retirados }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <br/>
+        </div>
+        <div class='span2' style="text-align: right">
+            {% if perms.sga.add_vendedor %}
+                <a href="#" class='btn btn-success btn-generar'><i class='icon-file'></i> Generar</a>
+            {% endif %}
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atras</a>
+        </div>
+
+    </div>
+    <!-- SEDES -->
+{#    {% if not perms.sga.change_vendedor or persona.usuario.is_superuser %}#}
+    {% if not perms.sga.change_vendedor or persona.usuario.is_superuser %}
+        <div class='row-fluid'>
+            <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                {% for sede in sedes %}
+                    <thead>
+                    <tr>
+                        <th colspan="2" class="label-info">{{ sede.nombre }}</th>
+                    </tr>
+                    <tr>
+                        <th width='30%'>Carreras</th>
+                        <th width='70%'>Niveles</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for carrera in carreras %}
+                        <tr class='{% cycle "odd" "even" %}'>
+                            <td id='ca_{{ carrera.id }}_{{ sede.id }}'>{{ carrera.nombre }}</td>
+                            <td>
+                                <table class='table table-bordered cell' sede='{{ sede.id }}' carrera='{{ carrera.id }}'>
+                                    <thead>
+                                    <th colspan="2">
+                                        <div class="btn-group niveles" data-toggle="buttons-radio">
+                                            <button class="btn btn-mini niveltodos">Todos</button>
+                                            <button class='btn btn-mini btn-warning nivelninguno'><i class="icon-chevron-up"></i></button>
+                                        </div>
+                                    </th>
+                                    </thead>
+                                </table>
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <td><b>Total de Matriculados </b></td>
+                        <td class='cell' id='totalsede_{{ sede.id }}'> </td>
+                    </tr>
+                    </tbody>
+
+                {% endfor %}
+                <tfoot>
+                <tr>
+                    <td align="center"><b>TOTAL DE ALUMNOS MATRICULADOS</b></td>
+                    <td><div class='cell ' id='totalgeneral'> </div></td>
+                </tr>
+                </tfoot>
+
+            </table>
+
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block moreblock %}
+
+    <div class="modal fade static" id="grupo_panel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Ingrese el Nivel</h3>
+        </div>
+        <div class="modal-body ">
+            <div style="overflow-y: auto"  class='form-horizontal' >
+                   <h4> Nivel:<input type="text" name="nivel" id="id_nivel" style="width: 95%"></h4>
+                   <p class="help-text">{{ field.help_text }} </p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-primary btn-grupo"> Generar</a>
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+        <div class="modal-header" style="background-color: red">
+                <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+
+{% endblock %}

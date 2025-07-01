@@ -1,0 +1,147 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>
+    {% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+    <script type="text/javascript">
+
+     $(function() {
+        var programa_id=0;
+        var programa_idedit=0;
+        $("form").validationEngine();
+        $('#id_programa,#id_convenio,#id_carrera').addClass('input-xxlarge');
+        $("#id_inicio,#id_fin").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+        $("#id_nombre, #id_lugar,#id_objetivo").attr({rows:3 , style:'width:58%;font-size:12px'});
+        $("#id_lider").attr({rows:2,style:'width:58%;font-size:12px'});
+        $("#id_proyecto,#id_horas,#id_taller,#id_objetivo,#id_lugar,#id_lider,#id_inicio,#id_fin").addClass("validate[required]");
+        $("#id_estadoconv,#id_tipoprograma").attr("disabled",true);
+        $('#id_estadoconv').addClass('input-small');
+        $('#id_tipoprograma').addClass('input-xxlarge');
+
+        prety = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(2), {prefix: '$', thousandSeparator: ',', decimalSeparator: ".", sufix: '', decimalPlaces: 2});
+        };
+
+        pretyPct = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(1), {prefix: '', thousandSeparator: ',', decimalSeparator: ".", sufix: '%', decimalPlaces: 1});
+        };
+
+        simple = function(sid) {
+            return Big($.fn.floats.simplify_fn($(sid).val(), {prefix: '$', thousandSeparator: ',', sufix: '%'}));
+        };
+
+        simpleV = function(v) {
+            return Big($.fn.floats.simplify_fn(v, {prefix: '$', thousandSeparator: ','}));
+        };
+
+         $(".linkback").click(function(){
+            location.href = "/vinculacion";
+         });
+
+        $("#id_convenio").attr({"autocomplete":"off"});
+        $("#id_convenio").addClass("input-xxlarge");
+        $($("#id_convenio_id").get(0).parentNode.parentNode).hide();
+
+        buscar_convenio = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Convenio',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_convenio").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+        verificaEstado = function(){
+            var cid = $("#id_convenio").attr("myval");
+            $.get("/vinculacion", {'action':'estadoconvenio', 'cid': cid}, function(data) {
+                if (data.estado){
+                    $("#id_estadoconv").val(data.estado);
+                }else{
+                }
+
+            }, 'json');
+        };
+
+        verificaTipoPrograma = function(){
+            var pid = programa_id;
+            $.get("/vinculacion", {'action':'tipoprograma', 'pid': pid}, function(data) {
+                if (data.tipoprograma){
+                    $("#id_tipoprograma").val(data.tipoprograma);
+                }else{
+                }
+            }, 'json');
+        };
+
+        verificaTipoProgramaEdit = function(){
+            var pid = programa_idedit;
+            $.get("/vinculacion", {'action':'tipoprograma', 'pid': pid}, function(data) {
+                if (data.tipoprograma){
+                    $("#id_tipoprograma").val(data.tipoprograma);
+                }else{
+                }
+            }, 'json');
+        };
+
+         $('#id_convenio').typeahead({source: buscar_convenio, updater: function(item) {
+                var results = $("#id_convenio").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_convenio").attr("myval",datos.id);
+                        d=datos.id;
+                        $("#id_convenio_id").val(d);
+                        verificaEstado();
+                    }
+                }
+                return item;
+         }});
+
+         {% if  actividad.convenio %}
+            $('#id_convenio').val('{{ actividad.convenio }}');
+            $("#id_convenio").attr("myval",'{{ actividad.convenio.id }}');
+            $("#id_convenio_id").val('{{ actividad.convenio.id }}');
+            verificaEstado();
+         {% endif %}
+
+         $("#id_programa").change(function() {
+             var pid = $(this).val();
+             programa_id=pid;
+             verificaTipoPrograma();
+         });
+
+         {% if  actividad.programa %}
+            programa_idedit={{ actividad.programa.id }};
+            verificaTipoProgramaEdit();
+         {% endif %}
+
+
+     });
+
+
+    </script>
+
+{% endblock %}
+{% block titulo %}{% if  ban == 2  %}Editar Actividad{% else %}Adicionar Actividad {% endif %}
+{% if error %}
+    {% if ban == 2 %}
+        </br></br> <span> ERROR AL EDITAR LA ACTIVIDAD</span>
+    {% else %}
+        </br></br> <span> ERROR AL CREAR LA ACTIVIDAD</span>
+    {% endif %}
+{% endif %}
+{% endblock %}
+
+
+{% block formaction %}/vinculacion{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='add'/>
+    <input type='hidden' name='ban' value='{{ ban }}'/>
+    <input type='hidden' name='actividad' value='{{ actividad.id }}'/>
+{% endblock %}
+{% block formback %}/vinculacion{% endblock %}
+{% block buttonname %}Guardar Cambios{% endblock %}

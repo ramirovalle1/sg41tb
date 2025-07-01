@@ -1,0 +1,843 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+<style>
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color:  #184679; }
+
+.btn-primary {
+  color: #fff;
+  background-color: #184679;
+  border-color: #184679;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover, .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color:#184679;
+    color: #fff;
+    border-color: #184679;
+}
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover,.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #184679;
+}
+</style>
+<script src="../../static/sganuevo/src/plugins/apexcharts/apexcharts.min.js"></script>
+<script src="../../static/sganuevo/src/plugins/sweetalert2/sweetalert2.all.js"></script>
+<script src="../../static/sganuevo/src/plugins/sweetalert2/sweet-alert.init.js"></script>
+<script type="text/javascript">
+    $(function () {
+    {#        colors: ['#F44336', '#E91E63', '#9C27B0', '#008FFB', '#F86624', '#F9CE1D', '#2B908F', '#662E9B', '#7D02EB', '#546E7A', '#16deee'],#}
+        $( document ).ready(function() {
+            {# ------------------- USO DE TRASPORTES POR CARRERA ----------------   #}
+            var tiposutrasporte = [];
+            var listcarrxutrasporte = [];
+            var listusotrasportexcarr = [];
+            var totalutrasporte=0;
+            tiposutrasporte.push([{% for ut in utrasporte %}"{{ ut.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]); {# TIPOS DE utrasporte #}
+            {% for lu in lista_carreras_usotrasporte %}
+                listcarrxutrasporte.push('{{ lu.carreranombre }}');
+                var utrasporte = [];
+                {% for lsdata in lu.data %}
+                    var cantidadutrasporte = parseInt('{{ lsdata.cantidad }}')
+                    utrasporte.push(cantidadutrasporte);
+                    totalutrasporte+= cantidadutrasporte
+                {% endfor %}
+                listusotrasportexcarr.push(utrasporte);
+            {% endfor %}
+
+            var listado_utrasportexcarrera = [{"carreras": listcarrxutrasporte, "lista": listusotrasportexcarr, "tiposutrasporte": tiposutrasporte}];
+
+            var seriesData = [];
+            for (var i = 0; i < listado_utrasportexcarrera[0].tiposutrasporte[0].length; i++) {
+                seriesData.push({
+                    name: listado_utrasportexcarrera[0].tiposutrasporte[0][i],
+                    data: listusotrasportexcarr.map(function(utrasporte) { return utrasporte[i]; })
+                });
+            }
+            var optionsxcarrerautrasporte = {
+                series: seriesData,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalutrasporte *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {  
+                    y: {
+                        formatter: function (val) {
+                          return  val 
+                        }
+                      }
+                }, 
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_utrasportexcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+            var chartxcarrerautrasporte  = new ApexCharts(document.querySelector("#chart_div_utransportexcarrera"), optionsxcarrerautrasporte);
+            chartxcarrerautrasporte.render();
+
+        {# -------------------- USO DE TRASPORTE POR COORDINACION ------------------------ #}
+            var listcoordinacion=[]
+            var listutrasportexcoord =[]
+            var totalutrasporte2=0
+            {% for ls in lista_coordinaciones_usotransporte %}
+                listcoordinacion.push('{{ ls.coordnombre }}');
+                var utraspcoord = [];
+                {% for lsdata in ls.data %}
+                    var cantidadutrasporte2 =parseInt('{{ lsdata.cantidad }}')
+                    utraspcoord.push(cantidadutrasporte2);
+                    totalutrasporte2 += cantidadutrasporte2
+                {% endfor %}
+                listutrasportexcoord.push(utraspcoord);
+            {% endfor %}
+
+            var listado_utrasportexcoordinacion = [{"coordinacion": listcoordinacion, "lista": listutrasportexcoord, "tiposutrasporte": tiposutrasporte}];
+            var seriesData2 = [];
+            for (var lc = 0; lc < listado_utrasportexcoordinacion[0].tiposutrasporte[0].length; lc++) {
+                seriesData2.push({
+                    name: listado_utrasportexcoordinacion[0].tiposutrasporte[0][lc],
+                    data: listutrasportexcoord.map(function(utraspcoord) { return utraspcoord[lc]; })
+                });
+            }
+            var optionsxcoordinacion = {
+                series:seriesData2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalutrasporte2 *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {  
+                    y: {
+                        formatter: function (val) {
+                          return  val 
+                        }
+                      }
+                }, 
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_utrasportexcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+
+            var chartxcoordinacionutrasporte  = new ApexCharts(document.querySelector("#chart_div_utrasportexcoordinacion"), optionsxcoordinacion);
+            chartxcoordinacionutrasporte.render();
+
+            {# --------------------FILTRAR------------------------    #}
+            $("#btnbuscarxcarrera").click(function() {
+                buscarutrasportexcarrera();
+            });
+            function buscarutrasportexcarrera(){
+                var filt_utxcarrera=[];
+                var listcarrxutrasporte2=[];
+                var lista1 = [];
+                var totalfiltcarr= 0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarutrasportexcarrera",
+                    idanio: $("#cmbaniocarrera_utrasporte").val(),
+                    idcarrera: $("#cmbutcarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarrxutrasporte.forEach(function(item) {
+                                listcarrxutrasporte2.push(item.carreranombre);
+                                var utrasp = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidad1 =parseInt(infoItem.cantidad)
+                                    utrasp.push(cantidad1);
+                                    totalfiltcarr +=cantidad1;
+                                });
+                                lista1.push(utrasp);
+                            });
+                            filt_utxcarrera.push({"carreras": listcarrxutrasporte2,  "lista": lista1, "tiposutrasporte":tiposutrasporte});
+                            var seriesData3 = [];
+                            for (var fi = 0; fi < filt_utxcarrera[0].tiposutrasporte[0].length; fi++) {
+                                seriesData3.push({
+                                    {#name: filt_nucleoxcarrera[0].tiposnucleos[0][i],#}
+                                    data: lista1.map(function (utrasp) {return utrasp[fi];})
+                                });
+                            }
+                            chartxcarrerautrasporte.updateOptions({
+                                series: seriesData3,
+                                xaxis: {
+                                    categories: filt_utxcarrera[0].carreras
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcarr *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinacion").click(function (){
+                buscarutrasportesxcoordinacion()
+            })
+            function buscarutrasportesxcoordinacion(){
+                var filt_utrasportexcoordinacion=[];
+                var listcoordinacion2=[];
+                var lista2 = [];
+                var totalfiltcord =0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarutrasportexcoordinacion",
+                    idanio: $("#cmbaniocoord_utrasporte").val(),
+                    idcoordinacion: $("#cmbidcoordinacion").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxutrasporte.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var utrasportec = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadcord= parseInt((infoItem.cantidad))
+                                    utrasportec.push(cantidadcord);
+                                    totalfiltcord += cantidadcord
+                                });
+                                lista2.push(utrasportec);
+                            });
+                            filt_utrasportexcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": lista2, "tiposutrasporte": tiposutrasporte});
+                            var seriesData4 = [];
+                            for (var fi = 0; fi < filt_utrasportexcoordinacion[0].tiposutrasporte[0].length; fi++) {
+                                seriesData4.push({
+                                    data: lista2.map(function (utrasportec) {return utrasportec[fi];})
+                                });
+                            }
+                            chartxcoordinacionutrasporte.updateOptions({
+                                series: seriesData4,
+                                xaxis: {
+                                    categories: filt_utrasportexcoordinacion[0].coordinaciones
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcord *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+        
+            {# -----------------------USO DE TRASPORTE RESUMEN ------------------------#}
+            var listadoxresumen =[]
+            var nombresutrasporte=[]
+            var cantidadresumen=[]
+            {% for xlista_usotransporte_resumen in lista_usotransporte_resumen  %}
+                    cantidadresumen.push(parseInt('{{ xlista_usotransporte_resumen.cantidad  }}'));
+                    nombresutrasporte.push('{{ xlista_usotransporte_resumen.utrasportenombre  }}');
+
+            {% endfor %}
+             listadoxresumen.push({"nombresutrasporte":nombresutrasporte,"cantidad":cantidadresumen });
+             var optionsresumenxutrasporte = {
+                series:listadoxresumen[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                labels: listadoxresumen[0].nombresutrasporte,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        },
+
+                    }
+                }],
+                legend: {
+                    position: 'bottom'
+                }
+            };
+            var chart = new ApexCharts(document.querySelector("#chart_resumen"), optionsresumenxutrasporte);
+            chart.render();
+
+            {# ------------------- TIPO DE TRASPORTE POR CARRERA ----------------   #}
+            var tiposttrasporte = [];
+            var listcarrxttrasporte = [];
+            var listtrasportexcarr = [];
+            var totaltrasportet=0;
+
+            tiposttrasporte.push([{% for tt in ttrasporte %}"{{ tt.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]);
+            {% for li in lista_carreras_tipotransporte %}
+                listcarrxttrasporte.push('{{ li.carreranombre }}');
+                var transportet = [];
+                {% for lsdatai in li.data %}
+                    var cantidadingresop = parseInt('{{ lsdatai.cantidad }}')
+                    transportet.push(cantidadingresop);
+                    totaltrasportet+= cantidadingresop
+                {% endfor %}
+                listtrasportexcarr.push(transportet);
+            {% endfor %}
+            var listado_tipotrasportexcarrera = [{"carreras": listcarrxttrasporte, "lista": listtrasportexcarr, "tiposttrasporte": tiposttrasporte}];
+
+            var seriesDatatransp = [];
+            for (var ip = 0; ip < listado_tipotrasportexcarrera[0].tiposttrasporte[0].length; ip++) {
+                seriesDatatransp.push({
+                    name: listado_tipotrasportexcarrera[0].tiposttrasporte[0][ip],
+                    data: listtrasportexcarr.map(function(transportet) { return transportet[ip]; })
+                });
+            }
+            var optionstransportetxcarrera = {
+                series: seriesDatatransp,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totaltrasportet *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_tipotrasportexcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+            var chartxcarreratransportet  = new ApexCharts(document.querySelector("#chart_div_ttransportexcarrera"), optionstransportetxcarrera);
+            chartxcarreratransportet.render();
+            
+            {# ------------------- TIPO DE TRANSPORTES POR COORDINACION -------------------  #}
+            var listcoordinaciontransp=[]
+            var listtranspxcoord =[]
+            var totaltrasporte2=0
+            {% for ls in lista_coordinaciones_tipotransporte %}
+                listcoordinaciontransp.push('{{ ls.coordnombre }}');
+                var transp = [];
+                {% for lsdata in ls.data %}
+                     var cantidadtransp2 = parseInt('{{ lsdata.cantidad }}')
+                    transp.push(cantidadtransp2);
+                    totaltrasporte2 += cantidadtransp2
+                {% endfor %}
+                listtranspxcoord.push(transp);
+            {% endfor %}
+
+            var listado_tipotransportexcoordinacion = [{"coordinacion": listcoordinaciontransp, "lista": listtranspxcoord, "tiposttrasporte": tiposttrasporte}];
+            var seriesDatatransp2 = [];
+            for (var lp = 0; lp < listado_tipotransportexcoordinacion[0].tiposttrasporte[0].length; lp++) {
+                seriesDatatransp2.push({
+                    name: listado_tipotransportexcoordinacion[0].tiposttrasporte[0][lp],
+                    data: listtranspxcoord.map(function(transp) { return transp[lp]; })
+                });
+            }
+            var optionsxcoordinaciontransp = {
+                series:seriesDatatransp2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totaltrasporte2 *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_tipotransportexcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+
+            var chartxcoordinaciontransportet  = new ApexCharts(document.querySelector("#chart_div_ttransportexcoordinacion"), optionsxcoordinaciontransp);
+            chartxcoordinaciontransportet.render();
+
+            {# --------------------FILTRAR------------------------    #}
+            $("#btnbuscarxcarreratransp").click(function() {
+                buscartransportetxcarrera();
+            });
+            function buscartransportetxcarrera(){
+                var filt_transptxcarrera=[];
+                var listcarrxttrasporte2=[];
+                var listatranspt1 = [];
+                var totalfiltcarr1= 0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscartransportetxcarrera",
+                    idanio: $("#cmbaniocarrera_ttransp").val(),
+                    idcarrera: $("#cmbttranspcarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarrxttransporte.forEach(function(item) {
+                                listcarrxttrasporte2.push(item.carreranombre);
+                                var transpt = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidad1 =parseInt(infoItem.cantidad)
+                                    transpt.push(cantidad1);
+                                    totalfiltcarr1 +=cantidad1;
+                                });
+                                listatranspt1.push(transpt);
+                            });
+                            filt_transptxcarrera.push({"carreras": listcarrxttrasporte2,  "lista": listatranspt1, "tiposttrasporte":tiposttrasporte});
+                            var seriesDatatransp3 = [];
+                            for (var fi = 0; fi < filt_transptxcarrera[0].tiposttrasporte[0].length; fi++) {
+                                seriesDatatransp3.push({
+                                    {#name: filt_nucleoxcarrera[0].tiposnucleos[0][i],#}
+                                    data: listatranspt1.map(function (transpt) {return transpt[fi];})
+                                });
+                            }
+                            chartxcarreratransportet.updateOptions({
+                                series: seriesDatatransp3,
+                                xaxis: {
+                                    categories: filt_transptxcarrera[0].carreras
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcarr1 *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinaciontranst").click(function (){
+                btnbuscarxcoordinaciontranst()
+            })
+            function btnbuscarxcoordinaciontranst(){
+                var filt_transptxcoordinacion=[];
+                var listcoordinacion2=[];
+                var listatranspt2 = [];
+                var totalfiltcord =0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarxcoordinaciontranst",
+                    "action": "buscarxcoordinaciontranst",
+                    idanio: $("#cmbaniocoord_transp").val(),
+                    idcoordinacion: $("#cmbidcoordinacion_transp").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxtransportet.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var transpc = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadcord= parseInt((infoItem.cantidad))
+                                    transpc.push(cantidadcord);
+                                    totalfiltcord += cantidadcord
+                                });
+                                listatranspt2.push(transpc);
+                            });
+                            filt_transptxcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": listatranspt2, "tiposttrasporte": tiposttrasporte});
+                            var seriesDatatranspc = [];
+                            for (var fi = 0; fi < filt_transptxcoordinacion[0].tiposttrasporte[0].length; fi++) {
+                                seriesDatatranspc.push({
+                                    data: listatranspt2.map(function (transpc) {return transpc[fi];})
+                                });
+                            }
+                            chartxcoordinaciontransportet.updateOptions({
+                                series: seriesDatatranspc,
+                                xaxis: {
+                                    categories: filt_transptxcoordinacion[0].coordinaciones
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcord *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            {# ------------ TIPOS DE TRANSPORTE RESUMEN ------------  #}
+            var listadoxresumentransportet =[]
+            var nombrestransportet=[]
+            var cantidadresumentranspt=[]
+            {% for xlista_ttransporte_resumen in lista_ttransporte_resumen  %}
+                    cantidadresumentranspt.push(parseInt('{{ xlista_ttransporte_resumen.cantidad  }}'));
+                    nombrestransportet.push('{{ xlista_ttransporte_resumen.ttrasportenombre  }}');
+
+            {% endfor %}
+            
+            listadoxresumentransportet.push({"nombrestransportet":nombrestransportet,"cantidad":cantidadresumentranspt});
+            
+             var optionsresumenxtransportet = {
+                series:listadoxresumentransportet[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                labels: listadoxresumentransportet[0].nombrestransportet,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        },
+                    }
+                }],
+                legend: {
+                    position: 'bottom'
+                }
+            };
+            var chart2 = new ApexCharts(document.querySelector("#chart_resumen2"), optionsresumenxtransportet);
+            chart2.render();
+                        
+        });
+    });
+</script>
+
+{% endblock %}
+
+{% block canvas %}
+<div class="main-container">
+    <div class="xs-pd-20-10 pd-ltr-20">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-10 col-sm-12">
+                    <div class="title">
+                        <h4>Estad&iacute;sticas de Ingreso a ITB - Transporte y movilizaci&oacute;n de los estudiantes</h4>
+                    </div>
+                </div>
+                 <div class="col-lg-2 col-md-2 col-sm-2">
+                    <div class="title">
+                        <a href="/cons_encuestaingreso" style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+                 </div>
+            </div>
+        </div>
+
+        {# ----------  USO DE TRANSPORTE POR CARRERA  -------------  #}
+        <div class="row clearfix" >
+            <div class="col-md-8 mb-5" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue"> Uso de Transporte por Carrera</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarrera_utrasporte" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbutcarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listadocarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarrera" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_utransportexcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-5" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Uso de Transporte Resumen</h4>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div  id="chart_resumen"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {# ----------  USO DE TRANSPORTE POR COORDINACION ------------- #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue"> Uso de Transporte por Coordinaci&oacute;n </h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label > Año : </label>
+                                <select id="cmbaniocoord_utrasporte" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinacion" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_utrasportexcoordinacion" ></div>
+                </div>
+            </div>
+        </div>
+        {# ---------- TIPOS DE TRANSPORTE POR CARRERA #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-5">
+                <div class="pd-20 card-box  height-100-p">
+                    <h4 class="h4 text-blue"> Tipos de Transportes por Carrera</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarrera_ttransp" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbttranspcarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listadocarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarreratransp" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_ttransportexcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-5" >
+                <div class="pd-20 card-box height-100-p" >
+                    <h4 class="h4 text-blue"> Tipos de transportes Resumen </h4>
+                    <div class="row" >
+                        <div class="col-md-12" >
+                            <div  id="chart_resumen2" ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {#---------- TIPOS DE TRANSPORTE POR COORDINACION #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue"> Tipos de Transportes por Coordinaci&oacute;n </h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label> Año :</label>
+                                <select id="cmbaniocoord_transp" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label> Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion_transp" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinaciontranst" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_ttransportexcoordinacion" ></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

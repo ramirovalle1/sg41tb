@@ -1,0 +1,107 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            actualizaAsistencias = function(id) {
+                showWaiting("Buscando Datos de Asistencia","Espere unos segundos por favor...");
+                $.get("/adm_docentes",{action:'segmentoasist', 'id': id, 'profid': '{{ profesor.id }}' {% if ins_id %} ,'ins_id': '{{ ins_id }}','especienum':'{{ especienum }}'{% endif %} }, function(data) {
+                    $("#segmento").html(data);
+                    hideWaiting();
+                }, 'html');
+            };
+
+            {% if materiajus %}
+                $("#materiassel").val("{{  materiajus }}");
+                actualizaAsistencias("{{ materiajus }}");
+                $("#materiassel").attr('readonly','true');
+                $("#materiassel").attr('disabled','true');
+
+            {% endif %}
+
+            $("#materiassel").change(function() {
+                var id = $(this).val();
+                actualizaAsistencias(id);
+            });
+
+
+            {% if materias %}
+                if($("#materiassel").val())
+                    actualizaAsistencias($("#materiassel").val());
+            {% endif %}
+            {% if materiaabs %}
+                $("#materiassel").val("{{  materiaabs }}");
+                actualizaAsistencias("{{ materiaabs }}");
+                $("#materiassel").attr('readonly','true');
+                $("#materiassel").attr('disabled','true');
+            {% endif %}
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            {% if materiajus %}
+                <h3>Justificar Asistencias de Alumnos </h3>
+            {% else %}
+                <h3>Consulta de Asistencias de Alumnos </h3>
+            {% endif %}
+            <h4>Docente: {{ profesor }}</h4>
+        </div>
+        <div class='span1'>
+            {% if materiajus %}
+                {% if op == 'es' %}
+                    <a href="/controlespecies?&s={{ inscrip.persona.nombre_completo_inverso }}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+                {% else %}
+                    <a href="/solicitudonline?tiposol=3&s={{ inscrip.persona.nombre_completo_inverso }}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+
+                {% endif %}
+            {% else %}
+                {% if materiaabs %}
+                    <a href="/absentismo" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+                {% else %}
+                    <a href="/adm_docentes" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+                {% endif %}
+
+            {% endif %}
+
+        </div>
+    {% if not materiajus %}
+        <div class="span4">
+            {% if not cerradas %}
+                <a href="/adm_docentes?action=asistencias&c=1&id={{ profesor.id }}" class='btn btn-success'> Materias Cerradas </a>
+            {% endif %}
+            {% if not abiertas  %}
+                <a href="/adm_docentes?action=asistencias&a=1&id={{ profesor.id }}" class='btn btn-info'> Materias Abiertas </a>
+            {% endif %}
+        {% endif %}
+    </div>
+    </div>
+    <br/>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            {% if not materias and  cerradas and  abiertas%}
+                <span class="alert alert-danger"> ESTE DOCENTE NO TIENE ASIGNADAS MATERIAS EN EL PERIODO SELECCIONADO</span>
+            {% else %}
+                <table width='100%' cellpadding="0" cellspacing="10">
+                    <thead>
+                    <tr>
+                        <th>
+                            <form class='well'>
+                                <select id='materiassel'>
+                                    <option value="" selected="selected">------</option>
+                                    {% for materia in materias %}
+                                        <option value='{{ materia.id }}'>{{ materia }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody id='segmento'></tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+
+{% endblock %}

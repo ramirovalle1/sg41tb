@@ -1,0 +1,239 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>
+    <script src='/static/js/adicionarproveedor.js'></script>
+
+    <script>
+    $(function() {
+        $("#id_participante").addClass("input-xxlarge");
+        registro = {
+        {% for p in personasact %}
+            "{{ p.id }}": {"nombre": "{{ p.nombre_completo }}","regisid":"{{ p.id }}"}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        };
+
+
+
+{#        $("#id_nombre").addClass("input-xxlarge");#}
+        $("#adicionarpersona").click(function() {
+            $("#id_participante").val("");
+            $("#id_participante").attr("myval","");
+            $("#personapanel").modal({backdrop: 'static'});
+            $("#personapanel").modal("show");
+            return false;
+        });
+        $("#personapanel .btn-cerrar").click(function() {
+            $("#personapanel").modal("hide");
+            return false;
+        });
+        $("#personapanel .btn-adicionar").click(function() {
+            var regist = $("#id_participante").attr("myval");
+            if (regist != ''){
+               adicionarPersona(false);
+            }
+            $("#id_participante").val("");
+            $("#id_participante").attr("myval","");
+            return false;
+        });
+
+        $("#personapanel .btn-adicionarycerrar").click(function() {
+            var partici = $("#id_participante").attr("myval");
+            if (partici != ''){
+               adicionarPersona(true);
+            }
+            $("#id_participante").val("");
+            $("#id_participante").attr("myval","");
+            return false;
+        });
+        persona= [];
+        adicionarPersona = function(cerrar) {
+            var partici = $("#id_participante").attr("myval");
+            var registrome = registro[partici];
+            var regisid = registrome.regisid;
+            var band = 0;
+            if (persona.length==0) {
+                $("#personabody").empty();
+            }
+            else{
+               for (var m in persona) {
+                    var personas = persona[m];
+                    if (personas.regisid==partici){
+                        $("#personapanel").modal("hide");
+                        smoke.alert('Registro ya ingresado');
+                        band = 1;
+                    }
+                }
+
+
+            }
+            if (band == 0){
+                var i = persona.length;
+                persona.push({"regisid":regisid,"regist":partici});
+                $("#personabody").append("<tr><td style='text-align:center'>"+registrome.nombre+"</td><td style='text-align:center'><a href='#' class='btn btn-mini btn-danger' id='retdelete"+i+"' indice='"+i+"'><i class='icon-remove icon-white'></i></a></td></tr>");
+                $("#retdelete"+i).click(borrarpersona);
+
+                if (cerrar) {
+                    $("#personapanel").modal("hide");
+                }
+            }
+
+        };
+        borrarpersona = function() {
+            var indice = parseInt($(this).attr("indice"));
+            //delete retenciones[indice];
+            persona.splice(indice,1);
+            $(this.parentNode.parentNode).remove();
+            if (persona.length==0) {
+                $("#personabody").html("<tr><td colspan='7'>NO HAY REGISTRO</td></tr>");
+            }
+            return false;
+        };
+        $("#ingresardato").click(function() {
+            $("#ingresardato").hide();
+            ingreso = [];
+            for (var m in persona) {
+                var personas = persona[m];
+                ingreso.push({"persona": personas.regisid});
+            }
+            if (ingreso!= ''){
+                $.post("/adm_calendario", {"action":'addparticipante',"actividad":'{{actividad.id}}', "datos": JSON.stringify(ingreso)}, function(data) {
+                        if (data.result=='ok') {
+                           location.href='/adm_calendario';
+                        {#Para imprimir la receta OCastillo   #}
+
+                        }
+                        else{
+
+                                smoke.alert('Error al ingresar los participantes')
+                            }
+
+                }, "json");}
+            else{
+                smoke.alert('No existe Informacion');
+                $("#ingresardato").show();
+            }
+        });
+
+        buscar_participante = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Persona',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_participante").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        if(data.results[i].id!=48139&&data.results[i].id!=15809){
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+
+                }
+                else{
+                     $("#id_participante").attr("myval","");
+                }
+            }, 'json');
+        };
+
+        $('#id_participante').typeahead({source: buscar_participante, updater: function(item) {
+            var results = $("#id_participante").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_participante").attr("myval",datos.id);
+                }
+            }
+            return item;
+        }});
+
+        {% if participantes %}
+            partici = {
+            {% for p in participantes %}
+                "{{ p.id }}": {"nombre": "{{ p.nombre_completo }}","regisid":"{{ p.participante.id }}"}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+            };
+
+            for (var m in partici) {
+                var personas = partici[m];
+                $("#id_participante").attr("myval",personas.regisid);
+                adicionarPersona(false);
+            }
+        {% endif %}
+    });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span3'></div>
+        <div class='span6' style="text-align: center">
+            {% if error %} {{ error }} {% endif %}
+            <h3>{{ title }}</h3><br>
+        </div>
+        <div class='span2'></div>
+        <div class='span1'>
+            <a href="#" class="btn linkback" ><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='row-fluid'>
+            <div class='span3'></div>
+            <div class='span6'>
+                <div id="panelpersona">
+                    <form id="formulario2" class='well form-horizontal' action="" method="POST">
+                        <table class="table table-bordered" style="margin-bottom: 0;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: center;width:70%">         Nombre        </th>
+                                    <th style="text-align: center;width:10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="personabody" class="datatable">
+                                <tr>
+                                    <td colspan="4" style="text-align: center">
+                                        NO HAY REGISTRO
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <span class='help-text' id="tablehelptext"><br/>
+                        <a href="#" id="adicionarpersona" class="btn btn-info"><i class="icon-plus icon-white"></i> Adicionar</a>
+                        <a href="#" id="ingresardato" class="btn btn-success"><i class=""></i> Guardar</a>
+                        <a href="/adm_calendario?action=detalle&visita={{ visita.visitabox.id }}" class="btn btn-info" style="float: right" ><i class=""></i> Cerrar</a>
+                    </form>
+                </div>
+            </div>
+            <div class='span3'></div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block moreblock %}
+
+
+
+    <div class="modal fade static" id="personapanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Adicionar Participante</h3>
+        </div>
+        <div class="modal-body panelbody">
+{#            <form id="formulario" class='form-horizontal' action="" method="POST">#}
+
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+{#                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>#}
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+{#            </form>#}
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionarycerrar btn-warning">Adicionar y Cerrar</a>
+            <a href="#" class="btn btn-adicionar btn-success">Adicionar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+{% endblock %}

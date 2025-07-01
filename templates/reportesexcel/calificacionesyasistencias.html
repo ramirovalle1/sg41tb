@@ -1,0 +1,157 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+
+        indice = 0;
+        datosOK=false;
+        $("#id_periodo").attr({"autocomplete":"off"});
+        $("#id_carrera").attr({"autocomplete":"off"});
+{#        $("#id_nivel").attr({"autocomplete":"off"});#}
+
+        buscar_nivel = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Nivel',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_nivel").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+        $('#id_nivel').typeahead({source: buscar_nivel, updater: function(item) {
+                var results = $("#id_nivel").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_nivel").attr("myval",datos.id);
+                    }
+                }
+                return item;
+        }});
+
+        buscar_periodo = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Periodo',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_periodo").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+        $('#id_periodo').typeahead({source: buscar_periodo, updater: function(item) {
+                var results = $("#id_periodo").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_periodo").attr("myval",datos.id);
+                    }
+                }
+                return item;
+        }});
+
+        buscar_carrera = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Carrera',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_carrera").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+        $('#id_carrera').typeahead({source: buscar_carrera, updater: function(item) {
+                var results = $("#id_carrera").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_carrera").attr("myval",datos.id);
+                    }
+                }
+                return item;
+        }});
+
+
+        $("#generar").modal({width: '500px', backdrop: 'static'});
+        $("#generar").modal("show");
+
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+            var periodo = $("#id_periodo").attr("myval");
+            var carrera = $("#id_carrera").attr("myval");
+{#            var nivel = $("#id_nivel").attr("myval");#}
+
+{#            $.post("/calificacionesyasistencias", {"action":"generarexcel","periodo":periodo,"carrera":carrera,"nivel":nivel}, function(data) {#}
+            $.post("/calificacionesyasistencias", {"action":"generarexcel","periodo":periodo,"carrera":carrera}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 250);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json");
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Calificaciones y Asistencias por Per&iacute;odo y Carrera</h3>
+        </div>
+        <div class="modal-body ">
+            <div style="overflow-y: auto"  class='form-horizontal' >
+                   <h4> Periodo:<input type="text" name="periodo" id="id_periodo" style="width: 95%"></h4>
+                   <p class="help-text">{{ field.help_text }} </p>
+            </div>
+            <div style="overflow-y: auto"  class='form-horizontal' >
+                   <h4> Carrera:<input type="text" name="carrera" id="id_carrera" style="width: 95%"></h4>
+                   <p class="help-text">{{ field.help_text }} </p>
+            </div>
+{#            <div style="overflow-y: auto"  class='form-horizontal' >#}
+{#                   <h4> Nivel:<input type="text" name="nivel" id="id_nivel" style="width: 95%"></h4>#}
+{#                   <p class="help-text">{{ field.help_text }} </p>#}
+{#            </div>#}
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+        <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}
+

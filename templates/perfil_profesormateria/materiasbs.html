@@ -1,0 +1,317 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        var id_mat = 0;
+        var nom_mat = '';
+        $("#id_fecha").datepicker({format:"yyyy-mm-dd",language: "es"});
+        $("#id_profesor").addClass("validate[required]");
+
+        $("#id_profesor").attr({"autocomplete":"off"});
+
+
+
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/perfil_profesormateria?action=seleccionar_carrera&s="+term+"&id={{ malla.id }}";
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+
+    {#------------------------------------------------------PANTALLA AGREGAR DOCENTE----------------------------------------------------------------#}
+        $('.agregar_profesor').click(function(){
+            $("#id_profesor").val('');
+            $("#id_fecha").val('{{ fechaactual|date:'Y-m-d' }}');
+            $("#id_estado").attr('checked',false);
+            $("#idmateria").val($(this).attr('mat_id'));
+            $("#idmalla").val($(this).attr('malla_id'));
+            $("#agregar_docente #paneltitle2").html('Nuevo Docente para la materia '+($(this).attr('mat_nombre')));
+            $("#agregar_docente").modal({"backdrop":"static","width":"40%"});
+            $("#agregar_docente").modal("show");
+        });
+
+        $("#agregar_docente .btn-cerrar").click(function(){
+            $(".formError").removeClass('aparece');
+            $(".formError").addClass('oculta');
+            $("#agregar_docente").modal("hide");
+            return false;
+        });
+
+        $("#formbutton").click(function(){
+    {#        $("#id_profesor").val('');#}
+            $(".formError").removeClass('oculta');
+            $(".formError").addClass('aparece');
+        });
+
+        buscar_profe = function(query, process) {
+            $.get("/reportes", {'action':'datafilt', 'model': 'Profesor',
+                                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_profesor").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+        $('#id_profesor').typeahead({source: buscar_profe, updater: function(item) {
+            var results = $("#id_profesor").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_profesor").attr("myval",datos.id);
+                    $("#idprofe").val(datos.id);
+    {#                $("#idsolici").val(datos.id);#}
+    {#                $.post("/asistente_estudiantiles", {"action":'existe', "editar":edita,"idasis":datos.id }, function(data) {#}
+    {#                    if (data.result=='ok') {#}
+    {#                      $($("#id_asistente").get(0).parentNode).find(".help-text").html('Ya existe esta persona como asistente');#}
+    {#                        $("#id_asistente").val("");#}
+    {#                        $("#idsolici").val("");#}
+    {#                    }#}
+    {#                    else#}
+    {#                    {#}
+    {#                        $($("#id_asistente").get(0).parentNode).find(".help-text").html("");#}
+    {#                    }#}
+    {#                }, "json");#}
+                }
+            }
+
+            return item;
+    }});
+
+
+
+
+{#------------------------------------------------------PANTALLA VER DOCENTE----------------------------------------------------------------#}
+
+        $(".ver_profesor").click(function() {
+            id_mat = $(this).attr("mat_id");
+            nom_mat = $(this).attr("mat_nombre");
+            id_malla = $(this).attr("malla_id");
+
+            $("#idmateria").val($(this).attr('mat_id'));
+            $("#idmalla").val($(this).attr('malla_id'));
+
+            $.get("/perfil_profesormateria",{"action": "verdocentes","id":id_mat},function(data) {
+                $("#ver_docente .modal-body").html(data);
+                $("#ver_docente #paneltitle1").html("Docentes para la materia "+nom_mat);
+                $("#ver_docente").modal({"backdrop":"static","width":"70%"});
+                $("#ver_docente").modal("show");
+           }, "html");
+        });
+
+        $("#ver_docente .btn-cerrar").click(function(){
+            $("#ver_docente").modal("hide");
+        });
+
+        $("#ver_docente #agregar").click(function() {
+{#            $("#ver_docente").modal("hide");#}
+            $("#agregar_docente").modal("show");
+        });
+
+
+{#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+        {% if error %}
+            smoke.alert('{{ error }}');
+            setInterval(function(){
+            }, 5000);
+        {% endif %}
+
+    });
+</script>
+
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+{% endblock %}
+
+
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class='atright'>
+            <div class="span2"></div>
+            <div class="span8"  >
+                <h3 style="text-align: center">{{ malla.carrera.nombre }} </h3></br>
+            </div>
+        </div>
+    </div>
+
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class='atright'>
+            <div class="span2"></div>
+            <div class="span7"  >
+                <h3>Listado de Materias </h3></br>
+            </div>
+            <div class="span1">
+                <a href="/perfil_profesormateria" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+            </div>
+        </div>
+    </div>
+
+
+    <div class='row-fluid'>
+        <div class='atright'>
+            <div class="span2"></div>
+            <div class='span8'>
+                <form class="form-search">
+                <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/perfil_profesormateria?action=seleccionar_carrera&id={{ malla.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class='row-fluid' style="margin-top: 20px">
+        <div class='atright'>
+            <div class="span2"></div>
+            <div class='span8'>
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th> Asignatura</th>
+                            <th style="text-align: center"> Nivel</th>
+                            <th style="text-align: center"> Creditos</th>
+                            <th style="text-align: center"> Horas</th>
+                            <th style="text-align: center"> # Docentes</th>
+                            <th style="width: 50px"> </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for c in materias %}
+                            <tr>
+                                <td> {{ c.asignatura.nombre }} </td>
+                                <td style="text-align: center"> {{ c.nivelmalla.nombre }} </td>
+                                <td style="text-align: center"> {{ c.creditos }} </td>
+                                <td style="text-align: center"> {{ c.horas }} </td>
+                                <td style="text-align: center"> {{ c.asignatura.cantidad_profesorasignatura }} </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                            Acciones
+                                            <span class="caret"></span>
+                                        </a>
+                                        <ul class="dropdown-menu pull-right">
+    {#                                        <li><a href="/perfil_profesormateria?action=add&id={{ c.id }}"><i class="icon-pencil"></i> Agregar Docente</a></li>#}
+                                            <li><a mat_id='{{ c.asignatura.id }}' mat_nombre='{{ c.asignatura.nombre }}' malla_id='{{ malla.id }}' class="ver_profesor" style="cursor: pointer"><i class="icon-list"></i>  Ver Docentes</a></li>
+                                            <li><a mat_id='{{ c.asignatura.id }}' mat_nombre='{{ c.asignatura.nombre }}' malla_id='{{ malla.id }}' class="agregar_profesor" style="cursor: pointer"><i class="icon-edit"></i>  Agregar Docente</a></li>
+
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+                        {% if not materias %}
+                            <tr>
+                                <td colspan="10">
+                                    NO EXISTE REGISTRO
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+{#                        {% if paging.primera_pagina %}#}
+{#                            <li><a href="/perfil_profesormateria?page=1">1</a></li>#}
+{#                            <li><a href="/perfil_profesormateria?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>#}
+{#                        {% endif %}#}
+{#                        {% for pagenumber in paging.paginas %}#}
+{#                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/perfil_profesormateria?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>#}
+{#                        {% endfor %}#}
+{#                        {% if paging.ultima_pagina %}#}
+{#                            <li><a href="/perfil_profesormateria?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>#}
+{#                            <li><a href="/perfil_profesormateria?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>#}
+{#                        {% endif %}#}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/perfil_profesormateria?action=seleccionar_carrera&id={{ malla.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="agregar_docente">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/perfil_profesormateria?action=seleccionar_carrera&id={{ malla.id }}" method="POST"  >
+                <input type='hidden' name='action' value='add' />
+                <input type='hidden'  name='idmateria' id='idmateria' />
+                <input type='hidden'  name='idmalla' id='idmalla' />
+                <input type='hidden'  name='idprofe' id='idprofe' />
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+
+
+<div class="modal fade static" id="ver_docente"   >
+    <div class="row-fluid modal-header">
+         <h4  id='paneltitle1'><i> </i></h4>
+        <h5></h5>
+    </div>
+
+    <div class="modal-body" >
+{#        ver_docente.html#}
+    </div>
+
+    <div class="modal-footer">
+        <div >
+            <a style="float: left" href="#" id="agregar" class="btn btn-success">Agregar Docente</a>
+            <a style="float: left" href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

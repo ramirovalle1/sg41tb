@@ -1,0 +1,505 @@
+{% block heading %}
+
+    <script type="text/javascript">
+             $(".imprimiracta").click(function(){
+                 var materia=$(this).attr("mat");
+                 window.open('/reportes?action=run&direct=true&n=acta_notas&rt=pdf&materia='+materia);
+                 window.open('/reportes?action=run&direct=true&n=informe_acta_calificaciones&rt=pdf&materia='+materia);
+             });
+
+             $(".generarespecie").click(function(){
+                 var matasignada=$(this).attr("matid");
+                 $.post("/pro_evaluaciones", {'action':'generarespecie','matasignada': matasignada}, function(data) {
+                    if (data.result=="ok") {
+                        smoke.alert("Especie Generada ");
+{#                        location.reload();#}
+                    } else {
+                        smoke.alert("Estudiante tiene especie Generada ");
+                        self.val(0);
+                        location.reload();
+                    }
+                 }, "json");
+             });
+
+             $("#habilita24").click(function(){
+                mid = $("#materiassel").val();
+                smoke.confirm("UD.tendrá 24 horas para ingresar las notas y se generará una multa de $10 al rol de pagos. Desea continuar? ", function(e){
+                if (e){
+                    $.post("/pro_evaluaciones", {action: 'habilita24', 'h24': mid}, function(data) {
+                        if (data.result=='ok') {
+                             location.reload();
+                             }
+                        if (data.result=='bad') {
+                             smoke.alert("TIENE UNA PRORROGA VIGENTE ");
+                             self.val(0);
+                             location.reload();
+                             }
+                        if (data.result=='bad2') {
+                             smoke.alert("LOS CASILLEROS DE LA MATERIA SE ENCUENTRAN ACTIVOS ");
+                             self.val(0);
+                             location.reload();
+                             }
+                    }, "json");
+                }
+                }, {
+                     ok: "Si",
+                     cancel: "No",
+                     classname: "custom-class",
+                     reverseButtons: true
+                });
+             });
+
+             $("#habilita48").click(function(){
+                mid = $("#materiassel").val();
+                smoke.confirm("Ud. Tendrá 48 horas para ingresar las notas y se generará una multa de $20 al rol de pagos. Desea continuar? ", function(e){
+                if (e){
+                    $.post("/pro_evaluaciones", {action: 'habilita48', 'h48': mid}, function(data) {
+                        if (data.result=='ok') {
+                             location.reload();
+                             }
+                        if (data.result=='bad') {
+                             smoke.alert("TIENE UNA PRORROGA VIGENTE ");
+                             self.val(0);
+                             location.reload();
+                             }
+
+                        if (data.result=='bad2') {
+                             smoke.alert("LOS CASILLEROS DE LA MATERIA SE ENCUENTRAN ACTIVOS ");
+                             self.val(0);
+                             location.reload();
+                             }
+                    }, "json");
+                }
+                }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+             });
+
+
+             $("#habilita24cerrado").click(function(){
+                mid = $("#materiassel").val();
+                smoke.confirm("UD.tendrá 24 horas para ingresar notas a los estudiantes y se generará una multa de $20 al rol de pagos. Desea continuar? ", function(e){
+                if (e){
+                    $.post("/pro_evaluaciones", {action: 'habilita24', 'h24': mid}, function(data) {
+                        if (data.result=='ok') {
+                             location.reload();
+                             }
+                        if (data.result=='bad') {
+                             smoke.alert("TIENE UNA PRORROGA VIGENTE ");
+                             self.val(0);
+                             location.reload();
+                             }
+                        if (data.result=='bad2') {
+                             smoke.alert("NO LE CORRESPONDE GENERAR LA MULTA ");
+                             self.val(0);
+                             location.reload();
+                             }
+                    }, "json");
+                }
+                }, {
+                     ok: "Si",
+                     cancel: "No",
+                     classname: "custom-class",
+                     reverseButtons: true
+                });
+             });
+
+             $("#habilita48cerrado").click(function(){
+                mid = $("#materiassel").val();
+                smoke.confirm("UD.tendrá 48 horas para ingresar la nota de examen a los estudiantes que están aptos y se generará una multa de $20 al rol de pagos. Desea continuar? ", function(e){
+                if (e){
+                    $.post("/pro_evaluaciones", {action: 'habilita48', 'h48': mid}, function(data) {
+                    if (data.result=='ok') {
+                        location.reload();
+                        } else {
+                          smoke.alert("TIENE UNA PRORROGA VIGENTE ");
+                          self.val(0);
+                        }
+                    }, "json");
+                }
+                }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+             });
+
+             subirnotas=function (idmateria) {
+
+               $("#cmbtiponota").val(0)
+               $("#cmtipoeva").val(0);
+               $("#fileced").val('');
+               $("#cargarnotas").modal({"backdrop":"static",width:'40%'});
+               $("#cargarnotas").modal("show");
+
+
+             }
+
+</script>
+{% endblock %}
+
+
+{% load sga_extras %}
+
+<tr>
+<td>
+    <div>
+        {% if not materia.cerrado %}
+            <h4>Materia Inicia el: {{ materia.inicio|date:'d-m-Y' }} Termina el: {{ materia.fin|date:'d-m-Y' }} </h4>
+            <h4>
+                {% if materia.profmateriaasignacion %} {% if materia.profmateriaasignacion.0 %}Fin de Teoría: {{ materia.profmateriaasignacion.0}} {% endif %} {% if materia.profmateriaasignacion.1 %}Fin de Práctica: {{ materia.profmateriaasignacion.1 }}{% endif %}{% endif %}
+            </h4></br>
+            <a  id="subirnotas" class="btn btn-primary" onclick="subirnotas('{{ materia.id }}')" ><i class="icon-adjust"></i> Subir Notas</a>
+        {% endif %}
+        {% if not materia.cerrado and materia.verificacioncierremateria and not materia.nivel.cerrado %}
+            <a href="#" mid='{{ materia.id }}' id="habilita24" class="btn btn-success " ><i class="icon-check"></i>Habilitar 24H</a>
+            <a href="#" mid='{{ materia.id }}' id="habilita48" class="btn btn-primary" ><i class="icon-check"></i>Habilitar 48H</a>
+        {% endif %}
+        {% if not materia.cerrado and not materia.nivel.cerrado and materia.activacioncierremateria %}
+            <span style="color: #dc143c;"><b>Tiene habilitada multa de 24H Materia Cerrada</b></span>
+        {% endif %}
+        {% if materia.cerrado and not materia.nivel.cerrado and not materia.activacioncierremateria %}
+            <a href="#" mid='{{ materia.id }}' id="habilita24cerrado" class="btn btn-success " ><i class="icon-check"></i>Habilitar 24H Materia Cerrada</a>
+        {% endif %}
+        {% if not materia.cerrado and not materia.nivel.cerrado and materia.profesorfinasignacionteoria %}
+            <a href="#" mid='{{ materia.id }}' id="habilita24" class="btn btn-success " ><i class="icon-check"></i>Habilitar 24H</a>
+            <a href="#" mid='{{ materia.id }}' id="habilita48" class="btn btn-primary" ><i class="icon-check"></i>Habilitar 48H</a>
+        {% endif %}
+    </div>
+</td>
+<td>
+{% if materia.cerrado %}
+    <div class="alert alert-error">
+        MATERIA CERRADA EL {{ materia.fechacierre|date:'d-m-Y' }}
+    </div>
+{% endif %}
+{#{% if not materia.cerrado and not materia.nivel.cerrado and not materia.nivel.nivelmalla.id == nivel_seminario %}#}
+{#     {% if DEFAULT_PASSWORD == 'itb' %}#}
+{#         {% if materia|call:"cierre_sistema"  %}#}
+{#            <span style=" font-size: 20px;color:orangered; font-weight: bold " >  El cierre autom&aacute;tico de la materia ser&aacute; el : {{ materia.cierre_sistema|date:'d-m-Y' }} </span>#}
+{#            <span style=" font-size: 20px;color:#0000ff; font-weight: bold " >  Fecha M&aacute;xima de Cierre de materia: {{ materia.cierre_sistema|date:'d-m-Y' }} 00:00:00 </span>#}
+{#         {% endif %}#}
+{#     {% endif %}#}
+{#{% endif %}#}
+
+<table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Alumnos</th>
+
+            {# IAVQ #}
+            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                {% include "calificaciones/iavq/encabezado.html" %}
+           {% endif %}
+
+            {# ITB / ITF / IGAD #}
+            {%  if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+                {% if materia.nueva_acta_buck %}
+                    {% include "calificaciones/bucki/encabezado.html" %}
+                {% else %}
+                      {% if materia.nivel.carrera.recuperacion  %}
+                        {% include "calificaciones/conduce_recuperacion/encabezado.html" %}
+                      {% else %}
+                        {%  if DEFAULT_PASSWORD == 'itb' %}
+                            {% include "calificaciones/itb_itf_igad/encabezado.html" %}
+                        {% else %}
+                            {% include "calificaciones/itf/encabezado.html" %}
+                        {% endif %}
+                      {% endif %}
+                {% endif %}
+            {% endif %}
+
+            {# ITS #}
+            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+                {% include "calificaciones/its/encabezado.html" %}
+           {% endif %}
+
+            {# TES #}
+            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.4 %}
+                {% include "calificaciones/tes/encabezado.html" %}
+           {% endif %}
+
+            {# CASADE #}
+            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+                {% include "calificaciones/casade/encabezado.html" %}
+           {% endif %}
+            {% if not materia.nueva_acta_buck %}
+                {% if materia.nivel.carrera.recuperacion  %}
+                    <th>Asistencia</th>
+                {% else %}
+                    <th>Asiste.</th>
+                    <th>Actuac.</th>
+                {% endif %}
+            {% endif %}
+            <th>Estado</th>
+
+            {# ITB / ITF / IGAD / TES #}
+            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.4 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+                <th>Observ</th>
+            {% endif %}
+{#            {%  if DEFAULT_PASSWORD == 'itb' %}#}
+{#                {% if not materia.cerrado  %}#}
+{#                    <th style="text-align: center "><h3>Especie</h3></th>#}
+{#                {% endif %}#}
+{#            {% endif %}#}
+            {#OC 17-SEPTIEMBRE-2019 CASADE CONDUCCION ITF Y BUCK NO CAMBIA ESTA PARTE #}
+            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 or conduccion or centro_externo or DEFAULT_PASSWORD == 'itf' %}
+                <th>Cierre</th>
+            {% endif %}
+            <th></th>
+        </tr>
+
+        {# ITB / ITF / IGAD #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+            {% if materia.nivel.carrera.recuperacion  %}
+                {% include "calificaciones/conduce_recuperacion/codigos.html" %}
+            {% else %}
+                {%  if DEFAULT_PASSWORD == 'itb' %}
+                    {% include "calificaciones/itb_itf_igad/codigos.html" %}
+                {% else %}
+                    {% include "calificaciones/itf/codigos.html" %}
+                {% endif %}
+            {% endif %}
+        {% endif %}
+
+    </thead>
+    <tbody>
+    {% for asignadomateria in materia.asignados_a_esta_materia %}
+        {% if not asignadomateria.matricula.esta_retirado %}
+            {# OCastillo 20-03-20202 funcion temporal por el momento del codvid-19 #}
+            {#  {% with regnota=asignadomateria.tiene_especie_regnota espnota=asignadomateria.ver_especienotas tienedeuda=asignadomateria.matricula.inscripcion.tiene_deuda tienedeudatmp=asignadomateria.matricula.inscripcion.tiene_deuda_temp suspension=asignadomateria.matricula.inscripcion.suspension notaparcial=asignadomateria.evaluacion.nota_parcial notafinal=asignadomateria.evaluacion.nota_final_nueva evaluacion=asignadomateria.evaluacion tieneespecie=asignadomateria.tiene_especie%} #}
+            {% with regnota=asignadomateria.tiene_especie_regnota espnota=asignadomateria.ver_especienotas tienedeuda=False tienedeudatmp=asignadomateria.matricula.inscripcion.tiene_deuda_temp suspension=asignadomateria.matricula.inscripcion.suspension notaparcial=asignadomateria.evaluacion.nota_parcial notafinal=asignadomateria.evaluacion.nota_final_nueva evaluacion=asignadomateria.evaluacion tieneespecie=asignadomateria.tiene_especie%}
+
+            <tr id='materiaasignadarow{{ asignadomateria.id }}'>
+                <td title="{% if asignadomateria.matricula.inscripcion.persona.email %}{{ asignadomateria.matricula.inscripcion.persona.email }}{% else %}No tiene Email{% endif %}">
+                    {{ asignadomateria.matricula.inscripcion }}<br/>
+                    {% if asignadomateria.matricula.inscripcion.persona.datos_incompletos and incluyedatos %}
+                        <span class='label label-info'>Datos Incompletos</span>
+                    {% endif %}
+                    {% if modulofinanzas %}
+                        {% if tienedeudatmp %}
+                            <span class='label label-important'>Deuda: ${{ asignadomateria.matricula.inscripcion.adeuda_a_la_fecha|floatformat:2 }}</span>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if suspension %}
+                        <span class="label label-important tl" title="Suspensión">(S)</span>
+                    {% endif %}
+{#                        <br/><b>Contacto:</b>#}
+{#                            <span>{% if asignadomateria.matricula.inscripcion.persona.email %}{{ asignadomateria.matricula.inscripcion.persona.email }},{% endif %}#}
+{#                                  {% if asignadomateria.matricula.inscripcion.persona.emailinst %}{{ asignadomateria.matricula.inscripcion.persona.emailinst }}{% endif %}#}
+{#                            </span>#}
+                    {% if tieneespecie %}
+                        <span class="label label-warning " title="tiene Especie">{{ tieneespecie }}</span>
+                    {% endif %}
+                    {% if espnota %}
+                        <span class="label label-warning " title="tiene Especie">{{ espnota }}</span>
+                    {% endif %}
+                </td>
+
+
+                {# IAVQ #}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                    {% include "calificaciones/iavq/filanotas.html" %}
+               {% endif %}
+
+                {# ITB / ITF / IGAD #}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+                    {% if materia.nueva_acta_buck %}
+                        {% include "calificaciones/bucki/filanotas.html" %}
+                    {% else %}
+                         {% if materia.nivel.carrera.recuperacion %}
+                            {% include "calificaciones/conduce_recuperacion/filanotas.html" %}
+                        {% else %}
+                            {%  if DEFAULT_PASSWORD == 'itb' %}
+                                {% include "calificaciones/itb_itf_igad/filanotas.html" %}
+                            {% else %}
+                                {% include "calificaciones/itf/filanotas.html" %}
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+
+                {# ITS #}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+                    {% include "calificaciones/its/filanotas.html" %}
+               {% endif %}
+
+                {# TES #}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.4 %}
+                    {% include "calificaciones/tes/filanotas.html" %}
+               {% endif %}
+
+                {# CASADE #}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+                    {% include "calificaciones/casade/filanotas.html" %}
+               {% endif %}
+
+
+                {# DATOS ADICIONALES #}
+                {# IAVQ #}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                    {% include "calificaciones/iavq/extradata.html" %}
+               {% endif %}
+
+                {# ITB / ITF / ITS #}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+                    {% if materia.nueva_acta_buck %}
+                        {% include "calificaciones/bucki/extradata.html" %}
+                    {% else %}
+                        {% if materia.nivel.carrera.recuperacion %}
+                            {% include "calificaciones/conduce_recuperacion/extradata.html" %}
+                        {% else %}
+                            {%  if DEFAULT_PASSWORD == 'itb' %}
+                                {% include "calificaciones/itb_itf_igad/extradata.html" %}
+                            {% else %}
+                                {% include "calificaciones/itf/extradata.html" %}
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+
+                {#  IGAD #}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+                    {%  if DEFAULT_PASSWORD == 'itb' %}
+                        {% include "calificaciones/itb_itf_igad/extradata_igad.html" %}
+                    {% else %}
+                        {% include "calificaciones/itf/extradata_igad.html" %}
+                    {% endif %}
+                {% endif %}
+
+                {# TES #}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.4 %}
+                    {% include "calificaciones/tes/extradata.html" %}
+                {% endif %}
+
+                {# CASADE #}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+                    {% include "calificaciones/casade/extradata.html" %}
+                {% endif %}
+
+                <td>
+                   {%  if DEFAULT_PASSWORD == 'itf' or DEFAULT_PASSWORD == 'conduccion' or DEFAULT_PASSWORD == 'casade' or centro_externo %}
+                        {% if not materia.cerrado %}
+                            {% if not asignadomateria.matricula.esta_retirado %}
+                                {#   <a href="#" maid='{{ asignadomateria.id }}' class="cierremateriaasignada btn btn-mini {% if asignadomateria.cerrado %}btn-danger{% endif %}">#}
+                                    {% if not materia.acta_entregada %}
+                                            {% if asignadomateria.cerrado  %}
+        {#                  {% if asignadomateria.cerrado and not asignadomateria.esta_aprobado %}#}
+                                                <a href="#" maid='{{ asignadomateria.id }}' class="cierremateriaasignada btn btn-mini {% if asignadomateria.cerrado %}btn-danger{% endif %}">
+                                                Abrir
+                                            {% else %}
+                                                {% if  not asignadomateria.cerrado%}
+                                                    <a href="#" maid='{{ asignadomateria.id }}' class="cierremateriaasignada btn btn-mini {% if asignadomateria.cerrado %}btn-danger{% endif %}">
+                                                    Cerrar
+                                                {% endif %}
+                                            {% endif %}
+                                    {% else %}
+                                        {% if asignadomateria.cerrado and not asignadomateria.esta_aprobado %}
+                                            <a href="#" maid='{{ asignadomateria.id }}' class="cierremateriaasignada btn btn-mini {% if asignadomateria.cerrado %}btn-danger{% endif %}">
+                                            Abrir
+                                        {% else %}
+                                            {% if  not asignadomateria.cerrado%}
+                                                <a href="#" maid='{{ asignadomateria.id }}' class="cierremateriaasignada btn btn-mini {% if asignadomateria.cerrado %}btn-danger{% endif %}">
+                                                Cerrar
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                   {% else %}
+                        {%  if DEFAULT_PASSWORD == 'itb' %}
+{#                            {% if not asignadomateria.materia.cerrado%}#}
+{#                                {% if asignadomateria.evaluacion.estado_id == 3 and asignadomateria.matricula.inscripcion.tiene_deuda and not asignadomateria.ver_asentamiento and not asignadomateria.ver_especienotas and asignadomateria.verifica_asentamiento %}#}
+{#                                    <a href="#"  class="generarespecie btn btn-success " matid='{{ asignadomateria.id }}'><i class="icon-money"></i> Especie Asentamiento</a>#}
+{#                                {% endif %}#}
+{#                            {% endif %}#}
+                        {% endif %}
+                   {% endif %}
+                </td>
+            </tr>
+
+            {% endwith %}
+        {% endif %}
+    {% endfor %}
+    </tbody>
+
+    <tfoot>
+        <tr>
+            <td colspan='11'>
+                {% if materia.nueva_acta_buck %}
+                    <a id="rep" href="/reportes?action=run&direct=true&n=nueva_acta_notas&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Notas</a>
+                {% else %}
+                        {% if conduccion or DEFAULT_PASSWORD == 'casade' or centro_externo or DEFAULT_PASSWORD == 'itf'  %}
+                            <a id="rep" href="/reportes?action=run&direct=true&n=acta_notas&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Notas</a>
+                            <a id="rep" href="/reportes?action=run&direct=true&n=acta_notas_alcance&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Alcance</a>
+                        {% else %}
+                            <a href="#"  class="imprimiracta btn btn-success " mat='{{ materia.id }}'><i class="icon-print"></i> Imprimir Acta de Notas</a>
+                        {% endif %}
+                {% endif %}
+{#                {% if materia.tiene_notas_alcance %}#}
+{#                    <a id="rep" href="/reportes?action=run&direct=true&n=acta_notas_alcance&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Alcance</a>#}
+{#                {% endif %}#}
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+                    {# ITS #}
+                    <a href="/reportes?action=run&direct=true&n=lista_control_calificaciones&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Modelo Acta de Notas</a>
+               {% endif %}
+
+
+                {% if not materia.nivel.cerrado %}
+                    {% if materia.cerrado %}
+{#                        <a href="#" mid='{{ materia.id }}' id='abrirmateria' class="btn btn-warning">Abrir Materia</a>#}
+                    {% else %}
+{#                        {% if  materia.cerrar_disponible == 1 %}#}
+                        {% if DEFAULT_PASSWORD == 'itb' %}
+                             {# OC 4 de oct 2019 para que les permita cerrar materia luego de la fecha de fin de materia   #}
+                             {% if fechadia >=  materia.fin %}
+                             {# OCastillo 4-nov-2020 para que les permita cerrar materia si la multa está vigente #}
+                             {#{% if fechadia >=  materia.fin and not materia.activacioncierremateria %}#}
+                                <a href="#" mid='{{ materia.id }}' id="cierremateria" class="btn btn-danger">Cerrar Materia</a>
+                             {% endif %}
+                        {% else %}
+                              {% if materia|args:periodo|call:"cerrar_disponible"  %}
+                                    <a href="#" mid='{{ materia.id }}' id="cierremateria" class="btn btn-danger">Cerrar Materia</a>
+                              {% else %}
+                                    <a href="#" mid='{{ materia.id }}' id="cierremateria" class="btn btn-danger">Cerrar Materia</a>
+                              {% endif %}
+                        {% endif %}
+                    {% endif %}
+{#                        <a href="#" mid='{{ materia.id }}' id="actualizaestado" class="btn btn-primary"><i class="icon-asterisk"></i> Actualizar Estado</a>#}
+                {% endif %}
+            </td>
+        </tr>
+
+
+    </tfoot>
+</table>
+</td></tr>
+<script type="text/javascript">
+    {% if claveevaluacionnota %}
+        $("#addpanel").modal({"backdrop":"static","width":"20%"});
+        $('#addpanel').show();
+    {% endif %}
+    $("#addpanel .solicitar").click(function(){
+        $("#addpanel .alert-danger").html('');
+        $.post("/pro_evaluaciones", {action: 'claveevaluanota', 'idmate': '{{ materia.id }}' }, function(data) {
+           if (data.result=='ok') {
+              $("#addpanel .alert-danger").html('El codigo de verificacion se envio al correo '+ data.email);
+              document.getElementById('codigo').type='text';
+              $('#validar').show();
+           }
+           else
+           {
+               $("#addpanel .alert-danger").html('Solicite el codigo nuevamente');
+               document.getElementById('codigo').type = 'hidden';
+               $('#validar').hide();
+           }
+        }, "json");
+
+    });
+</script>

@@ -1,0 +1,94 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+
+        indice = 0;
+        datosOK=false;
+
+
+        buscar_nivel = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Nivel',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_nivel").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+         };
+         $('#id_nivel').typeahead({source: buscar_nivel, updater: function(item) {
+                var results = $("#id_nivel").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_nivel").attr("myval",datos.id);
+                    }
+                }
+                return item;
+            }});
+
+        $("#generar").modal({width: '500px', backdrop: 'static'});
+        $("#generar").modal("show");
+
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+            var nivel = $("#id_nivel").attr("myval");
+
+            $.post("/matriculados_sms", {"action":"generarexcel","nivel":nivel}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 2500);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json");
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Matriculados SMS</h3>
+        </div>
+        <div class="modal-body ">
+            <div style="overflow-y: auto"  class='form-horizontal' >
+                   <h4> Nivel:<input type="text" name="nivel" id="id_nivel" style="width: 95%"></h4>
+                   <p class="help-text">{{ field.help_text }} </p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}
+
+

@@ -1,0 +1,273 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+
+            $(".btn-desactivar").click(function() {
+                var ins = $(this).attr("ins");
+                location.href = '/becas_matricula?action=desactivar&id='+ins;
+            });
+
+            $(".desactivarinscripcion").click(function() {
+                var ins = $(this).attr("ins");
+                $(".btn-desactivar").attr("ins",ins);
+                $("#desactivacion").modal("show");
+            });
+
+            $(".resetearusuario").click(function() {
+                var ins = $(this).attr("ins");
+                $(".btn-resetear").attr("ins",ins);
+                $("#resetear").modal("show");
+            });
+
+            $(".btn-resetear").click(function() {
+                var ins = $(this).attr("ins");
+                location.href = '/becas_matricula?action=resetear&id='+ins;
+            });
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/pre_inscripciones?s="+term;
+            });
+
+            $("#cerrar").click(function() {
+{#                    alert (1)#}
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#motivodesactivacion").modal("hide");
+            });
+
+            $(".motivodesactivacion").click(function() {
+                $("#motivodesactivacion").modal('show')
+                $(".modal-footer").hide();
+                $(".modal-body").html("espere");
+                 var id = $(this).attr("ins")
+                $.post("/pre_inscripciones",{"action": "motivoanula", "id": id },function(data) {
+                        $(".modal-body").html(data.mensaje);
+{#                        $("#mclose").prop("href", "/niveles?action=filtrar&id="+data.ni+"&f=2");#}
+
+                    $(".modal-footer").show();
+                },"json");
+                var ins = $(this).attr("ins");
+
+{#                $("#cerrar").attr("ins",ins);#}
+{#                location.href = '/becas_matricula?action=motivoanula&id='+ins;#}
+{#                $("#motivodesactivacion").modal("show");#}
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/pre_inscripciones?g='+id;
+                }else{
+                    location.href = '/pre_inscripciones';
+                }
+
+            });
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                Listado de PreInscritos
+            </h3>
+            {% if grupo %}
+                <h3> Grupo: {{ grupo.nombre }}</h3>
+                <h3>Inscritos: {{ grupo.count }} </h3>
+            {% endif %}
+            <br>
+        </div>
+        <div class='atright'>
+            {% if grupo %}
+                <a href="/adm_grupos" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% else %}
+                <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="row-fluid">
+            <div class='span5'>
+             <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/pre_inscripciones" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+
+            </div>
+        <div class='span2'>
+            <a></i>                       </a>
+        </div>
+
+        <div class="span2">
+            Grupos:
+            <select id='gruposel' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for g in grupos %}
+                    <option value="{{ g.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ g.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombres</th>
+                <th>Cedula</th>
+                <th>Grupo</th>
+                <th style="width: 100px">Tel&eacute;fonos</th>
+                <th>Email</th>
+                <th>Fecha Registro</th>
+                <th>Carrera</th>
+                <th style="width: 50px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for preinscrito in preinscritos %}
+                    <tr>
+                        <td>
+                               {{ preinscrito.apellido1 }} {{ preinscrito.apellido2 }} {{ preinscrito.nombres }} {% if preinscrito.esta_cadudado %}CADUCADO{% endif %}
+                        </td >
+                        <td>{{ preinscrito.cedula }} </td>
+                        <td>{{ preinscrito.grupo.nombre }} </td>
+                        <td>
+                            {% if preinscrito.telefono %}{{ preinscrito.telefono }}{% endif %}
+                            <br/>{% if preinscrito.celular %}{{ preinscrito.celular }}{% endif %}
+                        </td>
+                        <td>
+                            {% if preinscrito.email %}
+                                <a href="mailto:{{ preinscrito.email }}" style="color: #003bb3">
+                                    {{ preinscrito.email }}
+                                </a>
+                            {% endif %}
+{#                            <br/>{{ inscripcion.persona.emails }}#}
+                        </td>
+                        <td style="font-size: 11px" nowrap>{{ preinscrito.fecha_registro|date:"d-m-Y"  }}</td>
+                        <td nowrap>{{ preinscrito.carrera.alias }}</td>
+
+                        <td>
+
+                            <div class="btn-group">
+
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if not persona.pertenece_soporte %}
+                                            <li><a href="/pre_inscripciones?action=inscribir&id={{ preinscrito.id }}"><i class="icon-book"></i> Inscribir</a></li>
+                                        {% endif %}
+                                    </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/pre_inscripciones?page=1">1</a></li>
+                            <li><a href="/pre_inscripciones?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/pre_inscripciones?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/pre_inscripciones?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/pre_inscripciones?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/pre_inscripciones?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="desactivacion" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> ¿Est&aacute; seguro de inactivar a este alumno?</h3>
+        </div>
+        <div class="modal-body">
+            <p> Este usuario no podr&aacute; ingresar al sistema ...</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-desactivar"> Desactivar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="motivodesactivacion" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> Motivo de Desactivacion</h3>
+        </div>
+        <div class="modal-body">
+{#            {% if inscripcion.tiene_inactivacion %}#}
+{#                  <p> dkajdkjsadkjsafhkjdsfhksjdf}</p>#}
+            {{ inscripcion }}
+{#            {% endif %}#}
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="resetear" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle1"> ¿Desea Resetear la Clave al Usuario?</h3>
+        </div>
+        <div class="modal-body">
+            <p> El usuario ingresar&aacute; nuevamente al sistema con la clave por defecto {% if clave %}<b>{{ clave }}</b>{% endif %}</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-resetear"> Resetear</a>
+        </div>
+    </div>
+{% endblock %}
+

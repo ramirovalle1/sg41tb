@@ -1,0 +1,123 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    $("#id_nivel, #id_inscripcion").addClass("validate[required]");
+    chequeaBecado = function() {
+        if (!$("#id_becado").is(':checked')) {
+            $("#id_porcientobeca").attr("disabled", true);
+            $("#id_motivobeca").attr("disabled", true);
+            $("#id_tipobeca").attr("disabled", true);
+            $("#id_tipobeneficio").attr("disabled", true);
+            $("#id_porcientobeca").val("");
+            $("#id_motivobeca").val("");
+            $("#id_tipobeca").val("");
+            $("#id_tipobeneficio").val("");
+        } else {
+            $("#id_porcientobeca").attr("disabled", false);
+            $("#id_motivobeca").attr("disabled", false);
+            $("#id_tipobeca").attr("disabled", false);
+            $("#id_tipobeneficio").attr("disabled", false);
+        }
+    }
+    $("#id_becado").click(chequeaBecado);
+    chequeaBecado();
+    $('#formbutton').click(function(){
+      $("#formbutton").hide()
+    });
+
+    {% if error == '6' %}
+        $("#formbutton").attr("disabled",true);
+    {% endif %}
+    {% if error == '7' %}
+        $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("<span style='color: blueviolet'><i>Horas de Pr&aacute;cticas y/o Vinculaci&oacute;n " + {{ hvin }} + " horas" + "</i></span> " );
+        $("#formbutton").attr("disabled",true);
+    {% endif %}
+    {% if error == '8' %}
+        $("#formbutton").attr("disabled",true);
+    {% endif %}
+
+    {% if error == '9' %}
+        $("#formbutton").attr("disabled",true);
+    {% endif %}
+
+    $("#id_inscripcion").change(function(){
+        $.post("/matriculas", {action: 'buscaobs',inscrip: $("#id_inscripcion").val()}, function(data) {
+            if (data.result=='bad') {
+                var msjobs='';
+                if (data.obs !='') {
+                    msjobs = "<span style='color: darkred'><i>Observaci&oacute;n Cr&iacute;tica: " +  data.obs + " </i></span>";
+                    $("#formbutton").attr("disabled",true);
+                }
+                if (data.msj !='') {
+                    msjobs = msjobs + "<br> <span style='color: darkred'><i> " +  data.msj + " </i></span> ";
+                }
+
+                $($("#id_inscripcion").get(0).parentNode).find(".help-text").html(msjobs);
+
+            }
+            else{
+                $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("");
+                $("#formbutton").attr("disabled",false);
+                }
+        }, "json");
+    });
+
+{% endblock %}
+{% block titulo %}
+     Matricular Alumno en: {{ nivel.nivelmalla }} de la Carrera: {{ nivel.carrera }} - Grupo: {{ nivel.grupo.nombre }}<br>
+    <h4>Periodo: {{ nivel.periodo }}</h4>
+
+{% endblock %}
+{% block formaction %}/matriculas{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='addmatricula'/>
+     {% if fail %}
+        <div class="alert alert-error">
+                Estudiante Tiene Deuda..!!!!
+        </div>
+    {% endif %}
+    {% if error %}
+        <div class="alert alert-error">
+            {% if error == "1" %}
+                CUIDADO: Ya este alumno esta matriculado !!!!
+           {% endif %}
+            {% if error == "4" %}
+                CUIDADO: Estudiante no ha dado examen de ingreso !!!!
+           {% endif %}
+            {% if error == "5" %}
+                CUIDADO: Estudiante no tiene aprobado el examen de ingreso !!!!
+           {% endif %}
+            {% if error == "6" %}
+                CUIDADO: Estudiante no tiene certificacion de ingles !!!!
+           {% endif %}
+            {% if error == "7" %}
+                CUIDADO: Estudiante no tiene completas horas de Vinculacion y/o Practicas !!!!
+           {% endif %}
+            {% if error == "8" %}
+                CUIDADO: Estudiante no tiene malla completa !!!!
+           {% endif %}
+            {% if error == "9" %}
+                CUIDADO: Estudiante no tiene documentacion aprobada !!!!
+           {% endif %}
+
+{#            {% if error == "6" %}#}
+{#                NO SE PUEDE APLICAR LA BECA  VERIFICAR QUE TENGA LA APROBACION DEL JEFE DOBE,DEL ESTUDIANTE Y QUE TENGA ASIGNADA LA TABLA DE DESCUENTO DE BECAS#}
+{#           {% endif %}#}
+{##}
+{#            {% if error == "7" %}#}
+{#                CUIDADO: NO SE PUEDE APLICAR LA BECA PORQUE NO TIENE UNA SOLICITUD !!!!#}
+{#           {% endif %}#}
+        </div>
+    {% endif %}
+    {% if ficha %}
+        <div class="alert alert-error">
+            IMPORTANTE: Estudiante con ficha m&eacute;dica incompleta. Favor proceder a llenar sus datos m&eacute;dicos para ser matriculado.
+        </div>
+    {% endif %}
+    {% if valoracion %}
+        <div class="alert alert-error">
+            IMPORTANTE: Datos Incompletos en la Valoraci&oacute;n m&eacute;dica. Debe dirigirse al dpto m&eacute;dico para completar su formulario.
+        </div>
+    {% endif %}
+{% endblock %}
+{% block formback %}/matriculas{% endblock %}
+{% block buttonname %}Adicionar Matr&iacute;cula{% endblock %}

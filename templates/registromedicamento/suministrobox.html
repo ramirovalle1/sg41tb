@@ -1,0 +1,170 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+           $("#nuevo").click(function() {
+                location.href = "/suministrobox?action=add";
+           });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/suministrobox?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+           $(".activar").click(function() {
+                var id = $(this).attr("id")
+                $.post("/suministrobox",{"action": "activacion", "id": id },function(data) {
+                        if(data.result=='ok'){
+                        location.reload();}
+                        else{
+                            $("#test").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                            $("#test").modal("show");
+                        }
+                },"json");
+            });
+
+           $(".baja").click(function() {
+                var id = $(this).attr("id")
+                $.post("/suministrobox",{"action": "baja", "id": id },function(data) {
+                        if(data.result=='ok'){
+                        location.reload();}
+                        else{
+                            $("#test").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                            $("#test").modal("show");
+                        }
+                },"json");
+            });
+
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+
+        <div class="span11"  >
+            <h3 >Registros de Suministro</h3></br>
+            {% if grupo %}
+                <h3> Grupo: {{ grupo.descripcion }}</h3>
+            {% endif %}
+        </div>
+        <div class="span1">
+            <a href="/registromedicamento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Suministro</a>
+            {% if search %}
+                <a href="/suministrobox" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span2' style="width: 9%">
+            <table class="table table-condensed table-bordered smaller2 tabla">
+               <thead>
+                <tr>
+                    <th title="Ingreso de Registro" id="nuevo" ><a><i class="icon-share-alt icon-white"></i> Nuevo Registro</a></th>
+                </tr>
+               </thead>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+
+        <div class='span4'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Descripcion</th>
+                        <th style="text-align: center;">Estado</th>
+                        <th style="text-align: center;">Baja</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for s in suministro %}
+                        <tr>
+                            <td style="text-align: center;" ><a href="/suministrobox?action=edit&id={{ s.id }}">{{ s.descripcion }}</a></td>
+
+                            <td style="text-align: center;">
+                                <a href="#" id='{{ s.id }}' class="activar">
+                                    {% if s.estado %}
+                                         <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <a href="#" id='{{ s.id }}' class="baja">
+                                    {% if s.baja %}
+                                         <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                                </a>
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class="span4">
+
+            {% if perms.med.change_personafichamedica %}
+{#            <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>#}
+            {% endif %}
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/suministrobox?page=1">1</a></li>
+                            <li><a href="/suministrobox?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/suministrobox?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/suministrobox?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/suministrobox?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/suministrobox?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+{% endblock %}

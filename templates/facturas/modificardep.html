@@ -1,0 +1,66 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_fecha").datepicker({format:"dd-mm-yyyy"});
+
+    $(function() {
+{#        $("#id_numero,#id_motivo, #id_beneficiario").addClass("validate[required]");#}
+{#        $("#id_numero, #id_valor").addClass("input-medium");#}
+{#        $("#id_motivo, #id_beneficiario").addClass("input-block-level");#}
+{#        $("#id_numero").focus();#}
+     $($("#id_cuentabanco_id").get(0).parentNode.parentNode).hide();
+        buscar_deposito = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'CuentaBanco',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_cuentabanco").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+        {%  if cta %}
+            $("#id_cuentabanco_id").val('{{ cta }}');
+        {% endif  %}
+
+
+        $('#id_cuentabanco').typeahead({source: buscar_deposito, updater: function(item) {
+            var results = $("#id_cuentabanco").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_cuentabanco").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_cuentabanco_id").val(d);
+                }
+            }
+            return item;
+
+        }});
+     });
+
+{% endblock %}
+{% block titulo %}
+    MODIFICAR DATOS TRANSFERENCIA O DEPOSITOS
+    <h3>{{ factura }} (Valor: ${{ factura.total|floatformat:2 }})</h3>
+    <h4>{{ factura.cliente }}</h4>
+    <h4>Estudiante: {{ factura.estudiante }}</h4>
+{% endblock %}
+{% block formaction %}/facturas{% endblock %}
+
+{% block formextra %}
+    <input type='hidden' name='action' value='modificardep'/>
+    <input type='hidden' name='id' value='{{ factura.id }}'/>
+    <input type='hidden' id='modificardep' name='bid' value='' />
+    <input type='hidden' name='dep' value='{{ pago_transf.id }}' />
+{% endblock %}
+{% block formback %}/facturas?id={{ factura.id }}{% endblock %}
+{% block buttonname %}Guardar Datos{% endblock %}

@@ -1,0 +1,404 @@
+ {% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" >
+
+$(function() {
+     $("#periodosel").change(function() {
+        var pid = $("#periodosel").val();
+{#        location.href='/dire_evaluaciondocente?action=verevaluaciondecano&id={{ evaluaciondocente.id }}&per='+pid+'"#}
+        location.href='/evaluaciondecano?action=verevaluaciondecano&id={{ evaluaciondocente.id }}&per='+pid+""
+     });
+  $("#search").click(function() {
+    var term = $("#searchfield").val().toUpperCase();
+    location.href='/evaluaciondecano?action=verevaluaciondecano&id={{ evaluaciondocente.id }}&per={{ pereval.id }}&s='+term+""
+    });
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+    Verdecano = function(id,eva,periodo){
+        location.href="/evaluaciondecano?action=evaluardecano&id="+eva+"&per="+id+"&periodo="+periodo;
+{#        location.href="/evaluaciondecano?action=evaluardecano&id="+eva+"&per="+id+"&periodo="+periodo;#}
+    }
+
+    EvaluarPeriodo = function(id,eva,periodo){
+            id=id;
+
+            swal.fire({
+                title: 'Esta seguro de realizar la evaluacion',
+                {#text: "# Número: "+idpersonadobe,#}
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si!',
+                cancelButtonText: 'No',
+                confirmButtonClass: 'btn btn-success margin-5',
+                cancelButtonClass: 'btn btn-danger margin-5'
+                }).then(function (isConfirm) {
+                    if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+
+                        location.href="/evaluaciondecano?action=evaluardecano&id="+eva+"&per="+id+"&periodo="+periodo;
+
+                    }
+
+                 });
+
+
+            }
+
+
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+    {% if errorcor %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+
+
+});
+</script>
+
+
+
+
+<style>
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .font-weight-bold {
+        font-weight: bold;
+    }
+
+ .custom-select {
+    width: 80%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid #ced4da;
+    background-color: #ffffff;
+    color: #495057;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    height: 2.5rem; /* Set a fixed height */
+    line-height: 1.5rem; /* Adjust line height to center text vertically */
+}
+
+.custom-select:focus {
+    border-color: #80bdff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(128, 189, 255, 0.5);
+}
+
+.custom-select option {
+    padding: 0.5rem;
+    background-color: #ffffff;
+    color: #495057;
+}
+
+
+
+
+
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+{#        {% if not  escoordinador %}#}
+            <div class="span11">
+                <div class="title">
+                    <h3 >Listado de Coordinadores  </h3></br>
+{#                    <h4 >Periodos: {{ periodoeval.periodo.nombre  }} </h4>#}
+
+                </div>
+
+                    </div>
+{#                </div>#}
+{#            </div>#}
+            <div class="span1">
+            <div class="title">
+                <a href="/evaluaciondecano" class="btn"><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            </div>
+        </div>
+        </div>
+{#            {% endif %}#}
+    <br>
+    <div class='row-fluid'>
+        <div class="span3">
+            <div class="form-group">
+                <input type="text"  id='searchfield' placeholder="Buscar el nombre del Coordinador" style="width: 100%" class="form-control " value='{{ search }}'>
+            </div>
+        </div>
+        <div class="span1">
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+        </div>
+        <div class="span1">
+            {% if search  %}
+                <a href ="/evaluaciondecano?action=verevaluaciondecano&id={{ evaluaciondocente.id }}&per={{ pereval.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+
+        </div>
+
+    <div class="span4">
+            <label for="periodosel" class="font-weight-bold">Períodos:</label>
+
+            <select id="periodosel" name="periodosel" value="0" class="form-control custom-select"  style="width: 100%">
+                <option value="0">-Elija Periodo-</option>
+                {% for periodo in periodos %}
+                    <option value="{{ periodo.id }}" {% if pereval.id == periodo.id %}selected="selected"{% endif %}>{{ periodo.periodo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th class="table-plus datatable-nosort">Nombre</th>
+                        <th>Cedula/Pasap</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Usuario</th>
+                        <th>Calificacion</th>
+                        <th>  </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {% if pereval %}
+                {% for p in personas %}
+
+                    <tr>
+                        <td>
+                            {% if p.nombre_completo_inverso %}{{ p.nombre_completo_inverso }}{% endif %}
+
+
+{#                                             {% if p.evaluado %}<br><span class="badge badge-primary"> Evaluado </span>{% endif %}#}
+                             {% if  p|args:pereval|call:"evaluadodecano"%}<br><span class="badge badge-primary"> Evaluado </span>{% endif %}
+{#                                            {% if p|args:evaluacion|call:"recalifiacion" %}<span class="badge  badge-info"> Recalifiación </span>#}
+{#                                            {% endif %}#}
+                        </td>
+
+
+                        <td>
+                            {{ p.cedula }} <br/>
+                            {% if p.extranjero %}
+                                {% if p.pasaporte %}{{ p.pasaporte }}<br/><span class="bg bg-red tag">Extranjero</span> {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                             {% if p.telefono %}{{ p.telefono }}{% endif %}
+                            <br/>{% if p.telefono_conv %}{{ p.telefono_conv }}{% endif %}
+                        </td>
+                        <td>
+                            {% if p.emailinst %}
+                                <a style="color: #003bb3">
+                                    {{ p.emailinst }}
+                                </a>
+                                {% endif %}
+                                {% if p.email %}<br>
+                                    <a style="color: #003bb3">{{ p.email }}</a>
+                                {% endif %}
+
+                        </td>
+
+                        <td>
+                            <a>
+                                {% if  p.usuario.is_active  %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png'  alt='No' border='0'/>
+                                {% endif %}
+                                {{ p.usuario }}
+                            </a>
+                        </td>
+                    <td>
+                        {% with eva=p|args:pereval|call:"calificacion_decano" %}
+                            {% if eva %}
+                                {{ eva }}
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                        <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                    {% if  p|args:pereval|call:"evaluadodecano"%}
+                                        <li><a class="dropdown-item" onclick="Verdecano('{{ p.id }}','{{ evaluaciondocente.id }}','{{ pereval.id }}')"><i class="dw dw-list"></i>Ver Evaluacion Decano</a></li>
+                                    {% else %}
+                                        <li><a class="dropdown-item " onclick="EvaluarPeriodo('{{ p.id }}','{{ evaluaciondocente.id }}','{{ pereval.id }}')"><i class="dw dw-list"></i>Evaluar </a></li>
+                                    {% endif %}
+{#                                    <li><a  class="dropdown-item"  href='/evaluaciondecano?action=verevaluacioncoordinador&id={{ p.id }}&eva={{ evaluaciondocente.id }}{% if escoordinador %}&coord{% endif %}'><i class="dw dw-list"></i>Ver Evaluaciones </a></li>#}
+                               </div>
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+                {% endif %}
+                {% if not personas %}
+                    <tr>
+                        <td colspan="10">
+                            NO EXISTE COORDINADORES
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/dire_evaluaciondocente?action=verevaluacion&id={{ evaluacion.id }}&page=1">1</a></li>
+                            <li><a href="/dire_evaluaciondocente?action=verevaluacion&id={{ evaluacion.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/dire_evaluaciondocente?action=verevaluacion&id={{ evaluacion.id }}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/dire_evaluaciondocente?action=verevaluacion&id={{ evaluacion.id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/dire_evaluaciondocente?action=verevaluacion&id={{ evaluacion.id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/dire_evaluaciondocente?action=verevaluacion&id={{ evaluacion.id }}{% if search %}&s={{ search }}{% endif %}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+
+<div class="modal fade bs-example-modal-xl" id="modalvergestio" role="dialog" aria-labelledby="myModalLabel33" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="login-title">
+                    <label class="modal-title text-text-bold-600 titulo" id="myModalLabel33">Registrar Observación</label>
+                </div>
+            </div>
+            <form>
+              <div class="modal-body">
+                  <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Observacion:</label>
+                                <textarea id="txt_observacion" maxlength="300"  class="form-control" disabled value=""></textarea>
+                                 <p id="helptxt_descripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>
+                        </div>
+                  </div>
+                  <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Resolución:</label>
+                                <textarea id="txt_resolucion" maxlength="300"  class="form-control" disabled value=""></textarea>
+                                 <p id="helptxt_descripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>
+                        </div>
+                  </div>
+
+
+              </div>
+              <div class="modal-footer">
+                <button type="button" id="btncancelar" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+
+              </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade bs-example-modal-xl" id=generar tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xs modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="login-title">
+{#                        <label class="modal-title text-text-bold-600" id="myModalLabel33">Listado del Personal Institucional</label>#}
+                </div>
+            </div>
+            <div class="modal-body">
+
+            </div>
+            <div class="modal-footer">
+                 <a href="#" id="ingresardato" class="btn btn-success"><i class=""></i> Generar Excel</a>
+                 <a  class="btn btn-cerrar" style="float: right;cursor: pointer;background: #FA1D06;color: white" data-bgcolor="#FA1D06" data-color="#ffffff"> Cerrar</a>
+            </div>
+        </div>
+    </div>
+</div>
+    <div  class="modal fade " id="modalvideo" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Video</h4>
+
+                </div>
+
+                <div class="modal-body" style="min-height: 700px;max-height: 700px;overflow: auto" >
+                    <div class="row" >
+                        <iframe id="vistavideo" width="800" height="500" src="" frameborder="0" allowfullscreen ></iframe>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"  class="btn" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff">Salir</button>
+                    <button type="button" id="btnguardaraptacompromiso" class="btn" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="modal fade" id="espera"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="row">
+                    <div id="content" class="col-lg-12">
+                        Generando reporte, espere un momento...
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+
+
+
+{% endblock %}

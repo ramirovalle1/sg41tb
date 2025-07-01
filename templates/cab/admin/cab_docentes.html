@@ -1,0 +1,78 @@
+<div class="pb-20">
+    <div class="row-fluid">
+    <div class="span1"></div>
+        <div class="span10">
+            <table class='table table-bordered table-striped'>
+                <thead>
+                    <tr>
+                        <th> Docente</th>
+                        <th style="text-align: center"> Aportacion</th>
+                        <th style="text-align: center"> Fecha</th>
+                        <th style="text-align: center"> En CAB</th>
+                        <th style="text-align: center"> Estado</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% if not inscripciones_cab %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% else %}
+                        {% for i in inscripciones_cab %}
+                            <tr>
+                                <td> {{ i.persona }} </td>
+                                <td style="text-align: right"> ${{ i.monto }} </td>
+                                <td style="text-align: center"> {{ i.fecha|date:"d-m-Y" }} </td>
+                                <td style="text-align: center">
+                                    {% if i.en_cab %}
+                                       <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                       <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center">
+                                    {% if i.estado %}
+                                        <span class="label label-success">Afiliado</span>
+                                    {% else %}
+                                        <span class="label label-important">Desafiliado</span>
+                                    {% endif %}
+                                    {% if i.estado and i.solicitud_desafiliacion %}
+                                        <span class='label label-warning'>Solicitud Desafiliacion</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                            Acciones
+                                            <span class="caret"></span>
+                                        </a>
+                                        <ul class="dropdown-menu pull-right">
+                                            {% if perms.sga.add_inscripcionescab  %}
+                                                <li><a href="/alumnos_cab?action=ver_form&personaid={{ i.persona.id }}" style="cursor: pointer"><i class="icon-eye-open"></i> Ver Formulario</a></li>
+                                                {% if not i.en_cab %}
+                                                    <li><a onclick="estado({{ i.id }})" style="cursor: pointer"><i class="icon-plus"></i> En CAB</a></li>
+                                                {% endif %}
+                                                {% if i.solicitud_desafiliacion %}
+                                                    {% if  not i.solicitud_desafiliacion.solicitud_aceptada and not i.solicitud_desafiliacion.solicitud_rechazada %}
+                                                        <li><a href="#" onclick="desafiliacion('{{ i.solicitud_desafiliacion.id }}', '{{ i.solicitud_desafiliacion.solicitud }}')"><i class="icon-remove"></i> Ver Solicitud Desafiliacion</a></li>
+                                                    {% else %}
+                                                        <li><a href="{{ i.solicitud_desafiliacion.solicitud }}" target="_blank"><i class="icon-eye-open"></i>Ver Solicitud Desafiliacion</a></li>
+                                                    {% endif %}
+                                                {% endif %}
+                                                <li><a href="{{ i.solicitud_desafiliacion.solicitud }}" target="_blank"><i class="icon-eye-open"></i>Desafiliar</a></li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

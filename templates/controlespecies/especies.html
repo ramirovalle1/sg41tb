@@ -1,0 +1,2254 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+
+            var ide=0;
+            var opcion='';
+            var inscripcionid='';
+            $("#id_inicio").attr({"autocomplete":"off"});
+            $("#id_fin").attr({"autocomplete":"off"});
+            $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy",language: "es"});
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/controlespecies?s="+term;
+            });
+
+            $("#todos").click(function() {
+                cargadatos();
+            });
+               $(".quitarautorizar").click(function(){
+                var id = $(this).attr("eid");
+                smoke.confirm('Esta seguro de quitar la resolucion ', function(e){
+                if (e){
+                    $.post("/controlespecies",{"action":"quitarautorizar","id":id},function(data) {
+                        if(data.result=='ok'){
+                            alert("Registro Eliminado");
+                            location.reload()
+                       }else{
+                            alert(data.result);
+                       }
+
+                    },"json");
+                }else{
+                }
+                }, {
+                ok: "Si",
+                cancel: "No",
+                classname: "custom-class",
+                reverseButtons: true
+                });
+            });
+
+            $("#buscartramites").click(function() {
+
+                if (inscripcionid ==''){
+                    smoke.alert("Debe seleccionar una inscripcion");
+                }else{
+                    $("#modaldatos").modal({width: '90%', backdrop: 'static' , maxHeight: ($(window).height()*3)/4,keyboard: false });
+                    cargadatos();
+                }
+
+            });
+
+
+            $("#searchseccion").click(function() {
+                var serie = $("#searchfieldseccion").val().toUpperCase();
+                $.post("/controlespecies", {"action":'filtrarregistro',"inscripcionid":inscripcionid,'serie':serie}, function(data) {
+                   if (data.result=='ok') {
+                       $('#searchgen').val("");
+                       $('#titulodatos').html(data.inscripcion);
+                       var html='';
+                       for (var o in data.registros) {
+                           var indice=parseInt(o)+(parseInt(1));
+                               html = html + '<tr>'+
+                                       '<td style="font-size:10px;text-align:center">'+indice+'</td>'+
+                                        '<td style="font-size:10px;text-align:center"> <a class="label label-info">'+data.registros[o].tipo+'</a></td>'+
+                                        '<td style="font-size:10px;text-align:center">'+data.registros[o].tipotramite+'</td>'+
+                                        '<td style="font-size:10px;text-align:center">'+data.registros[o].serie+'</td>'+
+                                        '<td style="font-size:1px,text-align:center">'+data.registros[o].fechat+'</td>'+
+                                       '<td style="font-size:10px;text-align:center">'+data.registros[o].obsest+'</td>'+
+                                        '<td style="font-size:12px;text-align:center">'+data.registros[o].usrautoriza+'</td>'+
+                                        '<td style="font-size:10px;text-align:center">'+data.registros[o].resolucion+'</td>'+
+                                        '<td style="font-size:10px;text-align:center">'+data.registros[o].depart+'</td>'+
+                                        '<td style="font-size:12px;text-align:center">'+data.registros[o].asigando+'</td>'+
+                                       '<td style="font-size:10px;text-align:center">'+data.registros[o].obsfinal+'</td>'+
+                                        '<td style="font-size:10px;text-align:center">'+data.registros[o].estado+'</td>'+
+                                        '<td style="font-size:14px;text-align:center"><a style="cursor: pointer" class="label label-info" onclick="vergestiontramite(this);" idsol="'+ data.registros[o].solid +'";>Ver Gestion</a></td>'+
+{#                                                   +'<td><a style="cursor: pointer" class="label label-info" id="vergestion" ids='+data.registros[o].solid +' onclick="vergestion(this)"> Ver Gestion </a></td>'+#}
+                                    '</tr>';
+                        }
+                       $("#bodydatos").html(html);
+{#                       $("#bodytble2").html(html1);#}
+
+                       hideWaiting();
+                   }else{
+
+                       hideWaiting();
+                       smoke.alert("Error Vuelva a Intentarlo");
+                           hideWaiting();
+                   }
+                }, "json");
+            });
+            cargadatos= function(){
+                showWaiting("Extrayendo datos","Espere unos segundos por favor...");
+                $.post("/controlespecies", {"action":'verregistros',"inscripcionid":inscripcionid}, function(data) {
+                   if (data.result=='ok') {
+                       $('#searchgen').val("");
+                       $('#titulodatos').html(data.inscripcion);
+
+                       if (data.errores) {
+                          alert("Errores SolicitudEstudiante: "+data.errores)
+                       }
+
+                       var html='';
+                       for (var o in data.registros) {
+                           var indice=parseInt(o)+(parseInt(1));
+                               html = html + '<tr>'+
+
+                                       '<td style="font-size:10px;text-align:center">'+indice+'</td>'+
+                                        '<td style="font-size:10px;text-align:center">  <a class="label label-info">'+data.registros[o].tipo+'</a></td>'+
+                                        '<td style="font-size:10px;text-align:center"> '+data.registros[o].tipotramite+'</td>'+
+                                        '<td style="font-size:10px;text-align:center"> '+data.registros[o].serie+'</td>'+
+                                        '<td style="font-size:1px,text-align:center">'+data.registros[o].fechat+'</td>'+
+                                       '<td style="font-size:10px;text-align:center">'+data.registros[o].obsest+'</td>'+
+                                        '<td style="font-size:12px;text-align:center">'+data.registros[o].usrautoriza+'</td>'+
+                                        '<td style="font-size:10px;text-align:center">'+data.registros[o].resolucion+'</td>'+
+                                        '<td style="font-size:10px;text-align:center">'+data.registros[o].depart+'</td>'+
+                                        '<td style="font-size:12px;text-align:center">'+data.registros[o].asigando+'</td>'+
+                                       '<td style="font-size:10px;text-align:center">'+data.registros[o].obsfinal+'</td>'+
+                                        '<td style="font-size:10px;text-align:center">'+data.registros[o].estado+'</td>'+
+                                        '<td style="font-size:14px;text-align:center"><a style="cursor: pointer" class="label label-info" onclick="vergestiontramite(this);" idsol="'+ data.registros[o].solid +'";>Ver Gestion</a></td>'+
+    {#                                                   +'<td><a style="cursor: pointer" class="label label-info" id="vergestion" ids='+data.registros[o].solid +' onclick="vergestion(this)"> Ver Gestion </a></td>'+#}
+                                    '</tr>';
+                        }
+                       $("#bodydatos").html(html);
+    {#                       $("#bodytble2").html(html1);#}
+                       hideWaiting();
+                   }else{
+
+                       hideWaiting();
+                       smoke.alert("Error Vuelva a Intentarlo");
+                           hideWaiting();
+                   }
+                }, "json");
+            };
+
+            $("#tabla").hide();
+
+            $('#fechatab').on('changeDate', function(ev){
+                if (!$("#general").is(':checked')) {
+{#                    ver();#}
+                }
+            });
+            $('#fechafin').on('changeDate', function(ev){
+                if (!$("#general").is(':checked')) {
+                    ver();
+                }
+            });
+             buscar_alumno = function(query, process) {
+                    $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+                                        'p': 1, 'q': query, 's': 10}, function(data) {
+                        if (data.results) {
+                            $("#searchgen").get(0).results = data.results;
+                            listing = [];
+                            for (var i in data.results) {
+                                var dato = data.results[i];
+                                listing.push(dato.name);
+                            }
+                            process(listing);
+                        }
+                    }, 'json');
+                };
+
+                $('#searchgen').typeahead({source: buscar_alumno, updater: function(item) {
+                    var results = $("#searchgen").get(0).results;
+                    for (var i in results) {
+                        var datos = results[i];
+                        if (item==datos.name) {
+
+                            inscripcionid=datos.id;
+
+
+                        }
+                    }
+
+                    return item;
+                }});
+
+
+
+            $("#fechatab").datepicker({format:'yyyy-mm-dd'}).mask("9999-99-99");
+            $("#fechafin").datepicker({format:'yyyy-mm-dd'}).mask("9999-99-99");
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+            $("#editturno").click(function(){
+                    $("#horaasistentesol").modal({backdrop: 'static', keyboard: false,width: "25%"});
+
+                     if ($("#nolaborasol").is(':checked')) {
+                            $("#iniciosol").val('');
+                            $("#iniciosol").attr('readonly',true);
+                            $("#finsol").val('');
+                            $("#finsol").attr('readonly',true);
+                        }else{
+                            $("#iniciosol").attr('readonly',false);
+                            $("#finsol").attr('readonly',false);
+                        }
+                    $("#horaasistentesol").modal("show");
+
+            });
+            $(".cerrarsoli").click(function(){
+                    $("#horaasistentesol").modal("hide");
+
+            });
+        $("#iniciosol").blur(function(){
+
+                    var v = $("#iniciosol").val();
+                    var p = tiene_numeros(v);
+                    if(v!=''){
+                        if (v.split(':').length == 2 ){
+                            if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                            {
+                              $("#piniciosol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#iniciosol").focus();
+                            }
+                            else{
+                                $("#piniciosol").html("");
+
+                            }
+                        }
+                        else{
+                              $("#piniciosol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#iniciosol").focus();
+                            }
+                    }
+                    else{
+                        $("#piniciosol").html("");
+                    }
+                });
+
+                $("#finsol").blur(function(){
+
+                    var v = $("#finsol").val();
+                    var p = tiene_numeros(v);
+                    if(v!=''){
+                        if (v.split(':').length == 2 ){
+                            if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                            {
+                              $("#pfinsol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#finsol").focus();
+                            }
+                            else{
+                                $("#pfinsol").html("");
+
+                            }
+                        }
+                        else{
+                              $("#pfinsol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#finsol").focus();
+                            }
+                    }
+                    else{
+                        $("#pfinsol").html("");
+                    }
+                });
+
+                var numeroshor="0123456789:";
+
+                function tiene_numeros(texto){
+                   var num = 0;
+                   for(i=0; i<texto.length; i++){
+                      if (numeroshor.indexOf(texto.charAt(i),0)!=-1){
+                          num = num +1;
+                      }
+                   }
+                   return num;
+                }
+         $("#nolaborasol").click(function(){
+                $("#piniciosol").html('');
+                $("#pfinsol").html('');
+                $("#pnolaborasol").html("");
+
+                if ($("#nolaborasol").is(':checked')) {
+                    $("#iniciosol").val('');
+                    $("#iniciosol").attr('readonly',true);
+                    $("#finsol").val('');
+                    $("#finsol").attr('readonly',true);
+                }else{
+                    $("#iniciosol").attr('readonly',false);
+                    $("#finsol").attr('readonly',false);
+                }
+
+            });
+             $("#ingresarhorariosol").click(function(){
+
+
+                    $("#piniciosol").html("");
+                    $("#pfinsol").html("");
+                    $("#pnolabora").html("");
+                    var valida = true;
+                    var nolabora = true;
+                    if (!$("#nolaborasol").is(':checked')) {
+                        nolabora = false;
+                        if($("#iniciosol").val()==''){
+                            $("#piniciosol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                            valida = false
+                        }
+                        if($("#finsol").val()==''){
+                            $("#pfinsol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                            valida = false
+                        }
+
+                    }
+                    if(valida){
+                        showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                        $.post("/controlespecies", {"action":'editarhorario', "idhorat":'{{ horarioasistente.id }}',"hinicio":$("#iniciosol").val(), "hfin":$("#finsol").val(), "nolabora":nolabora}, function(data) {
+                           if (data.result=='ok') {
+                                hideWaiting();
+                                location.reload()
+                           }if (data.result == 'badhora'){
+                                        hideWaiting();
+
+    {#                                   smoke.alert("la hora de salida debe ser mayor a la hora de entrada. formato 24 horas");#}
+                                       $("#piniciosol").html("La hora de entrada debe ser menor a la hora de salida. Debe ingresar el horario en formato 24 horas");
+                                   }else{
+                                        hideWaiting();
+                                       $("#pmensja").html("Error Vuelva a Intentarlo");
+                                   }
+                        }, "json");
+
+                    }
+                });
+
+
+            $('#cancelar').click(function() {
+               $("#detalle_tipo").modal("hide");
+            });
+
+            $('#cancelarusuario').click(function() {
+               $("#reasigna_usuario").modal("hide");
+            });
+
+
+            $(".reasignarasis").click(function(){
+                ide = $(this).attr('eid');
+                $("#reasigna_usuario").modal({width: '400px', backdrop: 'static'});
+                $("#reasigna_usuario").modal("show");
+                 $.post("/controlespecies",{"action": "consultaasis",'id':ide },function(data) {
+                       if(data.result=='ok'){
+                                html = '<select id="selectorusuario">';
+                                for (var n in data.usuarios){
+                                     html = html + '<option value='+ data.usuarios[n].id +'>' + data.usuarios[n].usuario  +' </option>'
+                                }
+                                html = html + '</select>';
+{#                                $('#detalle_tipo #sel').addClass('input-xlarge');#}
+                                $("#datousuario").html(html);
+                       }else{
+                           alert(data.result);
+                       }
+                    },"json");
+            });
+
+            $("#reasigna_usuario #reasignarusuario").click(function(){
+                     var usuario = $("#selectorusuario").val();
+                    $.post("/controlespecies", {action: 'reasignarusuario', 'id':ide ,'usuario':usuario}, function(data) {
+                            if (data.result=='ok') {
+                                alert("REASIGNADO CORRECTAMENTE");
+                                location.reload() ;
+
+                            }
+                            else{
+                               smoke.alert('Error vuelva a intentarlo');
+                            }
+                    }, "json");
+                });
+            $(".reasignar").click(function(){
+                ide = $(this).attr('eid');
+                $("#detalle_tipo").modal({width: '400px', backdrop: 'static'});
+                $("#detalle_tipo").modal("show");
+                 $.post("/controlespecies",{"action": "consulta",'id':ide },function(data) {
+                       if(data.result=='ok'){
+                                html = '<select id="selector">';
+                                for (var n in data.departamento){
+                                     html = html + '<option value='+ data.departamento[n].id +'>' + data.departamento[n].descripcion  +' </option>'
+                                }
+                                html = html + '</select>';
+{#                                $('#detalle_tipo #sel').addClass('input-xlarge');#}
+                                $("#dato").html(html);
+                       }else{
+                           alert(data.result);
+                       }
+                    },"json");
+            });
+            $("#detalle_tipo #reasignargrupo").click(function(){
+                 var dpto = $("#selector").val();
+                $.post("/controlespecies", {action: 'reasignar', 'id':ide ,'dpto':dpto}, function(data) {
+                        if (data.result=='ok') {
+                            alert("REASIGNADO CORRECTAMENTE");
+                            location.reload() ;
+
+                        }
+                        else{
+                           alert(data.e);
+                        }
+                }, "json");
+            });
+
+
+
+            $($("#id_departamento").get(0).parentNode.parentNode).hide();
+        $(".autorizar").click(function(){
+                ide = $(this).attr("eid");
+                var nom = $(this).attr("non");
+                var tipoe = $(this).attr("tipoe");
+                opcion = $(this).attr("op");
+                $("#respuesta_panel").modal({width: '600px', backdrop: 'static'});
+                $("#respuesta_panel").modal("show");
+                if( opcion == "reingreso"){
+                    $($("#id_departamento").get(0).parentNode.parentNode).show();
+                }
+                if( opcion == "otra"){
+                    $($("#id_departamento").get(0).parentNode.parentNode).hide();
+                }
+                $("#id_respuesta").val("");
+                $("#id_departamento").val("");
+                $("#id_aprobado").attr('checked',false);
+                $("#id_reprobado").attr('checked',false);
+                $("#respuesta_panel #paneltitle1").html( "ESPECIE TIPO "+ tipoe +" SOLICITADA POR " + nom);
+                $("#respuesta_panel .adicionar").show();
+                $("#id_aprobado").attr("disabled",false);
+                $("#id_reprobado").attr("disabled",false);
+                $("#id_respuesta").attr("disabled",false);
+               return false;
+        });
+        $(".verresp").click(function(){
+                var nom = $(this).attr("non");
+                var obs = $(this).attr("obs");
+                var autorizado = $(this).attr("autorizado");
+                var usrautoriza = $(this).attr("usrautoriza");
+                $("#respuesta_panel").modal({width: '600px', backdrop: 'static'});
+                $("#respuesta_panel").modal("show");
+                $("#id_aprobado").attr("disabled",true);
+                $("#id_reprobado").attr("disabled",true);
+                $("#id_respuesta").attr("disabled",true);
+                $("#id_respuesta").val(obs);
+                if( autorizado == "True"){
+                    $("#id_aprobado").attr('checked',true);
+                    $("#id_reprobado").attr('checked',false);
+                }else{
+                    $("#id_reprobado").attr('checked',true);
+                     $("#id_aprobado").attr('checked',false);
+                }
+                $("#respuesta_panel #paneltitle1").html( "ESPECIE SOLICITADA POR " + nom + "<br> Usuario Autoriza: "+ usrautoriza);
+                $("#respuesta_panel .adicionar").hide();
+               return false;
+        });
+        $("#respuesta_panel .cerrar").click(function() {
+                $("#respuesta_panel").modal("hide");
+                 return false;
+
+        });
+
+       $(".vergestiondocente").click(function(){
+                var fechares = $(this).attr("fecharespuesta");
+                var fechaasig = $(this).attr("fechaasignacion");
+                var respuesta = $(this).attr("respuesta");
+                $("#fechaasig").html("Fecha Asignacion: " + fechaasig);
+                $("#fecharesp").html("Fecha de Respuesta: " +fechares);
+                $("#modalgestiondocente #observaciontr").attr("disabled",true);
+
+                $("#modalgestiondocente #observaciontr").val(respuesta);
+                $("#modalgestiondocente").modal({"backdrop":"static","width":"40%"});
+                $("#modalgestiondocente").modal("show");
+        });
+
+            $(".btn-cerrarobstr").click(function(){
+                $("#observaciontr").val('');
+                $("#modalgestiondocente").modal("hide");
+
+            });
+
+            $("#cerrargestion").click(function(){
+                $("#detalle_gestiontramite").modal("hide");
+
+            });
+
+
+        $("#respuesta_panel .adicionar").click(function() {
+            $("#respuesta_panel").modal("hide");
+            var aprobado = 0;
+            var reprobado = 0;
+            var dpto =0;
+            if ($("#id_respuesta").val() != "") {
+                if ((opcion == "reingreso") &&($("#id_departamento").val() == ""))
+                    {
+                        smoke.alert('DEBE SELECCIONAR DPTO REALIZO GESTION');
+                    }
+                else{
+                    dpto=$("#id_departamento").val();
+                    if ( (!$("#id_aprobado").is(':checked')) && (!$("#id_reprobado").is(':checked')) ) {
+                        smoke.alert('DEBE APROBAR O NO LA SOLICITUD');
+                    }
+                    else{
+                        if ($("#id_aprobado").is(':checked')){
+                            aprobado = 1;
+                        }
+                        else{
+                            aprobado = 0;
+                        }
+                          $.post("/controlespecies",{"action": "autorizar", "idespecie":ide,"respuesta": $('#id_respuesta').val(),"aprobado": aprobado,"dpto": dpto },function(data) {
+                          if(data.result=='ok'){
+                               alert('REGISTRO GUARDADO');
+                               location.reload();
+                          }else{
+                               smoke.alert('OCURRIO UN ERROR: ' + (data.result));
+                          }
+                          },"json");
+                    }
+                }
+            }
+            else{
+            }
+        });
+
+        $(".addgestion").click(function(){
+                var nom = $(this).attr("non");
+                var tipoe = $(this).attr("tipoe");
+                ide = $(this).attr("eid");
+
+                $("#seguimiento_panel").modal({width: '600px', backdrop: 'static'});
+                $("#seguimiento_panel").modal("show");
+
+                $("#seguimiento_panel #paneltitle1").html( "ESPECIE TIPO " + tipoe +" SOLICITADA POR " + nom );
+               return false;
+        });
+        $(".vergestion").click(function(){
+                ide = $(this).attr("eid");
+                $.get("/controlespecies", {'action':'vergestion', 'ide': ide }, function(data) {
+                        $("#detalle_gestion .modal-body").html(data);
+                        $("#detalle_gestion").modal({"backdrop":"static", keyboard: false,width: "60%"});
+                        $("#detalle_gestion").modal("show");
+                   }, "html");
+                return false;
+        });
+
+          $("#detalle_gestion #cerrar").click(function() {
+                $("#detalle_gestion").modal("hide");
+            });
+        $("#seguimiento_panel .cerrar").click(function() {
+                $("#seguimiento_panel").modal("hide");
+                 return false;
+
+        });
+         $("#seguimiento_panel .adicionar").click(function() {
+            $("#seguimiento_panel").modal("hide");
+            $.post("/controlespecies",{"action": "addgestion", "idespecie":ide,"observacion": $('#id_observacion').val()},function(data) {
+                if(data.result=='ok'){
+                   alert('REGISTRO GUARDADO');
+                   location.reload();
+                  }else{
+                   smoke.alert('OCURRIO UN ERROR: ' + (data.result));
+                  }
+                },"json");
+
+        });
+
+
+        $(".justificar").click(function(){
+          $("#materiasel").val("");
+          $("#profesorsel").val("");
+{#          $("#materia").modal({width: '600px', backdrop: 'static'});#}
+{#          $("#materia").modal("show");#}
+          var id=$(this).attr("insc_id");
+          var idon=$(this).attr("idon");
+          especienum=$(this).attr("especienum");
+             $.post("/solicitudonline",{"action": "consultamateria", "id":id ,'idon':idon},function(data) {
+                if(data.result == "ok"){
+                    location.href='/adm_docentes?action=asistencias&a=1&idmateria='+data.materia +'&ins_id='+data.id+'&prof_id='+data.profesor+"&especienum="+data.especienum+'&op=es'
+
+                }
+             },"json");
+        });
+         $(".justificarant").click(function(){
+          $("#materiasel").val("");
+          $("#profesorsel").val("");
+          $("#materia").modal({width: '600px', backdrop: 'static'});
+          $("#materia").modal("show");
+          id=$(this).attr("insc_id");
+          especienum=$(this).attr("especienum");
+             $.post("/solicitudonline",{"action": "consultamateriaant", "id":id },function(data) {
+                if(data.result == "ok"){
+                    var html = '<option value="0" >---</option>';
+                    for (var m in data.materias){
+                        var mat = data.materias[m]
+                        html = html + '<option value="'+ mat['id'] + '" >'+ mat['asig']+'</option>'
+                    }
+                    $("#materiasel").html(html)
+                }
+             },"json");
+        });
+
+        $("#materiasel").change(function(){
+           $.post("/solicitudonline",{"action": "consultaprofesor", "id":$("#materiasel").val() },function(data) {
+                if(data.result == "ok"){
+                    var html = '<option value="0" >---</option>';
+                    for (var m in data.profesor){
+                        var mat = data.profesor[m]
+                        html = html + '<option value="'+ mat['id'] + '" >'+ mat['nombre']+'</option>'
+                    }
+                    $("#profesorsel").html(html)
+                }
+           },"json");
+        });
+        $("#materia .cerrar").click(function() {
+            $("#materia").modal("hide");
+             return false;
+
+        });
+
+
+        $("#materia .adicionar").click(function() {
+           if  (($("#materiasel").val() != 0 && $("#profesorsel").val() != 0 && $("#materiasel").val() != '' && $("#profesorsel").val() != '' )) {
+               $("#materia").modal("hide");
+               location.href='/adm_docentes?action=asistencias&a=1&idmateria='+$("#materiasel").val()+'&ins_id='+id+'&prof_id='+$("#profesorsel").val()+"&especienum="+especienum+'&op=es'
+           }else{
+               $("#mensaje").html("Debe Seleccionar la Materia y el Profesor");
+           }
+        });
+
+        $("#materiasel").change(function(){
+           $.post("/solicitudonline",{"action": "consultaprofesor", "id":$("#materiasel").val() },function(data) {
+                if(data.result == "ok"){
+                    var html = '<option value="0" >---</option>';
+                    for (var m in data.profesor){
+                        var mat = data.profesor[m]
+                        html = html + '<option value="'+ mat['id'] + '" >'+ mat['nombre']+'</option>'
+                    }
+                    $("#profesorsel").html(html)
+                }
+           },"json");
+        });
+        $("#materia .cerrar").click(function() {
+            $("#materia").modal("hide");
+             return false;
+
+        });
+
+
+        $("#materia .adicionar").click(function() {
+           if  (($("#materiasel").val() != 0 && $("#profesorsel").val() != 0 && $("#materiasel").val() != '' && $("#profesorsel").val() != '' )) {
+               $("#materia").modal("hide");
+               location.href='/adm_docentes?action=asistencias&a=1&idmateria='+$("#materiasel").val()+'&ins_id='+id+'&prof_id='+$("#profesorsel").val()+"&especienum="+especienum+'&op=es'
+           }else{
+               $("#mensaje").html("Debe Seleccionar la Materia y el Profesor");
+{#                   smoke.alert("Debe Seleccionar la Materia y el profesor");#}
+
+
+
+           }
+        });
+
+        verObservacion = function(event, observacion, fechaFinaliza, usuarioFinaliza) {
+            event.preventDefault()
+            swal.fire('Obsevaciones', observacion+' ('+usuarioFinaliza+' '+fechaFinaliza+')', 'info')
+        }
+
+        $(".ver2").click(function() {
+            var obs=$(this).attr("obs2");
+            smoke.alert(obs);
+
+        });
+        {% if error %}
+            smoke.alert("{{ error }}");
+        {% endif %}
+
+         $("#asist").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = "/controlespecies?op=buscar&asist="+id;
+                }else{
+                    location.href = "/controlespecies";
+                }
+
+            });
+
+            $($("#id_profesor_id").get(0).parentNode.parentNode).hide();
+            buscar_profesor = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_profesor").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#id_profesor').typeahead({source: buscar_profesor, updater: function(item) {
+            var results = $("#id_profesor").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_profesor").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_profesor_id").val(d);
+                }
+            }
+              return item;
+            }});
+
+
+
+            $("#obsdocente").click(function(){
+                $("#obsdocente_panel").modal({backdrop: 'static', keyboard: 'false', width: "50%",maxHeight: ($(window).height()*3)/4  });
+                $("#obsdocente_panel").modal("show");
+
+            });
+            $("#obsdocente_panel .btn-cerrar").click(function(){
+                 $("#obsdocente_panel").modal("hide");
+                 $(".notas").attr('checked',false);
+            });
+            $("#obsdocente_panel .btn-adicionar").click(function(){
+                 var obs = $("#id_observaciones").val();
+                 var doc = $("#id_profesor_id").val();
+
+                $("#obsdocente_panel").modal("hide");
+                $.post("/controlespecies", {action: 'obsdocente', 'id':ide ,'doc':doc, 'obs':obs}, function(data) {
+                        if (data.result=='ok') {
+                            location.reload() ;
+                            $("#obsdocente_panel").modal("show");
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+                }, "json");
+            });
+
+            $("#modalresumen .btn-salir").click(function(){
+                $("#modalresumen .btn-salir").hide();
+                $("#modalresumen").modal("hide");
+            });
+
+            $("#modaldatos .btn-salirconsulta").click(function(){
+                $("#modaldatos").modal("hide");
+            });
+
+            vergestiontramite =  function(eval){
+                var ide = $(eval).attr("idsol");
+                    $.get("/controlespecies", {'action':'vergestiontramite', 'ide': ide }, function(data) {
+                            $("#detalle_gestiontramite .modal-body").html(data);
+                            $("#detalle_gestiontramite").modal({"backdrop":"static", keyboard: false,width: "40%"});
+                            $("#detalle_gestiontramite").modal("show");
+                       }, "html");
+                    return false;
+            };
+
+            ver = function(){
+                var html='';
+                var html1='';
+                var html2='';
+                var general=false;
+                var filtro = $("#fechatab").val();
+                var filtro2 = $("#fechafin").val();
+                if ($("#general").is(':checked')) {
+                    general=true
+                    filtro = 'General';
+                }
+                $("#modalresumen").modal({backdrop: 'static', keyboard: false,width: "80%"});
+                $("#modalresumen").modal('show');
+                 $("#modalresumen .btn-salir").show();
+
+                showWaiting("Extrayendo datos","Espere unos segundos por favor...");
+                $.post("/controlespecies", {"action":'dataregistros','general':general,'fecha':$("#fechatab").val(),'fechafin':$("#fechafin").val()}, function(data) {
+                    if (filtro != 'General'){
+                        $("#modalresumen #desde").html('Desde: '+$("#fechatab").val());
+                        $("#modalresumen #hasta").html('Hasta: '+$("#fechafin").val());
+                    }else{
+                        $("#modalresumen #desde").html('');
+                        $("#modalresumen #hasta").html('');
+                    }
+
+                   if (data.result=='ok') {
+{#                       $("#titulo").html('<b>Departamentos: </b> <br>');#}
+                       for (var d in data.departamentos) {
+                            html2=html2+data.departamentos[d].id + "-" +data.departamentos[d].desc +'<br>'
+                       }
+{#                       $("#dpto").html(html2);#}
+
+                       for (var o in data.list) {
+                           var indice=parseInt(o)+(parseInt(1));
+{#                           if(o < data.cant){#}
+
+                               html = html + '<tr>'+
+
+                                       '<td style="font-size:14px;text-align:center">'+indice+'</td>'+
+                                        '<td style="font-size:14px;text-align:center"> <a class="label label-info">'+data.list[o].horaingre+'</a></td>'+
+                                        '<td style="font-size:14px;text-align:center"> <a class="label label-success">'+data.list[o].horarioactual+'</a></td>'+
+                                        '<td style="font-size:14px,text-align:center">'+data.list[o].nombre+'</td>'+
+                                        '<td style="font-size:14px">'+data.list[o].departamento+'</td>'+
+{#                                        '<td><a class="label label-important">'+filtro+'</a></td>'+#}
+                                        '<td style="font-size:14px;text-align:center" >'+data.list[o].asignadotramite+'</td>'+
+                                        '<td style="font-size:14px;text-align:center">'+data.list[o].pendientetramite+'</td>'+
+                                        '<td style="font-size:14px;text-align:center">'+data.list[o].gestiontramite+'</td>'+
+                                        '<td style="font-size:14px;text-align:center">'+data.list[o].atrasadotramites+'</td>'+
+                                        '<td style="font-size:14px;text-align:center">'+data.list[o].atendidotramite+'</td>'+
+                                        '<td style="font-size:14px;text-align:center">'+data.list[o].asignadosolicitud+'</td>'+
+                                       '<td style="font-size:14px;text-align:center">'+data.list[o].pendientesolicitud+'</td>'+
+                                       '<td style="font-size:14px;text-align:center">'+data.list[o].gestionsolicitud+'</td>'+
+                                        '<td style="font-size:14px;text-align:center">'+data.list[o].atrasadosolicitud+'</td>'+
+                                        '<td style="font-size:14px;text-align: center">'+data.list[o].atendidosolicitud+'</td>'+
+                                        '<td></td>'+
+                                    '</tr>';
+                        }
+                       for (var o in data.totales) {
+                           html = html + '<tr>'+
+                               '<td style="font-size:14px;text-align:center;" colspan=5>Totales</td>'+
+                                '<td style="font-size:14px;text-align:center;"> '+data.totales[o].totasignadotramite+'</td>'+
+                                '<td style="font-size:14px;text-align:center;"> '+data.totales[o].totpendientetramite+'</td>'+
+                                '<td style="font-size:14px;text-align:center;">'+data.totales[o].totgestiontramite+'</td>'+
+                                '<td style="font-size:14px;text-align:center;">'+data.totales[o].totatrasadotramites+'</td>'+
+                                '<td style="font-size:14px;text-align:center;">'+data.totales[o].totatendidotramite+'</td>'+
+                                '<td style="font-size:14px;text-align:center;">'+data.totales[o].totasignadosolicitud+'</td>'+
+                                '<td style="font-size:14px;text-align:center;">'+data.totales[o].totpendientesolicitud+'</td>'+
+                                '<td style="font-size:14px;text-align:center;">'+data.totales[o].totgestionsolicitud+'</td>'+
+                                '<td style="font-size:14px;text-align:center;">'+data.totales[o].totatrasadosolicitud+'</td>'+
+                                '<td style="font-size:14px;text-align:center;">'+data.totales[o].totatendidosolicitud+'</td>'+
+
+                                '<td></td>'+
+                            '</tr>';
+                       }
+
+                       $("#bodytble1").html(html);
+{#                       $("#bodytble2").html(html1);#}
+                       if(html1 != ''){
+                           $("#table2asis").show()
+                       }
+
+                       hideWaiting();
+                   }else{
+
+                       hideWaiting();
+                       smoke.alert("Error Vuelva a Intentarlo");
+                           hideWaiting();
+                   }
+                }, "json");
+                $("#opchead").html('<a style="cursor: pointer" class="label label-important" id="ocultar" onclick="ocultar()"> Ocultar </a>')
+
+            };
+            ocultar = function(){
+                $("#bodytble1").html('');
+{#               $("#bodytble2").html('');#}
+{#               $("#table2asis").hide();#}
+                $("#opchead").html('<a style="cursor: pointer" class="label label-info" id="ver" onclick="ver()"> Ver </a>')
+            };
+
+    buscar_usuario = function(query, process) {
+        $.get("/reportes", {'action':'data', 'model': 'Persona',
+            'p': 1, 'q': query, 's': 10}, function(data) {
+            if (data.results) {
+                $("#id_usrautoriza").get(0).results = data.results;
+
+                listing = [];
+                for (var i in data.results) {
+                    var dato = data.results[i];
+                    listing.push(dato.name);
+                }
+                process(listing);
+            }
+        }, 'json');
+    };
+        buscar_usuario_asig = function(query, process) {
+        $.get("/reportes", {'action':'data', 'model': 'Persona',
+            'p': 1, 'q': query, 's': 10}, function(data) {
+            if (data.results) {
+
+                $("#id_usrasig").get(0).results = data.results;
+
+                listing = [];
+                for (var i in data.results) {
+                    var dato = data.results[i];
+                    listing.push(dato.name);
+                }
+                process(listing);
+            }
+        }, 'json');
+    };
+        buscar_usuario_reg = function(query, process) {
+        $.get("/reportes", {'action':'data', 'model': 'Persona',
+            'p': 1, 'q': query, 's': 10}, function(data) {
+            if (data.results) {
+
+                $("#id_usrregistro").get(0).results = data.results;
+                listing = [];
+                for (var i in data.results) {
+                    var dato = data.results[i];
+                    listing.push(dato.name);
+                }
+                process(listing);
+            }
+        }, 'json');
+    };
+        $('#id_usrautoriza').typeahead({source: buscar_usuario, updater: function(item) {
+            var results = $("#id_usrautoriza").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+
+                    $("#id_usrautoriza").attr("myval",datos.id);
+                    d=datos.id;
+
+
+                }
+            }
+            return item;
+
+        }});
+        $('#id_usrasig').typeahead({source: buscar_usuario_asig, updater: function(item) {
+            var results = $("#id_usrasig").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+
+                    $("#id_usrasig").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_usrasign_id").val(d);
+
+
+                }
+            }
+            return item;
+
+        }});
+        $('#id_usrregistro').typeahead({source: buscar_usuario_reg, updater: function(item) {
+            var results = $("#id_usrregistro").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+
+                    $("#id_usrregistro").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_usrregistro_id").val(d);
+
+
+                }
+            }
+            return item;
+
+        }});
+            $("#general").click(function() {
+                    if ($("#general").is(':checked')) {
+                        var html='';
+                        $("#fechatab").attr('disabled',true);
+                        $("#fechafin").attr('disabled',true);
+                    }
+                    else{
+                        $("#fechatab").attr('disabled',false);
+                        $("#fechafin").attr('disabled',false);
+                    }
+                    ver();
+                });
+
+            $(".notas").change(function(){
+                 ide=$(this).attr("idespecie");
+
+                $("#obsdocente_panel").modal({backdrop: 'static', keyboard: 'false', width: "50%",maxHeight: ($(window).height()*3)/4  });
+                $("#obsdocente_panel").modal("show");
+                $("#obsdocente_panel .btn-adicionar").show();
+                $("#id_profesor").attr("disabled",false);
+                $("#id_observaciones").attr("disabled",false);
+                $("#id_profesor").val("");
+                $("#id_observaciones").val("");
+            });
+
+            $(".verobs").click(function(){
+                 ide=$(this).attr("idespecie");
+
+                $("#obsdocente_panel").modal({backdrop: 'static', keyboard: 'false', width: "50%",maxHeight: ($(window).height()*3)/4  });
+                $("#obsdocente_panel").modal("show");
+                $.post("/controlespecies", {action: 'obsdocente','id':ide,'op':1}, function(data) {
+                        if (data.result=='ok') {
+                            $("#obsdocente_panel").modal("show");
+                            $("#obsdocente_panel .btn-adicionar").hide();
+                            $("#id_profesor").val(data.docente);
+                            $("#id_observaciones").val(data.obsdocente);
+                            $("#id_profesor").attr("disabled",true);
+                            $("#id_observaciones").attr("disabled",true);
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+                }, "json");
+            });
+
+            $("#descargarchivo").click(function() {
+                accion = $(this).attr("ac");
+                $("#id_inicio").val('');
+                $("#id_fin").val('');
+                $("#pregunta").modal({backdrop: 'static', keyboard: false, width: "15%", height: "15%"});
+                $("#pregunta").modal("show");
+
+            });
+        idInscripcion = null
+    $('.editarcontrolespecies').click(function(){
+        idInscripcion = $(this).attr('inscripcion')
+        var opedit = $(this).attr("opt");
+        if (opedit == '1') {
+            $($("#id_tipoespecie").get(0).parentNode.parentNode).show();
+        }
+        else{
+            $($("#id_tipoespecie").get(0).parentNode.parentNode).hide();
+        }
+
+    $("#id_observacionescon").val($(this).attr('observaciones'));
+    $("#id_usrregistro").val($(this).attr('usrregistro'));
+    $("#id_usrregistro_id").val($(this).attr('usrregis_id'));
+    $("#id_usrasign_id").val($(this).attr('usrasig_id'));
+    $("#id_obssecretaria").val($(this).attr('obssecretaria'));
+    $("#id_usrautoriza").val($(this).attr('usrautoriza'));
+    $("#id_usrasig").val($(this).attr('usrasig'));
+    $("#id_fechaasignac").val($(this).attr('fechaasigna'));
+    $("#id_fechafinaliza").val($(this).attr('fechafinaliza'));
+    if (($(this).attr('aplicada')) == "True"){
+        $("#id_aplicada").attr('checked',true);
+    }else{
+        $("#id_aplicada").attr('checked',false);
+    }
+        if (($(this).attr('disponible')) == "True"){
+        $("#id_disponible").attr('checked',true);
+    }else{
+        $("#id_disponible").attr('checked',false);
+    }
+    $("#editarcontrolespecies #idcontrol").val($(this).attr('control_id'));
+    $("#editarcontrolespecies #paneltitle2").html('Editar Datos ');
+    $("#editarcontrolespecies").modal({"backdrop":"static","width":"40%"});
+    $("#editarcontrolespecies").modal("show");
+    });
+    $("#editarcontrolespecies .btn-cerrar").click(function(){
+    $("#editarcontrolespecies").modal("hide");
+    return false;
+    });
+
+            $("#pregunta .btn-consultar").click(function() {
+                $("#pregunta").modal('hide');
+                showWaiting("Generando el Archivo","Espere un Momento");
+                 $.post("/controlespecies", {
+                     "action": "generarcondensado",
+                     fechainicio : $("#id_inicio").val().toUpperCase(),
+                     fechafin : $("#id_fin").val().toUpperCase()
+                     }, function (data) {
+                        if (data.result == 'ok') {
+                            location.href=data.url;
+                        }else{
+                            smoke.alert("Problema para Generar el Archivo ( "+ data.message + ")");
+                        }
+                     hideWaiting();
+                 }, 'json');
+            });
+
+            $("#pregunta .btn-cerrar").click(function() {
+                $("#pregunta").modal('hide');
+            });
+
+{#        -----------------------------------------------------------------------------------------------#}
+            $("#depa").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = "/controlespecies?depa="+id;
+                }else{
+                    location.href = "/controlespecies";
+                }
+            });
+
+{#            lgomez 01-2024#}
+            $("#id_tipoespecie").change(function(){
+                            if ($("#id_tipoespecie").val() != '') {
+                    obtenerMaterias()
+                } else {
+                    $($("#id_asignada").get(0).parentNode.parentNode).hide();
+                    $($("#id_docente").get(0).parentNode.parentNode).hide();
+                    $("#id_asignada").val(null)
+                    $("#id_docente").val(null)
+                }
+            })
+
+            $("#id_asignada").change(function(){
+                if ($("#id_asignada").val() != 0) {
+                    obtenerDocentes()
+                }else {
+                    $("#id_docente").attr("disabled", true);
+                    $("#id_docente").val(null)
+                }
+                console.log($("#id_tipoespecie").val())
+                console.log('INSCRIPCION = '+idInscripcion)
+            })
+
+            habilitaEspecie = function(event, id) {
+                event.preventDefault()
+                swal.fire({
+                    title: 'Habilitar Especie<br><p style="font-size:1rem">La especie podrá ser utilizada a pesar de tener días de vencimiento. Desea continuar?</p>',
+                    type: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5'
+                }).then(function (isConfirm) {
+                    if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                        $.post("/controlespecies", {'action':'habilitaEspecie', 'rubro_especie':id}, function(data) {
+                             if (data.result=="ok") {
+                                swal.fire("Especie Habilitada!", "", "info").then(function(e) {
+                                    location.reload()
+                                })
+
+                             } else {
+                                swal.fire("Error", data.mensaje, 'warning')
+                             }
+                        }, "json");
+                    }
+                });
+            }
+
+            obtenerMaterias = function() {
+                $.ajaxSetup({async: false});
+                $.post("/controlespecies",{"action":"obtenerMateriasAsignadas", "inscripcion":idInscripcion, "tipoEspecie":$("#id_tipoespecie").val()},function(data) {
+                    if(data.result=='ok'){
+                        if (data.relacionDocente) {
+                            $("#id_docente").attr("disabled", true);
+                            $("#id_docente, #id_asignada").addClass("validate[required]");
+                            $('.utilizaDocente').show(500)
+                            let html = "<option value='0'>---------</option>"
+                            data.materiasAsignadas.forEach(function(x){
+{#                                console.log(x)#}
+                                html += "<option value='"+ x.id+"'>"+x.nivelMalla+" - "+ x.materia+"</option>"
+                            })
+                            $("#id_asignada").html(html)
+                        } else {
+                            $('.utilizaDocente').hide(500)
+                            $("#id_asignada").val(null)
+                            $("#id_docente").val(null)                        }
+                    }else{
+                        alert(data.msj);
+                    }
+                },"json");
+            }
+
+            obtenerDocentes = function () {
+                $.ajaxSetup({async: false});
+                $("#id_docente").attr("disabled", false);
+                $.post("/controlespecies",{"action":"obtenerProfesor", "materiaAsignada":$("#id_asignada").val()},function(data) {
+                    if(data.result=='ok'){
+                        let html = "<option>---------</option>"
+                        data.docentes.forEach(function(x){
+{#                            console.log(x)#}
+                            html += "<option value='"+ x.id+"'>"+x.docente+"</option>"
+                        })
+                        $("#id_docente").html(html)
+                    }else{
+                        alert(data.msj);
+                    }
+                },"json");
+            }
+
+            exitModal = function(event, modal) {
+                event.preventDefault()
+                $('#'+modal).modal('hide')
+            }
+
+            limpiarFormEditarEspecie = function() {
+                $.ajaxSetup({async: false});
+                $('.utilizaDocente').hide()
+                $('#id_observacionescon').val('')
+                $('#id_asignada').val(null)
+                $('#id_docente').val(null)
+            }
+
+            idEspecie = null
+            editarEspecie = function(event, id, observaciones, tipoEspecie, materia, profesor, userAutoriza, userAsignado, aplicada, disponible, inscripcion, relacionaDocente) {
+                event.preventDefault()
+                idEspecie = id
+                limpiarFormEditarEspecie()
+                $('#id_observacionescon').val(observaciones)
+                $('#id_tipoespecie').val(tipoEspecie)
+                idInscripcion = inscripcion
+                if (relacionaDocente == 'True') {
+                    $('.utilizaDocente').show()
+                    obtenerMaterias()
+                    $('#id_asignada').val(materia)
+                    obtenerDocentes()
+                    $('#id_docente').val(profesor)
+                 }
+
+                if (userAsignado) {
+                    $("#id_usrautoriza").attr("myval",userAsignado);
+                    $.post("/controlespecies",{"action":"obtenerNombreUsuario", "id":userAsignado},function(data) {
+                        if(data.result=='ok'){
+                            $("#id_usrautoriza").val(data.nombre);
+                        }else{
+                            alert(data.msj);
+                        }
+                    },"json");
+                 }
+
+                aplicada=='True' ? $('#id_aplicada').prop('checked', true) : $('#id_aplicada').prop('checked', false)
+                disponible=='True' ? $('#id_disponible').prop('checked', true) : $('#id_disponible').prop('checked', false)
+                $("#editarEspecieModal").modal({width: '600px', backdrop: 'static'});
+                $("#editarEspecieModal").modal("show");
+            }
+
+            saveEspecie = function(event) {
+                event.preventDefault()
+                disponible = false
+                aplicada = false
+                if ($("#id_aplicada").is(':checked')){
+                    aplicada = true
+                }
+                if ($("#id_disponible").is(':checked')){
+                    disponible = true
+                }
+                swal.fire({
+                    title: 'Guardar Especie',
+                    text: 'Va a cambiar datos de la especie. Desea continuar?',
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5'
+                }).then(function (isConfirm) {
+                    if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                        $.post("/controlespecies", {
+                                                    'action': 'edit_especie',
+                                                    'id': idEspecie,
+                                                    'observaciones': $('#id_observacionescon').val(),
+                                                    'tipo_especie': $('#id_tipoespecie').val(),
+                                                    'materia_asignada': $('#id_asignada').val(),
+                                                    'profesor': $('#id_docente').val(),
+                                                    'usuario_asigna': $('#id_usrautoriza').attr('myval'),
+                                                    'aplicada': aplicada,
+                                                    'disponible': disponible
+                                                    }, function(data)
+                        {
+                            if (data.result=="ok") {
+                                swal.fire("Notas actualizadas", data.mensaje, "info").then(function(){
+                                    location.reload()
+                                })
+                            } else {
+                                swal.fire("Alerta!", data.mensaje, "warning")
+                            }
+                        }, "json");
+                    }
+                });
+            }
+
+            verRutaTramite = function(event, id) {
+                event.preventDefault()
+                $.post("/controlespecies",{"action":"verRutaTramite", "id":id},function(data) {
+                    if(data.result=='ok'){
+{#                        console.log(data)#}
+                        html = '<table class="table" style="font-size:1rem">' +
+                                '<tr>' +
+                                '<th>#</th>' +
+                                '<th style="text-align:center">Fecha</th>' +
+                                '<th>Usuario</th>' +
+                                '<th>Observación</th>' +
+                                '</tr>'
+                        data.ruta.forEach(function(x) {
+                            html += '<tr><td>'+x.num+'</td>' +
+                                    '<td style="text-align:center">'+x.fechaAsigna+'</td>' +
+                                    '<td>'+x.usuario+'</td>' +
+                                    '<td>'+x.observacion+'</td></tr>'
+                        })
+                        swal.fire({
+                            title:'Ruta Trámite',
+                            html:html,
+                            width: '800px'
+                        })
+                    }else{
+                        swal.fire("Error", data.mensaje, 'warning')
+                    }
+                },"json");
+            }
+
+
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    {% if asistentes %}
+        <div class='row-fluid'>
+            <div class='span11'>
+                <h3> Bloque de Datos </h3>
+            </div>
+            <div class="span1" style="text-align: right">
+                <a href="/controlespecies" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+            </div>
+        </div>
+
+        <br>
+        <div class='row-fluid'>
+            <div class="span6">
+                <b id="bfechatab"> Desde: </b><input type="text" name="fechatab" id="fechatab" value="{{ fechahoy|date:'Y-m-d' }}" class="input input-small" />
+                <b id="bfechafin"> Hasta: </b><input type="text" name="fechafin" id="fechafin" value="{{ fechahoy|date:'Y-m-d' }}" class="input input-small" /><br/>
+                <b id="bgeneral">General: </b><input type="checkbox" name="general" id="general" style="width: 4%;height: 2em" /><br><br>
+
+            </div>
+            <div style="text-align: right" class='span6'>
+            <br><br>
+                <b>Departamento </b>
+                <select id="depa" class="input-xxlarge bigger">
+                    <option value="">-----</option>
+                    {% for d in departamentos %}'
+                        <option  {% if d.id == depa %}selected="selected"{% endif %} value="{{ d.id }}" >{{ d.descripcion }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span6"  >
+            <h3 >Registro de Tr&aacute;mites {% if asistentefilter %}   {{ asistentefilter }} {% endif %}</h3></br>
+            {% if asistentefilter %}
+                 <h4> Tr&aacute;mites Asignados: {{ asignados }} Gestionados: {{ gestionados }}</h4>
+                 <h4> Solicitudes Asignadas: {{ asistentefilter.cantidadsol }}  Solicitudes Gestionados: {{ solicitudgestionadas }}</h4>
+            {% endif %}
+            {% if horarioasistente and puedecambiarturno %}
+                <h4> Turno Actual: {%  if horarioasistente.nolabora %} NO LABORA{% else %} {{ horarioasistente.horainicio|time:'H:i' }} - {{ horarioasistente.horafin|time:'H:i' }} {% endif %} <a style="cursor: pointer" id='editturno' class='btn btn-info'><i class="icon-edit icon-white"></i> Editar Turno </a></h4>   <br>
+            {% endif %}
+        </div>
+        {% if asistentes %}
+            <div style="text-align: right" class='span6'>
+                <b>Asistentes </b>
+                <select id="asist" class="input-xxlarge bigger">
+                    <option value="">-----</option>
+                    {% for a in asistentes %}'
+                        <option  {% if asistentefilter.id == a.id %}selected="selected"{% endif %} value="{{ a.id }}" >{{ a.persona.nombre_completo_inverso }}</option>
+                    {% endfor %}
+               </select>
+            </div>
+            {% endif %}
+        <div class="span1">
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Tr&aacute;mite</a>
+            <a href="/solicitudes" id='#' class='btn btn-warning'><i class="icon-eye-open icon-white"></i> Ver Solicitudes </a>
+            {% if  perms.sga.add_asistentedepartamento %}
+                    <a href="#" id='descargarchivo' hidden class='btn btn-success'><i class="icon-arrow-down icon-white" ></i> Informe de Gesti&oacute;n</a>
+            {% else %}
+                {% if  perms.sga.change_asistentedepartamento %}
+                    <a href="#" id='descargarchivo' hidden class='btn btn-success'><i class="icon-arrow-down icon-white" ></i> Informe de Gesti&oacute;n</a>
+                {% endif %}
+            {% endif %}
+            {% if search or op or inscripcionid%}
+                <a href="/controlespecies" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+         <div class='span7' style="text-align: right">
+            <b>Buscar Tr&aacute;mites de Alumno:</b> <input type="text" id="searchgen" class="searchgen input-xxlarge search-query" data-provide="typeahead"/>
+            <a href="#" id='buscartramites' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Buscar</a>
+        </div>
+    </div>
+
+    {% if promedio %}
+        <div class='row-fluid'>
+        <div class='span5'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;"rowspan="2">Departamento</th>
+                        <th style="text-align: center;" colspan="2">Solicitudes</th>
+                        <th style="text-align: center;"  colspan="2">Tr&aacute;mites</th>
+                    </tr>
+                    <tr>
+                        <th style="text-align: center">General</th>
+                        <th style="text-align: center">Mensual</th>
+                        <th style="text-align: center">General</th>
+                        <th style="text-align: center">Mensual</th>
+
+                    </tr>
+                </thead>
+
+            <tbody>
+            {% for p in promedio %}
+                <tr>
+                <td> {{ p.dpto }}</td>
+                <td> {{ p.promedios }}</td>
+                <td> {{ p.promediosmes }}</td>
+                <td> {{ p.promediot }}</td>
+                <td> {{ p.promediotmes }}</td>
+
+                </tr>
+            {% endfor %}
+            </tbody>
+            </table>
+        </div>
+
+
+    </div>
+    {% endif %}
+
+    <div class='row-fluid'>
+        <div class='span13'>
+            <table class='table' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">#Serie</th>
+                        <th style="text-align: center; width:auto">Tr&aacute;mite </th>
+{#                        <th style="text-align: center;">Fecha Tr&aacute;mite</th>#}
+{#                        <th style="text-align: center;">Hora Tr&aacute;mite</th>#}
+{#                        <th style="text-align: center;">Valor</th>#}
+{#                        <th style="text-align: center;">Pagada</th>#}
+                        <th style="text-align: center;">C&oacute;digo</th>
+{#                        <th style="text-align: center;">Fecha Asignaci&oacute;n</th>#}
+{#                        <th style="text-align: center;">Hora Asignaci&oacute;n</th>#}
+                        <th style="text-align: center;">Usuario Resoluci&oacute;n</th>
+                        <th style="text-align: center;">Departamento Actual</th>
+                        <th style="text-align: center;">Observaci&oacute;n</th>
+                        <th style="text-align: center;">Estudiante</th>
+{#                        <th style="text-align: center;">Disponible</th>#}
+                        <th style="text-align: center;">Registrada</th>
+{#                        <th style="text-align: center;">Archivo</th>#}
+                        <th style="text-align: center;">Usuario Asignado</th>
+                        <th style="text-align: center;">Calificaci&oacute;n</th>
+                        <th style="text-align: center;">Habilitada</th>
+                        <th style="width: 50px"></th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for s in especie %}
+                        <tr>
+                            <td style="text-align: center;">
+                                {{ s.serie }}
+                                {% if s.es_online.presencial %}
+                                    <br/><span class="label label-success">Presencial</span>
+                                {% endif %}
+                                {% if not s.tienederecho %}
+                                    <br/><span class="label label-danger">Pendiente Pago Derecho</span>
+                                {% endif %}
+                            </td>
+                            <td style="display: flex; flex-direction:column; gap:.3em; width: 400px">
+                                <div>
+                                    <strong>{{ s.tipoespecie.nombre }}</strong>
+                                </div>
+                                {% if s.materia or s.es_online %}
+                                    <div style="background: none; border-radius: 5px; font-size: .8rem; padding: 0 .5em; display: flex; flex-direction:column; gap:0">
+                                        {% if s.materia %}
+                                            <div><strong>Materia: </strong>{{ s.materia.materia.asignatura }}</div>
+                                            <div><strong>Nivel: </strong>{{ s.materia.materia.nivel.nivelmalla }} - {{ s.materia.materia.nivel.paralelo }}</div>
+                                        {% endif %}
+                                        {% if s.es_online %}
+                                            <div>{% if s.es_online.asignatura %}<strong>Materia: </strong>{{ s.es_online.asignatura.nombre }} {% endif %}</div>
+                                            <div>{% if s.es_online.profesor %}<strong>Docente: </strong> 
+                                                    {{ s.es_online.profesor.persona.nombre_completo }}<br>
+                                                    {% with profaux=s.materia.materia|args:s.es_online.profesor|call:"tiene_prof_aux" %}
+                                                        {% if profaux %}
+                                                            <strong>Docente Auxiliar: </strong>{{profaux.persona.nombre_completo}}
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                 {% endif %}
+                                            </div>                                           
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <span class="label label-inverse">
+                                        {{ s.rubro.fecha|date:'d-m-Y' }}
+                                        {% if s.es_online %}
+                                            {{ s.es_online.fecha|time:"h:i a" }}
+                                        {% endif %}
+                                    </span>
+                                    {% if s.rubro.cancelado %}
+                                        <span class="label label-info">Pagada: ✔</span>
+                                    {% else %}
+                                        <span class="label label-important">Pagada: ✖</span>
+                                    {% endif %}
+                                    {% if s.vencida > DIAS_ESPECIE %}
+                                        <span class="label label-important">Vencida {{ s.vencida }}  D&iacute;as </span>
+                                    {% else %}
+                                        <span class="label label-success">Caduca en {{ s.dias_disponibles }} dias</span>
+                                    {% endif %}
+                                    {% if s.habilita %}
+                                        <span class="label label-success">Especie habilitada: {{ s.fechahabilita|date:'d-m-Y' }}</span>
+                                    {% endif %}
+                                </div>
+
+
+                            </td>
+{#                            <td style="text-align: center;">#}
+{#                                <span class="label">#}
+{#                                    {{ s.rubro.fecha|date:'d-m-Y' }}<br>#}
+{#                                    {% if s.es_online %}#}
+{#                                        {{ s.es_online.fecha|time:"h:i a" }}<br>#}
+{#                                    {% endif %}#}
+{#                                </span>#}
+{#                                {% if s.vencida > DIAS_ESPECIE%}#}
+{#                                    <span class="label label-important">Vencida: {{ s.vencida }}  D&iacute;as </span>#}
+{#                                {% else %}#}
+{#                                    <span class="label label-success">Caduca en: {{ s.dias_disponibles }} dias</span>#}
+{#                                {% endif %}#}
+{#                            </td>#}
+{#                            <td style="text-align: center;">#}
+{#                                {% if s.es_online %}#}
+{#                                    {{ s.es_online.fecha|time:"h:i a" }}#}
+{#                                {% endif %}#}
+{#                            </td>#}
+{#                            <td style="text-align: center;"> {{ s.rubro.valor|floatformat:2 }}</td>#}
+{#                            <td style="text-align: center;">#}
+{#                                {% if s.rubro.cancelado %}#}
+{#                                     <img src='/static/images/16/true.png' alt='Si' border='0'/>#}
+{#                                {% else %}#}
+{#                                    <img src='/static/images/16/false.png' alt='No' border='0'/>#}
+{#                                {% endif %}#}
+{#                            </td>#}
+                            <td style="text-align: center">{% if s.codigoe  %} {{ s.codigoe }}{% endif %}
+                                {% if s.es_online.comprobante %}
+                                    <a href='{{  s.es_online.descargar }}' title="Descargar"> <img src="/static/images/16/down_document.png"> Descargar Soporte</a>
+                                {% endif %}
+                            </td>
+{#                            <td style="text-align: center;"> {% if s.fechaasigna  %} {{ s.fechaasigna|date:'d-m-Y' }}{% endif %}</td>#}
+{#                            <td style="text-align: center;"> {% if s.fechaasigna  %} {{ s.fechaasigna|time:"h:i a"}}{% endif %}</td>#}
+                            <td style="text-align: center;">{% if s.usuario.username  %}{{ s.usuario.username }}{% endif %}</td>
+                            <td style="text-align: center;">{{ s.dptoactual }}</td>
+                            <td>{% if s.es_online.observacion %}{{ s.es_online.observacion }}{% endif %}</td>
+                            <td> {{ s.rubro.inscripcion.persona.apellido1 }} {{ s.rubro.inscripcion.persona.apellido2 }}  {{ s.rubro.inscripcion.persona.nombres }}
+                                {% if s.rubro.inscripcion.persona.cedula %} <span class="badge badge-info">{{ s.rubro.inscripcion.persona.cedula }}</span> {% else %}{{ s.rubro.inscripcion.persona.pasaporte }}{% endif %} <br>
+                            {{ s.rubro.inscripcion.persona.email }} <br> {{ s.rubro.inscripcion.persona.emailinst }} <br> {{ s.rubro.inscripcion.persona.telefono }}
+                            </td >
+
+                            <td style="text-align: center;">
+                                {% if s.rubro.especie_valorada.aplicada %}
+                                        <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align:center; display: flex; flex-direction:column; gap:.3em">
+                                {% if s.usrasig %}
+                                    {{ s.usrasig }}
+                                {% else %}
+                                    No Asignado
+                                {% endif %}
+                                {% if s.tiene_horario %}
+                                   <span class="label label-inverse"><strong>Turno Actual: </strong>{%  if  s.tiene_horario.nolabora %}No labora{% else %}{{  s.tiene_horario.horainicio|time:'H:i' }} - {{  s.tiene_horario.horafin|time:'H:i' }} {% endif %}</span>
+                                {% endif %}
+                                {% if s.fechaasigna  %}
+                                    <span class="label label-inverse"><strong>Asignado: </strong>{{ s.fechaasigna|date:'d-m-Y' }} {{ s.fechaasigna|time:"H:i"}}</span>
+                                {% endif %}
+                            </td>
+                            <td>{% if s.es_online.calificacion %}{{ s.es_online.calificacion }}{% endif %}</td>
+                            <td style="text-align: center">
+                                {% if not s.aplicada %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if perms.sga.change_rubroespecievalorada %}
+                                            <li>
+                                                <a
+                                                    href="#"
+                                                    onclick="editarEspecie(
+                                                                            event,
+                                                                            `{{ s.id }}`,                       //id
+                                                                            `{{ s.observaciones }}`,            //observaciones
+                                                                            `{{ s.tipoespecie.id }}`,           //tipoEspecie
+                                                                            `{{ s.materia.id }}`,               //materia
+                                                                            `{{ s.es_online.profesor.id }}`,    //profesor
+                                                                            `{{ s.usuarioautoriza.id }}`,       //userAutoriza
+                                                                            `{{ s.usrasig.id }}`,               //userAsignado
+                                                                            `{{ s.aplicada }}`,                 //aplicada
+                                                                            `{{ s.disponible }}`,               //disponible
+                                                                            `{{ s.rubro.inscripcion.id }}`,
+                                                                            `{{ s.tipoespecie.relaciodocente }}`
+
+                                                            )"
+                                                    >
+                                                    <span class="icon-edit"></span>
+                                                    Editar Especie
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                        {% if not s.aplicada or usuario.is_superuser %}
+                                            {% if not s.vencida > DIAS_ESPECIE  or usuario.is_superuser or s.habilita  %}
+                                                {% if  s.usrasig == usuario or usuario.is_superuser %}
+                                                    {% if s.tipoespecie.tienegestion %}
+                                                        {% if s.tienederecho %}
+                                                            <li><a href="#" class="addgestion" eid="{{ s.id }}"  non="{{ s.rubro.inscripcion.persona.nombre_completo }}"  tipoe="{{ s.rubro.especie_valorada.tipoespecie.nombre }}"><i class="icon-plus"></i> Ingresar Gesti&oacute;n </a></li>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                    {% if s.tienederecho %}
+                                                        <li><a href="#" eid="{{ s.id }}" class="reasignar"><i class="icon-book"></i> Reasignar Tr&aacute;mite a Departamento</a></li>
+                                                    {% endif %}
+                                                    {% if not  s.rubro.especie_valorada.obsautorizar  %}
+                                                        {% if s.existe_rubroespepractica %}
+                                                            <li>
+                                                                <a style="cursor: pointer" href="/solicitud_practicasadm?action=solicitud&ides={{ s.existe_rubroespepractica.escenariopractica.id }}&idsol={{ s.existe_rubroespepractica.id }}">
+                                                                    <i class="icon-eye-open"></i> Debe Ingresar la carta de asignacion para autorizar
+                                                                </a>
+                                                            </li>
+                                                        {% else %}
+                                                            {% if s.tipoespecie.id == ESPECIE_REINGRESO %}
+                                                                <li><a href="" class="autorizar" eid="{{ s.id }}" non="{{ s.rubro.inscripcion.persona.nombre_completo }}" tipoe="{{ s.rubro.especie_valorada.tipoespecie.nombre }}" op="reingreso"  ><i class="icon-book"></i> Resoluci&oacute;n/Autorizaci&oacute;n </a></li>
+                                                            {% else %}
+                                                                {% if s.tienederecho %}
+                                                                    <li><a href="" class="autorizar" eid="{{ s.id }}" non="{{ s.rubro.inscripcion.persona.nombre_completo }}" op="otra" tipoe="{{ s.rubro.especie_valorada.tipoespecie.nombre }}"><i class="icon-book"></i> Resoluci&oacute;n/Autorizaci&oacute;n  </a></li>
+                                                                {% endif %}
+                                                            {% endif %}
+
+                                                        {% endif %}
+                                                    {% else %}
+                                                        {% if s.vencida <= DIAS_ESPECIE or s.habilita %}
+                                                            {% if s.rubro.especie_valorada.tienegestion_docente %}
+                                                                {% if s.rubro.especie_valorada.tienegestion_docente.respuesta %}
+                                                                    <li><a href="#" class="vergestiondocente" eid="{{ s.id }}"  respuesta="{{ s.rubro.especie_valorada.tienegestion_docente.respuesta }}"  fecharespuesta="{{s.rubro.especie_valorada.tienegestion_docente.fecharespuesta}}" fechaasignacion="{{s.rubro.especie_valorada.tienegestion_docente.fechaasignacion}} "><i class="icon-eye-open"></i> Ver Gesti&oacute;n Docente</a></li>
+                                                                {% endif %}
+                                                            {% endif %}
+                                                            {% if s.tipoespecie.id == ESPECIE_CAMBIO_PROGRAMACION %}
+                                                                <li><a href="/controlespecies?action=registro&especie={{ s.id }}&op=esp&cambio=1"><i class="icon-asterisk"></i> Realizar Cambio de Programaci&oacute;n</a></li>
+                                                            {% endif%}
+                                                            {% if s.tipoespecie.id == ESPECIE_RETIRO_MATRICULA %}
+                                                                <li><a href="/controlespecies?action=registro&especie={{ s.id }}&op=esp&retiro=1"><i class="icon-asterisk"></i> Realizar Retiro</a></li>
+                                                            {% endif%}
+                                                            {%  if s.tipoespecie.relaciodocente %}
+                                                                {%  if s.rubro.especie_valorada.tienegestion_docente %}
+                                                                    {%  if s.rubro.especie_valorada.tienegestion_docente.finalizado and not s.rubro.especie_valorada.aplicada and not s.rubro.especie_valorada.tipoespecie.id in ESPECIES_ASENTAMIENTO_NOTAS %}
+                                                                        <li><a href="/controlespecies?action=registro&especie={{ s.id }}&op=esp"><i class="icon-asterisk"></i> Finalizar Tr&aacute;mite</a></li>
+                                                                    {% else %}
+                                                                        <li><a href="#"><i class="icon-asterisk"></i> Docente no ha realizado gesti&oacute;n </a></li>
+                                                                    {% endif %}
+                                                                {% endif %}
+                                                            {% else %}
+                                                                {% if not s.rubro.especie_valorada.aplicada%}
+                                                                    <li><a href="/controlespecies?action=registro&especie={{ s.id }}&op=esp"><i class="icon-asterisk"></i> Finalizar Tr&aacute;mite </a></li>
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
+                                                {% if perms.sga.change_asistentedepartamento %}
+                                                    {% if s.tienederecho %}
+                                                        <li><a href="#" eid="{{ s.id }}" class="reasignar"><i class="icon-book"></i> Reasignar Tr&aacute;mite a Departamento</a></li>
+                                                        {% if s|args:persona|call:"puede_reasignar" %}
+                                                            <li><a href="#" eid="{{ s.id }}" class="reasignarasis"><i class="icon-user"></i> Reasignar Usuario </a></li>
+                                                        {% endif %}
+                                                    {% else %}
+                                                         {# OCastillo 18-05-2022 que puedar finalizar el tramite al estudiante desistir del mismo  #}
+                                                         <li><a href="/controlespecies?action=registro&especie={{ s.id }}&op=esp"><i class="icon-asterisk"></i> Finalizar Tr&aacute;mite </a></li>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% else %}
+                                                {# OCastillo 17-06-2022 que puedar finalizar el tramite al esta la especie caducada  #}
+                                                <li><a href="/controlespecies?action=registro&especie={{ s.id }}&op=esp"><i class="icon-asterisk"></i> Finalizar Tr&aacute;mite </a></li>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if perms.sga.add_rubroespecievalorada %}
+                                                {% if s.certificado and s.fecha == fechahoy %}
+                                                    <li><a href="/reportes?action=run&direct=true&rid={{ s.certificado.id }}&rt=pdf&inscripcion={{ s.rubro.inscripcion.id }}&destinatario={{ s.destinatario }}"  class="btn btn-primary "><i class="icon-print"></i> Print</a></li>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if s.tipoespecie.id == ESPECIE_RETIRO_MATRICULA %}
+                                             <li><a href="/controlespecies?action=registro&especie={{ s.id }}&op=esp&retiro=1"><i class="icon-asterisk"></i> Realizar Retiro</a></li>
+                                             <li><a href="/encuestadesersionitb?action=verencuesta&especie={{ s.rubro.id }}&op=esp&retiro=1" target="_blank"><i class="icon-eye-open"></i> Ver Encuesta Retiro</a></li>
+                                        {% endif%}
+                                        {% if s.rubro.especie_valorada.aplicada %}
+                                            <li><a href="#" onclick="verObservacion(event, '{{ s.observaciones }}', '{{ s.fechafinaliza|date:'d-m-Y' }}', '{{ s.usuario }}')"><i class="icon-book"></i> Ver Observaci&oacute;n</a></li>
+                                            {% if s.es_online.calificacion %}
+                                                {% if s.es_online.obscalificacion %}
+                                                    <li><a href="#" class="ver2" obs2="{{ s.es_online.obscalificacion }}" ><i class="icon-eye-open"></i> Ver Obs.Calificaci&oacute;n</a></li>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if s.tienegestion %}
+                                            <li><a href="#" class="vergestion" eid="{{ s.id }}"  non="{{ s.rubro.inscripcion.persona.nombre_completo }}"  tipoe="{{ s.rubro.especie_valorada.tipoespecie.nombre }}"><i class="icon-eye-open"></i> Ver Gesti&oacute;n </a></li>
+                                        {% endif %}
+                                        {%  if  s.rubro.especie_valorada.usrautoriza %}
+                                               <li><a href="" class="verresp" eid="{{ s.id }}"
+                                                      non="{{ s.rubro.inscripcion.persona.nombre_completo }}"
+                                                      obs="{{  s.rubro.especie_valorada.obsautorizar }}"
+                                                      autorizado="{{  s.rubro.especie_valorada.autorizado }}"
+                                                      usrautoriza="{{  s.rubro.especie_valorada.usrautoriza }}"
+                                               ><i class="icon-eye-open"></i> Ver Resolución </a></li>
+                                             {% if perms.sga.change_asistentedepartamento or usuario.is_superuser  %}
+                                                 <li><a href="#" class="quitarautorizar" eid="{{ s.id }}" ><i class="icon-book"></i> Quitar Resoluci&oacute;n/Autorizaci&oacute;n </a></li>
+                                                {# OCastillo 12-09-2022 para que decanos puedan finalizar tramites      #}
+                                                 {% if not s.rubro.especie_valorada.aplicada%}
+                                                     <li><a href="/controlespecies?action=registro&especie={{ s.id }}&op=esp"><i class="icon-asterisk"></i> Finalizar Tr&aacute;mite </a></li>
+                                                 {% endif %}
+                                             {% endif %}
+                                        {% endif %}
+                                        {% if s.vencida > DIAS_ESPECIE and not s.fechahabilita %}
+                                            <li><a href="#" onclick="habilitaEspecie(event, '{{ s.id }}')"><i class="icon-share"></i> Habilitar Especie</a></li>
+                                        {% endif %}
+                                        <li><a href="#" onclick="verRutaTramite(event, '{{ s.id }}')"><i class="icon-list"></i> Ver Ruta Tr&aacute;mite</a></li>
+                                    </ul>
+                                </div>
+
+                            </td>
+                            <td>
+                                {% if s.archivo %}
+                                    <a href='media/{{ s.archivo }}' class="btn btn-small" target="_blank"><i class='icon-eye-open'></i> Ver Archivo</a>
+                                {% endif %}
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                    {% if not especie %}
+                        <tr>
+                            <td colspan="10">
+                                NO HAY ESPECIES
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/controlespecies?page=1">1</a></li>
+                            <li><a href="/controlespecies?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/controlespecies?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/controlespecies?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/controlespecies?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/controlespecies?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="obsdocente_panel" style="display: none;">
+        <div class="modal-header" style="background-color: lightblue">
+
+            <h3 class="paneltitle">Registro Uso Especie Docente</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="form" class='form-horizontal' action="" method="POST">
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="materia" style="display: none;"  >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>  </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+           <table>
+               <thead></thead>
+               <tbody>
+               <tr>
+                   <th>Materia</th>
+               </tr>
+               <tr>
+                   <td>
+                        <select id='materiasel'> </select>
+                    </td>
+                <tr>
+                   <th>Profesor</th>
+               <tr>
+                   <td>
+                        <select id='profesorsel'> </select>
+                       <p id="mensaje" style="color: red;font-weight: bold"></p>
+                    </td>
+               </tr>
+
+               </tbody>
+
+           </table>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Buscar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="respuesta_panel" style="display: none;"  >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>  </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in respform %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="seguimiento_panel" style="display: none;"  >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>  </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in segform %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="detalle_gestion"   >
+    <div class="row-fluid modal-header">
+        <h4 ><i> DETALLES DE GESTI&Oacute;N </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a href="#" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+    <div class="modal fade static" id="detalle_gestiontramite"   >
+    <div class="row-fluid modal-header">
+        <h4 ><i> DETALLES DE GESTI&Oacute;N </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a href="#" id="cerrargestion" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+
+
+<div class="modal fade static" id="detalle_tipo"   >
+    <div class="row-fluid modal-header">
+         <h4  id='paneltitle1'><i> </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+    <div id="dato">
+
+    </div>
+    </div>
+    <div class="modal-footer">
+        <div >
+            <a style="float: left" href="#" id="cancelar" class="btn btn-danger  btn-cancelar">  <i  class="icon-remove icon-white"></i> <b> CANCELAR </b></a>
+            <a style="float: left" href="#" id="reasignargrupo" class="btn btn-success  btn-reasignar">  <i  class="icon-plus icon-white"></i> <b> REASIGNAR </b></a>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade static" id="reasigna_usuario"   >
+    <div class="row-fluid modal-header">
+         <h4  id='paneltitle1'><i> </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+    <div id="datousuario">
+
+    </div>
+    </div>
+    <div class="modal-footer">
+        <div >
+            <a style="float: left" href="#" id="cancelarusuario" class="btn btn-danger  btn-cancelar">  <i  class="icon-remove icon-white"></i> <b> CANCELAR </b></a>
+            <a style="float: left" href="#" id="reasignarusuario" class="btn btn-success  btn-reasignar">  <i  class="icon-plus icon-white"></i> <b> REASIGNAR </b></a>
+
+        </div>
+    </div>
+</div>
+  <div class="modal fade static" id="horaasistentesol" style="display: none;">
+    <div class="modal-header alert-info" style="text-align: center">
+        <h3 id="paneltitle1"> Ingresar Horario Laboral</h3>
+    </div>
+    <div class="modal-body" style="margin: 20px">
+        <b>H. Inicio: </b><input type="text" name="iniciosol" id="iniciosol" class="input input-small" value="{{ horarioasistente.horainicio|time:'H:i' }}" ><br>
+        <p id="piniciosol" style="color: red"></p>
+        <b>H. Fin:&nbsp;&nbsp;&nbsp;&nbsp; </b><input type="text" name="finsol" id="finsol" class="input input-small"  value="{{ horarioasistente.horafin|time:'H:i' }}"><br>
+        <p id="pfinsol" style="color: red"></p>
+        <b> {% if puedecambiarturno %}No labora:{% endif %} </b><input {% if  puedecambiarturno %} type="checkbox" {% else %} type="hidden"{% endif %} name="nolaborasol" id="nolaborasol" style="width: 10%;height: 5em;" {% if horarioasistente.nolabora %} checked {% endif %}>
+        <p id="pmensjasol" style="color: red"></p>
+
+    </div>
+    <div class="modal-footer">
+        <a  href="#" class="btn btn-cerrar cerrarsoli">Cerrar</a>
+        <a style="cursor: pointer;" id="ingresarhorariosol" class="btn btn-primary btn-resetear"> Ingresar</a>
+    </div>
+</div>
+
+<div class="modal fade static" id="modalgestiondocente">
+    <div class="modal-header" style="word-wrap: break-word">
+        <h4>Resoluci&oacute;n de Tr&aacute;mite:  </h4><br/>
+        <h5 id='paneltitle2' ></h5>
+        <p style="font-weight: bold" id='fechaasig'></p>
+        <p style="font-weight: bold" id='fecharesp'></p>
+    </div>
+    <div class="modal-body" >
+        <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="#" method="POST"  >
+
+
+
+                <div class="controls" style="margin-left: 1%">
+
+                    <textarea type='text' id='observaciontr' style="width:98%;text-transform: uppercase" rows="6" cols="50" name='observacion'> </textarea>
+                </div>
+            <a  class="btn btn-cerrarobstr" style="float: right;cursor: pointer"> Cerrar</a>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade static" id="modalresumen">
+<div class="modal-header" style="word-wrap: break-word">
+    <div class='row-fluid' >
+            <div class="span12">
+                <div class="span6">
+                    <h5 id='titulo' style="color: red"></h5>
+                    <h6 id='dpto' ></h6>
+                </div>
+            </div>
+
+        </div>
+         <div class='row-fluid' >
+            <div class="span12">
+                <div class="span6">
+                    <h4 id='desde' ></h4>
+                    <h4 id='hasta' ></h4>
+                </div>
+            </div>
+
+        </div>
+
+        <div class='row-fluid' >
+            <div class='span12'>
+                <div class="row-fluid"  style=" overflow-y: auto;height: 35em" >
+                    <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                        <thead>
+                        <tr>
+                            <th colspan="5"  style="text-align: center">Datos</th>
+                            <th colspan="5"  style="text-align: center">Tramites</th>
+                            <th colspan="5" style="text-align: center">Solicitudes</th>
+                            <th id="opchead"><a style="cursor: pointer" class="label label-info" id="ver" onclick="ver()"> Ver </a></th>
+                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Hora R.</th>
+                                <th>Horario</th>
+                                <th>Usuario</th>
+                                <th>Departamento</th>
+{#                                <th>Filtro</th>#}
+                                <th style="text-align: center">Asignados</th>
+                                <th style="text-align: center">Pendientes</th>
+                                <th style="text-align: center">Gestiones Realizadas</th>
+                                <th style="text-align: center">Finalizados 72H</th>
+                                <th style="text-align: center">Finalizados.</th>
+                                <th style="text-align: center">Asignados</th>
+                                <th style="text-align: center">Pendientes</th>
+                                <th style="text-align: center">Gestiones Realizadas</th>
+                                <th style="text-align: center">Finalizados 72H</th>
+                                <th style="text-align: center">Finalizados</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="bodytble1">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><hr>
+    </div>
+    <div class="modal-footer" style="text-align: center">
+        <a href="#" class="btn btn-success btn-salir">Salir</a>
+    </div>
+</div>
+
+<div class="modal fade static" id="modaldatos">
+    <div class="modal-header" style="word-wrap: break-word">
+         <div class='row-fluid' >
+            <div class="span12">
+                <div class="span6">
+                    <h5 id='titulodatos' style="color: red"></h5>
+
+                </div>
+            </div>
+        </div>
+        <div class='span5'>
+            <form class="form-search">
+            <input style="text-transform: uppercase" class='searchinputseccion input-large search-query' type='text' id='searchfieldseccion' value='{{ search }}'/>
+            <a href="#" id='searchseccion' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            <a href="#" id='todos' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            </form>
+        </div>
+        <div class='row-fluid' >
+            <div class='span12'>
+                <div class="row-fluid" style=" overflow-y: auto;height: 35em">
+                    <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0" >
+                        <thead>
+                            <th style="text-align: center;width: 3%">#</th>
+                            <th style="text-align: center;width:4%">Tipo </th>
+                            <th style="text-align: center; width: 15%">Tipo Tr&aacute;mite</th>
+                            <th style="text-align: center;width: 3%">Serie #</th>
+                            <th style="text-align: center;width: 8%">Fecha Tr&aacute;mite</th>
+                            <th style="text-align: center;width: 20%">Descripci&oacute;n</th>
+                            <th style="text-align: center;width: 5%">Usuario Resolucion</th>
+                            <th style="text-align: center;width: 15%">Resolucion</th>
+                            <th style="text-align: center;width: 8%">Departamento Actual</th>
+                            <th style="text-align: center;width: 8%">Usuario Asignado</th>
+                            <th style="text-align: center;width:20%">Respuesta Final</th>
+                            <th style="text-align: center;width: 5%">Estado</th>
+                            <th style="width: 50px"> </th>
+                        </thead>
+                        <tbody id="bodydatos">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-success btn-salirconsulta">Salir</a>
+        </div>
+    </div>
+</div>
+<div class="modal fade static" id="pregunta" style="display: none; width: 25%">
+    <div class="modal-header">
+        <h3 id="paneltitle1" style="text-align: center"> Ingrese las Fechas</h3>
+    </div>
+    <div class="modal-body" style="text-align: left">
+        <form id="formulario5"  action="" method="POST">
+        {% for field in formfechas %}
+           <fieldset class="control-group nomargins">
+                    <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+        {% endfor %}
+        </form>
+
+    </div>
+    <div class="modal-footer" style="text-align: center">
+        <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+        <a href="#" class="btn btn-primary btn-consultar"> Generar</a>
+    </div>
+</div>
+
+<div class="modal fade static" id="editarEspecieModal" style="position: relative">
+    <div style="position: absolute; top: .5em; right: 1em">
+        <a href="#"><span class="icon-remove" onclick="exitModal(event, 'editarEspecieModal')"></span></a>
+    </div>
+    <div class="modal-header " style="word-wrap: break-word">
+        <h4>Editar Especie</h4>
+    </div>
+    <div class="modal-body" >
+        <form action="" id="editEspecieForm">
+            <div class="formContent">
+                <label for="id_observacionescon">Observaciones:</label>
+                <textarea id="id_observacionescon" cols="30" rows="10" style="width: 98%"></textarea>
+            </div>
+
+            <div class="formContent">
+                <label for="id_tipoespecie">Tipo Especie:</label>
+                <select id="id_tipoespecie">
+                    <option value="0">---</option>
+                    {% for x in tipos_especies %}
+                        <option value="{{ x.id }}">{% if x.precio %}${{ x.precio|floatformat:'2' }}{% else %}$0.00{% endif %} - {{ x.nombre }}</option>
+                    {% endfor %}
+                </select>
+                <div class="utilizaDocente">
+                    <label for="id_asignada">Materia:</label>
+                    <select id="id_asignada">
+                        <option value="0">---</option>
+                    </select>
+                    <label for="id_docente">Docente:</label>
+                    <select id="id_docente">
+                        <option value="0">---</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="formContent">
+                <label for="id_usrautoriza">Usuario Autoriza:</label>
+                <input type="text" id="id_usrautoriza" disabled/>
+            </div>
+
+            <div class="formContent" style="display: flex; gap:1em">
+                <label class="container">Disponible
+                    <input type="checkbox" id="id_disponible" />
+                    <span class="checkmark"></span>
+                </label>
+                <label class="container">Aplicada
+                    <input type="checkbox" id="id_aplicada" >
+                    <span class="checkmark"></span>
+                </label>
+            </div>
+        </form>
+    </div>
+
+
+    <div class="modal-footer">
+        <a href="#" onclick="saveEspecie(event)" class="btn btn-primary"><span class="icon-save"></span> Guardar</a>
+    </div>
+</div>
+
+<style type="text/css">
+    #editEspecieForm input {
+        box-sizing: border-box;
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 1em;
+    }
+
+    #editEspecieForm {
+        padding: 0 1em;
+        max-width: 550px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5em;
+    }
+
+    .formContent {
+        padding: 1em 2em;
+        border-radius: 5px;
+        border: .5px solid #ddd;
+    }
+
+{#    checkbox#}
+    .container {
+        display: block;
+        position: relative;
+        padding-left: 35px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .container input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
+    }
+
+    .checkmark {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 25px;
+        width: 25px;
+        border: .5px solid #999;
+    }
+
+    .container:hover input ~ .checkmark {
+        background-color: #ccc;
+    }
+
+    .container input:checked ~ .checkmark {
+        background-color: #2196F3;
+    }
+
+    .checkmark:after {
+        content: " ";
+        position: absolute;
+        display: none;
+    }
+
+    .container input:checked ~ .checkmark:after {
+        display: block;
+    }
+
+    .container .checkmark:after {
+        left: 9px;
+        top: 5px;
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 3px 3px 0;
+        transform: rotate(45deg);
+    }
+
+
+
+</style>
+
+{% endblock %}

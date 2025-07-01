@@ -1,0 +1,123 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <link type="text/css" rel="stylesheet" href="/static/css/jquery.flexbox.css"/>
+    <script type='text/javascript' src='/static/js/jquery.flexbox.js'></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+        google.load('visualization', '1', {'packages': ['geochart']});
+        google.setOnLoadCallback(drawVisualization);
+{#        google.setOnLoadCallback(drawMarkersMap);#}
+        {% if fechainicio %}
+             provincias = [{% for provincia in provincias %}
+
+                {"id":"{{ provincia.id }}","nombre":"{{ provincia.nombre }}","matriculados": {{ provincia|args:fechainicio|args:fechafin|call:"cantidad_matriculadosfil" }}}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+            ];
+        {% else %}
+            provincias = [{% for provincia in provincias %}
+
+                {"id":"{{ provincia.id }}","nombre":"{{ provincia.nombre }}","matriculados": {{ provincia.cantidad_matriculados }}}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+            ];
+        {% endif %}
+          function drawVisualization() {var data = new google.visualization.DataTable();
+
+            data.addColumn('string', 'Country');
+            data.addColumn('number', 'Value');
+            data.addColumn({type:'string', role:'tooltip'});var ivalue = new Array();
+            var c =0;
+
+            for (var i in provincias) {
+                var n=0;
+                var provincia = provincias[i];
+                n=provincia.matriculados;
+                data.addRows([[provincia.nombre,c,'Matriculados: ' + n.toString()]]);
+                c=c +1
+
+            }
+             var options = {
+                 backgroundColor: {fill:'#FFFFFF',stroke:'#FFFFFF' ,strokeWidth:2 },
+                 colorAxis:  {minValue: 0, maxValue: 49,  colors: ['#F0072E','#FAEE46','#2451F2','#2E5740','#E63FCF','#75A9FC','#F0072E','#FAEE46','#2451F2','#2E5740','#E63FCF','#75A9FC','#F0072E','#FAEE46','#2451F2','#2E5740','#E63FCF','#75A9FC','#F0072E','#FAEE46','#2451F2','#2E5740','#E63FCF','#75A9FC']},
+                 legend: 'none',
+                 region:'EC',
+                 backgroundColor: {fill:'#BAE6FB',stroke:'#000000' ,strokeWidth:3 },
+{#                 datalessRegionColor: '#f5f5f5',#}
+                 datalessRegionColor: '#D8C9C9',
+                 displayMode: 'markers',
+                 enableRegionInteractivity: 'true',
+                 resolution: 'provinces',
+                 sizeAxis: {minValue: 1, maxValue:1,minSize:10,  maxSize: 10},
+                 keepAspectRatio: true,
+                 width:1000,
+                 height:700,
+                 tooltip: {textStyle: {color: '#444444'}, trigger:'hover'}
+{#                 'colorAxis': {colors: ['green', 'blue']}#}
+                 };
+                  var chart = new google.visualization.GeoChart(document.getElementById('visualization'));
+                  google.visualization.events.addListener(chart, 'select', function() {
+                  var selection = chart.getSelection();
+                  if (selection.length == 1) {
+                  var selectedRow = selection[0].row;
+                  var selectedRegion = data.getValue(selectedRow, 0);
+                  if(ivalue[selectedRegion] != '') { alert(ivalue[selectedRegion]); }
+                  }
+                  });
+                 chart.draw(data, options);
+                 };
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered  table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th colspan="3" style="text-align: center;">
+                        <h4>Alumnos Matriculados por Provincias (Mapa de Ecuador)</h4>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div id="visualization" style="width: 1100px; height: 700px; margin-left: 200px"></div>
+
+{#                            <div id="geochart_provincias" style="width: 1100px; height: 700px;"></div>#}
+{#                            <div id='visualization'></div>#}
+                        </td>
+                    </tr>
+                </tbody>
+
+            </table>
+            <table class="table table-bordered table-striped" cellpadding="0" cellspacing="0" border="1">
+                <thead>
+                <tr>
+                    <th colspan="25" style="text-align: center; border: 2px" >
+                        <h4 style="background-color: lightgray" >Tabla de Datos</h4>
+                    </th>
+                </tr>
+                   {% for p in provincias %}
+                            <td style="font-size: 8px; font-weight: bold ;background-color: lightgray; text-align: center">{{ p.nombre }} </td>
+                   {% endfor %}
+
+                   <td style="font-size: 8px; font-weight: bold ;background-color: lightgray; text-align: center">PROVINCIA NO ASIGNADA </td>
+                </thead>
+                <tbody>
+                    {% for p in provincias %}
+                        {% if fechainicio %}
+                            <td  style="font-size: 11px; text-align: center ">{{ p|args:fechainicio|args:fechafin|call:"cantidad_matriculadosfil" }} </td>
+                        {% else %}
+                            <td  style="font-size: 11px; text-align: center ">{{ p.cantidad_matriculados }} </td>
+                        {%  endif %}
+                    {% endfor %}
+                    <td  style="font-size: 11px; text-align: center ">{{ provinciasnul }} </td>
+                </tbody>
+
+
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

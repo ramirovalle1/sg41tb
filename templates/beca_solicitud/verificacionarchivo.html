@@ -1,0 +1,125 @@
+{% load sga_extras %}
+
+<link rel="stylesheet" type="text/css" href="../../static/vendors/sweetalert/sweetalert2.css">
+
+<!-- js -->
+<script src="../../static/vendors/sweetalert/sweetalert2.all.js"></script>
+<script src="../../static/vendors/sweetalert/sweet-alert.init.js"></script>
+
+<script type="text/javascript">
+
+    var idsoli=0;
+    var tipoarchivo=0;
+    var nombresstr="";
+
+    function detrechazo (nombres, inssolic){
+        $.get("/beca_solicitud", {'action':'ver_verificacionarchivo', 'idpreregistro': inssolic}, function(data) {
+        $("#lblnombreestudiante").html(nombres);
+        $("#rechazar .modal-body").html(data);
+        $("#rechazar").modal({"backdrop":"static",keyboard: false,width:'40%'});
+        $("#rechazar").modal("show");
+       }, "html");
+       return false;
+    }
+
+    noaceptartipoarchivo = function(idsol,idtipoarchivo,nommbres) {
+        nombresstr=nommbres;
+        idsoli=idsol;
+        tipoarchivo=idtipoarchivo;
+        $("#rechazar").modal("hide");
+        smoke.prompt("Motivo de Rechazo", function(v) {
+            if (v) {
+                $.get("/beca_solicitud", {'action':'rechazararchivo', 'idpreregistro': idsoli,'idtipoarchivo':tipoarchivo,'comentario': v}, function(data) {
+{#                  $("#rechardocumento").modal("hide");#}
+                    detrechazo(nommbres, idsol)
+                }, "html");
+            } else {
+                detrechazo(nommbres, idsol)
+            }
+        });
+        return false;
+    };
+
+      $("#rechardocumento .btn-cerrar").click(function() {
+                $("#rechardocumento").modal("hide");
+                return false;
+      });
+
+      aceptartipoarchivo = function(idsol,idtipoarchivo,nombres) {
+
+
+        $.get("/beca_solicitud", {'action':'validararchivo', 'idpreregistro': idsol,'idtipoarchivo':idtipoarchivo }, function(data) {
+            $("#lblnombreestudiante").html(nombres);
+                detrechazo(nombres, idsol)
+            }, "html");
+            return false;
+      }
+
+        $("#ventanarechazra").click(function() {
+            $.post("beca_solicitud",{action: 'tienearchivo', 'id': '{{ becaverificacion.id }}'}, function(data) {
+                    if (data.result=='ok') {
+                         $("#rechazar").modal("hide");
+                            $.get("/beca_solicitud", {'action':'aceptarsolibeca', 'id': '{{ becaverificacion.id }}'}, function(data) {
+                                swal("Solicitud", "Se aprobó los archivos subidos", "success").then(function(){
+                                    location.href = "/beca_solicitud?action=aceptarsolibeca&id="+{{ becaverificacion.id }};
+                                });
+                            }, "html");
+
+                    }
+                    else{
+                          $($("#ayudaverica").get(0).parentNode).find(".help-text").html("<h4 class='alert alert-danger'>No puede aprobar porque el estudiante no ha adjuntado archivos.</h4>");
+                    }
+
+                }, "json");
+
+            });
+
+
+</script>
+
+
+<div class="row-fluid">
+<div class="span12">
+    <table class="table table-condensed table-stripped">
+        <thead>
+        <tr>
+            <th style="text-align: center;width:15% ">Archivo</th>
+            <th style="text-align: center;width:20%">Estado</th>
+            <th style="text-align: center;width:15%">.....</th>
+
+        </tr>
+        </thead>
+    <tbody>
+    {% for tipoarchivosolicitudbeca in tipoarchivosolicitud %}
+        <tr>
+            <td style="text-align: center"> {{ tipoarchivosolicitudbeca.nombre }}</td>
+
+             {% with verficarexiste=tipoarchivosolicitudbeca|args:becaverificacion.id|call:"verficarexiste" %}
+                 {% if verficarexiste %}
+                    {% if verficarexiste.estado %}
+
+                            <td style="text-align: center"> VERIFICADO </td>
+                            <td> <a class="btn btn-danger" href="#" id="1" onclick="noaceptartipoarchivo('{{becaverificacion.id }}','{{tipoarchivosolicitudbeca.id }}','{{ becaverificacion.inscripcion.persona.nombre_completo }}')" title="Rechazar el Documento" style="color:rgb(255, 255, 255);">RECHAZAR </a></td>
+                    {% else %}
+                            <td style="text-align: center"> NO VERIFICADO</td>
+                            <td>
+                            <a class="btn btn-success" href="#" id="2" onclick="aceptartipoarchivo('{{becaverificacion.id }}','{{tipoarchivosolicitudbeca.id }}','{{ becaverificacion.inscripcion.persona.nombre_completo }}')" title="Aceptar Documento"  style="color:rgb(255, 255, 255);">ACEPTAR </a>
+                            <a class="btn btn-danger" href="#" id="3" onclick="noaceptartipoarchivo('{{becaverificacion.id }}','{{tipoarchivosolicitudbeca.id }}','{{ becaverificacion.inscripcion.persona.nombre_completo }}')" title="Rechazar el Documento" style="color:rgb(255, 255, 255);">RECHAZAR </a>
+                            </td>
+                    {% endif %}
+                 {% else %}
+                        <td style="text-align: center"> NO VERIFICADO</td>
+                        <td>
+                        <a class="btn btn-success" href="#" id="2" onclick="aceptartipoarchivo('{{becaverificacion.id }}','{{tipoarchivosolicitudbeca.id }}','{{ becaverificacion.inscripcion.persona.nombre_completo }}')" title="Aceptar Documento"  style="color:rgb(255, 255, 255);">ACEPTAR </a>
+                        <a class="btn btn-danger" href="#" id="3" onclick="noaceptartipoarchivo('{{becaverificacion.id }}','{{tipoarchivosolicitudbeca.id }}','{{ becaverificacion.inscripcion.persona.nombre_completo }}')" title="Rechazar el Documento" style="color:rgb(255, 255, 255);">RECHAZAR </a>
+                        </td>
+                 {% endif %}
+             {% endwith %}
+        </tr>
+    {% endfor %}
+    <p id="ayudaverica"class="help-text"> </p>
+    </tbody>
+</table>
+
+</div>
+</div>

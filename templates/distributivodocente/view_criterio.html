@@ -1,0 +1,141 @@
+{% extends "layout/basebs.html" %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        $(function() {
+
+            $(".action_delete").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const question = `Al eliminar el registro no podra volver a recuperar los datos. <br>¿Está seguro de eliminar el registro <span class="text-info">${name}</span>?`;
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            });
+
+
+            $(".modal-body").on("click", ".rel_plananalitico", function(event) {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const value = $(this).data('value');
+                let question = `¿Está seguro crear el Sílabo de la asignatura <span class="badge bg-info">${name}</span>?`;
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id, 'value': value, 'idm': '{{ materia.id }}'}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            })
+        });
+    </script>
+{% endblock %}
+{% block atras %}{{ request.path }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid ">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                    <h6>Periodo: {{ periodo }}</h6>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <a class="btn waves-effect waves-light btn-rounded btn-outline-success" href="/distributivodocente?action=addcriterio"><i class="fa fa-plus"></i> Adionar nuevo criterio</a>
+            </div>
+        </div>
+        <div class='row bm-4'>
+            <div class='col-12 col-md-12 col-sm-12'>
+                <table class='table table-bordered table-striped text-nowrap customize-table mb-0 align-middle' cellpadding="0" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th class="text-left" width="75%">Criterios de docencia</th>
+                        <th class="text-center" width="20%">Dedicación</th>
+                        <th class="text-center" width="20%">Tipo criterio</th>
+                        <th class="text-center" width="5%">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for criterio in criterios %}
+                        <tr>
+                            <td>{{ criterio.nombre }}
+{#                                <div>#}
+{#                                    <span class="badge font-medium bg-light-secondary text-secondary">Fecha de creación: {{ criterio.plananalitico.fecha_creacion|date:'d-m-Y H:i A' }}</span>|#}
+{#                                    <span class="badge font-medium bg-light-warning text-warning">Fecha de modificación: {{ criterio.plananalitico.fecha_creacion|date:'d-m-Y H:i A' }}</span><br>#}
+{#                                    <span class="badge bg-info"> 100% planificado</span>|<span class="badge bg-success">Versión: {{ criterio.versioncriterio }}</span>#}
+{#                                </div>#}
+                            </td>
+                        <td class="text-center">{{ criterio.dedicacion }}</td>
+                        <td class="text-center">{{ criterio.get_tipocriterio_display }}</td>
+{#                            <td class="text-center">#}
+{#                                {% if criterio.plananalitico.activo %}#}
+{#                                    <span class="badge bg-success">Activo</span>#}
+{#                                {% else %}#}
+{#                                    <span class="badge bg-danger">Inactivo</span>#}
+{#                                {% endif %}#}
+{#                            </td>#}
+                            <td class="text-center">
+                                <div class="dropdown">
+                                    <a href="#" class="btn dropdown-toggle" id="dropdownMenuCriterio_{{ criterio.id }}" data-bs-toggle="dropdown"> Acciones <span class="caret"></span> </a>
+                                    <ul class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuCriterio_{{ criterio.id }}"
+                                        data-popper-placement="left-start">
+                                        <li><a class="dropdown-item" href="/distributivodocente?action=editcriterio&id={{ criterio.id }}"><i class="fa fa-edit"></i>  Editar</a></li>
+                                        <li><a class="dropdown-item action_delete" data-id="{{ criterio.id }}" data-action="delcriterio" data-name="{{ criterio.nombre }}" href="javascript:void(0);"><i class="fa fa-trash me-2"></i>Eliminar</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">No existe registros</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

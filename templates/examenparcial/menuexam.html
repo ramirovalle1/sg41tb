@@ -1,0 +1,189 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+<script src="/static/js/notificacionpanel.js"></script>
+<link type="text/css" rel="stylesheet" href="/static/css/datepicker.css"/>
+<script type='text/javascript' src='/static/js/bootstrap-datepicker.js'></script>
+
+<script type="text/javascript">
+
+
+
+    $(function() {
+
+        var idtit = 0;
+        $(".examenejc").click(function(){
+            idtit = $(this).attr('idtitu');
+            $("#examenmodal .observa").html($(this).attr('descripcion'));
+            $("#examenmodal").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+            $("#examenmodal").modal("show");
+        });
+
+        $("#cerrar").click(function() {
+            idtit=0;
+            $("#examenmodal").modal("hide");
+        });
+        $("#continuar").click(function(){
+            window.open('/inscrexamenparcial?action=examen&id='+idtit,"Examen", 'width='+(screen.availWidth)+',height ='+(screen.availHeight)+',fullscreen=yes,menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=no');
+            location.href = '/';
+        });
+
+        $("#cerrarmodal").click(function() {
+            $("#finalizamodal").modal("hide");
+        });
+        {% if info %}
+            smoke.alert('{{ info }}');
+        {% endif %}
+
+
+    });   {# Fin de Function#}
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class='span6'>
+            <h2 style="text-align: center">Lista de Exámenes Parciales</h2>
+            <hr/>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <br/>
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span7">
+            <table class="table table-condensed table-bordered">
+                <thead>
+                    <tr class="alert alert-info">
+                        <th colspan="4" style="text-align: center; font-size: 17px;"><b>Lista</b></th>
+                    </tr>
+                    <tr class="alert alert-info">
+                        <th style="font-size: 16px;text-align: center">Comenzar</th>
+                        <th style="font-size: 16px;">Examen</th>
+                        <th style="font-size: 16px;">Tipo Examen</th>
+                        <th style="font-size: 16px;">Descripci&oacute;n</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in  tituloexamenes %}
+                        {% with mateasign=t|args:matricula.id|call:"titmateriaasign" normaexam=matricula|args:t.id|call:"examennormalact" %}
+                            {% if t.supletorio and normaexam and normaexam.finalizado  or not t.supletorio %}
+                                <tr style="height: 50px;">
+                                    <td style="text-align: center; vertical-align: middle;">
+                                        {% if t.supletorio %}
+                                            {% if mateasign.notafinal >= NOTA_PARA_SUPLET  %}
+                                                <a style="cursor: pointer" idtitu="{{ t.id }}" descripcion="{{ t.descripcion }}" class="examenejc"><img src="/static/images/circle_arrow1.png" class="modimage"/></a>&nbsp;&nbsp;
+                                            {% else %}
+                                                <span class="label label-important">NO CUMPLE CON EL PUNTAJE MINIMO PARA RECUPERACION </span>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if mateasign.notaparcial >= PUNTAJE_MIN_EXAMEN  %}
+                                                <a style="cursor: pointer" idtitu="{{ t.id }}" descripcion="{{ t.descripcion }}" class="examenejc"><img src="/static/images/circle_arrow1.png" class="modimage"/></a>&nbsp;&nbsp;
+                                            {% else %}
+                                                <span class="label label-important">NO CUMPLE CON EL PUNTAJE MINIMO PARA EL EXAMEN</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                     <td class="bigger" style="vertical-align: middle;">
+                                        <b> {{ t.tituloexamen }} </b>
+                                    </td>
+                                     <td class="bigger" style="vertical-align: middle;">
+                                        {% if t.supletorio %}
+                                            RECUPERACION O MEJORAMIENTO
+                                        {% else %}
+                                            PARCIAL
+                                        {% endif %}
+                                    </td>
+                                    <td style="vertical-align: middle;">
+                                        <i>{{ t.subtituloexamen }}</i>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endwith %}
+                    {% endfor %}
+                    {% if not tituloexamenes %}
+                        <tr>
+                            <td colspan="3">NO EXISTEN EXAMENES</td>
+                        </tr>
+                    {% endif %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="examenmodal" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante</h3>
+        </div>
+        <div class="modal-body">
+            <p class="observa">  </b>
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer" id="continuar" class="btn btn-info"><i class=""></i> CONTINUAR</a>
+            <a style="cursor: pointer" id='cerrar' class="btn btn-success"><i class=""></i> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="finalizamodal" style="display: none;">
+        <div class="modal-body">
+            <p>Solo se finalizará los examenes pendientes que hayan excedido su tiempo. </p>
+            <p><b>Nota:</b> Al finalizar los examenes pendientes las notas se pasaran automáticamente al Histórico y Record Académico</p>
+            <b>Si está seguro de finalizar los examenes dar click en CONTINUAR. </b>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer" id="continfinalizarbtn" class="btn btn-info"><i class=""></i> Continuar</a>
+            <a style="cursor: pointer" id='cerrarmodal' class="btn btn-success"><i class=""></i> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="aulatitutexamenmodal" style="display: none;">
+        <div class="modal-header paneltitleaula">
+
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="recipient-name" class="col-form-label"><b>Laboratorio:</b></label>
+                <input class='searchinput input-xlarge search-query' type='text' id='laboraid' value='{{ search }}' myval='0'/>
+                &nbsp;&nbsp;<a id="add_row" title="Agregar Laboratorio" class='btn btn-info'><i class="icon-plus icon-white"></i> </a>
+                <p class="help-textaddr"></p>
+            </div>
+            <hr>
+
+            <div class="form-group2" style="display: none">
+                <table class='table' cellpadding="0" cellspacing="0" id="tab_logic">
+
+                    <thead>
+                        <tr>
+                            <th style="text-align: center;width: 90%">Laboratorio</th>
+                            <th style="text-align: center;width: 10%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="LaborAddForm">
+                        <tr id='addr0' data-id="0" con="0" class="hidden">
+                            <td data-name="laboratorio">
+                                <h4><a id='laboratorio0' name="laboratorio0" style="width:98%;" myval='0'></a></h4>
+                            </td>
+                            <td data-name="dell">
+                                <button name="dell0" class='btn btn-minis btn-danger glyphicon glyphicon-trash row-remove' ><i class="icon-remove icon-white"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer;display: none" id="activarlabo" class="btn btn-success"><i class=""></i> Activar Examen</a>
+            <a style="cursor: pointer" id='cancelarlaborat' class="btn btn-danger"><i class=""></i> Cancelar</a>
+        </div>
+    </div>
+{% endblock %}
+
+

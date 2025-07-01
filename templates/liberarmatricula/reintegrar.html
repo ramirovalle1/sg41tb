@@ -1,0 +1,70 @@
+{#{% extends "deletebs.html" %}#}
+{% extends "formbs.html" %}
+{% block titulo %}Reintegrar al Alumno
+<br/>{{ r.inscripcion }} {{ r.nivel.nivelmalla }}- {{ r.nivel.paralelo }} - {{ r.nivel.carrera }}<br/><br/>
+{% endblock %}
+{% block formback %}/retirados?action=reintegrar&id={{ r.id }}{% endblock %}
+{% block formaction %}/retirados{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='reintegrar'/>
+    <input type='hidden' name='id' value="{{ r.id }}"/>
+{% endblock %}
+{#{% block formactionvalue %}delmatricula{% endblock %}#}
+{% block formobjectid %}{{ r.id }}{% endblock %}
+{% block formobjectname %}la Matricula del Alumno{% endblock %}
+{% block formobjectrepr %}
+{% block javascript %}
+    $("#id_fecha").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+    $("#id_motivo, #id_fecha").addClass("validate[required]");
+    $("#id_motivo").focus();
+    $("#id_departamento").addClass("input-xxlarge")
+    $("#id_persona").addClass("input-xxlarge")
+    $("#id_persona").attr({"autocomplete":"off"});
+    $($("#id_persona_id").get(0).parentNode.parentNode).hide();
+
+    buscar_persona = function(query, process) {
+        $.get("/reportes", {'action':'datafilt', 'model': 'Persona',
+                            'p': 1, 'q': query, 's': 10}, function(data) {
+            if (data.results) {
+                $("#id_persona").get(0).results = data.results;
+                listing = [];
+                for (var i in data.results) {
+                    var dato = data.results[i];
+                    listing.push(dato.name);
+                }
+                process(listing);
+            }
+        }, 'json');
+    };
+
+    $('#id_persona').typeahead({source: buscar_persona, updater: function(item) {
+        var results = $("#id_persona").get(0).results;
+        for (var i in results) {
+            var datos = results[i];
+            if (item==datos.name) {
+                $("#id_persona").attr("myval",datos.id);
+                d=datos.id;
+                $("#id_persona_id").val(d);
+            }
+        }
+        return item;
+    }});
+
+    $("#id_persona").blur(function(){
+        $.post("/retirados", {action: 'buscapersona', persona: $("#id_persona_id").val()}, function(data) {
+            if (data.result=='bad') {
+                $($("#id_persona").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Persona no es administrativo </i></span>");
+                $("#formbutton").attr("disabled",true);
+            }
+            else{
+                $($("#id_persona").get(0).parentNode).find(".help-text").html("");
+                $("#formbutton").attr("disabled",false);
+                }
+        }, "json");
+    });
+
+{% endblock %}
+
+
+
+{% endblock %}

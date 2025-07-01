@@ -1,0 +1,219 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>
+    <script src='/static/js/adicionarproveedor.js'></script>
+
+    <script>
+    $(function() {
+
+
+        buscar_persona = function(query, process) {
+            $.get("/reportes", {'action':'datafilt', 'model': 'Persona:usuario__groups__id__in={{ grupo_box_id }}',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#especialista").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+        $('#especialista').typeahead({source: buscar_persona, updater: function(item) {
+            var results = $("#especialista").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#especialista").attr("myval",datos.id);
+                    id_per = datos.id;
+                }
+            }
+            return item;
+
+        }});
+
+        $("#adicionarespecial").click(function() {
+            $(".errorespec").html('');
+            $("#especialistapanel").modal({backdrop: 'static'});
+            $("#especialistapanel").modal("show");
+            return false;
+        });
+        $("#especialistapanel .btn-cerrar").click(function() {
+            $("#especialistapanel").modal("hide");
+            return false;
+        });
+        $("#especialistapanel .btn-adicionar").click(function() {
+            if ($("#especialista").attr("myval")){
+                adicionarespecialista(false);
+                $(".errorespec").html('');
+            }
+            else{
+                $(".errorespec").html('Ingrese especialista');
+            }
+            return false;
+        });
+
+        $("#especialistapanel .btn-adicionarycerrar").click(function() {
+
+            if ($("#especialista").attr("myval")){
+
+                adicionarespecialista(true);
+                $(".errorespec").html('');
+            }
+            else{
+                $(".errorespec").html('Ingrese especialista');
+            }
+
+            return false;
+        });
+{#    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+        especialist= [];
+        adicionarespecialista = function(cerrar) {
+            var espec = $("#especialista").val();
+            var especid = $("#especialista").attr("myval");
+            var band = 0;
+            if (especialist.length==0) {
+                $("#especialbody").empty();
+            }
+            else{
+               for (var e in especialist) {
+                    var especialista = especialist[e];
+                    if (especialista.especid==especid){
+                        $("#especialistapanel").modal("hide");
+                        smoke.alert('Registro ya ingresado');
+                        band = 1;
+                    }
+               }
+
+
+            }
+            if (band == 0){
+                var i = especialist.length;
+                especialist.push({"especid":especid,"espec":espec});
+                $("#especialbody").append("<tr><td style='text-align:center'>"+espec+"</td><td style='text-align:center'><a href='#' class='btn btn-mini btn-danger' id='espdelete"+i+"' indice='"+i+"'><i class='icon-remove icon-white'></i></a></td></tr>");
+                $("#espdelete"+i).click(borrarespecialis);
+
+                if (cerrar) {
+                    $("#especialistapanel").modal("hide");
+                }
+            }
+            $("#especialista").val('');
+            $("#especialista").attr("myval",'');
+
+        };
+        borrarespecialis = function() {
+            var indice = parseInt($(this).attr("indice"));
+            //delete retenciones[indice];
+            especialist.splice(indice,1);
+            $(this.parentNode.parentNode).remove();
+            if (especialist.length==0) {
+                $("#especialbody").html("<tr><td colspan='7'>NO HAY ESPECIALISTA</td></tr>");
+            }
+            return false;
+        };
+        $("#ingresardato").click(function() {
+            $("#ingresardato").hide();
+{#            $($("#ingresardato").get(0).parentNode.parentNode).hide();#}
+            ingreso = [];
+            for (var e in especialist) {
+                var especialista = especialist[e];
+                ingreso.push({"espec": especialista.especid, "detvisita":'{{visita.id}}'});
+            }
+            if (ingreso!= ''){
+                $.post("/visitabox", {"action":'addespecialista', "datos": JSON.stringify(ingreso)}, function(data) {
+                        if (data.result=='ok') {
+                           location.href='/visitabox?action=detalle&visita='+data.visita
+                        }
+                        else{
+                             $("#ingresardato").show();
+                             if (data.result=='badreg') {
+                                smoke.alert('No hay Registros')
+                             }
+                             if (data.result=='badreg') {
+                                smoke.alert('Error al Ingresar Documento')
+                             }
+
+
+                        }
+
+                }, "json");}
+            else{
+                smoke.alert('No existe Informacion');
+                $("#ingresardato").show();
+            }
+        });
+
+    });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            {% if error %} {{ error }} {% endif %}
+            <h3>
+               Paciente: {{ visita.visitabox.nombre }}</h3>
+            <h3>Lista de Especialista </h3>
+        </div>
+        <div class='span1'>
+            <a href="#" class="btn linkback" ><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='row-fluid'>
+
+            <div class='span4'>
+                <div id="panelmedicina">
+                    <form id="formulario2" class='well form-horizontal' action="" method="POST">
+                        <table class="table table-bordered" style="margin-bottom: 0;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: center;width:70%">         Nombre        </th>
+                                    <th style="text-align: center;width:10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="especialbody" class="datatable">
+                                <tr>
+                                    <td colspan="4" style="text-align: center">
+                                        NO HAY ESPECIALISTA
+                                    </td>
+                                </tr>
+
+                            </tbody>
+
+                        </table>
+                        <span class='help-text' id="tablehelptext"/><br/>
+                        <a href="#" id="adicionarespecial" class="btn btn-info"><i class="icon-plus icon-white"></i> Adicionar</a>
+                        <a href="#" id="ingresardato" class="btn btn-success"><i class=""></i> Guardar</a>
+                        <a href="/visitabox?action=detalle&visita={{ visita.visitabox.id }}" class="btn btn-info" style="float: right" ><i class=""></i> Cerrar</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block moreblock %}
+
+
+
+    <div class="modal fade static" id="especialistapanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Adicionar Especialista</h3>
+        </div>
+        <div class="modal-body panelbody">
+
+            <b>Especialista:</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input name="especialista" id='especialista' type="text" style="margin: 0 0 0 0;width: 80%;text-transform: uppercase"/>
+{#            <input name="idespecialis" id='idespecialis' type="hidden" />#}
+            <h4 class="errorespec"></h4>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionarycerrar btn-warning">Adicionar y Cerrar</a>
+            <a href="#" class="btn btn-adicionar btn-success">Adicionar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+{% endblock %}

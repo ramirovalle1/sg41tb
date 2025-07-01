@@ -1,0 +1,444 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <style>
+        #id_cabecera  { text-transform: none; }
+        #id_recomendaciones  { text-transform: none; }
+        #id_objetivos { text-transform: none; }
+    </style>
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+        var encuesta=0;
+            $("#id_nombre").addClass("validate[required]");
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/encuestatut?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+        $("#modal_carrera #agregar").click(function() {
+
+                $("#modal_carrera").modal("hide");
+                 $("#carreraadd").modal("show");
+            });
+        $("#modal_carrera #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#modal_carrera").modal("hide");
+            });
+        $('.addencuesta').click(function(){
+            $("#id_cabecera").val('');
+            $("#id_recomendaciones").val('');
+            $("#id_objetivos").val('');
+            $("#id_estado").val('');
+            $("#agregar_indicador #paneltitle2").html('Nueva Encuesta');
+            $("#agregar_indicador").modal({"backdrop":"static","width":"40%"});
+            $("#agregar_indicador").modal("show");
+        });
+        $("#agregar_indicador .btn-cerrar").click(function(){
+               $("#agregar_indicador").modal("hide");
+                return false;
+            });
+        $('.modificar_indicador').click(function(){
+        $("#id_nombre").val($(this).attr('nombre'));
+        $("#agregar_indicador #idpregunta").val($(this).attr('indicador_id'));
+        $("#agregar_indicador #paneltitle2").html('Editar Datos de la Encuesta ');
+        $("#agregar_indicador").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_indicador").modal("show");
+        });
+        $(".eliminar_indicador").click(function(){
+        var id = $(this).attr("indicador_id");
+        smoke.confirm('Esta seguro de eliminar el indicador', function(e){
+
+        if (e){
+            $.post("/encuestatutores",{"action":"eliminar_indicador","idindicador":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Indicador Eliminado");
+               }else{
+                    alert(data.result);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+            $("#carreraadd .btn-cerrar").click(function() {
+                $("#carreraadd").modal("hide");
+                return false;
+            });
+        $(".vercarrera").click(function() {
+
+            encuesta = $(this).attr("encuestaid");
+            $.get("/encuestaevaluacion",{"action": "vercarrera","encuesta":encuesta },function(data) {
+                    $("#modal_carrera .modal-body").html(data);
+                    $("#modal_carrera #paneltitle1").html(  " CARRERA" );
+                    $("#modal_carrera").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                    $("#modal_carrera").modal("show");
+           }, "html");
+        });
+        $(".verencuestados").click(function() {
+
+            var encuestados = $(this).attr("encuestadosid");
+            $.get("/encuestaevaluacion",{"action": "verencuestados","encuestados":encuestados },function(data) {
+                    $("#modal_encuestados .modal-body").html(data);
+                    $("#modal_encuestados #paneltitle1").html(  " ENCUESTADOS" );
+                    $("#modal_encuestados").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                    $("#modal_encuestados").modal("show");
+           }, "html");
+        });
+
+        $("#carreraadd .btn-buscar").click(function() {
+                $("#carreraadd").modal("hide");
+                var idcarrera = $("#id_carrera").val();
+
+                $.post("/encuestaevaluacion",{"action": "addcarrera","idcarrera":idcarrera,"idencuesta":encuesta},function(data) {
+                       if(data.result=='ok'){
+                           alert("Registro Correcto");
+                            $.get("/encuestaevaluacion",{"action": "vercarrera","encuesta":encuesta},function(data) {
+                                    $("#modal_carrera .modal-body").html(data);
+                                    $("#modal_carrera #paneltitle1").html( " CARRERAS" );
+                                    $("#modal_carrera").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                                    $("#modal_carrera").modal("show");
+                           }, "html");
+                       }else{
+                           alert(data.result);
+                       }
+                    },"json");
+                });
+        $('.modificar_encuesta').click(function(){
+        $("#id_cabecera").val($(this).attr('cabecera'));
+        $("#id_objetivos").val($(this).attr('objetivos'));
+        $("#id_recomendaciones").val($(this).attr('recomendaciones'));
+         if (($(this).attr('estado')) == "True"){
+            $("#id_estado").attr('checked',true);
+        }else{
+            $("#id_estado").attr('checked',false);
+        }
+
+        $("#editar_encuesta #idencuesta").val($(this).attr('encuesta_id'));
+        $("#editar_encuesta #paneltitle2").html('Editar Datos de la encuesta');
+        $("#editar_encuesta").modal({"backdrop":"static","width":"40%"});
+        $("#editar_encuesta").modal("show");
+    });
+        $("#editar_encuesta .btn-cerrar").click(function(){
+        $("#editar_encuesta").modal("hide");
+            return false;
+    });
+        $(".eliminar_encuesta").click(function(){
+        var id = $(this).attr("eliminar_id");
+        smoke.confirm('Esta seguro de eliminar la encuesta ', function(e){
+        if (e){
+            $.post("/encuestaevaluacion",{"action":"eliminar_datosencuesta","ideliminar":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Registro Eliminado");
+               }else{
+                    alert(data.result);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+        $(".activares").click(function(){
+        var id = $(this).attr("ins");
+        smoke.confirm('Esta seguro de cambiar estado de la encuesta ', function(e){
+        if (e){
+            $.post("/encuestaevaluacion",{"action":"activacion","id":id},function(data) {
+                if(data.result=='ok'){
+                    location.reload();
+               }else{
+
+                    smoke.alert("No se puede cambiar estado por que hay encuestas por finalizar")
+               }
+{#               location.reload()#}
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+
+        {% if error %}
+            smoke.alert('{{ error }}');
+
+        {% endif %}
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span10"  style="text-align: center">
+            <h3>Encuestas a Tutores </br>
+
+            </h3></br>
+        </div>
+        <div class="span1">
+            <a href="/encuestatutores" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span10' {% if search %} style="width:30% "{% else %}style="width:25% "{% endif %}>
+            <form class="form-search">
+{#            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>#}
+{#            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Descripcion</a>#}
+{##}
+{#            {% if search %}#}
+{#                <a href="/encuestatutores" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>#}
+{#            {% endif %}#}
+            </form>
+        </div>
+
+    </div>
+
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span10'>
+            <div class='span 1'>
+                <table class="">
+
+                    <thead>
+                        <tr>
+                         <td><a href="#" class="btn btn-success addencuesta"><i class="icon-plus icon-white"></i> Agregar Encuesta</a></td>
+
+                        </tr>
+                   </thead>
+
+                </table>
+            </div>
+
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+
+                <thead>
+                    <tr>
+                        <th style="text-align: center">Cabecera</th>
+                        <th style="text-align: center">Recomendaciones</th>
+                        <th style="text-align: center">Objetivos</th>
+                        <th style="text-align: center">Usuario</th>
+                        <th style="text-align: center">Activo</th>
+
+                        <th> </th>
+
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for t in tutor %}
+                        <tr>
+                            <td style="text-align: left;">{{t.cabecera}}</td>
+                            <td style="text-align: left;">{{t.recomendaciones}}</td>
+                            <td style="text-align: left;">{{t.objetivos}}</td>
+                            <td style="text-align: left;">{{t.usuario}}</td>
+                            <td style="text-align: center">
+                                <a href="#" ins='{{ t.id }}' class="activares">
+                                {% if t.estado %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </a>
+                             </td>
+
+                            <td style="text-align: center;">
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right" style="text-align: left">
+                                    <li><a href="/encuestaevaluacion?action=pregunta&id={{ t.id }}" class=" "><i class="icon-plus icon-white"></i>  Preguntas</a></li>
+                                    <li><a  class="vercarrera"  encuestaid="{{ t.id }}" style="cursor: pointer">  <i class='icon-certificate'></i> Ver Carreras </a></li>
+                                    <li><a style="cursor: pointer" encuesta_id="{{ t.id }}"cabecera="{{ t.cabecera }}" objetivos="{{ t.objetivos }}" recomendaciones="{{ t.recomendaciones }}"  estado="{{ t.estado }}"  class="modificar_encuesta"><i class="icon-edit"></i>  Editar</a></li>
+
+                                    {% if not t.puedeeliminarse %}
+                                        <li><a style="cursor: pointer" eliminar_id="{{ t.id }}" class="eliminar_encuesta"><i class="icon-remove"></i>  Eliminar </a></li>
+                                    {% endif %}
+                                    {% if  t.puedeeliminarse %}
+                                    <li><a href="/encuestaevaluacion?action=encuestados&id={{ t.id }}" class=" "><i class="icon-eye-open icon-white"></i> Encuestados</a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not tutor %}
+                        <tr>
+                            <td colspan="5">NO HAY REGISTROS</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class="span8">
+
+
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/encuestatutores?page=1{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}">1</a></li>
+                            <li><a href="/encuestatutores?page={{ paging.ellipsis_izquierda }}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/encuestatutores?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/encuestatutores?page={{ paging.ellipsis_derecha }}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/encuestatutores?page={{ paging.num_pages }}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/encuestatutores?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="modal fade static" id="editar_encuesta">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/encuestaevaluacion" method="POST"  >
+                <input type='hidden' name='action' value='editarencuesta' />
+{#                <input type='hidden' name='editar' id='editar' value="0"/>#}
+                <input type='hidden' name='idencuesta' id='idencuesta'/>
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+    <div class="modal fade static" id="agregar_indicador">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/encuestaevaluacion" method="POST"  >
+                <input type='hidden' name='action' value='addencuesta' />
+{#                <input type='hidden' name='editar' id='editar' value="0"/>#}
+                <input type='hidden' name='idindicador' id='idindicador'/>
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+    <div class="modal fade static" id="modal_carrera"   >
+    <div class="row-fluid modal-header">
+         <h4  id='paneltitle1'><i> </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+    <input type='hidden' name='idcarrera' id='idcarrera' value="{{ carrera.id }}"/>
+
+    </div>
+    <div class="modal-footer">
+        <div >
+            <a style="float: left" href="#" id="cerrar" class="btn btn-danger  btn-aceptar">  <i  class="icon-remove icon-white"></i> <b> SALIR</b></a>
+            <a style="float: left" href="#" id="agregar" class="btn btn-success  btn-agregar">  <i  class="icon-plus icon-white"></i> <b> AGREGAR CARRERA</b></a>
+
+        </div>
+    </div>
+</div>
+    <div class="modal fade static" id="carreraadd"   >
+    <div class="modal-header">
+        <h4  id='paneltitle1'><i> </i></h4>
+    </div>
+    <div class="modal-body" style="text-align: left">
+        <form action="" method="POST">
+{#        <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/ambitoencuestatutor" method="POST"  >#}
+
+        {% for field in formcarrera %}
+            <fieldset class="control-group nomargins">
+            <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                <div class="controls" >
+                    {{ field }}
+                    <p class="help-text">{{ field.help_text }} </p>
+                </div>
+            </fieldset>
+        {% endfor %}
+        </form>
+
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+        <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+    </div>
+</div>
+
+    <div class="modal fade static" id="modal_encuestados"   >
+    <div class="row-fluid modal-header">
+         <h4  id='paneltitle1'><i> </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+{#    <input type='hidden' name='idencuestados' id='idencuestados' value="{{ encuestados.id }}"/>#}
+
+    </div>
+    <div class="modal-footer">
+        <div >
+            <a style="float: left" href="#" id="cerrar" class="btn btn-danger  btn-aceptar">  <i  class="icon-remove icon-white"></i> <b> SALIR</b></a>
+{#            <a style="float: left" href="#" id="agregar" class="btn btn-success  btn-agregar">  <i  class="icon-plus icon-white"></i> <b> AGREGAR CARRERA</b></a>#}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

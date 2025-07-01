@@ -1,0 +1,737 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script src="../../static/vendors/sweetalert/sweetalert2.all.js"></script>
+<script src="../../static/vendors/sweetalert/sweet-alert.init.js"></script>
+<script type="text/javascript" >
+
+$(function() {
+
+    {% if periodo %}
+        $('#title-evaluacion').html( $('#title-evaluacion').html() + ' - {{ periodo.nombre }} ' )
+    {% endif %}
+  $("#search").click(function() {
+      {% if periodo %}
+    var term = $("#searchfield").val().toUpperCase();
+    location.href = "/resultadosevaluacion?s="+term+"{% if periodo %}&periodo={{ periodo.id }}{% endif %}";
+      {% endif %}
+    });
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+
+
+{#  $("#periodo").change(function() {#}
+{#      var pid = $("#periodo").val()#}
+{#        var acc = '{{ acc }}'#}
+{#              showWaiting("Cargando Informacion de Evaluaciones");#}
+{#                 $.get("/resultadosevaluacion", {#}
+{#                        "action": "periodosel",#}
+{#                       "periodo": pid,#}
+{#                        "acc":acc#}
+{#                    }, function (data) {#}
+{#                        if (data.result == 'ok') {#}
+{#                            location.href='/resultadosevaluacion?periodo='+pid#}
+{#                            swal("Notificacion", "Calificacion Ingresada Correctamente ", "success");#}
+{#                            hideWaiting();#}
+{#                        }if (data.result == 'bad'){#}
+{#                            swal("Notificacion", "Debe ingresar un numero en un rango del 1 al 5 ", "warning").then(function () {#}
+                                {#location.reload()#}
+{#                            });#}
+{#                        }#}
+{#                        hideWaiting();#}
+{#         }, 'json');#}
+{##}
+{##}
+{#    });#}
+$("#carrerasel").change(function() {
+      var pid = $("#carrerasel").val()
+        showWaiting("Cargando Informacion de Evaluaciones");
+      location.href='/resultadosevaluacion?carrera='+pid+'&periodo={{ periodo.id }}'
+
+    });
+$("#periodo").change(function() {
+      var pid = $("#periodo").val()
+        showWaiting("Cargando Informacion de Evaluaciones");
+      location.href='/resultadosevaluacion?periodo='+pid
+
+    });
+$("#coordinacionsel").change(function() {
+      var pid = $("#coordinacionsel").val()
+        showWaiting("Cargando Informacion de Evaluaciones");
+      location.href='/resultadosevaluacion?coordinacion='+pid+'&periodo={{ periodo.id }}'
+
+    });
+
+
+{#    {% if periodo %}#}
+{#        $("#periodo").val('{{periodo.nombre}}')#}
+{##}
+{#    {% endif %}#}
+    $('#cmbtipobusqueda').change(function () {
+
+         var pid = $("#periodo").val()
+        location.href='/resultadosevaluacion?periodo='+pid+"&acc={{ acc }}&tipo=" + $("#cmbtipobusqueda").val()
+
+  })
+
+    verinformacionalumno=function(id,per,acc){
+        window.open("/resultadosevaluacion?action=verevalalumno&periodo="+per+"&profesor="+id, '_blank');
+    };
+    verinformaciondocente=function(id,per,acc){
+        window.open("/resultadosevaluacion?action=verevaldocente&periodo="+per+"&profesor="+id+"&resul=resul", '_blank');
+        {#location.href="/resultadosevaluacion?action=verevaldocente&periodo="+per+"&profesor="+id+"&acc="+acc#}
+    };
+    verinformaciondirectivo=function(id,per,acc){
+        window.open("/resultadosevaluacion?action=verevaldirectivo&periodo="+per+"&profesor="+id+"&resul=resul", '_blank');
+        {#location.href="/resultadosevaluacion?action=verevaldirectivo&periodo="+per+"&profesor="+id+"&acc="+acc#}
+    };
+    var plani=0
+
+    ingresarplanificacion=function(idpla){
+        plani=idpla
+
+        $("#planificacionmodal").modal("show");
+    };
+    editarplanifiacion=function(idpla,cali){
+        plani=idpla
+        $("#txcalificacion").val(cali);
+        $("#planificacionmodal").modal("show");
+    };
+    $("#btnguardacalificacion").click(function() {
+
+                  {#$("#helpcmbmalla").html("");#}
+                var calificacion = $("#txcalificacion").val();
+
+                var acc = '{{ acc }}'
+              showWaiting("Guardando Respuestas de Evaluacion Cualitativa");
+                 $.post("/resultadosevaluacion", {
+                        "action": "addcaliplanificacion",
+                       "profesor": plani,
+                        "calificacion":calificacion,
+                        "acc":acc
+                        {#id:idmallaasi#}
+
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            swal("Notificacion", "Calificacion Ingresada Correctamente ", "success");
+                            hideWaiting();
+                            location.reload()
+
+                        }if (data.result == 'bad'){
+                            swal("Notificacion", "Debe ingresar un numero en un rango del 1 al 5 ", "warning").then(function () {
+                                {#location.reload()#}
+                            });
+                        }
+                        hideWaiting();
+         }, 'json');
+             });
+    generarExcelAuto=function(idperiodo) {
+      var acc = '{{ acc }}'
+      showWaiting("Generando Excel");
+         $.post("/resultadosevaluacion", {
+                "action": "generarexcelautoevaluacionprofesor",
+               "periodo": idperiodo,
+                "acc":acc
+            }, function (data) {
+                if (data.result == 'ok') {
+                     location.href=data.url;
+                        swal('Notificación','Reporte Ejecutado','success').then(function () {
+                            //location.href = '/reporteexcel?acc={{ acc }}';
+                            $('#carreramodal').modal('hide')
+                        });
+                    }else{
+                        swal('Error',data.message,'error')
+                    }
+                   hideWaiting()
+        }, 'json');
+    }
+    generarExcelDirect=function(idperiodo) {
+      var acc = '{{ acc }}'
+      showWaiting("Generando Excel");
+         $.post("/resultadosevaluacion", {
+                "action": "generarexceldirectivos",
+               "periodo": idperiodo,
+                "acc":acc
+            }, function (data) {
+                if (data.result == 'ok') {
+                     location.href=data.url;
+                        swal('Notificación','Reporte Ejecutado','success').then(function () {
+                            //location.href = '/reporteexcel?acc={{ acc }}';
+                            $('#carreramodal').modal('hide')
+                        });
+                    }else{
+                        swal('Error',data.message,'error')
+                    }
+                   hideWaiting()
+        }, 'json');
+    }
+        var numeros="0123456789";
+
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+    generarExcel = function () {
+        if($('#cmbcarreras').val() != '0'){
+            $('#helptxtcarrera').html('')
+            showWaiting('Generando Excel', 'Espere un momento....');
+                $.post("/resultadosevaluacion", {
+                    "action":"generarexcelevaluacionprofesor",
+                    "periodo":'{{ periodo.id }}',
+                    "carrera":$('#cmbcarreras').val(),
+                    "acc":'{{ acc }} '
+                }, function(data) {
+
+                    if (data.result=='ok'){
+
+                        location.href=data.url;
+                        swal('Notificación','Reporte Ejecutado','success').then(function () {
+                            //location.href = '/reporteexcel?acc={{ acc }}';
+                            $('#carreramodal').modal('hide')
+                        });
+                    }else{
+                        swal('Error',data.result,'error')
+                    }
+                   hideWaiting()
+                }, "json");
+        }else{
+                   $('#helptxtcarrera').html('Este campo es obligatorio')
+        }
+
+    }
+
+
+    cambiarcombocarreras = function () {
+        if ($("#filtracarreras").is(':checked')) {
+            $("#checkcarreras").addClass('d-none'); // Mostrar combo
+            $("#checkcarreras").removeClass('d-none'); // ocultar combo
+        } else {
+            $("#cmbcarrerasexcel").val('0')
+            $("#checkcarreras").addClass('d-none'); // Mostrar combo
+        }
+
+    };
+
+
+    btngenerarecxel = function (id_profesor, periodo_id) {
+        showWaiting("Generando Reporte...")
+        $.post("/resultadosevaluacion", {
+                "action": "generarexcelreporte",
+                "id": id_profesor,
+                "periodo_id": periodo_id
+            }, function (data) {
+                hideWaiting()
+                if (data.result == 'ok') {
+                    location.href = data.url;
+                    swal("","Reporte Generado","success").then(function () {
+                    location.reload()
+                    });
+                } else {
+                    swal('Error', data.message, 'error')
+                }
+            },"json").fail(function () {
+                hideWaiting();
+                swal("Error", "Error de conexión", 'error');
+            });
+    }
+
+
+
+    btngenerarreporte = function (){
+        $("#modalreporte").modal({backdrop: 'static', keyboard: false});
+        $('#modalreporte').modal('show');
+
+    }
+    btncancelar = function () {
+
+            $('#modalreporte').modal('hide');
+    };
+
+    $("#modalreporte #ingresardatosdecombo").click(function() {
+                var cmbcarrerasexcel = $("#cmbcarrerasexcel").val();
+                var cmbperiodoexcel= $("#cmbperiodoexcel").val();
+
+                $.post("/resultadosevaluacion", {"action":"generarexcel", 'cmbcarrerasexcel':cmbcarrerasexcel, 'cmbperiodoexcel':cmbperiodoexcel}, function(data) {
+                    if (data.result=='ok'){
+                        Swal.fire("","EL REPORTE SE GENERO CORRECTAMENTE","success").then(function (){
+                            location.href=data.url;
+                            $('#modalreporte').modal('hide');
+                        });
+
+                    }else{
+                        Swal.fire("Error", data.result, "error");
+
+                    }
+                }, "json").fail(function() {
+                        Swal.fire("Error", "ERROR DE CONEXION", "error");
+                })
+        });
+
+
+
+});
+</script>
+
+<style>
+    .oculta {
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+    <style>
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table-bordered {
+        border: 1px solid #dee2e6;
+    }
+
+    .table-bordered th, .table-bordered td {
+        border: 1px solid #dee2e6;
+        padding: 0.75rem;
+        vertical-align: middle;
+    }
+
+    .table-bordered th {
+        text-align: center; /* Center align header cells */
+    }
+
+    .table-bordered td {
+        text-align: left; /* Default left alignment for table data cells */
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: #f2f2f2;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.4rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+        color: #fff;
+    }
+
+    .badge-info {
+        background-color: #17a2b8;
+    }
+
+    .badge-success {
+        background-color: #28a745;
+    }
+
+    .badge-warning {
+        background-color: #ffc107;
+    }
+
+    .badge-danger {
+        background-color: #dc3545;
+    }
+
+    .btn {
+        display: inline-block;
+        font-weight: 400;
+        text-align: center;
+        vertical-align: middle;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-info {
+        color: #fff;
+        background-color: #17a2b8;
+        border-color: #17a2b8;
+    }
+
+    .btn-info:hover {
+        background-color: #138496;
+        border-color: #117a8b;
+    }
+
+    .btn-primary {
+        color: #fff;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .btn-primary:hover {
+        background-color: #0069d9;
+        border-color: #0062cc;
+    }
+
+    .bg-deep-red {
+        background-color: #dc3545;
+        color: #fff;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+
+    .tag {
+        font-size: 0.875rem;
+        color: #fff;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        display: inline-block;
+        text-align: center;
+    }
+
+    /* Specific styles for names column */
+    .names-column {
+        text-align: left; /* Align text to the left */
+    }
+</style>
+
+
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span9">
+            <h3 id="title-evaluacion">EVALUACIONES</h3>
+
+        </div>
+        <div class="span3" style="text-align: end">
+            <span class="label label-info" style="font-size: 16px">Total de Docentes Autoevaluados: {{ contador }}</span>
+        </div>
+    </div>
+    <br>
+    <div class='row-fluid'>
+        <div class='span3'>
+            <div class="title"><b>Periodos: </b>
+                 <select id="periodo" class="custom-select2  form-control">
+                    <option value="">-----</option>
+                    {% for p in periodos %}'
+                        <option  {% if p.id == periodo.id %}selected="selected"{% endif %} value="{{ p.id }}" >{{ p.nombre }}</option>
+                    {% endfor %}
+                 </select>
+            </div>
+        </div>
+        <div class='span3'>
+            <div class="title"><b>Carreras: </b>
+                 <select id="carrerasel" class="custom-select2  form-control">
+                    <option value="">-----</option>
+                    {% for c in carreras %}'
+                        <option  {% if c.id == carrera.id %}selected="selected"{% endif %} value="{{ c.id }}" >{{ c.nombre }}</option>
+                    {% endfor %}
+                 </select>
+            </div>
+        </div>
+    </div>
+
+{#                    <div class='span3'>#}
+{#                        <div class="title"><b>Coordinacion: </b>#}
+{#                             <select id="coordinacionsel" class="custom-select2  form-control">#}
+{#                                <option value="">-----</option>#}
+{#                                {% for c in coordinacion %}#}
+{#                                    <option  {% if c.id == coordinacion.id %}selected="selected"{% endif %} value="{{ c.id }}" >{{ c.nombre }}</option>#}
+{#                                {% endfor %}#}
+{#                             </select>#}
+{#                        </div>#}
+{#                    </div>#}
+
+    <div class='row-fluid'>
+        <div class='span8'>
+            <form class="form-search">
+                <input class=' input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/resultadosevaluacion?periodo={{ periodo.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+            </form>
+        </div>
+        <div class="span4" style="text-align: end">
+            <a class='btn btn-success' style="cursor: pointer" onclick="btngenerarreporte()"><span class="icon-download-alt"></span> Generar Reporte</a>
+        </div>
+    </div>
+
+        <div class='row-fluid'>
+            <div class='span12'>
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                    <thead>
+                        <tr>
+
+                            <th >Nombres</th>
+                                <th style="text-align: center">Evaluación Alumno</th>
+                                <th style="text-align: center">Autoevaluación</th>
+                                <th style="text-align: center">Evaluación Directivo</th>
+                            <th style="text-align: center; width: 50px"></th>
+                        </tr>
+                            </thead>
+
+                        <tbody>
+                            {% for d in profesor %}
+
+                                <tr>
+                                    <td > {{ d.persona.nombre_completo_inverso }} <br>
+                                        {% if d.persona.es_coordinador %}
+                                            <span class="badge badge-info"> COORDINADOR</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if perms.sga.change_evaluaciondocenteperiodo or decano %}
+                                        {% if d|args:periodo|call:"tiene_evaluacionalumno"%}
+                                            <td style="text-align: center;font-size:20px" ><a style="cursor: pointer" onclick="verinformacionalumno('{{ d.id }}','{{ periodo.id }}','{{ acc }}')" > <span class="badge badge-success">Ver Evaluación </span>  </a> <br> {% with eva=d|args:periodo|call:'resultadosevaluacion' %}{% if eva.0 %}<span class=""style="text-align: center;font-size:17px ">({{ eva.0}}/25) </span> {% endif %}{% endwith %}</td>
+                                        {% else %}
+                                            <td style="text-align: center;font-size:20px"><a  > <span class="bg bg-deep bg-red tag">No tiene Evaluación</span> </a></td>
+                                        {% endif %}
+                                     {% else %}
+                                        <td></td>
+                                    {% endif %}
+                                    {% if perms.sga.change_evaluaciondocenteperiodo or decano %}
+                                        {% if d|args:periodo|call:"tiene_evaluacion" %}
+                                             <td style="text-align: center;font-size:20px"><a style="cursor: pointer" onclick="verinformaciondocente('{{ d.id }}','{{ periodo.id }}','{{ acc }}')"> <span class="badge badge-info">Ver Autoevaluación</span> </a> <br> {% with eva=d|args:periodo|call:'resultadosevaluacion' %}{% if eva.1 %}<span class=""style="text-align: center;font-size:17px ">({{ eva.1}}/25) </span> {% endif %}{% endwith %}</td>
+                                        {% else %}
+                                            <td style="text-align: center;font-size:20px"><a > <span class="bg bg-deep bg-red tag">No tiene Autoevaluación</span> </a></td>
+                                        {% endif %}
+                                    {% else %}
+                                        <td></td>
+                                    {% endif %}
+                                    {% with dire=d|args:periodo|call:"tiene_evaluaciondirectivo" %}
+                                        {% if perms.sga.change_evaluaciondocenteperiodo or decano %}
+                                            {% if dire %}
+            {#                                {% if d|args:periodo|call:"tiene_evaluaciondirectivo" %}#}
+                                                 <td style="text-align: center;font-size:20px"><a  style="cursor: pointer"  onclick="verinformaciondirectivo('{{ d.id }}','{{ periodo.id }}','{{ acc }}')"> <span {% if dire == 1 %} class="badge badge-pill"> Ver Evaluacion Decano{% else %} class="badge badge-warning">  Ver Evaluacion Directivo {% endif %}</span> </a> <br> {% with eva=d|args:periodo|call:'resultadosevaluacion' %}{% if eva.2 %}<span class=""style="text-align: center;font-size:17px ">({{ eva.2}}/45) </span> {% endif %}{% endwith %}</td>
+            {#                                <span class=""style="text-align: center;font-size:17px ">({{ d|args:periodo|call:"calificaiondirectivo"}}/50) </span>#}
+                                            {% else %}
+                                                <td style="text-align: center;font-size:20px"><a > <span class="bg bg-deep bg-red tag">No Evaluación directivo</span> </a></td>
+                                            {% endif %}
+                                        {% else %}
+                                            <td></td>
+                                        {% endif %}
+                                    {% endwith %}
+        {#                            {% if periodo.maestria == maestria or  puedetodo%}#}
+        {#                                <td nowrap style="color:#002a80 ; text-align: center;font-size:20px"  >#}
+        {#                                    <a href="#" title="Editar Calificación" onclick="editarplanifiacion('{{ d.id }}',{% if d.calificacioneva.califacacionplanificacion%}'{{ d.calificacioneva.califacacionplanificacion }}','{{ editar }}'{% endif %})">#}
+        {#                                        {% if d.calificacioneva.califacacionplanificacion%}#}
+        {#                                            {{ d.calificacioneva.califacacionplanificacion }}</a>#}
+        {#                                        {% else %}#}
+        {#                                            <a onclick="ingresarplanificacion({{ d.id }})"#}
+        {#                                               class="btn btn-sm btn-info " title="Agregar Calificación"><i#}
+        {#                                                    class="dw dw-add"></i></a>#}
+        {#                                        {% endif %}#}
+        {#                                </td>#}
+        {#                            {% endif %}#}
+        {#                                        {% if perms.pyube.add_evaluaciondocenteperiodo %}#}
+        {#                                            {% with califiacion=d|args:periodo|call:"calificaciontotal" %}#}
+        {#                                                <td style="text-align: center;font-size:20px" > <span {% if califiacion <= 40  %} class="bg bg-deep bg-red tag" {% endif %}#}
+        {#                                                                                                                  {% if califiacion > 40 and califiacion <= 70  %}class="badge badge-info"  {% endif %}{% if califiacion > 70  %}class="bg bg-deep bg-green tag" {% endif %}> {{ califiacion }}</span></td>#}
+        {#                                            {% endwith %}#}
+        {#                                        {% endif %}#}
+                                    <td>
+                                        <div class="btn-group">
+                                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                                Acciones
+                                                <span class="caret"></span>
+                                            </a>
+                                            <ul class="dropdown-menu pull-right">
+                                                <li>
+                                                    <a style="cursor: pointer; display: flex; gap: 1em" onclick="btngenerarecxel('{{ d.id }}','{{ periodo.id }}')">
+                                                        <img src="/static/images/excel.png" alt="excel" width="16px" height="16px" style="margin: 0">
+                                                        <span style="margin: 0">Generar Excel</span>
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a target="_blank" href="/reportes?action=run&direct=true&n=evaluacion_docente_resultados&rt=pdf&profesor={{ d.id }}&periodo={{ periodo.id }}" style="cursor: pointer; display: flex; gap: 1em">
+                                                        <img src="/static/images/pdf.png" alt="pdf" width="16px" height="16px" style="margin: 0">
+                                                        <span style="margin: 0">Generar PDF</span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+
+                                    {% if not profesor %}
+                                        <tr>
+                                            <td colspan="11">
+                                                NO EXISTE REGISTRO
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class='row-fluid'>
+            <div class="span12">
+                {% if paging.num_pages > 20 %}
+                    <div class='pagination'>
+                        <ul>
+                            {% if paging.primera_pagina %}
+                                <li><a href="/resultadosevaluacion?{% if periodo %}periodo={{ periodo.id }}{% endif %}&{% if carrera %}{{ carrera.id }}{% endif %}&page=1">1</a></li>
+                                <li><a href="/resultadosevaluacion?{% if periodo %}periodo={{ periodo.id }}{% endif %}&{% if carrera %}{{ carrera.id }}{% endif %}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                            {% endif %}
+                            {% for pagenumber in paging.paginas %}
+                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/resultadosevaluacion?{% if periodo %}periodo={{ periodo.id }}{% endif %}&{% if carrera %}{{ carrera.id }}{% endif %}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                            {% endfor %}
+                            {% if paging.ultima_pagina %}
+                                <li><a href="/resultadosevaluacion?{% if periodo %}periodo={{ periodo.id }}{% endif %}&{% if carrera %}{{ carrera.id }}{% endif %}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                                <li><a href="/resultadosevaluacion?{% if periodo %}periodo={{ periodo.id }}{% endif %}&{% if carrera %}{{ carrera.id }}{% endif %}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                {% else %}
+
+                    <div class='pagination'>
+                        <ul>
+                            {% for pagenumber in paging.page_range %}
+                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/resultadosevaluacion?{% if periodo %}periodo={{ periodo.id }}{% endif %}&{% if carrera %}{{ carrera.id }}{% endif %}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                            {% endfor %}
+                        </ul>
+                </div>
+
+                {% endif %}
+
+            </div>
+        </div>
+
+
+    <div  class="modal fade" id="carreramodal" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title">REPORTE EVALUACION ALUMNOS</h4>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row">
+
+                        <div class="col-md-12 col-lg-12">
+                              <div class="form-group">
+                                <label>Carreras <a style="color: #d92550">(*)</a>:</label>
+                                <select id="cmbcarreras" name="cmbcarreras" style="width: 100%"
+                                        class="custom-select2 form-control">
+                                    <option value="0">SELECCIONE</option>
+                                    {% for xcarrera in carreras %}
+                                        <option value={{ xcarrera.id }}> {{ xcarrera.nombre }}  </option>
+                                    {% endfor %}
+                                </select>
+                                <p id="helptxtcarrera" style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                <div class="modal-footer">
+                <button type="button" onclick="generarExcel()" class="btn btn-success btn-min-width "><i class="icon-floppy-disk icon-white"></i> Guardar</button>
+
+                    <button type="button"  class="btn" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff">Salir</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+        <div class="modal fade static" id="planificacionmodal">
+{#    <div  class="modal fade " id="planificacionmodal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">#}
+{#        <div class="modal-dialog modal-lg modal-dialog-centered">#}
+{#            <div class="modal-content" style="width: 1000px;left: -100px">#}
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">INGRESE EL VALOR CORRESPONDIENTE DEL 1 A 5 PARA ASIGNAR LA CALIFICACION AL DOCENTE:</h4>
+                </div>
+
+                <div class="modal-body" >
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <div class="form-group">
+                                <label>Califiación:  </label>
+                                    <input type="number" id="txcalificacion" placeholder="Ingresar la calificacion" class="form-control" value="" >
+                                 <p id="helptxcalificacion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                <button type="button" id="btnguardacalificacion" class="btn btn-success btn-min-width "><i class="icon-floppy-disk icon-white"></i> Guardar</button>
+
+                    <button type="button"  class="btn" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff">Salir</button>
+                </div>
+
+                </div>
+            </div>
+
+
+
+
+{#<----------------------------------------------------------------------------------- Apartado del Modal de Generar Reportes--------------------------------------------------->#}
+
+    <div class="modal fade" id="modalreporte" data-backdrop="static" data-keyboard="false" aria-labelledby="myLargeModalLabel" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" >
+            <div class="modal-header">
+                <div class="login-title">
+                   <h4>Generar Reporte</h4>
+                </div>
+            </div>
+            <div class="modal-body">
+
+                <div class="col-md-12 col-lg-12">
+                    <div class="form-group">
+                        <label class="form-control-label">Nombre del Periodo:</label>
+                        <select id="cmbperiodoexcel" name="cmbperiodoecxel" value="0" style="width: 100%" class="custom-select2 form-control">
+                            <option value="0">Escoge el Periodo</option>
+                            {% for d in periodos %}
+                                <option value="{{ d.id }}">{{ d.nombre }} </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-6">
+                    <div class="form-group d-none" id="checkcarreras">
+                        <label class="form-control-label">Nombre de las carreras:</label>
+                        <select id="cmbcarrerasexcel" name=cmbcarrerasexcel" value="0" style="width: 100%" class="custom-select2 form-control">
+                            <option value="0">Escoge Carreras</option>
+                            {% for d in carreras_priodos %}
+                                <option value="{{ d.id }}">{{ d.nombre }} </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" onclick="btncancelar()" data-dismiss="modal" class="btn btn-danger btn-min-width " ><i></i> Cancelar</button>
+                <button type="button" id="ingresardatosdecombo" class="btn btn-success btn-min-width "><i ></i> Generar Reporte</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Documentos y Archivos del Alumno: {{ inscripcion.persona }}</h3>
+            <h4>Carrera: {{ inscripcion.carrera }}</h4>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/inscripciones" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Tipo de Documento</th>
+                    <th>Archivo</th>
+                    <th>Fecha</th>
+                    <th style="text-align: center">Estado</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for documento in documentos %}
+                    <tr>
+                        <td>{{ documento.archivo.tipo.nombre }}</td>
+                        <td><a href='{{ documento.archivo.download_link }}' class='btn btn-info btn-mini'><i class='icon-download-alt icon-white'></i> Descargar</a> {% if not documento.aprobado and puedesubir %}<a href='/documentos_alu?action=cambiar&id={{ documento.id }}' class='btn btn-success btn-mini'><i class='icon-download-alt icon-white'></i> Cambiar</a>{% endif %}</td>
+                        <td>{{ documento.archivo.fecha|date:"d-m-Y"}}</td>
+                        <td style="text-align: center" >
+                        {% if documento.motivo %}
+                            {% if documento.aprobado %}
+                                <span class="label label-info"> Aprobado</span>
+                            {% else %}
+                                <span class="label label-warning"> No Aprobado</span>
+                            {% endif %}
+                        {% endif %}<br>{% if documento.motivo %}{{ documento.motivo }}{% else %}PENDIENTE DE APROBACI&Oacute;N{% endif %}
+                        </td>
+
+                        <td>
+                            {% if perms.sga.change_inscripcion %}
+                                <a href='/inscripciones?action=deldocumento&id={{ documento.id }}' class="btn btn-danger btn-mini"><i class="icon-remove icon-white"></i> Borrar</a>
+                                {% if not documento.aprobado %}
+                                    <a href='/inscripciones?action=aprobar&id={{ documento.id }}' class="btn btn-info btn-mini"><i class="icon-check icon-white"></i> Aprobar Documento</a>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                {% endfor %}
+                {% if not documentos %}
+                    <tr>
+                        <td colspan="4">
+                            NO EXISTEN DOCUMENTOS DEL ALUMNO
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if perms.sga.change_inscripcion  %}
+                <a href="/inscripciones?action=adddocumento&id={{ inscripcion.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Adicionar Documentos</a>
+            {% endif %}
+            {% if  puedesubir %}
+                <a href="/documentos_alu?action=adddocumento&id={{ inscripcion.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Adicionar Documentos</a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

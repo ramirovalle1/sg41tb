@@ -1,0 +1,148 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/inscripciones?action=graduarcondu&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            actualizaPeriodos = function(id) {
+                location.href = "/inscripciones?action=graduarcondu&filter="+id;
+            };
+
+            $("#periodossel").change(function() {
+                var id = $(this).val();
+                actualizaPeriodos(id);
+            });
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Listado de Alumnos Graduados {% if filter %}en {{ filter.nombre }}{% endif %}</h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span6">
+            <form class='form-search'>
+            <input class='input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/inscripciones?action=graduarcondu" id='allresults' class='btn btn-danger'><i class="icon-remove icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class="span4">
+            <form class='well'>
+                <select id="periodossel">
+                    <option value="0">-----</option>
+                    {# Ojo aqui periodo      #}
+{#                    {% for c in carreras %}#}
+{#                        <option value='{{ c.id }}' {% if c.id == filter.id %}selected="true"{% endif %}>{{ c.nombre }}</option>#}
+{#                    {% endfor %}#}
+                    {% for c in periodos %}
+                        <option value='{{ c.id }}' {% if c.id == filter.id %}selected="true"{% endif %}>{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div class="span2"></div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>C&eacute;dula</th>
+                <th>Estudiante</th>
+                <th>Promedio</th>
+                <th>Examen Te&oacute;rico</th>
+                <th>Examen Pr&aacute;ctico</th>
+                <th>Nota Final</th>
+                <th>Equivalencia</th>
+                <th>No. Acta</th>
+                <th>Fecha Grado</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for graduado in graduados %}
+                <tr>
+{#                    <td>#}
+{#                        {% if perms.sga.change_graduado %}<a href='/graduados?action=edit&id={{ graduado.id }}'>{{ graduado.inscripcion.persona }}</a>{% else %}{{ graduado.inscripcion.persona }}{% endif %}#}
+{#                    </td>#}
+                    <td>{{ graduado.inscripcion.persona.cedula }}</td>
+                    <td>{{ graduado.nombres }}</td>
+                    <td>{{ graduado.promedio }}</td>
+                    <td>{{ graduado.examen_teorico }}</td>
+                    <td>{{ graduado.examen_practico }}</td>
+                    <td>{{ graduado.nota_final }}</td>
+                    <td>{{ graduado.equivalente }}</td>
+                    <td>{{ graduado.numero_acta }}</td>
+                    <td>{% if graduado.fecha_grado %}{{ graduado.fecha_grado|date:"d-m-Y"  }}{% endif %}</td>
+{#                    <td>#}
+{#                        <div class="btn-group">#}
+{#                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">#}
+{#                                Acciones#}
+{#                                <span class="caret"></span>#}
+{#                            </a>#}
+{#                            <ul class="dropdown-menu pull-right">#}
+{#                                <li><a href="/inscripciones?action=record&id={{ graduado.inscripcion.id }}&ret=/graduados"><i class="icon-plus icon-white"></i> Registro Acad&eacute;mico</a></li>#}
+{#                                {% if perms.sga.change_graduado %}#}
+{#                                    <li>#}
+{#                                        <a href="/graduados?action=seguimiento&id={{ graduado.id }}">#}
+{#                                            <i class="icon-eye-open icon-white"></i>#}
+{#                                            {% if graduado.seguimientos.count > 0 %}#}
+{#                                                {{ graduado.seguimientos.count }} Seguimiento{% if graduado.seguimientos.count > 1 %}s{% endif %}#}
+{#                                            {% else %}#}
+{#                                                Sin Seguimiento#}
+{#                                            {% endif %}#}
+{#                                        </a>#}
+{#                                    </li>#}
+{#                                    <li><a href="/inscripciones?action=edit&id={{ graduado.inscripcion.id }}&graduado={{ graduado.id }}"><i class="icon-share-alt"></i> Editar Datos Personales</a></li>#}
+{#                                    <li><a href="/graduados?action=del&id={{ graduado.id }}"><i class="icon-remove icon-white"></i> Borrar</a></li>#}
+{#                                {% endif %}#}
+{#                                <li><a href="/graduados?action=datos&id={{ graduado.id }}"><i class="icon-user icon-white"></i> Datos de Contacto</a></li>#}
+{#                                <li><a href="/graduados?action=observaciones&id={{ graduado.id }}"><i class="icon-adjust icon-white"></i> Observaciones {% if graduado.cantidadobservaciones %}({{ graduado.cantidadobservaciones }}){% endif %}</a></li>#}
+{#                            </ul>#}
+{#                        </div>#}
+{#                    </td>#}
+                </tr>
+            {% endfor %}
+            {% if not graduados %}
+                <tr>
+                    <td colspan="9">
+                        NO HAY GRADUADOS EN CONDUCCION
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/inscripciones?action=graduarcondu{% if search %}s={{ search }}&{% endif %}&page={{ pagenumber }}{% if filter %}&filter={{ filter.id }}{% endif %}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

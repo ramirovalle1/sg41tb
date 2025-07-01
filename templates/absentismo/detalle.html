@@ -1,0 +1,111 @@
+<script type="text/javascript">
+    $(function(){
+        $(".obser").click(function()
+        {
+           $('#observacion').val("");
+           $("#mensaj").html("").removeClass('alert alert-danger');
+           $("#addpanel").modal({"backdrop":"static"});
+           $('#addpanel').show();
+           $("#detalle_absent").modal("hide");
+           $("#idabsent").val($(this).attr("idabs"));
+        });
+        $("#nomalumn").html('<i>Detalle del Alumno {{ inscripcion.persona }}<i>')
+
+{#        $(".activar").click(function(){#}
+{##}
+{#            $.post("/finalizaabsent", {action: 'activar', 'idabs': $(this).attr('idabs')}, function(data) {#}
+{##}
+{##}
+{#            }, "json");#}
+{##}
+{##}
+{##}
+{#        });#}
+    });
+</script>
+<div class="row-fluid">
+<div class="span12">
+    <table class="table table-condensed table-stripped">
+        <thead>
+        <tr>
+            <th style="text-align: center">Materia</th>
+            <th style="text-align: center">Carrera</th>
+            <th style="text-align: center">Periodo</th>
+            <th style="text-align: center">Observacion</th>
+            <th style="text-align: center">Docente</th>
+            <th style="text-align: center">Fecha</th>
+{#            <th style="text-align: center">Absentismo</th>#}
+            <th style="text-align: center">Observacion</th>
+            <th style="text-align: center">Reintegr&oacute;</th>
+            <th style="text-align: center">Ver asistencias;</th>
+            <th style="text-align: center">Finalizado</th>
+
+        </tr>
+        </thead>
+    <tbody>
+        {% for a in absentismos %}
+            <tr>
+
+                <td style="text-align: center"> {% if a.manual %}<span class=" label label-warning larger"> M  </span>{% endif %} {{ a.materiaasignada.materia.asignatura }}</td>
+                <td style="text-align: center"> {{ a.materiaasignada.materia.nivel.carrera.nombre }}</td>
+                <td style="text-align: center"> {{ a.materiaasignada.materia.nivel.periodo }}</td>
+                <td style="text-align: center"> {{ a.observacion }}</td>
+                <td style="text-align: center">
+                    {% if a.materiaasignada.materia.profesormateria_set.count %}
+                        {% for profesormateria in a.materiaasignada.materia.profesores_materia %}
+
+                                {% if profesormateria.profesor_aux %}
+                                   {{ profesormateria.profesor_auxiliar.persona.nombre_completo  }}
+                                {% else %}
+                                   {{ profesormateria.profesor.persona.nombre_completo }}
+
+                                {% endif %}
+
+
+                        {% endfor %}
+
+                    {% endif %}
+                </td>
+                <td  style="text-align: center"> {{ a.fecha|date:'d-m-Y H:i:s' }}</td>
+{#                <td>#}
+{#                    {% if a.materiaasignada.absentismo %}#}
+{#                        <img src='/static/images/16/true.png' border='0'/>#}
+{#                    {% else %}#}
+{#                        <img src='/static/images/16/false.png' border='0'/>#}
+{#                    {% endif %}#}
+{#                </td>#}
+                <td>
+                    {% if not a.observaadmin and a.materiaasignada.absentismo %}
+                        {% if not persona.pertenece_soporte %}
+                            <a style="cursor: pointer" idabs="{{ a.id }}" class="obser">Ingresar Observacion</a>
+                        {% endif %}
+                    {% else %}
+                        {% if a.observaadmin %}
+                            {{ a.observaadmin }}
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td style="text-align: center">
+                    {% if a.reintegro %}
+                        <img class="activar" idabs="{{ a.id }}" src='/static/images/16/true.png' border='0'/> {{ a.fechaobserv|date:'d-m-Y' }}
+                    {% else %}
+                        <img class="activar"  idabs="{{ a.id }}" src='/static/images/16/false.png' border='0'/>
+                    {% endif %}
+                </td>
+                <td><a href="/adm_docentes?action=asistencias&id={{ a.materiaasignada.materia.profmateria.id }}&opabs=1&idmaterias={{ a.materiaasignada.materia.id }}" class='btn btn-info'> ASISTENCIAS</a></td>
+
+                <td style="text-align: center">
+                    {% if a.finalizado %}
+                        <img src='/static/images/16/true.png' border='0'/>
+                    {% else %}
+                        <img src='/static/images/16/false.png' border='0'/>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>
+
+

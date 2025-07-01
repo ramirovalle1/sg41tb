@@ -1,0 +1,1372 @@
+    {% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            var cap =0;
+            var tema =0;
+            var det =0;
+            var dettema =0;
+            var sub =0;
+            var subdet=0;
+            var hab=0;
+            var val=0;
+            var hora=0;
+            var opcion='';
+            $(".addcap").click(function(){
+                $("#modal_capitulo #op").val('0');
+                $("#modal_capitulo").modal({width: '650px', backdrop: 'static'});
+                $("#modal_capitulo").modal("show");
+                $("#id_numero").addClass("input-medium");
+
+                $("#id_orden").addClass("input-small");
+                $("#id_nombre").addClass("input-xxlarge");
+                $("#id_contenido").attr({rows:8 , style:'width:87%;font-size:10px'});
+               return false;
+            });
+            $("#archivopanel .btn-cerrar").click(function(){
+                    $("#archivopanel").modal("hide");
+
+            });
+            $(".editcap").click(function(){
+                cap = $(this).attr("cid");
+                $("#modal_capitulo #op").val('1');
+
+                $("#modal_capitulo").modal({width: '650px', backdrop: 'static'});
+                $("#modal_capitulo").modal("show");
+                $("#id_numero").addClass("input-medium");
+                $("#id_orden").addClass("input-small");
+                $("#id_nombre").addClass("input-xxlarge");
+                $("#id_numero").val($(this).attr("num"));
+                $("#id_orden").val($(this).attr("orden"));
+                $("#id_contenido").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#id_contenido").val($(this).attr("contenido"));
+                $("#id_nombre").val($(this).attr("nom"));
+                if ($(this).attr("detalle")=='True'){
+                    $("#id_tiene_detalle").attr('checked',true);
+                }else{
+                    $("#id_tiene_detalle").attr('checked',false);
+                }
+               return false;
+            });
+
+
+            $("#prereq").blur(function(){
+               var prer = $(this).val();
+               $.post("/syllabus", {action: 'addprerequisito', 'id': '{{ syllabus.id }}', 'prer':prer}, function(data) {
+                    if (data.result=='ok') {
+                        location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                    }
+                    else{
+                       smoke.alert('Error vuelva a intentarlo');
+                    }
+
+               }, "json");
+            });
+            $("#correq").blur(function(){
+               var correquisito = $(this).val();
+               $.post("/syllabus", {action: 'addcorequisito', 'id': '{{ syllabus.id }}', 'correquisito':correquisito}, function(data) {
+                    if (data.result=='ok') {
+                            location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                    }
+                    else{
+                       smoke.alert('Error vuelva a intentarlo');
+                    }
+
+               }, "json");
+            });
+
+            $("#modal_capitulo .cerrar").click(function() {
+                $("#modal_capitulo").modal("hide");
+                 return false;
+
+            });
+
+            $("#modal_capitulo .adicionar").click(function() {
+                var op = $("#modal_capitulo #op").val();
+                $("#modal_capitulo").modal("hide");
+                var num = $("#id_numero").val();
+                var orden = $("#id_orden").val();
+                var nombre = $("#id_nombre").val();
+                var contenido = $("#id_contenido").val();
+                var det = 0;
+                if ($("#id_tiene_detalle").is(':checked')){
+                    det = 1;
+                }
+                $.post("/syllabus", {action: 'addcap', 'id': '{{ syllabus.id }}', 'num':num, 'orden':orden,'nombre':nombre, 'contenido':contenido ,'det':det,'op':op,'cap':cap}, function(data) {
+                        if (data.result=='ok') {
+                           smoke.alert('ingreso exitoso');
+
+                           setInterval(function(){
+                                location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                           }, 1000);
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                    }, "json");
+
+            });
+            $("#unidadorg").change(function(){
+               var unidad =  $(this).val();
+                $.post("/syllabus", {action: 'addunidad', 'id': '{{ syllabus.id }}', 'unidad':unidad }, function(data) {
+                        if (data.result=='ok') {
+                            location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                        }
+                        else{
+
+                        }
+
+                    }, "json");
+            });
+
+            $(".addtema").click(function(){
+                cap = $(this).attr("cid");
+                $("#modal_tema #optema").val('0');
+{#                $("#id_contenidotema").attr({rows:8 , style:'width:87%;font-size:10px'});#}
+                $("#id_numerotema").val("");
+                $("#id_ordentema").val("");
+                $("#id_contenidotema").val("");
+                $("#id_nombretema").val("");
+                $("#modal_tema").modal({width: '650px', backdrop: 'static'});
+                $("#modal_tema").modal("show");
+                $("#id_numerotema").addClass("input-medium");
+                $("#id_ordentema").addClass("input-small");
+                $("#id_nombretema").addClass("input-xxlarge");
+                $("#id_contenidotema").attr({rows:8 , style:'width:87%;font-size:10px'});
+               return false;
+            });
+
+            $("#modal_tema .cerrar").click(function() {
+                $("#modal_tema").modal("hide");
+                 return false;
+
+            });
+
+            $(".edittema").click(function(){
+                cap = $(this).attr("cid");
+                tema = $(this).attr("tid");
+                var op = $("#modal_tema #op").val('1');
+                $("#modal_tema").modal({width: '650px', backdrop: 'static'});
+                $("#modal_tema").modal("show");
+                $("#id_numerotema").addClass("input-medium");
+                $("#id_ordentema").addClass("input-small");
+                $("#id_nombretema").addClass("input-xxlarge");
+                $("#id_contenidotema").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#id_numerotema").val($(this).attr("num"));
+                $("#id_ordentema").val($(this).attr("orden"));
+                $("#id_contenidotema").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#id_contenidotema").val($(this).attr("contenido"));
+                $("#id_nombretema").val($(this).attr("nom"));
+               return false;
+
+            });
+
+            $("#modal_tema .adicionar").click(function() {
+
+                var op = $("#modal_tema #optema").val();
+                var num = $("#id_numerotema").val();
+                var orden = $("#id_ordentema").val();
+                var nombre = $("#id_nombretema").val();
+                var contenido = $("#id_contenidotema").val();
+                if (num != '' && orden != '' && nombre != ''){
+                    $("#modal_tema").modal("hide");
+                     $.post("/syllabus", {action: 'addtema', 'id': cap, 'num':num, 'orden':orden,'nombre':nombre, 'contenido':contenido,'op':op,'tid':tema}, function(data) {
+                        if (data.result=='ok') {
+                           smoke.alert('ingreso exitoso');
+
+                           setInterval(function(){
+                                location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                           }, 1000);
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                    }, "json");
+                }else{
+                $("#modal_tema #error").html("Faltan Datos de Ingresar");
+
+                }
+            });
+
+
+            $(".adddettema").click(function(){
+                tema = $(this).attr("tid");
+                $("#modal_detalletema #optdet").val('0');
+                $("#modal_detalletema").modal({width: '650px', backdrop: 'static'});
+                $("#modal_detalletema").modal("show");
+                $("#id_descripcion").attr({rows:8 , style:'width:87%;font-size:10px'});
+               return false;
+            });
+
+            $(".editdettema").click(function(){
+                dettema = $(this).attr("did");
+                var op = $("#modal_detalletema #optdet").val('1');
+                $("#modal_detalletema").modal({width: '650px', backdrop: 'static'});
+                $("#modal_detalletema").modal("show");
+                $("#modal_detalletema #id_descripcion").val($(this).attr("descripcion"));
+                $("#modal_detalletema #id_descripcion").attr({rows:8 , style:'width:87%;font-size:10px'});
+               return false;
+            });
+
+
+
+            $("#modal_detalletema .cerrar").click(function() {
+                $("#modal_detalletema").modal("hide");
+                 return false;
+
+            });
+
+            $("#modal_detalletema .adicionar").click(function() {
+                $("#modal_detalletema").modal("hide");
+                var op = $("#modal_detalletema #optdet").val();
+                var descripcion = $("#modal_detalletema #id_descripcion").val();
+                $.post("/syllabus", {action: 'adddettema', 'id': tema, 'descripcion':descripcion,'op':op,'det':dettema}, function(data) {
+                        if (data.result=='ok') {
+                           smoke.alert('ingreso exitoso');
+
+                           setInterval(function(){
+                                location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                           }, 1000);
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                    }, "json");
+
+            });
+            $(".addsubtema").click(function(){
+                tema = $(this).attr("tid");
+                $("#modal_subtema #optsub").val('0');
+                $("#modal_subtema #id_numerosubtema").val("");
+                $("#modal_subtema #id_nombresubtema").val("");
+                $("#id_numerosubtema").addClass("input-small");
+                $("#modal_subtema").modal({width: '650px', backdrop: 'static'});
+                $("#modal_subtema").modal("show");
+                $("#modal_subtema #id_descripcion").attr({rows:8 , style:'width:87%;font-size:10px'});
+               return false;
+            });
+
+            $(".editsubtema").click(function(){
+                tema = $(this).attr("tid");
+                sub = $(this).attr("sid");
+                var op = $("#modal_subtema #optsub").val('1');
+                $("#id_numerosubtema").addClass("input-small");
+                $("#modal_subtema").modal({width: '650px', backdrop: 'static'});
+                $("#modal_subtema").modal("show");
+                $("#modal_subtema #id_nombresubtema").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#modal_subtema #id_nombresubtema").val($(this).attr("contenido"));
+                $("#modal_subtema #id_numerosubtema").val($(this).attr("numero"));
+               return false;
+            });
+
+            $("#modal_subtema .cerrar").click(function() {
+                $("#modal_subtema").modal("hide");
+                 return false;
+
+            });
+
+            $("#modal_subtema .adicionar").click(function() {
+                $("#modal_subtema").modal("hide");
+                var op = $("#modal_subtema #optsub").val();
+                var numero = $("#modal_subtema #id_numerosubtema").val();
+                var descripcion = $("#modal_subtema #id_nombresubtema").val();
+                $.post("/syllabus", {action: 'adddsubtema', 'id': tema, 'descripcion':descripcion,'numero':numero,'sub':sub,'op':op}, function(data) {
+                        if (data.result=='ok') {
+                           smoke.alert('ingreso exitoso');
+
+                           setInterval(function(){
+                                location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                           }, 1000);
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                    }, "json");
+
+            });
+
+            $(".adddetalle").click(function(){
+                sub = $(this).attr("st");
+                var op = $("#modal_detalle #optsubdet").val('0');
+                $("#modal_detalle #id_numerosubtema").addClass("input-small");
+                $("#modal_detalle").modal({width: '650px', backdrop: 'static'});
+                $("#modal_detalle").modal("show");
+                $("#modal_detalle #id_numerosubtema").addClass("input-small");
+{#                $("#modal_detalle #id_nombresubtema").modal({width: '650px', backdrop: 'static'});#}
+                $("#modal_detalle #id_nombresubtema").val('');
+                $("#modal_detalle #id_numerosubtema").val('');
+
+
+               return false;
+            });
+
+            $(".editdetalle").click(function(){
+                subdet = $(this).attr("dst");
+                var op = $("#modal_detalle #optsubdet").val('1');
+                $("#modal_detalle #id_numerosubtema").addClass("input-small");
+                $("#modal_detalle").modal({width: '650px', backdrop: 'static'});
+                $("#modal_detalle").modal("show");
+                $("#modal_detalle #id_numerosubtema").addClass("input-small");
+                $("#modal_detalle #id_nombresubtema").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#modal_detalle #id_nombresubtema").val($(this).attr("contenido"));
+                $("#modal_detalle #id_numerosubtema").val($(this).attr("numero"));
+
+
+               return false;
+            });
+
+            $("#modal_detalle .cerrar").click(function() {
+                $("#modal_detalle").modal("hide");
+                 return false;
+            });
+
+            $("#modal_detalle .adicionar").click(function() {
+                $("#modal_detalle").modal("hide");
+                var op =  $("#modal_detalle #optsubdet").val();
+                var numero = $("#modal_detalle #id_numerosubtema").val();
+                var descripcion = $("#modal_detalle #id_nombresubtema").val();
+                $.post("/syllabus", {action: 'adddetalle', 'id': sub, 'descripcion':descripcion,'numero':numero,'sub':subdet,'op':op}, function(data) {
+                        if (data.result=='ok') {
+                           smoke.alert('ingreso exitoso');
+
+                           setInterval(function(){
+                                location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                           }, 1000);
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+                    }, "json");
+
+            });
+
+            $(".adddetcap").click(function(){
+                cap = $(this).attr("cid");
+                $("#modal_detcap #optcap").val('0');
+                $("#modal_detcap").modal({width: '650px', backdrop: 'static'});
+                $("#modal_detcap").modal("show");
+                $("#modal_detcap #id_descripcion").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#modal_detcap #id_descripcion").val('');
+               return false;
+            });
+
+            $(".editdetcap").click(function(){
+                cap = $(this).attr("cid");
+                det = $(this).attr("dc");
+                var op = $("#modal_detcap #optcap").val('1');
+                $("#modal_detcap").modal({width: '650px', backdrop: 'static'});
+                $("#modal_detcap").modal("show");
+                $("#modal_detcap #id_descripcion").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#modal_detcap #id_descripcion").val($(this).attr("descripcion"));
+               return false;
+            });
+
+            $("#modal_detcap .cerrar").click(function() {
+                $("#modal_detcap").modal("hide");
+                 return false;
+
+            });
+
+            $("#modal_detcap .adicionar").click(function() {
+                $("#modal_detcap").modal("hide");
+                var descripcion = $("#modal_detcap #id_descripcion").val();
+                var op = $("#modal_detcap #optcap").val();
+                $.post("/syllabus", {action: 'adddetcap', 'id': cap, 'descripcion':descripcion,'op':op,'dc':det}, function(data) {
+                        if (data.result=='ok') {
+                           smoke.alert('ingreso exitoso');
+
+                           setInterval(function(){
+                                location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                           }, 1000);
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                    }, "json");
+
+            });
+
+            $(".campo").change(function(){
+                var campo=0;
+                if ($(this).is(':checked')) {
+                     campo = 1;
+                }
+                $.post("/syllabus", {action: 'addcampo', 'id': {{ syllabus.id }}, 'campo':campo,'idcampo':$(this).attr('cid')}, function(data) {
+                        if (data.result=='ok') {
+                                location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                    }, "json");
+
+                });
+
+            $("#linea").blur(function(){
+               var linea = $(this).val();
+               $.post("/syllabus", { action: 'addlinea', 'id': '{{ syllabus.id }}', 'linea':linea}, function(data) {
+                    if (data.result=='ok') {
+                            location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                    }
+                    else{
+                       smoke.alert('Error vuelva a intentarlo');
+                    }
+
+               }, "json");
+            });
+
+            $(".addhabilidad").click(function(){
+                tema = $(this).attr("tid");
+                var op = $("#modal_habilidad #opthab").val('0');
+                $("#modal_habilidad").modal({width: '650px', backdrop: 'static'});
+                $("#modal_habilidad").modal("show");
+                $("#modal_habilidad #id_habilidad").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#modal_detalle #id_habilidad").val('');
+               return false;
+            });
+
+            $(".edithab").click(function(){
+                tema = $(this).attr("tid");
+                hab = $(this).attr("hid");
+                var op = $("#modal_habilidad #opthab").val('1');
+                $("#modal_habilidad").modal({width: '650px', backdrop: 'static'});
+                $("#modal_habilidad").modal("show");
+                $("#modal_habilidad #id_habilidad").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#modal_habilidad #id_habilidad").val($(this).attr("hab"));
+               return false;
+            });
+
+            $("#modal_habilidad .cerrar").click(function() {
+                $("#modal_habilidad").modal("hide");
+                 return false;
+
+            });
+
+            $("#modal_habilidad .adicionar").click(function() {
+                $("#modal_habilidad").modal("hide");
+                var habilidad = $("#modal_habilidad #id_habilidad").val();
+                var op = $("#modal_habilidad #opthab").val();
+                $.post("/syllabus", {action: 'addhabilidad', 'id': tema, 'habilidad':habilidad,'op':op,'hab':hab}, function(data) {
+                        if (data.result=='ok') {
+                           smoke.alert('ingreso exitoso');
+
+                           setInterval(function(){
+                                location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                           }, 1000);
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                    }, "json");
+
+            });
+
+            $(".addvalores").click(function(){
+                tema = $(this).attr("tid");
+                var op = $("#modal_valores #optval").val('0');
+                $("#modal_valores").modal({width: '650px', backdrop: 'static'});
+                $("#modal_valores").modal("show");
+                $("#modal_valores #id_habilidad").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#modal_valores #id_habilidad").val('');
+               return false;
+            });
+
+            $(".editvalores").click(function(){
+                tema = $(this).attr("tid");
+                val = $(this).attr("vid");
+                var op = $("#modal_valores #optval").val('1');
+                $("#modal_valores").modal({width: '650px', backdrop: 'static'});
+                $("#modal_valores").modal("show");
+                $("#modal_valores #id_habilidad").attr({rows:8 , style:'width:87%;font-size:10px'});
+                $("#modal_valores #id_habilidad").val($(this).attr("valor"));
+               return false;
+            });
+
+            $("#modal_valores .cerrar").click(function() {
+                $("#modal_valores").modal("hide");
+                 return false;
+
+            });
+
+            $("#modal_valores .adicionar").click(function() {
+                $("#modal_valores").modal("hide");
+                var valores = $("#modal_valores #id_habilidad").val();
+                var op = $("#modal_valores #optval").val();
+                $.post("/syllabus", {action: 'addvalores', 'id': tema, 'valores':valores,'op':op,'val':val}, function(data) {
+                        if (data.result=='ok') {
+                           smoke.alert('ingreso exitoso');
+
+                           setInterval(function(){
+                                location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                           }, 1000);
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                    }, "json");
+
+            });
+
+            $(".addhora").click(function(){
+                tema = $(this).attr("tid");
+                opcion =  $(this).attr("opc");
+                hora = $(this).attr("hid");
+                var op = $("#modal_horas #opthoras").val('0');
+                $("#modal_horas").modal({width: '200px', backdrop: 'static'});
+                $("#modal_horas").modal("show");
+                $("#modal_horas #id_valor").addClass("input-medium");
+                $("#modal_horas #id_valor").val('');
+               return false;
+            });
+
+            $(".edithora").click(function(){
+                tema = $(this).attr("tid");
+                hora = $(this).attr("hid");
+                opcion =  $(this).attr("opc");
+                var op = $("#modal_horas #opthoras").val('1');
+                $("#modal_horas").modal({width: '200px', backdrop: 'static'});
+                $("#modal_horas").modal("show");
+                $("#modal_horas #id_valor").addClass("input-medium");
+                $("#modal_horas #id_valor").val($(this).attr("horas"));
+               return false;
+            });
+
+
+            $("#modal_horas .cerrar").click(function() {
+                $("#modal_horas").modal("hide");
+                 return false;
+
+            });
+            $(".deletecap").click(function() {
+                var id = $(this).attr("cid");
+                smoke.confirm( 'Esta seguro que desea eliminar el capitulo?', function(e){
+                        if (e){
+                            $.post("/syllabus", {action: 'deletecap', 'id': id }, function(data) {
+                                if (data.result=='ok') {
+                                   smoke.alert("Registro Eliminado" );
+
+                                   setInterval(function(){
+                                        location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                                   }, 1000);
+                                }
+                                else{
+                                   smoke.alert('Error vuelva a intentarlo');
+                                }
+                            }, "json");
+                        }else{
+                            }
+                            }, {
+                            ok: "CONTINUAR",
+                            cancel: 'CANCELAR',
+                            classname: "custom-class",
+                            reverseButtons: true
+                            });
+                });
+
+            $(".deletedetcap").click(function() {
+                var id = $(this).attr("dc");
+                smoke.confirm( 'Esta seguro que desea eliminar el detalle del capitulo?', function(e){
+                        if (e){
+                            $.post("/syllabus", {action: 'deletedetcap', 'id': id }, function(data) {
+                                if (data.result=='ok') {
+                                   smoke.alert("Registro Eliminado" );
+
+                                   setInterval(function(){
+                                        location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                                   }, 1000);
+                                }
+                                else{
+                                   smoke.alert('Error vuelva a intentarlo');
+                                }
+                            }, "json");
+                        }else{
+                            }
+                            }, {
+                            ok: "CONTINUAR",
+                            cancel: 'CANCELAR',
+                            classname: "custom-class",
+                            reverseButtons: true
+                            });
+                });
+            $(".deletedetalle").click(function() {
+                var id = $(this).attr("dst");
+                smoke.confirm( 'Esta seguro que desea eliminar el detalle?', function(e){
+                        if (e){
+                            $.post("/syllabus", {action: 'deletedetalle', 'id': id }, function(data) {
+                                if (data.result=='ok') {
+                                   smoke.alert("Registro Eliminado");
+
+                                   setInterval(function(){
+                                        location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                                   }, 1000);
+                                }
+                                else{
+                                   smoke.alert('Error vuelva a intentarlo');
+                                }
+                            }, "json");
+                        }else{
+                            }
+                            }, {
+                            ok: "CONTINUAR",
+                            cancel: 'CANCELAR',
+                            classname: "custom-class",
+                            reverseButtons: true
+                            });
+                });
+
+            $(".deletesubtema").click(function() {
+                var id = $(this).attr("sid");
+                smoke.confirm( 'Esta seguro que desea eliminar el SubTema?', function(e){
+                        if (e){
+                            $.post("/syllabus", {action: 'deletesubtema', 'id': id }, function(data) {
+                                if (data.result=='ok') {
+                                   smoke.alert("Registro Eliminado");
+
+                                   setInterval(function(){
+                                        location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                                   }, 1000);
+                                }
+                                else{
+                                   smoke.alert('Error vuelva a intentarlo');
+                                }
+                            }, "json");
+                        }else{
+                            }
+                            }, {
+                            ok: "CONTINUAR",
+                            cancel: 'CANCELAR',
+                            classname: "custom-class",
+                            reverseButtons: true
+                            });
+                });
+
+            $(".deletedettema").click(function() {
+                var id = $(this).attr("did");
+                smoke.confirm( 'Esta seguro que desea eliminar el Detalle del Tema?', function(e){
+                        if (e){
+                            $.post("/syllabus", {action: 'deletedettema', 'id': id }, function(data) {
+                                if (data.result=='ok') {
+                                   smoke.alert("Registro Eliminado");
+
+                                   setInterval(function(){
+                                        location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                                   }, 1000);
+                                }
+                                else{
+                                   smoke.alert('Error vuelva a intentarlo');
+                                }
+                            }, "json");
+                        }else{
+                            }
+                            }, {
+                            ok: "CONTINUAR",
+                            cancel: 'CANCELAR',
+                            classname: "custom-class",
+                            reverseButtons: true
+                            });
+                });
+
+            $(".deletetema").click(function() {
+                var id = $(this).attr("tid");
+                smoke.confirm( 'Esta seguro que desea eliminar el Tema?', function(e){
+                        if (e){
+                            $.post("/syllabus", {action: 'deletetema', 'id': id }, function(data) {
+                                if (data.result=='ok') {
+                                   smoke.alert("Registro Eliminado");
+
+                                   setInterval(function(){
+                                        location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                                   }, 1000);
+                                }
+                                else{
+                                   smoke.alert('Error vuelva a intentarlo');
+                                }
+                            }, "json");
+                        }else{
+                            }
+                            }, {
+                            ok: "CONTINUAR",
+                            cancel: 'CANCELAR',
+                            classname: "custom-class",
+                            reverseButtons: true
+                            });
+                });
+
+            $(".deletehab").click(function() {
+                var id = $(this).attr("hid");
+                smoke.confirm( 'Esta seguro que desea eliminar habilidad?', function(e){
+                        if (e){
+                            $.post("/syllabus", {action: 'deletehab', 'id': id }, function(data) {
+                                if (data.result=='ok') {
+                                   smoke.alert("Registro Eliminado");
+
+                                   setInterval(function(){
+                                        location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                                   }, 1000);
+                                }
+                                else{
+                                   smoke.alert('Error vuelva a intentarlo');
+                                }
+                            }, "json");
+                        }else{
+                            }
+                            }, {
+                            ok: "CONTINUAR",
+                            cancel: 'CANCELAR',
+                            classname: "custom-class",
+                            reverseButtons: true
+                            });
+                });
+
+            $(".deletevalores").click(function() {
+                var id = $(this).attr("vid");
+                smoke.confirm( 'Esta seguro que desea eliminar Valores?', function(e){
+                        if (e){
+                            $.post("/syllabus", {action: 'deletevalores', 'id': id }, function(data) {
+                                if (data.result=='ok') {
+                                   smoke.alert("Registro Eliminado");
+
+                                   setInterval(function(){
+                                        location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                                   }, 1000);
+                                }
+                                else{
+                                   smoke.alert('Error vuelva a intentarlo');
+                                }
+                            }, "json");
+                        }else{
+                            }
+                            }, {
+                            ok: "CONTINUAR",
+                            cancel: 'CANCELAR',
+                            classname: "custom-class",
+                            reverseButtons: true
+                            });
+                });
+
+            $(".deletehora").click(function() {
+                var id = $(this).attr("hid");
+                var op = $(this).attr("opc");
+                smoke.confirm( "Esta seguro que desea eliminar el valor de hora '" + op + "'", function(e){
+                        if (e){
+                            $.post("/syllabus", {action: 'deletehora', 'id': id ,'op':op}, function(data) {
+                                if (data.result=='ok') {
+                                   smoke.alert("Registro Eliminado");
+
+                                   setInterval(function(){
+                                        location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                                   }, 1000);
+                                }
+                                else{
+                                   smoke.alert('Error vuelva a intentarlo');
+                                }
+                            }, "json");
+                        }else{
+                            }
+                            }, {
+                            ok: "CONTINUAR",
+                            cancel: 'CANCELAR',
+                            classname: "custom-class",
+                            reverseButtons: true
+                            });
+                });
+
+            function GuardaHoras(opcion){
+                var valorhora = $("#modal_horas #id_valor").val();
+                var op = $("#modal_horas #opthoras").val();
+                $.post("/syllabus", {action: 'addhora', 'id': tema, 'hora':valorhora,'op':op,'opcion':opcion,'hid':hora}, function(data) {
+                        if (data.result=='ok') {
+                           smoke.alert('ingreso exitoso');
+
+                           setInterval(function(){
+                                location.href = "/syllabus?action=ver&id={{ syllabus.asigmalla.id }}&malla={{ malla }}";
+                           }, 1000);
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                    }, "json");
+
+            }
+            $("#modal_horas .adicionar").click(function() {
+
+                $("#modal_horas").modal("hide");
+
+                GuardaHoras(opcion);
+            });
+             $('.subir').click(function(){
+
+                $("#archivopanel").modal({"backdrop":"static","width":"40%"});
+                $("#archivopanel").modal("show");
+            });
+
+            {% if error %}
+                smoke.alert('{{ error }}');
+            {% endif %}
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+    {% if syllabus.archivo %}
+        <div class='span8'>
+    {% else %}
+            <div class='span9'>
+    {% endif %}
+            <h3>SYLLABUS</h3>
+            <a href="/reportes?action=run&direct=true&n=syllabus_pormateria&rt=pdf&asigmalla={{ syllabus.asigmalla.id  }}&malla={{ malla  }}"class='btn btn-success'><i class="icon-print"></i> Imprimir</a>
+        </div>
+        <div class='span2' style="text-align: right">
+            {% if syllabus.archivo %}
+                <a href="media/{{ syllabus.archivo }}" class='btn btn-success'><i class="icon-download-alt"></i> Descargar  </a>
+            {% endif %}
+            {% if not syllabus.archivo %}
+                <a href="#" class='btn btn-success subir'><i class="icon-upload-alt"></i> Subir </a>
+            {% endif %}
+        </div>
+        {% if  syllabus.archivo %}
+            <div class='span1'>
+                <a href="#" class='btn btn-success subir'><i class="icon-upload"></i> Cambiar </a>
+            </div>
+        {% endif %}
+        <div class='span1'>
+            <a href="/mallas?action=edit&id={{ malla }}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th colspan="8" style="text-align: center">Datos Generales</th>
+            </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>Asignatura:</b> {{ asignatura.asignatura.nombre }}</td>
+                    <td colspan="3"><b>Nivel:</b> {{ asignatura.nivelmalla }}</td>
+                    <td colspan="4"><b>C&oacute;digo: </b>{{ asignatura.asignatura.codigo }}</td>
+                </tr>
+                <tr>
+                    <td colspan="3"><b>Total Horas:</b> {{ asignatura.horas }}</td>
+                    <td colspan="5"><b>N&uacute;m. de Cr&eacute;ditos:</b> {{ asignatura.creditos }}</td>
+                </tr>
+                <tr>
+                    <td colspan="3"><b>Prerrequisito: </b><input type="text" style="width: 80%;text-transform: uppercase" id='prereq' {% if syllabus.prerrequisito %} value='{{ syllabus.prerrequisito }}' {% else %}value=' '{% endif %}></td>
+                    <td colspan="5"><b>Correquisito: </b><input type="text" style="width: 80%;text-transform: uppercase" id='correq'{% if syllabus.correquisito %} value='{{ syllabus.correquisito }}' {% else %}{% endif %}> </td>
+
+                </tr>
+                <tr>
+                    <td style="text-align: center" colspan="3"><b>Unidades de Organización Curricular</b></td>
+                    <td style="text-align: center" colspan="8"><b>Campos de Formaci&oacute;n</b></td>
+                </tr>
+                <tr>
+                    <td colspan="3">
+                         <select id='unidadorg' class="input-xxlarge">
+                                    <option value=''>-----</option>
+                                    {% for u in unidad %}
+                                        <option id='unidad' value="{{ u.id }}"{% if u.id == syllabus.unidadorg.id %}selected="selected"{% endif %}>{{ u.descripcion }}</option>
+                                    {% endfor %}
+                                </select>
+                    </td>
+                    <td colspan="5" style="text-align: center">{% for c in campos %} {{ c.descripcion }}   <input name="campo" class='campo' cid='{{ c.id }}'  class='sect'  type="checkbox" style="margin: 0 0 0 0" {%  if  c|args:syllabus|call:"tiene_syllabus" %} checked  {% endif %}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% endfor %}     </td>
+                </tr>
+                <tr>
+                    <td colspan="8" ><b>L&iacute;neas de investigaci&oacute;n de la carrea: </b> <input type="text" style="width: 80%;text-transform: uppercase" id='linea' {% if syllabus.lineasinv %} value='{{ syllabus.lineasinv }}' {% else %}value=''{% endif %}> </td>
+                </tr>
+
+                {% for c in capitulos %}
+                    {% if  c.tiene_detalle %}
+                        <tr>
+                        <td {% if  c.tiene_detalle %} colspan="8"{% else %} colspan="5"{% endif %}><b>{{ c.numero }}. {{ c.nombre }} </b>
+{#                            <a style="cursor: pointer" class='btn btn-info editcap' cid='{{ c.id }}'  num='{{ c.numero }}' nom='{{ c.nombre }}' orden='{{ c.orden }}' contenido='{{ c.contenido }}'  detalle='{{ c.tiene_detalle }}'> <i class="icon-edit"></i> C</a><a class='btn btn-warning adddetcap' cid='{{ c.id }}'> <i class="icon-plus"></i> <b> DC</b></a>  <a class='btn btn-success addtema' cid='{{ c.id }}'> <i class="icon-plus"></i> T</a><br/>#}
+
+                            {% if not syllabus.en_clase %}
+                            <div class="btn-group">
+                                <a  class="btn btn-mini btn-info  dropdown-toggle" data-toggle="dropdown" href="#">
+{#                                    <b>Acciones</b>#}
+                                    <span class="icon-sort-down"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    <li title="Editar Cap&iacute;tulo"><a class='editcap' cid='{{ c.id }}'  num='{{ c.numero }}' nom='{{ c.nombre }}' orden='{{ c.orden }}' contenido='{{ c.contenido }}'  detalle='{{ c.tiene_detalle }}'> <i class="icon-edit"></i>  Cap&iacute;tulo</a></li>
+                                    <li title="Adicionar Detalle Cap&iacute;tulo"><a class='adddetcap' cid='{{ c.id }}'> <i class="icon-plus"></i> Detalle</a> </li>
+                                    <li title="Adicionar Tema"><a class='addtema' cid='{{ c.id }}'> <i class="icon-plus"></i> Tema</a> </li>
+                                    {% if not c.tiene_detalle and  not c.temas and not c.detalle %}
+                                        <li title="Eliminar Cap&iacute;tulo"><a class='deletecap' cid='{{ c.id }}'  > <i class="icon-remove"></i>  Eliminar</a></li>
+                                    {% endif %}
+
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                            {{ c.contenido }}
+
+                        <tr>
+                            <td colspan="4" style="text-align: center"><b>CONTENIDO</b></td>
+                            <td  style="text-align: center"   colspan="3"><b>HORAS</b></td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;font-weight: bold;width: 40%" colspan="2" >CONOCIMIENTO</td>
+                            <td style="text-align: center;font-weight: bold;width: 15%">HABILIDADES</td>
+                            <td style="text-align: center;font-weight: bold;width: 15%">VALORES</td>
+                            <td style="text-align: center;font-weight: bold; ">D</td>
+                            <td style="text-align: center;font-weight: bold;">P</td>
+                            <td style="text-align: center;font-weight: bold">A</td>
+                        </tr>
+{#                        {%  %}#}
+                    {% endif %}
+                        <tr>
+                        {% if not c.tiene_detalle %}
+                        <td colspan="8"><b>{{ c.numero }}. {{ c.nombre }} </b>
+{#                            <a class='btn btn-info  editcap' cid='{{ c.id }}'  num='{{ c.numero }}' nom='{{ c.nombre }}' orden='{{ c.orden }}' contenido='{{ c.contenido }}'  detalle='{{ c.tiene_detalle }}'> <i class="icon-edit"></i> C</a> <a class='btn btn-warning adddetcap' cid='{{ c.id }}'> <i class="icon-plus"></i> <b>DC</b></a> <a class='btn btn-success addtema' cid='{{ c.id }}'> <i class="icon-plus"></i> T</a> <br/>#}
+{#                             <br/>#}
+                                 {% if not syllabus.en_clase %}
+                                 <div class="btn-group">
+                                    <a style="font-size: 10px" class="btn btn-mini btn-info dropdown-toggle" data-toggle="dropdown" href="#">
+    {#                                    <b>Acciones</b>#}
+                                        <span class="icon-sort-down"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <li title="Editar Cap&iacute;tulo"><a class='editcap' cid='{{ c.id }}'  num='{{ c.numero }}' nom='{{ c.nombre }}' orden='{{ c.orden }}' contenido='{{ c.contenido }}'  detalle='{{ c.tiene_detalle }}'> <i class="icon-edit"></i>  Cap&iacute;tulo</a></li>
+                                        <li title="Adicionar Detalle Cap&iacute;tulo"><a class='adddetcap' cid='{{ c.id }}'> <i class="icon-plus"></i> Detalle </a> </li>
+                                        <li title="Adicionar Tema"><a class='addtema' cid='{{ c.id }}'> <i class="icon-plus"></i> Tema</a> </li>
+                                        {% if not  c.tiene_detalle and not c.temas and not c.detalle%}
+                                            <li title="Eliminar Cap&iacute;tulo"><a class='deletecap' cid='{{ c.id }}'  > <i class="icon-remove"></i>  Eliminar</a></li>
+                                        {% endif %}
+
+                                    </ul>
+                                  </div>
+                                 {% endif %}
+
+                        {% endif %}
+                            <br><div style="text-align: justify;padding-left: 15px">{{ c.contenido }}</div>
+                        {% if c.detalle %}
+                             {% for dc in c.detalle %}
+                                <br> <div style="text-align: justify;padding-left: 15px"> {{ dc.descripcion }}
+{#                                 <a class='btn btn-info editdetcap' dc='{{  dc.id }} 'cid='{{ c.id }}' descripcion='{{ dc.descripcion }}'> <i class="icon-edit"></i> <b> DC</b></a>#}
+                                 {% if not syllabus.en_clase  %}
+                                    <div class="btn-group">
+                                        <a  class="btn btn-mini btn-info  dropdown-toggle" data-toggle="dropdown" href="#">
+    {#                                        <b>Acciones</b>#}
+                                            <span class="icon-sort-down"></span>
+                                        </a>
+                                        <ul class="dropdown-menu pull-right">
+                                            <li title="Editar Detalle Cap&iacute;tulo"><a class='editdetcap' dc='{{  dc.id }} 'cid='{{ c.id }}' descripcion='{{ dc.descripcion }}'> <i class="icon-edit"></i> Detalle Cap&iacute;tulo</a></li>
+    {#                                        {% if %}#}
+                                                <li title="Eliminar Detalle Cap&iacute;tulo"><a class='deletedetcap' dc='{{  dc.id }}'> <i class="icon-remove"></i>  Eliminar </a></li>
+    {#                                        {% endif %}#}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                                     </div>
+
+                            {% endfor %}
+                        {% endif %}
+                        {% if c.temas %}
+                            {% for t in c.temas %}
+                                {% if c.tiene_detalle %}
+                                    </td><tr><td colspan="2">
+                                {% endif %}
+                                <div style="text-align: justify;padding-left: 15px"><b>{{ t.numero }}. {{ t.nombre }} </b>
+                                {% if  not syllabus.en_clase %}
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini btn-info  dropdown-toggle" data-toggle="dropdown" href="#">
+                                        <span class="icon-sort-down"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <li title="Editar Tema"><a class='edittema' cid='{{ c.id }}' tid='{{ t.id }}'  num='{{ t.numero }}' nom='{{ t.nombre }}' orden='{{ t.orden }}' contenido='{{ t.contenido }}'><i class="icon-edit"></i> Tema</a></li>
+                                        {% if not  c.tiene_detalle %}
+                                        <li title="Adicionar Detalle Tema"><a class='adddettema' tid='{{ t.id }}'> <i class="icon-plus"></i> Detalle Tema</a> </li>
+                                         {% endif %}
+                                        <li title="Adicionar SubTema"><a class='addsubtema' tid='{{ t.id }}'> <i class="icon-plus"></i> SubTema</a> </li>
+                                        {% if not t.detalltema and not t.subtema and not t.habilidades and not t.valores and not t.horas.d and not t.horas.p and not t.horas.a  %}
+                                            <li title="Eliminar Tema"><a class='deletetema' cid='{{ c.id }}' tid='{{ t.id }}' ><i class="icon-remove"></i> Eliminar </a></li>
+                                        {% endif %}
+
+                                    </ul>
+                                </div>
+                                {% endif %}
+                                </div>
+
+
+                                {% if t.contenido %}
+                                        <div style="text-align: justify;padding-left: 39px">{{ t.contenido }}</div>
+                                {% endif %}
+                                {% if t.detalltema %}
+                                    {% for dt in t.detalltema %}
+                                        <div style="text-align: justify;padding-left: 35px">{{ dt.descripcion }}
+                                    {% if  not syllabus.en_clase  %}
+                                        <div class="btn-group">
+                                            <a  class="btn btn-mini btn-info  dropdown-toggle" data-toggle="dropdown" href="#">
+    {#                                            <b>Acciones</b>#}
+                                                <span class="icon-sort-down"></span>
+                                            </a>
+
+                                            <ul class="dropdown-menu pull-right">
+                                                <li title="Editar Detalle Tema"><a class='editdettema' did='{{ dt.id }}' tid='{{ t.id }}' descripcion='{{ dt.descripcion }}'><i class="icon-edit"></i> Detalle Tema</a></li>
+                                                <li title="Eliminar Detalle Tema"><a class='deletedettema' did='{{ dt.id }}' tid='{{ t.id }}' ><i class="icon-remove"></i> Eliminar </a></li>
+
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                        </div>
+
+                                    {% endfor %}
+                                {% endif %}
+                                {% if t.subtema %}
+                                    {% for st in t.subtema %}
+                                        <div style="text-align: justify;padding-left: 33px">
+                                        {% if st.detalle %}<b>{{ st.numero }}. {{ st.contenido }}
+
+                                            </b>{% else %}{{ st.numero }}. {{ st.contenido }}{% endif %}
+                                            {% if  not syllabus.en_clase  %}
+                                                <div class="btn-group">
+                                                    <a  class="btn btn-mini btn-info  dropdown-toggle" data-toggle="dropdown" href="#">
+    {#                                                <b>Acciones</b>#}
+                                                        <span class="icon-sort-down"></span>
+                                                    </a>
+                                                    <ul class="dropdown-menu pull-right">
+                                                        <li title="Editar Subtema"><a class='editsubtema'  sid='{{ st.id }}' contenido='{{ st.contenido }}' tid='{{ t.id }}' numero='{{ st.numero }}' ><i class="icon-edit"></i> SubTema</a></li>
+                                                        <li title="Adicionar Detalle"><a class='adddetalle' st='{{ st.id }}' tid='{{ t.id }}' ><i class="icon-plus"></i> Detalle</a></li>
+                                                        {% if not st.detalle %}
+                                                            <li title="Eliminar SubTema"><a class='deletesubtema' sid='{{ st.id }}'  ><i class="icon-remove"></i> Eliminar</a></li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </div>
+                                             {% endif %}
+                                        </div>
+
+                                        {% if st.detalle %}
+                                            {% for dst in st.detalle %}
+                                               <div style="text-align: justify;padding-left: 43px">
+                                                {{ dst.numero }}. {{ dst.contenido }}
+                                                {% if  not syllabus.en_clase  %}
+                                                    <div class="btn-group">
+                                                        <a  class="btn btn-mini btn-info  dropdown-toggle" data-toggle="dropdown" href="#">
+    {#                                                        <b>Acciones</b>#}
+                                                            <span class="icon-sort-down"></span>
+                                                        </a>
+                                                        <ul class="dropdown-menu pull-right">
+                                                            <li title="Editar Detalle"><a class='editdetalle' dst='{{ dst.id }}' st='{{ st.id }}' numero='{{ dst.numero }}'  contenido='{{ dst.contenido }}' ><i class="icon-edit"></i> Detalle</a></li>
+                                                            <li title="Eliminar Detalle"><a class='deletedetalle' dst='{{ dst.id }}' st='{{ st.id }}' ><i class="icon-remove"></i>  Eliminar</a></li>
+                                                        </ul>
+                                                    </div>
+                                                {% endif %}
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                                {% if c.tiene_detalle %}
+                                    </td><td style="text-align: center;">{{ t.habilidades.descripcion }}<br/>
+                                    {% if not t.habilidades %}<a class='btn btn-success addhabilidad' tid='{{ t.id }}'><i class="icon-plus"></i> </a>{% else %}
+                                        <a class='btn btn-info edithab' tid='{{ t.id }}' hid='{{ t.habilidades.id }}' hab='{{ t.habilidades.descripcion }}'><i class="icon-edit"></i> </a>
+                                        <a class='btn btn-danger deletehab' hid='{{ t.habilidades.id }}' ><i class="icon-remove"></i> </a>
+                                    {% endif %}</td>
+                                    <td style="text-align: center" >{{ t.valores.descripcion }}<br/>
+                                    {% if not t.valores %}<a class='btn btn-success addvalores' tid='{{ t.id }}'><i class="icon-plus"></i> </a>{% else %}
+                                        <a class='btn btn-info editvalores' tid='{{ t.id }}' vid='{{ t.valores.id }}' valor='{{ t.valores.descripcion }}'><i class="icon-edit"></i></a>
+                                        <a class='btn btn-danger deletevalores'  vid='{{ t.valores.id }}'><i class="icon-remove"></i></a>
+                                    {% endif %}
+                                    </td>
+                                    <td style="text-align: center">
+                                    <br/>
+
+                                    {% if not t.horas.d %}<a class='btn btn-success addhora'  {% if t.horas %}hid='{{ t.horas.id }}' {% endif %} tid='{{ t.id }}'  opc = 'd'><i class="icon-plus"></i> </a>{% else %}
+                                        {{ t.horas.d }}<br/><a class='btn btn-info edithora' tid='{{ t.id }}' hid='{{ t.horas.id }}' horas='{{ t.horas.d  }}'  opc = 'd'><i class="icon-edit"></i> </a>
+                                        <a class='btn btn-danger deletehora' hid='{{ t.horas.id }}'  opc = 'd'><i class="icon-remove"></i> </a>
+                                    {% endif %}
+                                    </td>
+                                    <td style="text-align: center"><br/>
+                                    {% if not t.horas.p %}<a class='btn btn-success addhora' {% if t.horas %}hid='{{ t.horas.id }}'  {% endif %}tid='{{ t.id }}' opc = 'p'><i class="icon-plus"></i> </a>{% else %}
+                                      {{ t.horas.p }}<br/> <a class='btn btn-info edithora' tid='{{ t.id }}' hid='{{ t.horas.id }}' horas='{{ t.horas.p  }}'  opc = 'p'><i class="icon-edit"></i> </a>
+                                        <a class='btn btn-danger deletehora'  hid='{{ t.horas.id }}'   opc = 'p'><i class="icon-remove"></i> </a>
+                                    {% endif %}
+                                    </td>
+                                    <td style="text-align: center"><br/>
+                                    {% if not t.horas.a %}<a class='btn btn-success addhora' {% if t.horas %}hid='{{ t.horas.id }}' {% endif %} tid='{{ t.id }}'  opc = 'a'><i class="icon-plus"></i> </a>{% else %}
+                                       {{ t.horas.a }}
+                                    <br/> <a class='btn btn-info edithora' tid='{{ t.id }}' hid='{{ t.horas.id }}' horas='{{ t.horas.a  }}'  opc = 'a'><i class="icon-edit"></i> </a>
+                                        <a class='btn btn-danger deletehora'  hid='{{ t.horas.id }}'  opc = 'a'><i class="icon-remove"></i> </a>
+                                    {% endif %}
+                                    </td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                         {% endif %}
+                    </tr>
+
+                {% endfor %}
+                <tr>
+                {% if not syllabus.en_clase %}
+                    <td colspan="8"><a class="btn btn-ejecutar btn-info addcap"><i class="icon-plus"></i> Agregar Capitulo</a></td>
+                {% endif %}
+                </tr>
+            </tbody>
+
+        </table>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modal_capitulo"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Capitulo</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            <input type='hidden' id='op' />
+            {% for field in form %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}</b></label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modal_tema"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Tema</i></h4>
+            <p id="error"></p>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            <input type='hidden' id='optema' />
+            {% for field in formtema %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}</b></label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modal_subtema"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>  SubTema</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            <input type='hidden' id='optsub' />
+            {% for field in formdetsubtema %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}</b></label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="modal_detcap"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Detalle de Capitulo</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            <input type='hidden' id='optcap' />
+            {% for field in formdettema %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}</b></label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="modal_detalletema"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>Detalle de Tema</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            <input type='hidden' id='optdet' />
+            {% for field in formdettema %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}</b></label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+     <div class="modal fade static" id="modal_detalle"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>Detalle</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            <input type='hidden' id='optsubdet' />
+            {% for field in formdetsubtema %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}</b></label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="modal_habilidad"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>Habilidad</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            <input type='hidden' id='opthab' />
+            {% for field in habilidadfrm %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}</b></label>
+                    <div class="co trols">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modal_valores"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Valores </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            <input type='hidden' id='optval' />
+            {% for field in habilidadfrm %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}</b></label>
+                    <div class="co trols">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modal_horas"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>Hora </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <div id="formulario5"  action="" >
+            <input type='hidden' id='opthoras' />
+            {% for field in horasfrm %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}</b></label>
+                    <div class="co trols">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <a  class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a  class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="archivopanel"   >
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle1'><i> Ingrese Archivo </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well {% block form-type %}form-horizontal{% endblock %}' action="/syllabus" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addarchivo' />
+                <input type='hidden' name='id_syllabus' value='{{ syllabus.id }}' />
+                <input type='hidden' name='id_malla' value='{{ malla }}' />
+                {% for field in formsyll %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+
+                <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">{% block buttonname %}Guardar{% endblock %}</button>
+                {% block extrabuttons %}
+                    <a href="#" class="btn btn-cerrar"> Cerrar</a>
+                {% endblock %}
+            </form>
+        </div>
+    </div>
+{% endblock %}

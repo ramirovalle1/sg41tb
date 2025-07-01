@@ -1,0 +1,252 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $("#fechaDesde").val( '{{ fechaActual|date:"d-m-Y" }}')
+            var fechaincio = '{{ fechaActual|date:'d-m-Y' }}';
+            fechaincio2 =  new Date(parseInt(fechaincio.split('-')[0]), parseInt(fechaincio.split('-')[1])-1, parseInt(fechaincio.split('-')[2]));
+            $("#fechaDesde").datepicker({format:"dd-mm-yyyy", minDate: fechaincio2}).mask("99-99-9999");
+
+            let categorias = []
+
+            add = function(){
+                categorias = []
+                $("#tableCategorias").html('')
+                function Categoria(cat, porc, fac, desde, hasta){
+                    this.categoria=cat
+                    this.porcentaje=porc
+                    this.factor=fac
+                    this.diaDesde=desde
+                    this.diaHasta=hasta
+                }
+
+                const a2 = new Categoria('A2', null, null, null, '');
+                const a3 = new Categoria('A3', null, null, null, '');
+                const b1 = new Categoria('B1', null, null, null, '');
+                const b2 = new Categoria('B2', null, null, null, '');
+                const c1 = new Categoria('C1', null, null, null, '');
+                const c2 = new Categoria('C2', null, null, null, '');
+                const d = new Categoria('D', null, null, null, '');
+                const e = new Categoria('E', null, null, null, '1825');
+                categorias.push(a2, a3, b1, b2, c1, c2, d, e);
+
+{#                const a2 = new Categoria('A2', 0, 0.02, 1, 30);#}
+{#                const a3 = new Categoria('A3', 0, 0.04, 31, 45);#}
+{#                const b1 = new Categoria('B1', 0, 0.1, 46, 60);#}
+{#                const b2 = new Categoria('B2', 0, 0.2, 61, 75);#}
+{#                const c1 = new Categoria('C1', 5, 0.5, 76, 90);#}
+{#                const c2 = new Categoria('C2', 5, 0.7, 91, 120);#}
+{#                const d = new Categoria('D', 5, 0.8, 121, 180);#}
+{#                const e = new Categoria('E', 10, 1.1, 181, 9999999999);#}
+
+{#                categorias.push(a2, a3);#}
+                console.log(categorias)
+                $("#tableCategorias").append("<tr>" +
+                                                "<th style='text-align: center'>Categoria</th>"+
+                                                "<th style='text-align: center'>Porcentaje</th>"+
+                                                "<th style='text-align: center'>Factor</th>"+
+                                                "<th style='text-align: center'>Dia desde</th>"+
+                                                "<th style='text-align: center'>Dia hasta</th>"+
+                                                "</tr>")
+
+                for(let i in categorias){
+                    categoria = categorias[i].categoria
+                    porcentaje = categorias[i].porcentaje
+                    factor = categorias[i].factor
+                    desde = categorias[i].diaDesde
+                    hasta = categorias[i].diaHasta
+{#                    $("#tableCategorias").append("<tr>" +#}
+{#                            "<td style='text-align:center'>"+categoria+"</td>" +#}
+{#                            "<td style='text-align:center'>"+porcentaje+"</td>" +#}
+{#                            "<td style='text-align:center'>"+factor+"</td>" +#}
+{#                            "<td style='text-align:center'>"+desde+"</td>" +#}
+{#                            "<td style='text-align:center'>"+hasta+"</td>" +#}
+{#                            "</tr>")#}
+
+                    txtPorcentaje = "<input type='text' style='text-align:center; width:50%' onblur='prueba(this)' class='"+categoria+"' id='porcentaje_"+categoria+"'/>"
+                    txtFactor = "<input type='text' style='text-align:center; width:50%' onblur='prueba(this)' id='factor_"+categoria+"'/>"
+                    txtDesde = "<input type='text' style='text-align:center; width:50%' onblur='prueba(this)' id='desde_"+categoria+"'/>"
+                    txtHasta = "<input type='text' style='text-align:center; width:50%' onblur='prueba(this)' value='"+hasta+"' id='hasta_"+categoria+"'/>"
+
+                    $("#tableCategorias").append("<tr>" +
+                                                    "<td style='text-align:center'>"+categoria+"</td>" +
+                                                    "<td style='text-align:center'>"+txtPorcentaje+"</td>" +
+                                                    "<td style='text-align:center'>"+txtFactor+"</td>" +
+                                                    "<td style='text-align:center'>"+txtDesde+"</td>" +
+                                                    "<td style='text-align:center'>"+txtHasta+"</td>" +
+                                                "</tr>")
+                }
+
+                $("#addCategoria").modal({"backdrop":"static","width":"650px"});
+                $("#addCategoria").modal("show");
+            }
+
+            guardar = function(){
+                valida = true;
+                for(let c in categorias){
+                    $('#help').hide()
+                    if($("#porcentaje_"+categoria).val()==''||$("#factor_"+categoria).val()==''||$("#desde_"+categoria).val()==''||$("#hasta_"+categoria).val()==''){
+                        valida = false
+                        mensaje = 'Faltan datos sin completar'
+                        break;
+                    }
+                    categoria = categorias[c].categoria
+                    categorias[c].porcentaje = $("#porcentaje_"+categoria).val()
+                    categorias[c].factor = $("#factor_"+categoria).val()
+                    categorias[c].diaDesde = $("#desde_"+categoria).val()
+                    categorias[c].diaHasta = $("#hasta_"+categoria).val()
+                }
+                if($('#fechaDesde').val()<'{{ fechaActual|date:"d-m-Y" }}'){
+                    $('#help').hide()
+                    valida = false
+                    mensaje = "Fecha seleccionada debe debe ser mayor a fecha actual"
+                }
+                console.log(categorias)
+                if(valida){
+                    $("#addCategoria").modal("hide");
+                    $.post("/registros",{"action": "addCategoriaRubro", "categorias":JSON.stringify(categorias), "fecha":$('#fechaDesde').val()},function(data) {
+                        if(data.result == "ok"){
+                            alert('CATEGORIAS CREADAS CORRECTAMENTE')
+                            location.reload()
+                        }else{
+                            smoke.alert("Error: "+data.error)
+                        }
+                    },"json");
+                }else{
+                    $('#help').show(500)
+                    $('#help').html(mensaje)
+                    $('#help').addClass('alert')
+                    $('#help').addClass('alert-danger')
+                }
+
+            }
+
+            var numeros="0123456789.";
+
+            function solo_numeros(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+
+            prueba = function(obj){
+                var valor = $(obj).val();
+                if (solo_numeros(valor) != valor.length){
+                    $(obj).val('');
+                    $(obj).focus();
+                    $("#help").html("Solo ingresar numeros y punto.")
+                    $("#help").addClass('alert')
+                    $("#help").addClass('alert-danger')
+                }
+            }
+
+            cerrar = function(){
+                $("#addCategoria").modal("hide");
+            }
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span3'></div>
+        <div class='span3'>
+            <h3>Categor&iacute;a de Rubros</h3>
+        </div>
+
+        <div class='span3' style="text-align: right">
+            <a href="#" class="btn btn-success" onclick="add()"><i class="icon-plus"></i> Crear Categorias</a>
+            <a href="/registros" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <br>
+    <div class='row-fluid'>
+        <div class='span3'></div>
+        <div class='span6'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th style="text-align: center">id</th>
+                <th style="text-align: center">Categoria</th>
+                <th style="text-align: center">Porcentaje</th>
+                <th style="text-align: center">Factor</th>
+                <th style="text-align: center">Rango</th>
+                <th style="text-align: center">Desde</th>
+                <th style="text-align: center">Hasta</th>
+                <th style="text-align: center">Activo</th>
+{#                <th style="width: 50px"> </th>#}
+            </tr>
+            </thead>
+            <tbody>
+            {% for c in categorias %}
+                <tr>
+                    <td style="text-align: center">{{ c.id }}</td>
+                    <td style="text-align: center">{{ c.categoria }}</td>
+                    <td style="text-align: center">{{ c.porcentaje }}</td >
+                    <td style="text-align: center">{{ c.factor }}</td >
+                    <td style="text-align: center">{{ c.numdiasminimo }} a {{ c.numdiasmaximo }} dias</td >
+                    <td style="text-align: center">{{ c.desde|date:'d-m-Y' }}</td >
+                    <td style="text-align: center">{% if not c.estado %}{{ c.hasta|date:'d-m-Y' }}{% else %}-{% endif %}</td >
+                    <td style="text-align: center">
+                        {% if c.estado%}
+                            <img src='/static/images/16/true.png' border='0'/>
+                        {% else %}
+                            <img src='/static/images/16/false.png' border='0'/>
+                        {% endif %}
+                    </td>
+{#                    <td>#}
+{#                        <div class="btn-group">#}
+{#                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">#}
+{#                                Acciones#}
+{#                                <span class="caret"></span>#}
+{#                            </a>#}
+{#                            <ul class="dropdown-menu pull-right">#}
+{#                                <li><a href="#" class="vergestion" idins="{{ i.id }}" alumno='{{ i.persona }}'><i class="icon-eye-open"></i> Ver Gesti&oacute;n </a></li>#}
+{#                            </ul>#}
+{#                        </div>#}
+{#                    </td>#}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="addCategoria">
+        <div class="modal-header">
+            <h4>Agregar Categor&iacute;a</h4>
+        </div>
+{#        <form id="formulario6" action="/registros" method="POST">#}
+            <div class="modal-body" style="text-align: left">
+
+                <table class="table table-condensed" id="tableCategorias" style="border-bottom: none">
+                </table>
+                <p class="alert alert-info" style="text-align: right">1825 dias = 5 años</p>
+                <p id='help' style="text-align: right"></p>
+                <label for="" style="text-align: right">Fecha desde que se aplicará el cambio:
+                    <input type="text" id="fechaDesde"/>
+                </label>
+            </div>
+            <div class="modal-footer">
+{#                <button type="submit">Guardar</button>#}
+                <a href="#" class="btn btn-success" onclick="guardar()">Guardar</a>
+                <a href="#" class="btn btn-cerrar btn-warning" onclick="cerrar()">Salir</a>
+            </div>
+{#        </form>#}
+    </div>
+
+
+
+{% endblock %}
+
+

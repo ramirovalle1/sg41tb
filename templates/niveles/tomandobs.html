@@ -1,0 +1,311 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+            var ins=0;
+            $("#id_inscripcion").attr({"autocomplete":"off"});
+            $( document ).ready(function() {
+                $($("#id_numdocument").get(0).parentNode.parentNode).hide();
+                $($("#id_curso").get(0).parentNode.parentNode).hide();
+                $("#id_numdocument").addClass('input-large');
+                $("#datosbuck").hide();
+            });
+
+            $("#id_numdocument").blur(function(){
+                $.post("/niveles", {'action': 'bussgaonline', 'numdocument': $("#id_numdocument").val()}, function(data) {
+                    if (data.result=='ok'){
+                        var i=''
+                        console.log(data.datos)
+                        for (i in data.datos){
+                            $("#nombres").html(data.datos[i].nombres);
+                            $("#apellido1").html(data.datos[i].apellido1);
+                            $("#apellido2").html(data.datos[i].apellido2);
+                            $("#telefono_conv").html(data.datos[i].telefono_conv);
+                            $("#telefono").html(data.datos[i].telefono);
+                            $("#email").html(data.datos[i].email);
+                            $("#direccion").html(data.datos[i].direccion);
+                            $("#direccion2").html(data.datos[i].direccion2);
+                            if(data.datos[i].cedula){
+                                $("#pasapor").attr('checked',false);
+                            }else{
+                                $("#pasapor").attr('checked',true);
+                            }
+                        }
+                        $(".help-textmens").html('');
+                        $("#datosbuck").show();
+                    }else{
+                        $("#nombres").html('');
+                        $("#apellido1").html('');
+                        $("#apellido2").html('');
+                        $("#telefono_conv").html('');
+                        $("#telefono").html('');
+                        $("#email").html('');
+                        $("#direccion").html('');
+                        $("#direccion2").html('');
+                        $("#pasapor").attr('checked',false);
+                        $("#datosbuck").hide();
+                        $(".help-textmens").html('<a style="color:red">No se encuentra un estudiante con ese número de documento o no ha solicitado convalidación</a>')
+                    }
+                }, 'json');
+            });
+            $("#agregarestudiante .btn-inscribir").click(function(){
+                $(".help-textmens").html('');
+                $("#agregarestudiante .btn-inscribir").hide();
+                if($("#nombres").html()!= '' && $("#id_curso").val() != ''){
+                    var pasporte = '';
+                    var cedula = '';
+                    if ($("#pasapor").is(':checked')) {
+                        pasporte = $("#id_numdocument").val();
+                    }else{
+                        cedula = $("#id_numdocument").val();
+                    }
+                    var data = {'nombres': $("#nombres").html(),
+                    'apellido1': $("#apellido1").html(),
+                    'apellido2': $("#apellido2").html(),
+                    'telefono_conv': $("#telefono_conv").html(),
+                    'telefono': $("#telefono").html(),
+                    'email': $("#email").html(),
+                    'direccion': $("#direccion").html(),
+                    'direccion2': $("#direccion2").html(),
+                    'curso': $("#id_curso").val(),
+                    'id': '{{ materia.id }}',
+                    'cedula': cedula,
+                    'pasaporte': pasporte};
+                    $.post("/api", {'a': 'matribucksgaonline','data':JSON.stringify(data), 'buckop':'opcion'}, function(data) {
+                        if (data.result=='ok'){
+                            location.reload();
+                        }else{
+                            $("#agregarestudiante .btn-inscribir").show();
+                            $(".help-textmens").html('<a class="alert alert-danger">'+ data.error +'</a>');
+                        }
+                    }, 'json');
+
+                }else{
+                    $("#agregarestudiante .btn-inscribir").show();
+                    $(".help-textmens").html('<a class="alert alert-danger">DEBE INGRESAR EL NIVEL DE CONVALIDACIÓN O NO EXISTE DATOS DEL ESTUDIANTE</a>');
+                }
+
+            });
+            $("#id_sgaonline").click(function(){
+                 if ($("#id_sgaonline").is(':checked')) {
+                     $("#id_inscripcion").val('');
+                     $("#id_inscripcion").removeClass("validate[required]");
+                     $("#id_numdocument").addClass("validate[required]");
+                     $("#id_curso").addClass("validate[required]");
+                     $($("#id_inscripcion").get(0).parentNode.parentNode).hide();
+                     $($("#id_numdocument").get(0).parentNode.parentNode).show();
+                     $($("#id_curso").get(0).parentNode.parentNode).show();
+                     $("#agregarestudiante .btn-buscar").hide();
+                     $("#agregarestudiante .btn-inscribir").show();
+                 }else{
+                     $("#id_inscripcion").addClass("validate[required]");
+                     $("#id_numdocument").removeClass("validate[required]");
+                     $("#id_curso").removeClass("validate[required]");
+                     $("#id_numdocument").val('');
+                     $("#id_curso").val('');
+                     $($("#id_inscripcion").get(0).parentNode.parentNode).show();
+                     $($("#id_numdocument").get(0).parentNode.parentNode).hide();
+                     $($("#id_curso").get(0).parentNode.parentNode).hide();
+                     $("#agregarestudiante .btn-buscar").show();
+                     $("#agregarestudiante .btn-inscribir").hide();
+                 }
+            });
+            $("#agregari").click(function(){
+                $("#id_sgaonline").attr('checked',false)
+                $("#id_numdocument").val("");
+                $("#id_curso").val("");
+                $("#id_inscripcion").val("");
+                $("#agregarestudiante").modal({width: '800px', backdrop: 'static'});
+                $("#agregarestudiante").modal("show");
+            });
+
+            $("#agregarestudiante .btn-cerrar").click(function() {
+                $(".help-textmens").html('');
+                $("#id_inscripcion").addClass("validate[required]");
+                $("#id_numdocument").removeClass("validate[required]");
+                $("#id_curso").removeClass("validate[required]");
+                $("#datosbuck").hide();
+                $("#nombres").html('');
+                $("#apellido1").html('');
+                $("#apellido2").html('');
+                $("#telefono_conv").html('');
+                $("#telefono").html('');
+                $("#email").html('');
+                $("#direccion").html('');
+                $("#direccion2").html('');
+                $("#pasapor").attr('pasapor',false);
+                $($("#id_inscripcion").get(0).parentNode.parentNode).show();
+                $($("#id_numdocument").get(0).parentNode.parentNode).hide();
+                $($("#id_curso").get(0).parentNode.parentNode).hide();
+                $("#agregarestudiante .btn-buscar").show();
+                $("#agregarestudiante").modal("hide");
+                return false;
+            });
+
+            $("#agregarestudiante .btn-buscar").click(function() {
+                $("#agregarestudiante").modal("hide");
+                smoke.confirm('Esta seguro que desea agregar Estudiante', function(e){
+                    if (e){
+                        location.href = "/niveles?action=agregarestudiante&id="+ins+"&mat="+'{{  materia.id }}';
+                    }else{
+
+                        $("#agregarestudiante").modal("show");
+                        $("#id_inscripcion").val("");
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+            buscar_estudiante = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_inscripcion").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#id_inscripcion').typeahead({source: buscar_estudiante, updater: function(item) {
+                var results = $("#id_inscripcion").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_inscripcion").attr("myval",datos.id);
+                        ins=datos.id;
+                        $("#id_inscripcion").val(ins);
+                    }
+                }
+                return item;
+            }});
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span10'>
+            <h3>Materia: {{ materia.asignatura }} - {{ grupo }}</h3>
+        </div>
+        <div class='span1'>
+           <a href="#" class='btn btn-info' id=agregari><i class="icon-search" style="text-align: left"></i>  Agregar Estudiante</a>
+        </div>
+        <div class='span1'>
+            <a href="/niveles" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class='span12'>
+            <a href="/reportes?action=run&direct=true&n=lista_alumnos_matriculados_materia&rt=pdf&materia={{ materia.id }}" class='btn btn-success'><i class="icon-print icon-white"></i> Listado</a>
+            {# OC 05-10-2018 acta de notas buck en blanco para antigua y nueva malla #}
+            {% if materia.nueva_acta_buck %}
+                <a href="/reportes?action=run&direct=true&n=modelo_acta_calificaciones_nueva&rt=pdf&materia={{ materia.id }}" class='btn btn-success'><i class="icon-print icon-white"></i> Modelo Acta</a>
+            {% else %}
+                <a href="/reportes?action=run&direct=true&n=modelo_acta_calificaciones&rt=pdf&materia={{ materia.id }}" class='btn btn-success'><i class="icon-print icon-white"></i> Modelo Acta</a>
+            {% endif %}
+            <a href="/reportes?action=run&direct=true&n=listado_asistencia_dias&rt=pdf&materia={{ materia.id }}" class='btn btn-success'><i class="icon-print icon-white"></i> Modelo Asistencia</a>
+            <a href="/reportes?action=run&direct=true&n=lista_alumnos_deuda_afecha_materia&rt=pdf&materia={{ materia.id }}" class='btn btn-success'><i class="icon-print icon-white"></i> Rubros Pendientes</a>
+            {# OC 02-10-2018 acta de notas buck para antigua y nueva malla #}
+            {% if materia.nueva_acta_buck %}
+                <a id="rep" href="/reportes?action=run&direct=true&n=nueva_acta_notas&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Notas</a>
+            {% else %}
+                <a id="rep" href="/reportes?action=run&direct=true&n=acta_notas&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Acta de Notas</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Inscripci&oacute;n</th>
+                    <th>Cedula</th>
+                    <th>Email</th>
+                    <th>Telefono</th>
+                    <th style="text-align: center">Deuda</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for inscripcion in inscripciones %}
+                <tr>
+                    <td>{{ inscripcion.persona }}</td>
+                    <td>{{ inscripcion.persona.cedula }}</td>
+                    <td>{{ inscripcion.persona.email }}</td>
+                    <td>{{ inscripcion.persona.telefono }}</td>
+                    <td style="text-align: center">{{ inscripcion.total_adeudado }}</td>
+                    <td>
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    {% if not coordinador %}
+                                        <li><a href='/niveles?action=eliminarbk&id={{ inscripcion.id }}&materia={{ materia.id }}'><i class='icon-edit icon-white'></i> Eliminar</a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregarestudiante" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Buscar Estudiante</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <div class="row-fluid">
+                <form id="formulario5"  action="" method="POST">
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                    <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                        <div class="controls" style="width: 98%">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                </form>
+            </div>
+            <div class="row-fluid" id="datosbuck">
+                <h4 class="alert alert-success">Datos del Estudiante</h4>
+                <div class="col-md-12 col-lg-12"><b>Pasaporte: </b> <input type="checkbox" id="pasapor" disabled/></div>
+                <div class="col-md-12 col-lg-12"><b>nombres: </b> <a id='nombres' style="color: #000000"></a></div>
+                <div class="col-md-12 col-lg-12"><b>Apellido Paterno: </b> <a id='apellido1' style="color: #000000"></a></div>
+                <div class="col-md-12 col-lg-12"><b>Apellido Materno: </b> <a id='apellido2' style="color: #000000"></a></div>
+                <div class="col-md-12 col-lg-12"><b>Telefono Convencional: </b> <a id='telefono_conv' style="color: #000000"></a></div>
+                <div class="col-md-12 col-lg-12"><b>Telefono: </b> <a id='telefono' style="color: #000000"></a></div>
+                <div class="col-md-12 col-lg-12"><b>Email: </b> <a id='email' style="color: #000000"></a></div>
+                <div class="col-md-12 col-lg-12"><b>Direccion: </b> <a id='direccion' style="color: #000000"></a></div>
+                <div class="col-md-12 col-lg-12"><b>Direccion2: </b> <a id='direccion2' style="color: #000000"></a></div>
+            </div>
+            <div class="row-fluid">
+                <br/><p class="help-textmens"></p>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Agregar</a>
+            <a class="btn btn-inscribir btn-success" style="display:none">Inscribir</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+{% endblock %}
+
+
+

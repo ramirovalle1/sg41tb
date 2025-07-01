@@ -1,0 +1,95 @@
+{% extends "formbs.html" %}
+{% block heading %}
+     <script type="text/javascript">
+        $(function() {
+            var d=0;
+
+            $("#search").click(function() {
+                    var term = $("#searchfield").val().toUpperCase();
+                    location.href = "/vinculacion?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            buscar_participantes = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Nivel',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_grupo").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+
+        $('#id_grupo').typeahead({source: buscar_participantes, updater: function(item) {
+            var results = $("#id_grupo").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+
+                    $("#id_grupo").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_grupo").val(d);
+                }
+            }
+            return item;
+        }});
+
+        $("#participantes_panel .btn-cerrar").click(function() {
+            $("#participantes_panel").modal("hide");
+            return false;
+        });
+
+        $("#participantes_panel .btn-buscar").click(function() {
+            $("#participantes_panel").modal("hide");
+            location.href = "/vinculacion?action=buscar&id"+d;
+        });
+
+
+        $("#agregar").click(function(){
+            $("#id_grupo").val("");
+            $("#participantes_panel").modal({width: '800px', backdrop: 'static'});
+            $("#participantes_panel").modal("show");
+
+        });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+
+
+    <div class="modal fade static" id="participantes_panel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Buscar Participantes</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in form %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Buscar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+{% endblock  %}

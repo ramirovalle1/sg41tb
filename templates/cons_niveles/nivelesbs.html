@@ -1,0 +1,288 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            niveles = [{% for nivel in niveles %}
+                {"id":"{{ nivel.id }}","cerrado": {% if nivel.cerrado %}true{% else %}false{% endif %}, "fechacierre": "{{ nivel.fechacierre|date:'d-m-Y' }}", "modalidad": "{{ nivel.grupo.modalidad.nombre }}", "carrera": "{{ nivel.carrera_id }}", "sede": "{{ nivel.sede.id }}","sesion": "{{ nivel.sesion }}","nivelmalla":"{{ nivel.nivelmalla }}","mat_nivel": "{{ nivel.mat_nivel }}","annomalla": "{{ nivel.malla.inicio_anno }}","paralelo": "{{ nivel.paralelo }}","inicio":"{{ nivel.inicio_repr }}","fin":"{{ nivel.fin_repr }}","grupo":"{{ nivel.grupo }}", "tutor":"{% if nivel.tutornivel %} Tutor: {{ nivel.tutornivel.tutor.persona.nombre_completo_inverso }} - {{ nivel.tutornivel.tutor.persona.telefono }} - {{ nivel.tutornivel.tutor.persona.email }} {% endif %}"}{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            findNiveles = function(s, c) {
+                var l = [];
+                for (i in niveles) {
+                    var am = niveles[i];
+                    if (am.sede==s && am.carrera==c) {
+                        l.push(am);
+                    }
+                }
+                return l;
+            };
+
+            mostrar_nivel = function() {
+                var id = $(this).attr("id");
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").hide();
+                $("."+id).show();
+            };
+
+            mostrar_todos = function() {
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").show();
+            };
+
+            mostrar_ninguno = function() {
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").hide();
+            };
+            $(".nivelninguno").click(mostrar_ninguno);
+
+            $(".niveltodos").click(mostrar_todos);
+
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var carrera = $this.attr('carrera');
+                var sede = $this.attr('sede');
+                var sesion = $this.attr('sesion');
+                var nivelmalla = $this.attr('nivelmalla');
+                var paralelo = $this.attr('paralelo');
+                var tutor = $this.attr('tutor');
+
+                var niveles = findNiveles(sede, carrera);
+                for (i in niveles) {
+                    var nivel = niveles[i];
+                    var nivelmalla = nivel.nivelmalla;
+                    var idboton = "bot"+nivelmalla.replace(' ','').toLowerCase()+"_"+carrera+"_"+sede;
+                    var $boton = $(this).find("#"+idboton);
+                    if ($boton.length==0) {
+                        var botones = $this.find(".niveles button");
+                        var insertado = false;
+                        for (var ii=0; ii<botones.length; ii++) {
+                            var boton2 = botones.get(ii);
+                            if ($(boton2).html()>nivelmalla) {
+                                $(boton2).before("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                                insertado = true;
+                                break;
+                            }
+                        }
+                        if (!insertado) {
+                            $this.find(".niveles").append("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                        }
+//                        $this.find(".niveles").append("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                        $this.find("#"+idboton).click(mostrar_nivel);
+                    }
+                    $(this).append("<tr style='display: none' class='nivelrow "+idboton+"'><td><b>"+((nivel.cerrado)?"<span class='label label-important'>CERRADO</span> ":"")+nivel.paralelo+" - "+nivel.nivelmalla+ " (Del " + nivel.inicio +" al "+ nivel.fin + ") - "+nivel.modalidad+" "+nivel.sesion+ " - Malla["+nivel.annomalla+"]"+ " - Matric:("+ nivel.mat_nivel+")<br><h5 style='color:midnightblue'>"+nivel.tutor+"</h5></b></td><td>"
+                            +" <a href='/cons_niveles?action=materias&id="+nivel.id+"' class='btn btn-mini btn-success'><i class='icon-list icon-white'></i> Materias</a>" +
+                            "</td></tr>");
+                }
+            });
+
+            {% for s in sedes %}
+                {% with cantidad=s|args:periodo.id|call:"num_matriculados" %}
+                    $(".totalsede_"+"{{ s.id }}").html("{{ cantidad }}"+" matriculados");
+                {% endwith %}
+                $('.sede'+"{{ s.id }}").click(function(){
+                    if($(".body"+"{{ s.id }}").is(':visible')){
+                        $('.nav'+"{{ s.id }}").removeClass("active");
+                        $(".body"+"{{ s.id }}").hide();
+                        $(".cabecera"+"{{ s.id }}").hide();
+                    }else{
+                        {% for sede in sedes %}
+                            $(".body"+"{{ sede.id }}").hide();
+                            $(".cabecera"+"{{ sede.id }}").hide();
+                            $('.nav'+"{{ sede.id }}").removeClass("active");
+                        {% endfor %}
+
+                        $('.nav'+"{{ s.id }}").addClass("active");
+                        $(".body"+"{{ s.id }}").show();
+                        $(".cabecera"+"{{ s.id }}").show();
+                    }
+                });
+            {% endfor %}
+
+            {% if filtro %}
+                $('.nav'+"{{ sede.id }}").addClass("active");
+                $(".body"+"{{ sede.id }}").show();
+                $(".cabecera"+"{{ sede.id }}").show();
+            {% endif %}
+
+{#--------------------------------------------------------------------BUSCAR GRUPO---------------------------------------------------------------#}
+            buscar_grupo = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Nivel',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#txt_grupo").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#txt_grupo").attr("myval","0");
+                         $("#txt_grupo").get(0).results = "";
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+
+            $("#txt_grupo_id").hide();
+            $('#txt_grupo').typeahead({source: buscar_grupo, updater: function(item) {
+                var results = $("#txt_grupo").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        $("#txt_grupo").attr("myval",datos.id);
+                        $("#txt_grupo_id").val(datos.id);
+                    }
+                }
+                return item;
+            }});
+
+{#--------------------------------------------------------------------BUSCAR CARRERA---------------------------------------------------------------#}
+            buscar_carrera = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Carrera',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#txt_carrera").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#txt_carrera").attr("myval","0");
+                         $("#txt_carrera").get(0).results = "";
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+
+            $("#txt_carrera_id").hide();
+            $('#txt_carrera').typeahead({source: buscar_carrera, updater: function(item) {
+                var results = $("#txt_carrera").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        $("#txt_carrera").attr("myval",datos.id);
+                        $("#txt_carrera_id").val(datos.id);
+                    }
+                }
+                return item;
+            }});
+
+            $("#btn_buscargrupo").click(function() {
+                var nivel_id = $("#txt_grupo_id").val().toUpperCase();
+                var carrera_id = $("#txt_carrera_id").val().toUpperCase();
+                if(carrera_id !='' || nivel_id !=''){
+                    if(carrera_id==''){
+                        location.href = "/cons_niveles?n="+nivel_id;
+                    }
+                    else{
+                        location.href = "/cons_niveles?c="+carrera_id;
+                    }
+                }
+            });
+
+            $('#txt_grupo').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#btn_buscargrupo").trigger("click");
+                }
+            });
+
+            $('#txt_carrera').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#btn_buscargrupo").trigger("click");
+                }
+            });
+
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Niveles Acad&eacute;micos</h3>
+            <h4>Per&iacute;odo: <b>{{ periodo.nombre }}</b>, Desde: <b>{{ periodo.inicio|date:'d-m-Y' }}</b> Hasta: <b>{{ periodo.fin|date:'d-m-Y' }}</b></h4>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span9"></div>
+        <div class="span3">
+            <input class='input-large search-query' type='text' id='txt_grupo' value='' placeholder="Buscar Grupo"/>
+            <input class='input-large search-query' type='text' id='txt_grupo_id' value=''/>
+            <a href="#" id='btn_buscargrupo' class='btn btn-info' style="width: 20%"><i class="icon-search icon-white"></i> Buscar</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span9"></div>
+        <div class="span3">
+            <input class='input-large search-query' type='text' id='txt_carrera' value='' placeholder="Filtrar Carrera"/>
+            <input class='input-large search-query' type='text' id='txt_carrera_id' value=''/>
+            {% if filtro %}
+                <a href="/cons_niveles" class='btn btn-primary' style="width: 20%"><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- SEDES -->
+    <div class="row-fluid">
+        <div class="span12">
+            <ul class="nav nav-tabs nav-justified">
+                {% for sede in sedes %}
+                    <li class="nav{{ sede.id }}" id="lisede"><a href="#" class="sede{{ sede.id }}">{{ sede.nombre }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                {% if niveles or carreras %}
+                    {% for sede in sedes %}
+                        <thead class="cabecera{{ sede.id }}" hidden="" id="cabecera">
+                            <tr>
+                                <th colspan="2" style="background-color: dodgerblue">
+                                    <h3 style="color:aliceblue; text-align: center;">{{ sede.nombre }}</h3>
+                                    <h5 style="color:lightyellow; text-align: right;" class='totalsede_{{ sede.id }}'></h5>
+                                </th>
+                            </tr>
+                            <tr>
+                                <th width='30%'>Carreras</th>
+                                <th width='70%'>Niveles</th>
+                            </tr>
+                        </thead>
+                        <tbody class="body{{ sede.id }}" hidden="" id="body">
+                            {% for carrera in carreras %}
+                               <tr>
+                                    <td>{{ carrera.nombre }}</td>
+                                    <td>
+                                        <table class='table table-bordered cell' sede='{{ sede.id }}' carrera='{{ carrera.id }}'>
+                                            <thead>
+                                                <th colspan="2">
+                                                    <div class="btn-group niveles" data-toggle="buttons-radio">
+                                                        <button class="btn btn-mini niveltodos">Todos</button>
+                                                        <button class='btn btn-mini btn-warning nivelninguno'><i class="icon-chevron-up"></i></button>
+                                                    </div>
+                                                </th>
+                                            </thead>
+                                        </table>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    {% endfor %}
+                {% else %}
+                    {% if msj %}
+                        <tr>{{ msj }}</tr>
+                    {% else %}
+                        <tr>NO EXISTE REGISTRO</tr>
+                    {% endif %}
+                {% endif %}
+            </table>
+        </div>
+    </div>
+{% endblock %}

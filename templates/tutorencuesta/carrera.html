@@ -1,0 +1,65 @@
+<script type="text/javascript">
+    $(".eliminacarrera").click(function(){
+         $("#modal_carrera").modal("hide");
+        var encuestacarrera = $(this).attr("encuestacarrera");
+        var encuestatutor = $(this).attr("encuestatutor");
+
+        smoke.confirm("Esta seguro de eliminar la carrera", function(e){
+        if (e){
+            $.post("/encuestaevaluacion",{"action": "eliminacarrera","encuestacarrera":encuestacarrera},function(data) {
+                       if(data.result=='ok'){
+                           alert("Registro Eliminado");
+                            $.get("/encuestaevaluacion",{"action": "vercarrera","encuesta":encuestatutor},function(data) {
+                                    $("#modal_carrera .modal-body").html(data);
+                                    $("#modal_carrera #paneltitle1").html( " CARRERAS" );
+                                    $("#modal_carrera").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                                    $("#modal_carrera").modal("show");
+                           }, "html");
+                       }else{
+                           alert(data.result);
+                       }
+                    },"json");
+
+            }else{
+            }
+            }, {
+            ok: "Si",
+            cancel: "No",
+            classname: "custom-class",
+            reverseButtons: true
+        });
+    });
+</script>
+<div class="row-fluid">
+<div class="span12 ">
+    <table class="table table-condensed ">
+        <thead>
+            <th>Carrera</th>
+{#            <th  style="text-align: center">Todas las Carreras</th>#}
+            <th></th>
+        </thead>
+    <tbody>
+        {% for c in encuestacarrera %}
+            <tr>
+                <td > {{ c.carrera.nombre}}</td>
+{#                <td style="text-align: center">{% if g.todas_carreras %}#}
+{#                    <img src='/static/images/16/true.png' width="14px" alt='' border="0"/>#}
+{#                {% else %}#}
+{#                    <img src='/static/images/16/false.png' width="14px" alt='' border="0"/>#}
+{#                {% endif %}</td>#}
+                <td><a  style="float: right" href="#" class="btn  btn-danger eliminacarrera" encuestacarrera="{{ c.id }}" encuestatutor="{{ c.encuestatutor.id }}" >  <i  class="icon-remove icon-white"></i></a></td>
+            </tr>
+        {% endfor %}
+        {% if not encuestacarrera %}
+            <tr>
+                <td > NO EXISTEN REGISTROS
+
+                </td>
+            </tr>
+        {% endif %}
+
+    </tbody>
+</table>
+</div>
+</div>
+

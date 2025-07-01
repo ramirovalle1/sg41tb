@@ -1,0 +1,100 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    $("#id_codigo,#id_entrega").addClass("validate[required]");
+    $("#id_codigo").addClass("input-small").mask("******");
+    $("#id_entrega, #id_observaciones").addClass("input-block-level");
+    $($("#id_entregada").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-warning'>ACTA DE NOTAS</h4>");
+    $($("#id_alcanceentregada").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-warning'>ACTA DE ALCANCE</h4>");
+    $($("#id_actanivelentregada").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-warning'>ACTA NIVEL CERRADO</h4>");
+    chequearEntregada = function() {
+        if ($("#id_entregada").is(':checked')) {
+            {% if perms.sga.delete_materiarecepcionactanotas or  not r.entregada%}
+                $("#id_codigo").attr("disabled", false);
+                $("#id_entregada").attr("disabled", false);
+                $("#id_entrega").attr("disabled", false);
+                $("#observaciones").attr("disabled", false);
+{#                $("#formbutton").show();#}
+            {%else %}
+                $("#id_codigo").attr("disabled", true);
+                $("#id_entregada").attr("disabled", true);
+                $("#id_entrega").attr("disabled", true);
+                $("#id_observaciones").attr("disabled", true);
+            {% endif %}
+            }
+        else {
+            $("#id_codigo").attr("disabled", false);
+            $("#id_entrega").attr("disabled", false);
+            $("#id_codigo").val("");
+{#            $("#formbutton").hide();#}
+        }
+    }
+    chequearEntregadaAlcance = function() {
+        if ($("#id_alcanceentregada").is(':checked')) {
+            {% if perms.sga.delete_materiarecepcionactanotas or  not r.alcanceentregada %}
+                $("#id_alcanceentregada").attr("disabled", false);
+                $("#id_observacionesalcance").attr("disabled", false);
+{#                $("#formbutton").show();#}
+            {%else %}
+                $("#id_alcanceentregada").attr("disabled", true);
+                $("#id_observacionesalcance").attr("disabled", true);
+            {% endif %}
+            }
+        else {
+            $("#id_alcanceentregada").attr("disabled", false);
+            $("#id_observacionesalcance").attr("disabled", false);
+        }
+    }
+     chequearEntregadaNivelC = function() {
+            if ($("#id_actanivelentregada").is(':checked')) {
+                {% if perms.sga.delete_materiarecepcionactanotas or  not r.actanivelentregada %}
+                    $("#id_actanivelentregada").attr("disabled", false);
+                    $("#id_actanivelobservaciones").attr("disabled", false);
+    {#                $("#formbutton").show();#}
+                {%else %}
+                    $("#id_actanivelentregada").attr("disabled", true);
+                    $("#id_actanivelobservaciones").attr("disabled", true);
+                {% endif %}
+                }
+            else {
+                $("#id_actanivelentregada").attr("disabled", false);
+                $("#id_actanivelobservaciones").attr("disabled", false);
+            }
+        }
+
+
+    $('#formbutton').click(function(){
+        $("#id_codigo").attr("disabled", false);
+        $("#id_entregada").attr("disabled", false);
+        $("#id_entrega").attr("disabled", false);
+        $("#id_observaciones").attr("disabled", false);
+        $("#id_alcanceentregada").attr("disabled", false);
+        $("#id_observacionesalcance").attr("disabled", false);
+        $("#id_actanivelentregada").attr("disabled", false);
+        $("#id_actanivelobservaciones").attr("disabled", false);
+    });
+
+    $("#id_entregada").click(chequearEntregada);
+    $("#id_alcanceentregada").click(chequearEntregadaAlcance);
+    $("#id_actanivelentregada").click(chequearEntregadaNivelC);
+
+{#    $("#id_alcanceentregada").click(chequearEntregadaAlance);#}
+
+    chequearEntregada();
+    chequearEntregadaAlcance();
+    chequearEntregadaNivelC();
+    {% if r.entregada  and  r.alcanceentregada and r.actanivelentregada  %}
+                    $("#formbutton").hide();
+    {% endif %}
+{% endblock %}
+{% block titulo %}Actualizar Recepci&oacute;n de Acta de Nota{% endblock %}
+{% block subtitulo %}
+    {{ r.materia.asignatura }} - {{ r.materia.nivel.paralelo }}<br/>
+    <span class="label"> [{{ r.materia.inicio|date:'d-m-Y' }} al {{ r.materia.inicio|date:'d-m-Y' }}] ({{ r.materia.nivel.periodo.nombre }}) <br></span>
+{% endblock %}
+{% block formaction %}/recepcion_actas{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='edit'/>
+    <input type='hidden' name='id' value="{{ r.id }}"/>
+{% endblock %}
+{% block formback %}/recepcion_actas{% endblock %}
+{% block buttonname %}Guardar Cambios{% endblock %}

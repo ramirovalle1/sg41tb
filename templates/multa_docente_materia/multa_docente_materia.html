@@ -1,0 +1,196 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/multa_docente_materia?s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+{#------------------------------------------------------ ACTIVAR / DESACTIVAR ESTADO APROBADO----------------------------------------------------------------#}
+        $('.estado_aprobado').click(function(){
+            var id = $(this).attr('id');
+            var docente = $(this).attr('docente');
+            var valor = $(this).attr("valor");
+            var mensaje = '';
+            if($(this).attr('estad')){
+                mensaje = 'Esta seguro de desactivar multa por  $'+valor+' del docente "'+docente+'".<br>Esta valor de esta multa no se verá reflejada en el rol correspondiente.';
+            }
+            else{
+                mensaje = 'Esta seguro de activar multa por  $'+valor+' del docente "'+docente+'"';
+            }
+            smoke.confirm(mensaje,function(e)
+                {
+                    if(e)
+                    {
+                        $.post("/multa_docente_materia", {"action":'cambiar_estado', "id":id}, function(data) {
+                            if (data.result=='ok') {
+                                alert('Registro modificado correctamente');
+                                location.reload()
+                           }else{
+                               smoke.alert('Error. Intente de nuevo');
+                           }
+                        }, "json");
+                    }
+                    else
+                    {
+                    }
+                },
+                {
+                   ok:"SI",
+                   cancel:"NO",
+                   classname: "custom-class",
+                   reverseButtons: true
+                }
+
+            );
+        });
+
+        {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+        {% if error %}
+            smoke.alert('{{ error }}');
+        {% endif %}
+
+    });
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span11"  >
+            <h3 >Listado de Multas Docentes</h3></br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/mantenimiento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/multa_docente_materia" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th> Docente</th>
+                        <th style="text-align: center"> Materia</th>
+                        <th style="text-align: center"> Tipo de multa</th>
+                        <th style="text-align: center"> Desde</th>
+                        <th style="text-align: center"> Hasta</th>
+                        <th style="text-align: center"> Aprobado</th>
+                        <th style="text-align: center"> Usuario </th>
+                        <th style="text-align: center"> &Uacute;ltimo Cambio</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for m in multas %}
+                        <tr>
+                            <td>{{ m.profesor.persona.nombre_completo_inverso }} <br>
+                                <span style="color: #808080"> {% if m.profesor.persona.cedula %} {{ m.profesor.persona.cedula }} {% else %} {{ m.profesor.persona.pasaporte }} {% endif %}</span>
+                            </td>
+                            <td style="text-align: left"> {{ m.materia.asignatura.nombre }} <br>
+                                <span style="color: #808080"> {{ m.materia.nivel.paralelo }} </span>
+                            </td>
+                            <td style="text-align: left"> {{ m.tipomulta.nombre }} <br>
+                                <span style="color: #808080"> ${{ m.tipomulta.valor|floatformat:2 }} </span>
+                            </td>
+                            <td style="text-align: left"> {% if m.fechadesde %} {{ m.fechadesde }} {% endif %} </td>
+                            <td style="text-align: left"> {% if m.fechahasta %} {{ m.fechahasta }} {% endif %} </td>
+                            <td style="text-align: center">
+                                {% if m.dentro_del_rol and perms.sga.change_multadocentemateria %}
+                                    {% if m.aprobado %}
+                                        <a href="#" class="btn estado_aprobado" style="cursor: pointer" id='{{ m.id }}' docente='{{ m.profesor.persona.nombre_completo_inverso }}' valor='{{ m.tipomulta.valor }}' estad='true'><img src='/static/images/16/true.png' border='0'/></a>
+                                    {% else %}
+                                        <a href="#" class="btn estado_aprobado" style="cursor: pointer" id='{{ m.id }}' docente='{{ m.profesor.persona.nombre_completo_inverso }}' valor='{{ m.tipomulta.valor }}'><img src='/static/images/16/false.png' border='0'/></a>
+                                    {% endif %}
+                                {% else %}
+                                    {% if m.aprobado %}
+                                        <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: left"> {% if m.usuarioaprobacion %} {{ m.usuarioaprobacion }} {% endif %} </td>
+                            <td style="text-align: left"> {% if m.fechaaprobacion %} {{ m.fechaaprobacion }} {% endif %} </td>
+{#                            <td>#}
+{#                                <div class="btn-group">#}
+{#                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">#}
+{#                                        Acciones#}
+{#                                        <span class="caret"></span>#}
+{#                                    </a>#}
+{#                                    <ul class="dropdown-menu pull-right">#}
+{#                                        <li><a href="#" class='ver_grupos' nombre_tutor='{{ t.persona.nombre_completo_inverso }}' idasistente='{{ t.id }}'><i class="icon-list"></i>  Ver Grupos</a></li>#}
+{#                                        <li><a href="#" class='add_grupo' nombre_tutor='{{ t.persona.nombre_completo_inverso }}' idasistente='{{ t.id }}'><i class="icon-list"></i>  Adicionar Grupo</a></li>#}
+{#                                        <li><a href="#" class='modificar_datos' nombre_tutor='{{ t.persona.nombre_completo_inverso }}' idasistente='{{ t.id }}' telefono='{{ t.persona.telefono }}' correo='{{ t.persona.email }}'><i class="icon-edit"></i>  Editar Datos de Tutor</a></li>#}
+{#                                    </ul>#}
+{#                                </div>#}
+{#                            </td>#}
+                        </tr>
+                    {% endfor %}
+
+                    {% if not multas %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span10">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/multa_docente_materia?page=1">1</a></li>
+                            <li><a href="/multa_docente_materia?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/multa_docente_materia?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/multa_docente_materia?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/multa_docente_materia?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/multa_docente_materia?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+{% endblock %}

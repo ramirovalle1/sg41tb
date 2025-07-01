@@ -1,0 +1,389 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function(){
+          $("#id_desde").datepicker({format:"dd-mm-yyyy"});
+          $("#id_hasta").datepicker({format:"dd-mm-yyyy"});
+
+            $(".detalleabsent").click(function() {
+               var id = $(this).attr("id");
+                   $.get("/absentismo", {'action':'detalleabsent', 'id': id}, function(data) {
+                        $("#detalle_absent .modal-body").html(data);
+                        $("#detalle_absent").modal({"backdrop":"static","width":"80%"});
+                        $("#detalle_absent").modal("show");
+                   }, "html");
+               return false;
+            });
+
+            $(".proyeccion").click(function(){
+                    $("#modalproyeccion").modal({width: '300px', backdrop: 'static'});
+                    $("#modalproyeccion").modal("show");
+            });
+
+            $("#modalproyeccion .btn-buscar").click(function() {
+                $("#modalproyeccion").modal("hide");
+                var desde= $("#modalproyeccion #id_desde").val();
+                var hasta= $("#modalproyeccion #id_hasta").val();
+{#                alert(1);#}
+                location.href = '/absentismo?action=verproyeccion&desde='+desde+"&hasta="+hasta
+{#                $.get("/absentismo",{"action": "verproyeccion","desde":desde,"hasta":hasta},function(data) {#}
+{#                       if(data.result=='ok'){#}
+{#                           alert("Asistencia Registrada");#}
+{#                           location.reload();#}
+{#                       }else{#}
+{#                           alert("Ocurrio un Error... Intentelo mas Tarde");#}
+{#                       }#}
+{#                    },"json");#}
+                });
+
+             $("#modalproyeccion .btn-cerrar").click(function() {
+                $("#modalproyeccion").modal("hide");
+                return false;
+            });
+
+
+            $("#detalle_absent #cerrar").click(function() {
+                $("#detalle_absent").modal("hide");
+                {% if not finalizados and not inactivos %}
+                    location.href='/absentismo'
+                {% endif %}
+
+            });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/absentismo?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+
+
+            $("#addpanel .btn-cerrar").click(function(){
+                $("#addpanel").modal("hide");
+                $("#detalle_absent").modal({"backdrop":"static","width":"80%"});
+                $("#detalle_absent").modal("show");
+                return false;
+            });
+
+            $("#addpanel .ingresar").click(function(){
+
+                if($('#observacion').val() != '')
+                {
+                    $("#mensaj").html("").removeClass('alert alert-danger');
+                    $.post("/absentismo", {action: 'addobserva', 'observacion': $('#observacion').val(), 'idmateriasig':$("#idabsent").val(),'reintegro':$("#reintegro").is(":checked")}, function(data) {
+                        if (data.result=='ok') {
+                            $("#addpanel").modal("hide");
+
+                            $.get("/absentismo", {'action':'detalleabsent', 'id': data.idins}, function(data) {
+                                $("#detalle_absent .modal-body").html(data);
+                                $("#detalle_absent").modal({"backdrop":"static","width":"80%"});
+                                $("#detalle_absent").modal("show");
+                            }, "html");
+{#                            smoke.alert("INGRESO REALIZADO CON EXITO");#}
+                            return false;
+
+                        }
+                        else
+                        {
+                            $("#detalle_absent").modal({"backdrop":"static","width":"80%"});
+                            $("#detalle_absent").modal("show");
+{#                            smoke.alert("ERROR EN EL INGRESO");#}
+                            return false;
+                        }
+                    }, "json");
+
+                }
+                else
+                {
+                   $("#mensaj").html("Ingrese observacion").addClass('alert alert-danger');
+                }
+
+            });
+
+            $("#slct_asistente").change(function(){
+                asis = $("#slct_asistente").val();
+                window.location.href = "/absentismo?asis="+asis;
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+
+    <div class="row-fluid">
+        <div class="span11">
+            <h3>Lista de Alumnos en Absentismo - {% if not inactivos %} {% if not finalizados %}ACTIVOS {% else %} FINALIZADOS {% endif %}{% else %} INACTIVOS{% endif %}</h3>
+        </div>
+        <div class="span1">
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+
+
+    </div>
+    <div class="row-fluid">
+        <div class='span6'>
+            <form class="form-search"> <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search or a2 or g %}
+                <a href="/absentismo" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% else %}
+                {% if finalizados %}
+                    <a href="/absentismo?i=1" id='allresults' class='btn btn-danger'><i class="icon-refresh icon-white"></i> Inactivos</a>
+                    <a href="/absentismo" id='allresults' class='btn btn-success'><i class="icon-refresh icon-white"></i> Activos</a>
+                {% else %}
+                    {% if not inactivos %}
+                        <a href="/absentismo?i=1" id='allresults' class='btn btn-danger'><i class="icon-refresh icon-white"></i> Inactivos</a>
+                    {% else %}
+                        <a href="/absentismo" id='allresults' class='btn btn-success'><i class="icon-refresh icon-white"></i> Activos</a>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+
+
+            </form>
+        </div>
+       <div class="span6" style="text-align: right">
+            {% if not persona_asuntos %}
+                Asistentes:
+                <select name="" id="slct_asistente" style="vertical-align: middle">
+                    <option value="0">-----</option>
+                    {% for a in asistentes %}
+                        <option value="{{ a.id }}" {% if a.id == asistente.id %} selected {% endif %}>{{ a.persona.nombre_completo_inverso }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+            <a href="/absentismo?a2" id='' class='btn btn-info'><i class="icon-list icon-white"></i> A2</a>
+            <a href="/absentismo?g" id='' class='btn btn-info'><i class="icon-list icon-white"></i> Gestionados</a>
+{#            {% if persona_asuntos %}#}
+{#                <a href="/absentismo?pg" id='' class='btn btn-primary'><i class="icon-list icon-white"></i> Por Gestionar</a>#}
+{#            {% else %}#}
+            {% if not persona_asuntos %}
+                <a href="/absentismo?action=asistentes" id='' class='btn btn-success'><i class="icon-user icon-white"></i> Asistentes</a>
+            {% endif %}
+            {% if not finalizados %}
+                    <a href="/absentismo?f=1" id='allresults' class='btn btn-warning'><i class="icon-eye-open icon-white"></i> Finalizados</a>
+            {% endif %}
+            <a class='btn btn-success proyeccion'><i class="icon-table icon-white"></i> Proyecci&oacute;n</a>
+        </div>
+
+    </div>
+
+    <div class="row-fluid">
+        <div class="span12">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Alumno</th>
+                        <th>Grupo - Nivel</th>
+                        <th style="text-align: center">Cedula/Pasap</th>
+                        <th>Emails</th>
+                        <th style="text-align: center">Teléfonos</th>
+                        <th>Carrera</th>
+                        <th style="text-align: center">Absentismo</th>
+                        <th style="text-align: center">Becado</th>
+                        <th style="text-align: center">Gestion</th>
+                        {% if not persona_asuntos %}
+                            <th style="text-align: center">Gestor</th>
+                        {% endif %}
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inscripcion in inscripciones %}
+                        <tr>
+                            <td>{{ inscripcion }}</td>
+{#                            <td>#}
+                            {% if not centroexterno %}
+                                {% if utiliza_grupos_alumnos %}
+                                    <td nowrap style="color:#002a80 ">
+                                    {% with matriculado=inscripcion|args:periodo|call:"matriculado_periodo" %}
+                                        {% if matriculado %}
+                                        {% with matricula=inscripcion|args:periodo|call:"matricula_periodo" %}
+                                            {{ matricula.nivel.paralelo }} - {{ matricula.nivel.nivelmalla }}<br>
+                                            <span class="smaller"> ({{ matricula.nivel.inicio|date:'d-m-Y' }} - {{ matricula.nivel.fin|date:'d-m-Y' }})</span>
+                                        {% endwith %}
+                                        {% else %}
+                                            {{ inscripcion.grupo.nombre }}
+                                        {% endif %}
+                                    {% endwith %}
+                                    </td>
+                                {% endif %}
+                            {% endif %}
+{#                            </td>#}
+                            <td style="text-align: center">{{ inscripcion.persona.cedula }} <br/> {% if inscripcion.persona.pasaporte %}{{ inscripcion.persona.pasaporte }}{% endif %}</td>
+                            <td>
+                                {% if inscripcion.persona.emailinst %}
+                                    <a href="mailto:{{ inscripcion.persona.emailinst }}" style="color: #003bb3">
+                                        {{ inscripcion.persona.emailinst }}
+                                    </a>
+                                {% else %}
+                                    <a href="mailto:{{ inscripcion.persona.email }}" style="color: #003bb3">
+                                        {{ inscripcion.persona.email }}</a>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if inscripcion.persona.telefono %}{{ inscripcion.persona.telefono }}{% endif %}
+                                <br/>{% if inscripcion.persona.telefono_conv %}{{ inscripcion.persona.telefono_conv }}{% endif %}
+                            </td>
+                            <td>{{ inscripcion.carrera.alias }}</td>
+                            <td style="text-align: center; vertical-align: middle">
+                                {% if inscripcion.absentismo_existe.materiaasignada.absentismo %}
+                                    <img src='/static/images/16/true.png' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center; vertical-align: middle">
+                                {% if inscripcion.ultima_matricula %}
+{#                                    <img src='/static/images/16/true.png' border='0'/><br>#}
+                                    <span class='alert alert-success' style="padding: 5px">{{ inscripcion.ultima_matricula.porcientobeca }}%</span>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center; vertical-align: middle">
+                                {% if inscripcion.absentos_gestionados %}
+                                    <img src='/static/images/16/true.png' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' border='0'/>
+                                {% endif %}
+                            </td>
+                            {% if not persona_asuntos %}
+                                <td style="text-align: center">
+                                    {% if inscripcion.personaasuntos %}
+                                        {{ inscripcion.personaasuntos.persona.usuario.username }}
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a class="detalleabsent" id="{{ inscripcion.id }}" style="cursor: pointer"><span class="icon-eye-open"></span> Ver Detalle de Estudiante </a> </li>
+                                        {% if inscripcion|args:usuario|call:"gestionar_absentismos" %}
+                                            <li><a href="/absentismo?action=gestionar&id={{ inscripcion.id }}"><i class="icon-book"></i> Gestionar</a></li>
+                                        {% endif %}
+{#                                        {% if inscripcion|args:usuario|call:"existe_seguimientoabsentismo" %}#}
+                                        {% if inscripcion.absentos_gestionados %}
+                                            <li><a href="/absentismo?action=ver_seguimiento&id={{ inscripcion.id }}"><i class="icon-eye-open"></i> Ver Seguimiento</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not inscripciones %}
+                        <tr>
+                            <td colspan="8">NO EXISTEN REGISTROS</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/absentismo?{% if a2 %}a2&{% endif %}page=1{% if inactivos %}&i=1{% endif %}{% if pg %}&pg{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">1</a></li>
+                            <li><a href="/absentismo?{% if a2 %}a2&{% endif %}page={{ paging.ellipsis_izquierda }}{% if pg %}&pg{% endif %}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/absentismo?{% if a2 %}a2&{% endif %}page={{ pagenumber }}{% if pg %}&pg{% endif %}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/absentismo?{% if a2 %}a2&{% endif %}page={{ paging.ellipsis_derecha }}{% if pg %}&pg{% endif %}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/absentismo?{% if a2 %}a2&{% endif %}page={{ paging.num_pages }}{% if pg %}&pg{% endif %}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/absentismo?{% if a2 %}a2&{% endif %}page={{ pagenumber }}{% if pg %}&pg{% endif %}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="modal fade static " id="detalle_absent" style="margin-left: -500"  >
+    <div class="row-fluid modal-header">
+        <h4 id="nomalumn"><i> Detalles del Alumno</i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a style="cursor: pointer" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+
+
+    <div class="modal fade static" id="addpanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle" >Ingrese Observacion</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <h4>
+                <div style="width:100%;padding-left: 13%">
+                    <b>Observaci&oacute;n:</b> <textarea type='text' id='observacion' style="width:60%;text-transform: uppercase" rows="4" cols="50" > </textarea><br/><br/>
+                    <b>Reintegr&oacute;:</b> <input type="checkbox" name="reintegro" id="reintegro"  /><br/><br/>
+                    <b>Finalizado:</b> <input type="checkbox" name="finaliza" id="finaliza"  disabled checked/>
+                    <input type="hidden" id="idabsent"/>
+                </div>
+            </h4>
+            <div style="padding-left: 13%"> <p id='mensaj' ></p></div>
+        </div>
+        <div class="modal-footer">
+            {% if not persona.pertenece_soporte %}
+                <a href="#" class="btn btn-ejecutar btn-info ingresar"> Ingresar</a>
+            {% endif %}
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modalproyeccion"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Seleccione las Fechas a Consultar </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in frmproyeccion %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Consultar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+
+
+{% endblock %}

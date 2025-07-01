@@ -1,0 +1,215 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            var c = 0;
+            var tid = 0;
+            var especie = '';
+
+            var did = 0;
+            var departamento = '';
+            $("#id_nombre").attr({"autocomplete":"off"});
+
+
+
+            $("#modaldpto .btn-cerrar").click(function() {
+                $("#modaldpto").modal('hide');
+                  $("#detalle_tipo").modal("show");
+
+            });
+
+            $(".cerrarbtn").click(function() {
+                $("#test").modal("hide");
+            });
+
+            $(".edit").click(function() {
+                var desc = $(this).attr('descrip');
+                $("#modaldpto").modal({width: '800px', backdrop: 'static'});
+                $("#modaldpto").modal("show");
+                $("#id_nombre").val(desc);
+                $("#editar").val($(this).attr('idp'))
+            });
+
+            $(".adddpto").click(function() {
+
+                $("#modaldpto").modal({width: '800px', backdrop: 'static'});
+                $("#modaldpto").modal("show");
+                $("#id_nombre").val("");
+            });
+
+            $(".elimina").click(function(){
+                var dpid=$(this).attr('dpid');
+                smoke.confirm('Esta seguro de Eliminar el Departamento',function(e)
+                    {
+                        if(e)
+                        {
+                            location.href = 'especies_admin?action=eliminardpto&did='+dpid;
+                        }
+                    },
+                    {
+                        ok:'SI',
+                        cancel:'NO',
+                        reverseButtons:true
+                    }
+
+                );
+            });
+
+             {% if error %}
+                smoke.alert('{{ error }}');
+            {% endif %}
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/especies_admin?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+{#                    $("#search").trigger("click");#}
+                    $("#search").click();
+                }
+            });
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="row-fluid" style="margin-top: 45px">
+        <div class="span2"></div>
+        <div class="span8">
+            <h3> Listado de Grupo </h3>
+
+        </div>
+        <div class='atright'>
+            <a href="/especies_admin" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+     <div class="row-fluid" style="margin-top: 45px">
+        <div class="span2"></div>
+        <div class="span8">
+              <form class="form-search">
+{#            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>#}
+{#            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>#}
+            {% if search %}
+                <a href="/especies_admin?action=asistentes" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos </a>
+            {% endif %}
+            </form>
+                {% if not persona.pertenece_soporte %}
+                    <a href="#" class='btn btn-success adddpto'><i class="icon-plus icon-white"></i> Nuevo Grupo </a>
+                {% endif %}
+            </div>
+      </div>
+
+    <div class="row-fluid" style="margin-top: 45px">
+        <div class="span2"></div>
+        <div class="span8">
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+
+                <th style="width: 20px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for d in departamento %}
+                    <tr>
+                        <td>
+                            {% if not persona.pertenece_soporte %}
+                                <a href='#' class="edit" idp="{{ d.id }}" descrip="{{ d.descripcion }}">{{ d.descripcion }}</a>
+                            {% else %}
+                                {{ d.descripcion }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    <li><a href="/especies_admin?action=verasistentes&did={{ d.id }}" departamento="{{ d.descripcion }}" style="cursor: pointer">  <i class='icon-certificate'></i> Ver Asistentes </a></li>
+{#                                    <li><a href="/especies_admin?action=vergruposusuario&did={{ d.id }}" style="cursor: pointer">  <i class='icon-certificate'></i> Grupos </a></li>#}
+                                    <li><a href="/especies_admin?action=vercoordinacion&did={{ d.id }}" style="cursor: pointer">  <i class='icon-certificate'></i> Coordinaci&oacute;n </a></li>
+                                    {% if not persona.pertenece_soporte %}
+                                         {% if not d.puede_eliminarse %}
+                                            <li><a style="cursor: pointer" class="elimina" href="#" dpid="{{ d.id }}"><i class="icon-remove"></i> Eliminar </a></li>
+                                         {% endif %}
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+{#            {% if perms.sga.change_inscripcion %}#}
+{#            {% endif %}#}
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/especies_admin?page=1">1</a></li>
+                            <li><a href="/especies_admin?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/especies_admin?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/especies_admin?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/especies_admin?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/especies_admin?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+
+<div class="modal fade static" id="modaldpto">
+    <div class="modal-header " style="word-wrap: break-word">
+        <h4  id='paneltitle2' ><i> Adicionar Grupo </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+        <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/especies_admin" method="POST"  >
+            <input type='hidden' name='action' value='adddpto'/>
+            <input type='hidden' name='editar' id='editar' value="0"/>
+            {% for field in form %}
+                <fieldset class="control-group nomargins">
+                    <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

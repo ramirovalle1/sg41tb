@@ -1,0 +1,1675 @@
+{% extends 'basebs.html' %}
+{% load sga_extras%}
+{% block heading %}
+    <link type='text/css' rel='stylesheet' href="/static/css/datepicker.css"/>
+    <script src="/static/js/bootstrap-datepicker.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        $(function(){
+            datos = {};
+            datos['patpersonales'] = [];
+            datos['patfamiliares'] = [];
+            datos['antequirur'] = [];
+            datos['alergiadiv'] = [];
+            datos['antcirugi'] = [];
+            datos['anttratat'] = [];
+            datos['autotrata'] = [];
+            datos['corpcirugi'] = [];
+            datos['corptratat'] = [];
+            datos['autotratacorp'] = [];
+
+            $("#fum").datepicker({format:'yyyy-mm-dd'});
+            $("#fechnacimiento").datepicker({format:"yyyy-mm-dd"});
+            fechahoy = new Date({{ fechahoy.year }},{{ fechahoy.month }} - 1, {{ fechahoy.day}});
+            funagregpat = function(varobj){
+                var banagr = 1;
+                var idag = $(varobj).attr('id');
+                var mensj = $(varobj).attr('mensj');
+                html0 = '<a id="'+idag+'" con="0" mensj="'+mensj+'" class="agregpat" divid="'+ $(varobj).attr("divid") +'" onclick="funagregpat(this);" title="Agregar '+mensj+'">&nbsp;+&nbsp; </a>';
+                htmla='';
+                datosantece = [];
+
+                smoke.prompt(mensj,function(e){ // como el InputBox
+                    if (e){
+                        $.post("/historiaclinica", {action: 'guardarantec', antece: e.toUpperCase(), opc:$(varobj).attr("divid"), idfichamed:'{{ fichamedica.id }}'}, function(data) {
+
+                            if(data.result=='ok'){
+                                $("#"+$(varobj).attr("divid")+" a").each(function (index) {
+                                    if($(this).attr('con')>0){
+                                        banagr +=1;
+                                    }
+                                });
+                                if($(varobj).attr("divid")=='alergiadiv')
+                                    $('#alergiacomb').attr('disabled',true)
+                                if(banagr==1){
+                                    $("#"+$(varobj).attr("divid")).html('');
+                                    $("#"+$(varobj).attr("divid")).html('<a con="1" class="btn btn-secondary" style="cursor:default" id="'+idag+'1"> '+ e.toUpperCase() +' &nbsp;&nbsp;<span class="clsremovepat" id="remopa1" mensj="'+mensj+'" opc="'+idag+'" con="1" divid="'+ $(varobj).attr("divid") +'" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a> '+html0);
+
+                                }else{
+                                    $("#"+$(varobj).attr("divid")).append('<a con="'+ banagr +'" class="btn btn-secondary" style="cursor:default" id="'+idag+banagr+'"> '+ e.toUpperCase() +' &nbsp;&nbsp;<span class="clsremovepat" id="remopa'+ banagr +'" mensj="'+mensj+'" opc="'+idag+'" con="'+ banagr +'" divid="'+ $(varobj).attr("divid") +'" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a> ');
+                                }
+
+                            }else{
+                                smoke.alert(data.result)
+                            }
+                        }, "json");
+
+
+                    }
+                }, {
+                    ok: "Guardar",
+                    cancel: "Cancelar",
+                    classname: "classpront existecan",
+                    reverseButtons: true
+                });
+            };
+
+            removepat = function(varobj){
+
+                var mensj = $(varobj).attr('mensj');
+                html0 = '<a id="'+$(varobj).attr('opc')+'" mensj="'+mensj+'" con="0" class="agregpat" divid="'+ $(varobj).attr("divid") +'" onclick="funagregpat(this);" title="Agregar '+mensj+'">&nbsp;+&nbsp; </a>';
+                var cont = 0;
+                html = '';
+                var num = $(varobj).attr('con');
+                var antece = $.trim($("#"+$(varobj).attr('opc')+num).html().split('&nbsp;&nbsp;')[0]);
+                $.post("/historiaclinica", {action: 'eliminarantec', antece: antece,
+                                opc:$(varobj).attr("divid"), idfichamed:'{{ fichamedica.id }}'}, function(data) {
+                        if(data.result=='ok'){}
+                }, "json");
+                $("#"+$(varobj).attr("divid")+" a").each(function (index) {
+                    if($(this).attr('con') > 0 && $(this).attr('con') != num ){
+
+                        cont +=1;
+                        $('#remopa'+$(this).attr('con')).attr('con',cont);
+                        $('#remopa'+$(this).attr('con')).attr('id','remopa'+cont);
+                        html = html + '<a con="'+ cont +'" class="btn btn-secondary" style="cursor:default" id="'+$(varobj).attr('opc')+cont+'"> '+ $(this).html()+'</a> ';
+
+                    }
+
+                });
+                $("#"+$(varobj).attr("divid")).html('');
+                if(html){
+                    $("#"+$(varobj).attr("divid")).html(html+html0);
+                }else{
+                    if($(varobj).attr("divid")=='alergiadiv')
+                        $('#alergiacomb').attr('disabled',false)
+                    $("#"+$(varobj).attr("divid")).html("Ingrese "+mensj+' '+html0);
+                }
+                $('#agregarper').focus()
+            };
+
+            $(".clasfotpiel input[type='checkbox']").click(function(){
+                var obj = this.checked;
+                if(this.checked){
+                    $(".clasfotpiel input[type='checkbox']").attr('checked',!this.checked);
+                    $(this).attr('checked',obj);
+                }
+            });
+
+            $(".clasbiotipo input[type='checkbox']").click(function(){
+                var obj = this.checked;
+                if(this.checked){
+                    $(".clasbiotipo input[type='checkbox']").attr('checked',!this.checked);
+                    $(this).attr('checked',obj);
+                }
+            });
+
+            $(".clastippiel input[type='checkbox']").click(function(){
+                var obj = this.checked;
+                if(this.checked){
+                    $(".clastippiel input[type='checkbox']").attr('checked',!this.checked);
+                    $(this).attr('checked',obj);
+                }
+            });
+
+            $(".claseglogau input[type='checkbox']").click(function(){
+                var obj = this.checked;
+                if(this.checked){
+                    $(".claseglogau input[type='checkbox']").attr('checked',!this.checked);
+                    $(this).attr('checked',obj);
+                }
+            });
+
+            $(".claslinexpr input[type='checkbox']").click(function(){
+                var obj = this.checked;
+                if(this.checked){
+                    $(".claslinexpr input[type='checkbox']").attr('checked',!this.checked);
+                    $(this).attr('checked',obj);
+                }
+            });
+
+            var numerosdec="0123456789.";
+
+            function solo_numerosdec(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+
+            valida_numerosdec = function(varobje){
+                var num = $(varobje).val();
+                if(num){
+                    if (solo_numerosdec(num) != num.length){
+                        smoke.alert('Ingrese solo numeros');
+                        $(varobje).val('');
+                        $(varobje).blur();
+                    }
+                }
+
+            };
+
+            var numeros="0123456789";
+
+            function solo_numeros(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+
+            valida_numeros = function(varobje){
+                var num = $(varobje).val();
+                if(num){
+                    if (solo_numeros(num) != num.length){
+                        if($(varobje).attr('id') == 'numdocumento')
+                            smoke.alert('la cedula debe contener solo n&uacute;meros');
+                        else
+                            smoke.alert('Ingrese solo n&uacute;meros');
+                        $(varobje).val('');
+                        $(varobje).blur();
+                    }
+                }
+
+            };
+
+            $("#fechnacimiento").blur(function(){
+                fechahoy.setHours(0,0,0,0);
+
+                if(validate_fechaMayorQue('{{ fechaactual }}',$("#fechnacimiento").val()))
+                    calcularEdad($("#fechnacimiento").val());
+                else{
+                    $("#fechnacimiento").val('{{ fechaactual }}');
+                    smoke.alert("la fecha debe ser menor a la actual")
+                }
+
+            });
+
+            {% if fichamedica %}
+                $("#fechnacimiento").blur();
+            {% endif %}
+
+            function validate_fechaMayorQue(fechaInicial,fechaFinal)
+            {
+                valuesStart=fechaInicial.split("-");
+                valuesEnd=fechaFinal.split("-");
+
+                // Verificamos que la fecha no sea posterior a la actual
+                var dateStart=new Date(valuesStart[0],(valuesStart[1]-1),valuesStart[2]);
+                var dateEnd=new Date(valuesEnd[0],(valuesEnd[1]-1),valuesEnd[2]);
+                if(dateStart>dateEnd)
+                {
+                    return true;
+                }
+                else
+                    return false;
+            }
+            function esNumero(strNumber) {
+                if (strNumber == null) return false;
+                if (strNumber == undefined) return false;
+                if (typeof strNumber === "number" && !isNaN(strNumber)) return true;
+                if (strNumber == "") return false;
+                if (strNumber === "") return false;
+                var psInt, psFloat;
+                psInt = parseInt(strNumber);
+                psFloat = parseFloat(strNumber);
+                return !isNaN(strNumber) && !isNaN(psFloat);
+            }
+            function calcularEdad(fecha) {
+                // Si la fecha es correcta, calculamos la edad
+
+                if (typeof fecha != "string" && fecha && esNumero(fecha.getTime())) {
+                    fecha = formatDate(fecha, "yyyy-MM-dd");
+                }
+
+                var values = fecha.split("-");
+                var dia = values[2];
+                var mes = values[1];
+                var ano = values[0];
+
+                // cogemos los valores actuales
+                var fecha_hoy = new Date();
+                var ahora_ano = fecha_hoy.getYear();
+                var ahora_mes = fecha_hoy.getMonth() + 1;
+                var ahora_dia = fecha_hoy.getDate();
+
+                // realizamos el calculo
+                var edad = (ahora_ano + 1900) - ano;
+                if (ahora_mes < mes) {
+                    edad--;
+                }
+                if ((mes == ahora_mes) && (ahora_dia < dia)) {
+                    edad--;
+                }
+                if (edad > 1900) {
+                    edad -= 1900;
+                }
+
+                // calculamos los meses
+                var meses = 0;
+
+                if (ahora_mes > mes && dia > ahora_dia)
+                    meses = ahora_mes - mes - 1;
+                else if (ahora_mes > mes)
+                    meses = ahora_mes - mes
+                if (ahora_mes < mes && dia < ahora_dia)
+                    meses = 12 - (mes - ahora_mes);
+                else if (ahora_mes < mes)
+                    meses = 12 - (mes - ahora_mes + 1);
+                if (ahora_mes == mes && dia > ahora_dia)
+                    meses = 11;
+
+                // calculamos los dias
+                var dias = 0;
+                if (ahora_dia > dia)
+                    dias = ahora_dia - dia;
+                if (ahora_dia < dia) {
+                    ultimoDiaMes = new Date(ahora_ano, ahora_mes - 1, 0);
+                    dias = ultimoDiaMes.getDate() - (dia - ahora_dia);
+                }
+
+                $("#edad").html("Tiene: "+edad + " años, " + meses + " meses y " + dias + " días");
+            }
+{#            ///////////////////////////////////TYPEAHEAD///////////////////////////#}
+{#            ///////////////////////////////////TYPEAHEAD///////////////////////////#}
+
+            buscar_tratamientofac = function(query, process) {
+                $("#tratfacial").attr("myval",0);
+                $.get("/reportes", {'action':'datafilt', 'model': 'Tratamiento:tipoestetico__id={{ ID_TIPO_FACIAL }}',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#tratfacial").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#tratfacial").get(0).results = "";
+                        $("#tratfacial").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#tratfacial').typeahead({source: buscar_tratamientofac, updater: function(item) {
+                var results = $("#tratfacial").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#tratfacial").attr("myval",datos.id);
+                        guardarparmetrofac('tratamientofac',datos.id,this);
+                    }
+                }
+                return item;
+            }});
+            buscar_tratamientocorp = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Tratamiento:tipoestetico__id={{ ID_TIPO_CORPORAL }}',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#tratcorporal").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#tratcorporal").get(0).results = "";
+                        $("#tratcorporal").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#tratcorporal').typeahead({source: buscar_tratamientocorp, updater: function(item) {
+                var results = $("#tratcorporal").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#tratcorporal").attr("myval",datos.id);
+                        guardarparmetrocorp('tratamientocorp',datos.id,this);
+                    }
+                }
+                return item;
+            }});
+
+            chequeaCedula = function(){
+                numero = $("#numdocumento").val();
+                var suma = 0;
+                var residuo = 0;
+                var pri = false;
+                var pub = false;
+                var nat = false;
+                var numeroProvincias = 24;
+                var extranjero = 30;
+                var modulo = 11;
+
+                prov = numero.substr(0,2);
+                if (parseInt(prov)>numeroProvincias || parseInt(prov)<=0){
+                    if (parseInt(prov)!= extranjero){
+                        smoke.alert('El código de la provincia (dos primeros dígitos) es inválido');
+                        $("#numdocumento").val("");
+                    }
+                }
+                if (numero.length < 10 ){
+                    smoke.alert('El numero de cedula es invalido');
+                    $("#numdocumento").val("");
+                }
+
+                /* Aqui almacenamos los digitos de la cedula en variables. */
+                d1 = numero.substr(0,1);
+                d2 = numero.substr(1,1);
+                d3 = numero.substr(2,1);
+                d4 = numero.substr(3,1);
+                d5 = numero.substr(4,1);
+                d6 = numero.substr(5,1);
+                d7 = numero.substr(6,1);
+                d8 = numero.substr(7,1);
+                d9 = numero.substr(8,1);
+                d10 = numero.substr(9,1);
+
+                /* El tercer digito es: */
+                /* 9 para sociedades privadas y extranjeros */
+                /* 6 para sociedades publicas */
+                /* menor que 6 (0,1,2,3,4,5) para personas naturales */
+
+                if (d3==7 || d3==8){
+                    smoke.alert('El tercer dígito ingresado es inválido');
+                    $("#numdocumento").val("");
+                }
+
+                /* Solo para personas naturales (modulo 10) */
+               {#  OCU 02-feb-2017 para que valide cedulas de extranjeros con tercer digito = 6 #}
+        {#      if (d3 <6){#}
+                if (d3 <=6){
+                    nat = true;
+                    p1 = d1 * 2; if (p1 >= 10) p1 -= 9;
+                    p2 = d2 * 1; if (p2 >= 10) p2 -= 9;
+                    p3 = d3 * 2; if (p3 >= 10) p3 -= 9;
+                    p4 = d4 * 1; if (p4 >= 10) p4 -= 9;
+                    p5 = d5 * 2; if (p5 >= 10) p5 -= 9;
+                    p6 = d6 * 1; if (p6 >= 10) p6 -= 9;
+                    p7 = d7 * 2; if (p7 >= 10) p7 -= 9;
+                    p8 = d8 * 1; if (p8 >= 10) p8 -= 9;
+                    p9 = d9 * 2; if (p9 >= 10) p9 -= 9;
+                    modulo = 10;
+                }
+
+                /* Solo para sociedades publicas (modulo 11) */
+                /* Aqui el digito verficador esta en la posicion 9, en las otras 2 en la pos. 10 */
+                else if(d3 == 6){
+                    pub = true;
+                    p1 = d1 * 3;
+                    p2 = d2 * 2;
+                    p3 = d3 * 7;
+                    p4 = d4 * 6;
+                    p5 = d5 * 5;
+                    p6 = d6 * 4;
+                    p7 = d7 * 3;
+                    p8 = d8 * 2;
+                    p9 = 0;
+                }
+
+                /* Solo para entidades privadas (modulo 11) */
+                else if(d3 == 9) {
+                    pri = true;
+                    p1 = d1 * 4;
+                    p2 = d2 * 3;
+                    p3 = d3 * 2;
+                    p4 = d4 * 7;
+                    p5 = d5 * 6;
+                    p6 = d6 * 5;
+                    p7 = d7 * 4;
+                    p8 = d8 * 3;
+                    p9 = d9 * 2;
+                }
+
+                suma = p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+                residuo = suma % modulo;
+
+                /* Si residuo=0, dig.ver.=0, caso contrario 10 - residuo*/
+                digitoVerificador = residuo==0 ? 0: modulo - residuo;
+
+                /* ahora comparamos el elemento de la posicion 10 con el dig. ver.*/
+                if (pub==true){
+                    if (digitoVerificador != d9){
+                        smoke.alert('El ruc de la empresa del sector público es incorrecto.');
+                        $("#numdocumento").val("");
+                    }
+                    /* El ruc de las empresas del sector publico terminan con 0001*/
+                    if ( numero.substr(9,4) != '0001' ){
+                        smoke.alert('El ruc de la empresa del sector público debe terminar con 0001');
+                        $("#numdocumento").val("");
+                    }
+                }
+
+                else if(pri == true){
+                    if (digitoVerificador != d10){
+                        smoke.alert('El ruc de la empresa del sector privado es incorrecto.');
+                        $("#numdocumento").val("");
+                    }
+                    if ( numero.substr(10,3) != '001' ){
+                        smoke.alert('El ruc de la empresa del sector privado debe terminar con 001');
+                        $("#numdocumento").val("");
+                    }
+                }
+
+                else if(nat == true){
+                    if (digitoVerificador != d10){
+                        smoke.alert('El número de cédula de la persona natural es incorrecto.');
+                        $("#numdocumento").val("");
+                    }
+                    if (numero.length >10 && numero.substr(10,3) != '001' ){
+                        smoke.alert('El ruc de la persona natural debe terminar con 001');
+                        $("#numdocumento").val("");
+                    }
+
+                }
+                return true;
+            };
+
+            $("#numdocumento").blur(function(){
+                showWaiting("Consultando número de documento", "espere un momento por favor...");
+                $.post("/historiaclinica", {action: 'buscar', cedula: $("#numdocumento").val()}, function(data) {
+                    hideWaiting();
+                    if(data.result=='ok'){
+                        location.href = '/historiaclinica?action=add&id='+data.id
+                    }else{
+
+                        if(data.result == 'bad'){
+                            $("#guardargeneral").show();
+                            if(!$('#pasaporte').is(':checked')){
+                                valida_numeros($("#numdocumento"));
+                                if($("#numdocumento").val()!='')
+                                    chequeaCedula();
+                            }
+                            if($("#numdocumento").val()!='')
+                                habilitar();
+                            else{
+                                $("#guardargeneral").hide();
+                                deshabilitar();
+                            }
+                        }else{
+                            smoke.alert(data.result)
+                        }
+                    }
+                }, "json");
+            });
+
+            $('#pasaporte').click(function(){
+                if(!$('#pasaporte').is(':checked')){
+                    valida_numeros($("#numdocumento"))
+                    chequeaCedula();
+                    if($("#numdocumento").val()!='')
+                        habilitar();
+                    else
+                        deshabilitar();
+                }
+            });
+
+            deshabilitar = function(){
+                $('#nombres').attr('readonly',true);
+                $('#telefonocel').attr('readonly',true);
+                $('#tipopersona').attr('disabled',true);
+                $('#sexo').attr('disabled',true);
+                $('#direccion').attr('readonly',true);
+                $('#fechnacimiento').attr('readonly',false);
+                $('#fechnacimiento').attr('disabled',true);
+                $('#apellido').attr('readonly',true);
+                $('#ocupacion').attr('readonly',true);
+                $('#estadocivil').attr('disabled',true);
+                $('#email').attr('readonly',true);
+                $('#editargeneral').attr('readonly',true);
+                $('#ingresardatclin').attr('readonly',true);
+{#                /////////////////////////////////////////////////#}
+{#                /////////////////////////////////////////////////#}
+{#                /////////////////////////////////////////////////#}
+                $('#nombres').val('');
+                $('#telefonocel').val('');
+                $('#tipopersona').val(0);
+                $('#sexo').val(0);
+                $('#direccion').val('');
+                $('#apellido').val('');
+                $('#ocupacion').val('');
+                $('#estadocivil').val(0);
+                $('#email').val('');
+            };
+
+            habilitar = function(){
+                $('#nombres').attr('readonly',false);
+                $('#telefonocel').attr('readonly',false);
+                $('#tipopersona').attr('disabled',false);
+                $('#sexo').attr('disabled',false);
+                $('#direccion').attr('readonly',false);
+                $('#fechnacimiento').attr('readonly',true);
+                $('#fechnacimiento').attr('disabled',false);
+                $('#apellido').attr('readonly',false);
+                $('#ocupacion').attr('readonly',false);
+                $('#estadocivil').attr('disabled',false);
+                $('#email').attr('readonly',false);
+                $('#editargeneral').attr('readonly',false);
+                $('#ingresardatclin').attr('readonly',false);
+            };
+
+            function validarEmail( email ) {
+                expr = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+                var cant = email.split(';').length;
+                for (i=0;i<=cant-1;i++) {
+                    if ( !expr.test(email.split(';')[i]) ){
+                        $("#email").val('');
+                        smoke.alert("Error: La dirección de correo " + email.split(';')[i] + " es incorrecta.");
+                    }
+                }
+            }
+
+            $("#email").blur(function(){
+                if($("#email").val())
+                    validarEmail($("#email").val())
+            });
+
+            $("#guardargeneral").click(function(){
+                validar = true;
+                var nombres = $.trim($("#nombres").val());
+                var apellido = $.trim($("#apellido").val());
+                var tipopersona = $("#tipopersona").val();
+                var sexo = $("#sexo").val();
+                var estadocivil = $("#estadocivil").val();
+                var fechnacimiento = $("#fechnacimiento").val();
+{#                ///////noobligatorio#}
+                var telefonocel = $("#telefonocel").val();
+                var direccion = $("#direccion").val();
+                var ocupacion = $("#ocupacion").val();
+                var email = $("#email").val();
+
+                if(nombres=='' ||apellido==''||parseInt(tipopersona)==0||parseInt(sexo)==0||parseInt(estadocivil)==0 || !validate_fechaMayorQue('{{ fechaactual }}',fechnacimiento)){
+                    validar = false;
+                }
+
+                if(validar){
+                    if($("#pasaporte").is(":checked"))
+                        pasapor = true;
+                    else
+                        pasapor = false;
+
+                    $.post("/historiaclinica", {action: 'addgeneral', numdocumento: $("#numdocumento").val(),nombres: nombres,apellido: apellido
+                                                ,tipopersona: tipopersona,sexo: sexo,estadocivil: estadocivil,fechnacimiento: fechnacimiento,telefonocel: telefonocel
+                                                ,direccion:direccion,ocupacion:ocupacion,email:email,pasapor:pasapor}, function(data) {
+
+                        if(data.result=='ok'){
+                            location.href = '/historiaclinica?action=add&id='+data.id
+                        }else{
+                            if(data.result=='noexiste'){
+                                smoke.alert('No existe la persona con el tipo de persona');
+                            }
+                            else{
+                                smoke.alert('Error comuniquese con el administrador ('+data.result+')');
+                            }
+                        }
+                    }, "json");
+                }else{
+                    if(!validate_fechaMayorQue('{{ fechaactual }}',fechnacimiento))
+                        smoke.alert('Ingrese fecha de nacimiento diferente a Hoy');
+                    else
+                        smoke.alert('Faltan datos por Ingresar, los datos obligatorios contienen (*)');
+                }
+            });
+
+            $("#guardaredicion").click(function(){
+                validar = true;
+                var nombres = $.trim($("#nombres").val());
+                var apellido = $.trim($("#apellido").val());
+                var tipopersona = $("#tipopersona").val();
+                var sexo = $("#sexo").val();
+                var estadocivil = $("#estadocivil").val();
+                var fechnacimiento = $("#fechnacimiento").val();
+{#                ///////noobligatorio#}
+                var telefonocel = $("#telefonocel").val();
+                var direccion = $("#direccion").val();
+                var ocupacion = $("#ocupacion").val();
+                var email = $("#email").val();
+
+                if(nombres=='' ||apellido==''||parseInt(tipopersona)==0||parseInt(sexo)==0||parseInt(estadocivil)==0 || !validate_fechaMayorQue('{{ fechaactual }}',fechnacimiento)){
+                    validar = false;
+                }
+
+                if(validar){
+                    if($("#pasaporte").is(":checked"))
+                        pasapor = true;
+                    else
+                        pasapor = false;
+
+                    $.post("/historiaclinica", {action: 'addgeneral', id: '{{ fichamedica.id }}' ,numdocumento: $("#numdocumento").val(),nombres: nombres,apellido: apellido
+                                                ,tipopersona: tipopersona,sexo: sexo,estadocivil: estadocivil,fechnacimiento: fechnacimiento,telefonocel: telefonocel
+                                                ,direccion:direccion,ocupacion:ocupacion,email:email,pasapor:pasapor}, function(data) {
+
+                        if(data.result=='ok'){
+                            location.href = '/historiaclinica?action=add&id='+data.id
+                        }else{
+                            if(data.result=='noexiste'){
+                                smoke.alert('No existe la persona con el tipo de persona');
+                            }
+                            else{
+                                smoke.alert('Error comuniquese con el administrador ('+data.result+')');
+                            }
+                        }
+                    }, "json");
+                }else{
+                    if(!validate_fechaMayorQue('{{ fechaactual }}',fechnacimiento))
+                        smoke.alert('Ingrese fecha de nacimiento diferente a Hoy');
+                    else
+                        smoke.alert('Faltan datos por Ingresar, los datos obligatorios contienen (*)');
+                }
+            });
+            {% if fichamedica %}
+                {% if fichamedica.pasaporte %}
+                    $('#pasaporte').attr('checked',true);
+                {% endif  %}
+                $('#pasaporte').attr('disabled',true);
+                $('#numdocumento').attr('disabled',true);
+                $('#numdocumento').val('{{ fichamedica.numdocumento }}');
+                $('#nombres').val('{{ fichamedica.nombres }}');
+                $('#telefonocel').val('{{ fichamedica.telefono }}');
+                $('#tipopersona').val('{{ fichamedica.tipopersona.id }}');
+                $('#sexo').val('{{ fichamedica.sexo.id }}');
+                $('#direccion').val('{{ fichamedica.direccion }}');
+                $('#apellido').val('{{ fichamedica.apellidos }}');
+                $('#ocupacion').val('{{ fichamedica.ocupacion }}');
+                $('#estadocivil').val('{{ fichamedica.estadocivil.id }}');
+                $('#email').val('{{ fichamedica.email }}');
+                $("#editargeneral").show();
+                $("#ingresardatclin").show();
+                $("#nuevregistro").show();
+            {% endif %}
+
+            $('#editargeneral').click(function(){
+                habilitar();
+                $("#editargeneral").hide();
+                $("#ingresardatclin").hide();
+                $("#canceledicion").show();
+                $("#guardaredicion").show();
+            });
+
+            $('#ingresardatclin').click(function(){
+                $('#editargeneral').hide();
+                $('#ingresardatclin').hide();
+                $('#tabclinico').removeClass('disabled');
+                $('#tabclinico').click();
+
+            });
+            var idconsult = 0;
+            $('#guardarcontinuar').click(function(){
+                if($("#motivoconsulta").val() != '' &&  $("#medicamenactual").val() != ''){
+                    $('#guardarcontinuar').hide();
+
+                    $.post("/historiaclinica", {action: 'adddatoclinico', id: '{{ fichamedica.id }}' ,motivocon: $("#motivoconsulta").val(),medicamenactual: $("#medicamenactual").val(),
+                                                exponsol: $("#exponsol").val(), fps: $("#fps").val()}, function(data) {
+                        if(data.result=='ok'){
+                            idconsult = data.idconsult;
+                            $('#tabfacial').removeClass('disabled');
+                            $('#tabcorpo').removeClass('disabled');
+                            $('#tabfacial').focus();
+                            $("#nuevregistro").hide();
+                            $("#guardarconsulta").show();
+                            $("#eliminarconsulta").show();
+                            smoke.alert("Datos guardado exitosamente, ingrese Datos Esteticos Facial o Corporal");
+                        }else{
+                            $('#guardarcontinuar').show();
+                            smoke.alert(data.result);
+                        }
+                    }, "json");
+                }else{
+                    smoke.alert("Faltan datos por registrar, Revise motivo de consulta o medicamento actual");
+                }
+
+            });
+
+            $('#alergiacomb').change(function(){
+                if ($('#alergiacomb').val()=='si'){
+                    $("#alergiadiv").show()
+                }
+                else{
+                    $("#alergiadiv").hide()
+                }
+            });
+
+            $('#cosmeticoactual').blur(function(){
+                $.post("/historiaclinica", {action: 'cosmeticoactual', id: '{{ fichamedica.id }}' ,descrip: $('#cosmeticoactual').val(),idconsult:idconsult}, function(data) {
+                    if(data.result!='ok'){
+                        $('#cosmeticoactual').val('');
+                        smoke.alert(data.result);
+                    }
+                }, "json");
+            });
+
+            guardarfichcont = function(objec){
+                if($(objec).val() != ''){
+                    $.post("/historiaclinica", {action: 'guardarfichcont', id: '{{ fichamedica.id }}' ,descrip: $(objec).val(),opc:$(objec).attr('id'),idhabit:$(objec).attr('con'),idfichamed:'{{ fichamedica.id }}'}, function(data) {
+                        if(data.result!='ok'){
+                            $(objec).val('');
+                            smoke.alert(data.result);
+                        }
+                    }, "json");
+                }
+            };
+
+
+            var validafacial = false;
+            guardarparmetrofac = function(opc,descre,objeva){
+                var valcheck = true;
+                if(opc == 'sesiones' || opc == 'cantdias' || opc == 'tratamientofac' )
+                    valcheck = false;
+                if(parseInt(descre) > 0 && valcheck){
+                    if(!$(objeva).is(":checked")){
+                        descre = 0;
+                    }
+                    $.post("/historiaclinica", {action: 'evalesteticafac', id: '{{ fichamedica.id }}', opc:opc ,descrip: descre,idconsult:idconsult}, function(data) {
+                        if(data.result!='ok'){
+                            $(objeva).attr('checked',false);
+                            smoke.alert(data.result);
+                        }else{
+                            validafacial = true;
+                        }
+                    }, "json");
+                }else{
+                    $.post("/historiaclinica", {action: 'evalesteticafac', id: '{{ fichamedica.id }}', opc:opc ,descrip: descre,idconsult:idconsult}, function(data) {
+                        if(data.result!='ok'){
+                            $(objeva).val('');
+                            if(opc != 'tratamientofac')
+                                $(objeva).attr('myval',0);
+                            smoke.alert(data.result);
+                        }else{
+                                validafacial = true;
+                            }
+                    }, "json");
+                }
+            };
+            $("#desctratamiento").focus(function(){
+               if(parseInt($("#tratfacial").attr("myval")) == 0){
+                   guardarparmetrofac('tratamientofac','0',this)
+               }
+            });
+
+            var validacorporal = false;
+            guardarparmetrocorp = function(opc,descre,objeva){
+                $.post("/historiaclinica", {action: 'evalesteticacorp', id: '{{ fichamedica.id }}', opc:opc ,descrip: descre,idconsult:idconsult}, function(data) {
+                    if(data.result!='ok'){
+                        $(objeva).val('');
+                        smoke.alert(data.result);
+                    }else{
+                        validafacial = true;
+                    }
+                }, "json");
+            };
+            $("#desctratamientocorp").focus(function(){
+               if(parseInt($("#tratcorporal").attr("myval")) == 0){
+                   guardarparmetrocorp('tratamientocorp','0',this)
+               }
+            });
+            $("#tratfacial").blur(function(){
+                if($("#tratfacial").val() == '')
+                    guardarparmetrofac('tratamientofac','0',this)
+            });
+            $("#tratcorporal").blur(function(){
+                if($("#tratcorporal").val() == '')
+                    guardarparmetrocorp('tratamientocorp','0',this)
+            });
+            $("#guardarconsulta").click(function(){
+               var guardarfac = true;
+               var mensajefac = '';
+               if(parseInt($("#tratfacial").attr("myval")) == 0 && $("#desctratamiento").val() == '' && $("#sesiones").val() == ''&& $("#cantdias").val() == ''){
+                   mensajefac = 'No hay tratamiento Facial'
+               }else{
+                   if(parseInt($("#tratfacial").attr("myval")) == 0 || $("#desctratamiento").val() == '' || $("#sesiones").val() == '' || $("#cantdias").val() == ''){
+                       guardarfac = false
+                   }
+               }
+               var guardarcorp = true;
+               var mensajecorp = '';
+
+               if(parseInt($("#tratcorporal").attr("myval")) == 0 && $("#desctratamientocorp").val() == '' && $("#sesioncorp").val() == ''&& $("#diascorp").val() == ''){
+                   mensajecorp = 'No hay tratamiento Corporal'
+               }else{
+                   if(parseInt($("#tratcorporal").attr("myval")) == 0 || $("#desctratamientocorp").val() == '' || $("#sesioncorp").val() == '' || $("#diascorp").val() == ''){
+                       guardarcorp = false
+                   }
+               }
+               if(!guardarfac){
+                   smoke.alert('Faltan datos en el tratamiento estetico Facial')
+               }
+               else if(!guardarcorp){
+                   smoke.alert('Faltan datos en el tratamiento estetico Corporal')
+               }
+               else if (mensajecorp != '' && mensajefac != ''){
+                    smoke.confirm("No hay tratamiento Facial ni corporal, desea continuar guardando?", function(e){
+                    if (e){
+                            guardardatoscomple('Guardando datos de la consulta')
+                        }else{
+                        }
+                        }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+               }
+               else{
+                   guardardatoscomple('Guardando datos de la consulta')
+
+               }
+            });
+            function guardardatoscomple(mensaje){
+
+                $("#guardarconsulta").hide();
+                showWaiting(mensaje, "espere un momento por favor...");
+                if(validacorporal || validafacial){
+                    $.post("/historiaclinica", {action: 'validaguardar', id: '{{ fichamedica.id }}', opc:'facial', idconsult:idconsult}, function(data) {
+                        if(data.result=='ok'){
+                            $.post("/historiaclinica", {action: 'validaguardar', id: '{{ fichamedica.id }}', opc:'corporal',idconsult:idconsult}, function(data) {
+                                if(data.result=='ok'){
+                                    $.post("/historiaclinica", {action: 'guardardatos', id: '{{ fichamedica.id }}', idconsult:idconsult}, function(data) {
+                                        if(data.result=='ok'){
+                                            location.href = "/historiaclinica?info=Ingreso correcto";
+                                        }else{
+                                            hideWaiting();
+                                            $("#guardarconsulta").show();
+                                            smoke.alert(data.result);
+                                        }
+                                    }, "json");
+
+                                }else{
+                                    hideWaiting();
+                                    $("#guardarconsulta").show();
+                                    smoke.alert(data.result);
+                                }
+                            }, "json");
+
+                        }else{
+                            hideWaiting();
+                            $("#guardarconsulta").show();
+                            smoke.alert(data.result);
+                        }
+                    }, "json");
+                }else{
+                    hideWaiting();
+                    $("#guardarconsulta").show();
+                    smoke.alert('Ingrese datos Estetico Facial o corporal');
+                }
+            }
+            eliminardato = function(opc){
+                smoke.confirm("Esta seguro de limpiar los datos", function(e){
+                if (e){
+                    $.post("/historiaclinica", {action: 'eliminardato', id: '{{ fichamedica.id }}', opc:opc,idconsult:idconsult}, function(data) {
+                        if(data.result=='ok'){
+                            if(opc=='facial'){
+                                $(".clasfotpiel input[type='checkbox']").attr('checked',false);
+                                $(".clasbiotipo input[type='checkbox']").attr('checked',false);
+                                $(".clastippiel input[type='checkbox']").attr('checked',false);
+                                $(".claseglogau input[type='checkbox']").attr('checked',false);
+                                $(".claslinexpr input[type='checkbox']").attr('checked',false);
+                                $(".textporcom input[type='text']").val('');
+                                $(".tratsesdia input[type='text']").val('');
+                                $("#tratfacial").attr('myval',0);
+                                $("#altecutaneas").val('');
+                                $("#diagnostico").val('');
+                                $("#desctratamiento").val('');
+                                $("#cosmeticoactual").val('');
+
+                            }else{
+                                $(".pestalimcgr input[type='text']").val('');
+                                $(".cueabcinabmusbra input[type='text']").val('');
+                                $(".corptratsesdia input[type='text']").val('');
+                                $("#tratcorporal").attr('myval',0);
+                                $("#diagnosticocorp").val('');
+                                $("#desctratamientocorp").val('');
+
+                            }
+
+                        }else{
+                            smoke.alert(data.result);
+                        }
+                    }, "json");
+                }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            };
+            $("#eliminarconsulta").click(function(){
+                smoke.confirm("Esta seguro de Cancelar la consulta", function(e){
+                if (e){
+                    location.href = '/historiaclinica?action=del&idconsul='+idconsult;
+                }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+        });
+    </script>
+    <style type="text/css">
+        .classpront{
+            color: white;
+            background: rgba(91,192,222,0.77);
+            background: -moz-linear-gradient(top, rgba(91,192,222,0.77) 0%, rgba(47,150,180,0.65) 54%, rgba(47,150,180,0.55) 100%);
+            background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(91,192,222,0.77)), color-stop(54%, rgba(47,150,180,0.65)), color-stop(100%, rgba(47,150,180,0.55)));
+            background: -webkit-linear-gradient(top, rgba(91,192,222,0.77) 0%, rgba(47,150,180,0.65) 54%, rgba(47,150,180,0.55) 100%);
+            background: -o-linear-gradient(top, rgba(91,192,222,0.77) 0%, rgba(47,150,180,0.65) 54%, rgba(47,150,180,0.55) 100%);
+            background: -ms-linear-gradient(top, rgba(91,192,222,0.77) 0%, rgba(47,150,180,0.65) 54%, rgba(47,150,180,0.55) 100%);
+            background: linear-gradient(to bottom, rgba(91,192,222,0.77) 0%, rgba(47,150,180,0.65) 54%, rgba(47,150,180,0.55) 100%);
+            filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#5bc0de', endColorstr='#2f96b4', GradientType=0 );
+        }
+        .existecan button[ id|='prompt-ok']{
+            color: #ffffff;
+            background: #161616;
+        }
+        .existecan button[ id|='prompt-cancel']{
+            color: #ffffff;
+            background: #b11f1f;
+        }
+        .existecan input[ id|='dialog-input']{
+            text-transform: uppercase;
+            text-align: center;
+        }
+        .derecha .input-xxlarge{
+            width:95%;
+        }
+        .derecha .input-small{
+            width:20%;
+        }
+        .derecha .input-medium{
+            width:30%;
+        }
+        .derecha>.row-fluid>.span2>b{
+            width:100%;
+        }
+        .bordediv{
+            border-radius: 10px 10px 10px 10px;
+            -moz-border-radius: 10px 10px 10px 10px;
+            -webkit-border-radius: 10px 10px 10px 10px;
+            border: 2px solid #b3a6b3;
+            padding: 1%;
+        }
+        .agregpat{
+            border-radius: 45%;
+            background: green;
+            color:white;
+            font-size: 20px;
+            top: 12%;
+            float: right;
+            cursor: pointer;
+        }
+        .clsremovepat{
+            border-radius: 15%;
+            background: #e11b12;
+            color:white;
+            font-size: 14px;
+            cursor: pointer;
+            float: right;
+        }
+
+        .disabled {
+            pointer-events: none;
+            cursor: default;
+            background: #eeeeee;
+            color: #333333;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+
+    <div class="row-fluid">
+        <div class="span12">
+            <header style="text-align: center">
+                <h2>HISTORIA CLINICA
+                <a href="/historiaclinica" class="btn btn-danger" style="float: right"><i class="icon-arrow-left"></i>Atras</a></h2>
+            </header>
+        </div>
+    </div><hr>
+    <div class="row-fluid">
+        <div class="panel-heading">
+            <ul class="nav nav-tabs">
+                <li class="active">
+                    <a href="#general" data-toggle="tab" id='tabgene'><h4>DATOS GENERALES</h4> </a>
+                </li>
+                <li >
+                    <a href="#clinico" data-toggle="tab" id='tabclinico' class="disabled"><h4>DATOS CLINICOS</h4>
+                    </a>
+                </li>
+                <li >
+                    <a href="#facial" data-toggle="tab" id='tabfacial' class="disabled"><h4>DATOS EST&Eacute;TICOS FACIALES</h4>
+                    </a>
+                </li>
+                <li >
+                    <a href="#corporal" data-toggle="tab" id='tabcorpo' class="disabled"><h4>DATOS EST&Eacute;TICOS CORPORALES</h4>
+                    </a>
+                </li>
+                <li style="float:right">
+                    <h3 id="guardarconsulta" class="btn btn-success" style="float: right;display: none">Guardar Consulta</h3>
+                </li>
+            </ul>
+        </div>
+        <div class="panel-body">
+            <div class="tab-content">
+{#                    ///////////////////////////////////////////GENERAL////////////////////////////////////#}
+{#                    ///////////////////////////////////////////GENERAL////////////////////////////////////#}
+                <div class="tab-pane fade in active" id="general">
+                    <div class="row-fluid">
+                        <div class="span6">
+                            <section class="derecha">
+                                <div class="row-fluid" >
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Cedula: <br/> Pasaporte? &nbsp;&nbsp; <input type="checkbox" id="pasaporte" class="form-control" /></b></div>
+                                    <div class="span8">
+                                        <input type="text" id="numdocumento" class="form-control  input-small" autocomplete="off" placeholder=""/>
+                                    </div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Nombres <a style="font-size: 20px;color: #000000">*</a>:</b></div>
+                                    <div class="span8"><input type="text" id="nombres" placeholder="Nombres" class="form-control  input-xxlarge" autocomplete="off" readonly style="text-transform: uppercase"/></div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Apellidos <a style="font-size: 20px;color: #000000">*</a>:</b></div>
+                                    <div class="span8"><input type="text" class="form-control  input-xxlarge" autocomplete="off" id="apellido" placeholder="Apellidos" readonly style="text-transform: uppercase"/></div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Tipo Persona <a style="font-size: 20px;color: #000000">*</a>:</b></div>
+                                    <div class="span8">
+                                        <select  id='tipopersona'  name='tipopersona' class="input-xxlarge bigger" disabled>
+                                            <option value='0'>-----</option>
+                                            {% for t in tipopersona %}
+                                                <option value="{{ t.id }}" >{{ t.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Teléfono o celular:</b></div>
+                                    <div class="span8"><input type="text" class="form-control  input-small" id="telefonocel" autocomplete="off" placeholder="9999999999" readonly/></div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Sexo <a style="font-size: 20px;color: #000000">*</a>:</b></div>
+                                    <div class="span8">
+                                        <select  id='sexo'  name='sexo' class="input-medium bigger" disabled>
+                                            <option value='0'>-----</option>
+                                            {% for s in sexo %}
+                                                <option value="{{ s.id }}" >{{ s.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div><br/>
+                            </section>
+                        </div>
+                        <div class="span6">
+                            <section class="derecha">
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Dirección:</b></div>
+                                    <div class="span8"><input type="text" class="form-control input-xxlarge" id="direccion" placeholder="Direcci&oacute;n" autocomplete="off" readonly style="text-transform: uppercase"/></div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Ocupación:</b></div>
+                                    <div class="span8"><input type="text" class="form-control  input-small" autocomplete="off" id="ocupacion" placeholder="Ocupaci&oacute;n" readonly style="text-transform: uppercase"/></div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Estado Civil <a style="font-size: 20px;color: #000000">*</a>:</b></div>
+                                    <div class="span8">
+                                        <select  id='estadocivil'  name='estadocivil' class="input-large bigger"  disabled>
+                                            <option value='0'>-----</option>
+                                            {% for s in estadocivil %}
+                                                <option value="{{ s.id }}" >{{ s.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Email:</b></div>
+                                    <div class="span8"><input type="text" class="form-control input-xxlarge" autocomplete="off" id="email" placeholder="Email" readonly/></div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>F. Nacimiento <a style="font-size: 20px;color: #000000">*</a>:</b></div>
+                                    <div class="span8"><input type="text" class="form-control input-medium" id="fechnacimiento" value="{% if fichamedica %}{{ fichamedica.fechanacimiento.year }}-{{ fichamedica.fechanacimiento.month }}-{{ fichamedica.fechanacimiento.day }}{% else %}{{ fechaactual }}{% endif %}" disabled/></div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Edad:</b></div>
+                                    <div class="span8" id="edad">
+                                        Tiene 0 años, 0 meses y 0 días
+                                    </div>
+                                </div><br/>
+                                <div class="row-fluid" id="botones">
+                                    <div class="span11" >
+                                        <a class="btn btn-danger" id="nuevregistro" href="/historiaclinica?action=add" style="float: right;display: none;">Cambiar Paciente</a>
+                                        <a class="btn btn-info" id="guardaredicion" style="float: right;display: none;margin-left: 1%;margin-right: 1%">Guardar</a>
+                                        <a class="btn btn-danger" id="canceledicion" href="/historiaclinica?action=add&id={{ fichamedica.id }}" style="float: right;display: none;margin-left: 1%;margin-right: 1%">Cancelar Edic&iacute;on</a>
+                                        <a id="ingresardatclin" class="btn btn-warning" style="float: right;display: none;margin-left: 1%;margin-right: 1%;">Ingresar Consulta</a>
+                                        <a id="editargeneral" class="btn btn-info" style="float: right;margin-left: 1%;margin-right: 1%;display: none">Editar Paciente</a>
+                                        <a id="guardargeneral" class="btn btn-success" style="float: right;display: none">Guardar</a>
+
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+{#                      ///////////////////////////////////////////DATOS CLINICOS//////////////////////////////////////#}
+{#                      ///////////////////////////////////////////DATOS CLINICOS//////////////////////////////////////#}
+                <div class="tab-pane fade" id="clinico">
+
+                    <div class="row-fluid ">
+                        <div class="span7">
+                            <div class="span1"></div>
+                            <div class="span2"><b>Motivo de consulta:</b></div>
+                            <div class="span9">
+                                <textarea type='text' id='motivoconsulta' style="text-transform: uppercase;width: 95%" rows="4" cols="35" > </textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <div class="row-fluid">
+                                <div class="span1"></div><h4>Antecedentes Patol&oacute;gicos:</h4><hr style="margin: 1% 5% 1% 5%">
+                            </div>
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11">
+                                    <div class="span6">
+                                        <div class="span2"><b>Personales:</b></div>
+                                        <div class="span10 bordediv" id='patpersonales'>
+                                            {% if antecedentepersonales %}
+                                                <a id="agregarper" mensj="Antecedente Patol&oacute;gico Personal" tabindex="1" con="0" divid="patpersonales" class="agregpat" onclick="funagregpat(this);" title="Agregar Antecedentes Patol&oacute;gico">&nbsp;+&nbsp; </a>
+                                                {% for p in antecedentepersonales %}
+                                                    <a con="{{ forloop.counter }}" class="btn btn-secondary" style="cursor:default" id="agregarper{{ forloop.counter }}"> {{ p.descripcion }} &nbsp;&nbsp;<span class="clsremovepat" id="remopa{{ forloop.counter }}" mensj="Antecedente Patol&oacute;gico Personal" opc="agregarper" con="{{ forloop.counter }}" divid="patpersonales" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a>
+                                                {% endfor %}
+                                            {% else %}
+                                                Ingrese Antecedente Patol&oacute;gico <a id="agregarper" mensj="Antecedente Patol&oacute;gico Personal" tabindex="1" con="0" divid="patpersonales" class="agregpat" onclick="funagregpat(this);" title="Agregar Antecedentes Patol&oacute;gico">&nbsp;+&nbsp; </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="span6">
+                                        <div class="span2"><b>Familiares:</b></div>
+                                        <div class="span10 bordediv" id='patfamiliares'>
+                                            {% if antecedentefamiliares %}
+                                                <a id='agregarfamil' mensj="Antecedente Patol&oacute;gico Familiar" tabindex="1" con="0"  divid="patfamiliares" class='agregpat' onclick="funagregpat(this);" title="Agregar Antecedentes Patol&oacute;gico">&nbsp;+&nbsp; </a>
+                                                {% for f in antecedentefamiliares %}
+                                                    <a con="{{ forloop.counter }}" class="btn btn-secondary" style="cursor:default" id="agregarfamil{{ forloop.counter }}"> {{ f.descripcion }} &nbsp;&nbsp;<span class="clsremovepat" id="remopa{{ forloop.counter }}" mensj="Antecedente Patol&oacute;gico Familiar" opc="agregarfamil" con="1" divid="patfamiliares" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a>
+                                                {% endfor %}
+                                            {% else %}
+                                                Ingrese Antecedente Patol&oacute;gico <a id='agregarfamil' mensj="Antecedente Patol&oacute;gico Familiar" tabindex="1" con="0"  divid="patfamiliares" class='agregpat' onclick="funagregpat(this);" title="Agregar Antecedentes Patol&oacute;gico">&nbsp;+&nbsp; </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div><br/>
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11">
+                                    <div class="span8">
+                                        <div class="span3"><b>Antecedentes Quir&uacute;rgicos: </b></div>
+                                        <div class="span8 bordediv" id='antequirur'>
+                                            {% if quirurgicos %}
+                                                <a id="agregquirur" mensj="Antecedente Quir&uacute;rgicos" tabindex="1" con="0" divid="antequirur" class="agregpat" onclick="funagregpat(this);" title="Agregar Antecedentes Quir&uacute;rgicos">&nbsp;+&nbsp; </a>
+                                                {% for q in quirurgicos %}
+                                                    <a con="{{ forloop.counter }}" class="btn btn-secondary" style="cursor:default" id="agregquirur{{ forloop.counter }}"> {{ q.descripcion }} &nbsp;&nbsp;<span class="clsremovepat" id="remopa{{ forloop.counter }}" mensj="Antecedente Quir&uacute;rgicos" opc="agregquirur" con="{{ forloop.counter }}" divid="antequirur" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a>
+                                                {% endfor %}
+                                            {% else %}
+                                                Ingrese Antecedente Quir&uacute;rgicos <a id="agregquirur" mensj="Antecedente Quir&uacute;rgicos" tabindex="1" con="0" divid="antequirur" class="agregpat" onclick="funagregpat(this);" title="Agregar Antecedentes Quir&uacute;rgicos">&nbsp;+&nbsp; </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                    </div><br/>
+                    <div class="row-fluid">
+                        <div class="span11" style="margin-left: 4.5%">
+
+                            <b>N° Hijos: </b><input type="text" {% if fichamedica.hijos %}value="{{ fichamedica.hijos }}"{% endif %} class="input-mini" id="hijos" onblur="guardarfichcont(this)" onkeypress="valida_numeros(this)"/>&nbsp;&nbsp;&nbsp;
+                            <b>Partos: </b><input type="text" {% if fichamedica.partos %}value="{{ fichamedica.partos }}"{% endif %} class="input-mini" id="partos" onblur="guardarfichcont(this)" onkeypress="valida_numeros(this)"/>&nbsp;&nbsp;&nbsp;
+                            <b>Cesar&iacute;as: </b><input type="text" class="input-mini" {% if fichamedica.cesareas %}value="{{ fichamedica.cesareas }}"{% endif %} id="cesareas" onblur="guardarfichcont(this)" onkeypress="valida_numeros(this)"/>&nbsp;&nbsp;&nbsp;
+
+                            <b>M&eacute;todo control natal: </b><input type="text" {% if fichamedica.controlnatal %}value="{{ fichamedica.controlnatal }}"{% endif %} id='metodcontron' onblur="guardarfichcont(this)" class="inpu-xlarge" style="width: 35%"/>&nbsp;&nbsp;&nbsp;
+                            <b>FUM: </b><input type="text" id="fum" class="input-medium" onblur="guardarfichcont(this)" {% if fichamedica.fum %}value="{{ fichamedica.fum|date:'Y-m-d' }}"{% else %} value="{{ fechaactual }}" {% endif %}/>
+                        </div>
+                    </div><br/>
+                    <div class="row-fluid">
+                        <div class="span10" style="margin-left: 4.5%">
+                            <div class="span2">
+                            <b>Alergias: </b>
+                                <select  id='alergiacomb'  name='alergiacomb' class="input-small bigger" {% if alergias %} disabled {% endif %}>
+                                    <option value="si" {% if alergias %} selected {% endif %}>SI</option>
+                                    <option value="no" {% if not alergias %}selected {% endif %}>NO</option>
+                                </select>
+                            </div>
+                            <div class="span7 bordediv" id='alergiadiv' {% if not alergias %}style="display: none" {% endif %}>
+                                {% if alergias %}
+                                    <a id='agregaralerg' mensj="Alerg&iacute;as" tabindex="1" con="0"  divid="alergiadiv" class='agregpat' onclick="funagregpat(this);" title="Agregar Alergias">&nbsp;+&nbsp; </a>
+                                    {% for a in alergias %}
+                                        <a con="{{ forloop.counter }}" class="btn btn-secondary" style="cursor:default" id="agregaralerg{{ forloop.counter }}"> {{ a.descripcion }} &nbsp;&nbsp;<span class="clsremovepat" id="remopa{{ forloop.counter }}" mensj="Alerg&iacute;as" opc="agregaralerg" con="{{ forloop.counter }}" divid="alergiadiv" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a>
+                                    {% endfor %}
+                                {% else %}
+                                    Ingrese Alerg&iacute;as <a id='agregaralerg' mensj="Alerg&iacute;as" tabindex="1" con="0"  divid="alergiadiv" class='agregpat' onclick="funagregpat(this);" title="Agregar Alergias">&nbsp;+&nbsp; </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div><br/>
+                    <div class="row-fluid">
+                        <div class="span11" style="margin-left: 4.5%">
+                            {% for h in habitogeneral1 %}
+                                {% if fichamedica %}
+                                    {% with hbit1=fichamedica|args:h.id|call:"habitoficha" %}
+                                        <b>{{ h.nombres }}: </b><input id="habgener{{ h.id }}" {% if hbit1 %} {% if hbit1.cant %}value="{{ hbit1.cant }}" {% else %}value="{{ hbit1.descripcion }}" {% endif %}{% endif %} con="{{ h.id }}" onblur="guardarfichcont(this)" type="text" class="{{ h.clas }}" {% if h.porcen %}style="width: {{ h.porcen }}%"{% endif %}/>&nbsp;&nbsp;&nbsp;
+                                    {% endwith %}
+                                {% else %}
+                                    <b>{{ h.nombres }}: </b><input id="habgener{{ h.id }}" value="" con="{{ h.id }}" onblur="guardarfichcont(this)" type="text" class="{{ h.clas }}" {% if h.porcen %}style="width: {{ h.porcen }}%"{% endif %}/>&nbsp;&nbsp;&nbsp;
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div><br/>
+                    <div class="row-fluid">
+                        <div class="span11" style="margin-left: 4.5%">
+                            {% for h in habitogeneral2 %}
+                                {% if fichamedica %}
+                                    {% with hbit1=fichamedica|args:h.id|call:"habitoficha" %}
+                                        <b>{{ h.nombres }}: </b><input id="habgener{{ h.id }}" con="{{ h.id }}" {% if hbit1 %} {% if hbit1.cant %}value="{{ hbit1.cant }}" {% else %}value="{{ hbit1.descripcion }}" {% endif %}{% endif %} onblur="guardarfichcont(this)" idestet='{{ h.tipoestetico.id }}' type="text" class="{{ h.clas }}" {% if h.porcen %}style="width: {{ h.porcen }}%"{% endif %}/>&nbsp;&nbsp;&nbsp;
+                                    {% endwith %}
+                                {% else %}
+                                    <b>{{ h.nombres }}: </b><input id="habgener{{ h.id }}" con="{{ h.id }}" value="" onblur="guardarfichcont(this)" idestet='{{ h.tipoestetico.id }}' type="text" class="{{ h.clas }}" {% if h.porcen %}style="width: {{ h.porcen }}%"{% endif %}/>&nbsp;&nbsp;&nbsp;
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div><br/>
+                    <div class="row-fluid">
+                        <div class="span11" style="margin-left: 4.5%">
+                            <b>Medicamentos que ingiere actualmente: </b><input type="text" id="medicamenactual" class="input-xxlarge" style="width: 35%"/>&nbsp;&nbsp;&nbsp;
+                            <b>¿Cuantas horas se expone al sol: </b><input type="time" id="exponsol" class="input-small"/>&nbsp;&nbsp;&nbsp;
+                            <b>FPS: </b><select  id='fps'  name='fps' onchange="guardarfichcont(this)" class="input-small bigger" >
+                                    <option value="no" >NO</option>
+                                    <option value="si" >SI</option>
+                                </select>
+                        </div>
+                        <a id="guardarcontinuar" class="btn btn-info" style="float: right;">Guardar datos cl&iacute;nicos</a>
+                    </div><br/>
+                </div>
+{#                      ///////////////////////////////////////////FACIAL//////////////////////////////////////#}
+{#                      ///////////////////////////////////////////FACIAL//////////////////////////////////////#}
+                <div class="tab-pane fade" id="facial">
+
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <div class="row-fluid">
+                                <h3>ANTECEDENTES ESTÉTICOS FACIAL</h3><hr style="margin: 1% 5% 1% 5%">
+                            </div>
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11">
+                                    <div class="span6">
+                                        <div class="span3"><b>Cirug&iacute;as:</b></div>
+                                        <div class="span9 bordediv" id='antcirugi'>
+                                            {% if anteestetfaccirugia %}
+                                                <a id="agregarcir" mensj="Cirug&iacute;a est&eacute;tica" tabindex="1" con="0" divid="antcirugi" class="agregpat" onclick="funagregpat(this);" title="Agregar Cirug&iacute;a est&eacute;tica">&nbsp;+&nbsp; </a>
+                                                {% for p in anteestetfaccirugia %}
+                                                    <a con="{{ forloop.counter }}" class="btn btn-secondary" style="cursor:default" id="agregarcir{{ forloop.counter }}"> {{ p.descripcion }} &nbsp;&nbsp;<span class="clsremovepat" id="remopa{{ forloop.counter }}" mensj="Cirug&iacute;a est&eacute;tica" opc="agregarcir" con="{{ forloop.counter }}" divid="antcirugi" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a>
+                                                {% endfor %}
+                                            {% else %}
+                                                Ingrese Cirug&iacute;a est&eacute;tica <a id="agregarcir" mensj="Cirug&iacute;a est&eacute;tica" tabindex="1" con="0" divid="antcirugi" class="agregpat" onclick="funagregpat(this);" title="Agregar Cirug&iacute;a est&eacute;tica">&nbsp;+&nbsp; </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="span6">
+                                        <div class="span3"><b>Tratamientos:</b></div>
+                                        <div class="span9 bordediv" id='anttratat'>
+                                            {% if anteestetfactratamiento %}
+                                                <a id='agregartrat' mensj="Tratamiento est&eacute;tico" tabindex="1" con="0"  divid="anttratat" class='agregpat' onclick="funagregpat(this);" title="Agregar Tratamiento est&eacute;tico">&nbsp;+&nbsp; </a>
+                                                {% for p in anteestetfactratamiento %}
+                                                    <a con="{{ forloop.counter }}" class="btn btn-secondary" style="cursor:default" id="agregartrat{{ forloop.counter }}"> {{ p.descripcion }} &nbsp;&nbsp;<span class="clsremovepat" id="remopa{{ forloop.counter }}" mensj="Tratamiento est&eacute;tico" opc="agregartrat" con="{{ forloop.counter }}" divid="anttratat" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a>
+                                                {% endfor %}
+                                            {% else %}
+                                                Ingrese Tratamiento est&eacute;tico <a id='agregartrat' mensj="Tratamiento est&eacute;tico" tabindex="1" con="0"  divid="anttratat" class='agregpat' onclick="funagregpat(this);" title="Agregar Tratamiento est&eacute;tico">&nbsp;+&nbsp; </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div><br/>
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11">
+                                    <div class="span6">
+                                        <div class="span3"><b>Autotratamientos:</b></div>
+                                        <div class="span9 bordediv" id='autotrata'>
+                                            {% if anteestetfacauttratamiento %}
+                                                <a id="agregarautotrat" mensj="Autotratamiento est&eacute;tico" tabindex="1" con="0" divid="autotrata" class="agregpat" onclick="funagregpat(this);" title="Agregar Autotratamiento est&eacute;tico">&nbsp;+&nbsp; </a>
+                                                {% for p in anteestetfacauttratamiento %}
+                                                    <a con="{{ forloop.counter }}" class="btn btn-secondary" style="cursor:default" id="agregarautotrat{{ forloop.counter }}"> {{ p.descripcion }} &nbsp;&nbsp;<span class="clsremovepat" id="remopa{{ forloop.counter }}" mensj="Autotratamiento est&eacute;tico" opc="agregarautotrat" con="{{ forloop.counter }}" divid="autotrata" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a>
+                                                {% endfor %}
+                                            {% else %}
+                                                Ingrese Autotratamiento est&eacute;tico <a id="agregarautotrat" mensj="Autotratamiento est&eacute;tico" tabindex="1" con="0" divid="autotrata" class="agregpat" onclick="funagregpat(this);" title="Agregar Autotratamiento est&eacute;tico">&nbsp;+&nbsp; </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="span6">
+                                        <div class="span3"><b>Cosméticos Actual:</b></div>
+                                        <div class="span9">
+                                             <input type="text" id="cosmeticoactual" class="inpu-xlarge" style="width: 96%;text-transform: uppercase"/>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><br/>
+
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <div class="row-fluid">
+                                <h3>EVALUACIÓN ESTÉTICO FACIAL <span style="float:right" class="btn btn-info" onclick="eliminardato('facial')">Limpiar Datos</span></h3><hr style="margin: 1% 5% 1% 5%">
+                            </div>
+
+                            <div class="row-fluid" >
+                                <div class="span1"></div>
+                                <div class="span11 clasfotpiel">
+                                    <b>Fototipo de piel: </b>&nbsp;&nbsp;&nbsp;&nbsp;
+                                    {% for f in fotpiel %}
+                                        <b style="font-size: 18px;font-weight: normal">{{ f.nombre }} &nbsp;&nbsp;</b><input style="width: 2%;height: 2em" class="form-check-input" name="inlineRadioOptions" type="checkbox" onclick="guardarparmetrofac('fotopiel','{{ f.id }}',this);" id="{{ f.id }}"/>&nbsp;&nbsp;&nbsp;&nbsp;
+                                    {% endfor %}
+                                </div>
+                            </div><br/>
+
+                            <div class="row-fluid" >
+                                <div class="span1"></div>
+                                <div class="span11 clasbiotipo">
+                                    <b>Biotipo: </b>&nbsp;&nbsp;&nbsp;&nbsp;
+                                    {% for f in biotipo %}
+                                        <b style="font-weight: normal">{{ f.nombre }} &nbsp;&nbsp;</b><input style="width: 2%;height: 2em" class="form-check-input" name="inlineRadioOptions" type="checkbox" onclick="guardarparmetrofac('biotipo','{{ f.id }}',this);" id="{{ f.id }}"/>&nbsp;&nbsp;&nbsp;&nbsp;
+                                    {% endfor %}
+                                </div>
+                            </div><br/>
+                            <div class="row-fluid" >
+                                <div class="span1"></div>
+                                <div class="span11 clastippiel">
+                                    {% for f in tippiel %}
+                                        <b>{{ f.nombre }} &nbsp;&nbsp;</b><input style="width: 2%;height: 2em" class="form-check-input" name="inlineRadioOptions" type="checkbox" onclick="guardarparmetrofac('tipopiel','{{ f.id }}',this);" id="{{ f.id }}"/>&nbsp;&nbsp;&nbsp;&nbsp;
+                                    {% endfor %}
+                                </div>
+                            </div><br/>
+                            <div class="row-fluid" >
+                                <div class="span1"></div>
+                                <div class="span11 claseglogau">
+                                    <b>Escala de Glogau: </b>&nbsp;&nbsp;&nbsp;&nbsp;
+                                    {% for f in eglogau %}
+                                        <b style="font-size: 18px;font-weight: normal">{{ f.nombre }} &nbsp;&nbsp;</b><input style="width: 2%;height: 2em" class="form-check-input" name="inlineRadioOptions" type="checkbox" onclick="guardarparmetrofac('glogau','{{ f.id }}',this);" id="{{ f.id }}"/>&nbsp;&nbsp;&nbsp;&nbsp;
+                                    {% endfor %}
+                                </div>
+                            </div><br/>
+                            <div class="row-fluid" >
+                                <div class="span1"></div>
+                                <div class="span11 claslinexpr">
+                                    {% for f in linexpr %}
+                                        <b>{{ f.nombre }} &nbsp;&nbsp;</b><input style="width: 2%;height: 2em" class="form-check-input" name="inlineRadioOptions" type="checkbox" onclick="guardarparmetrofac('lineexpre','{{ f.id }}',this);" id="{{ f.id }}"/>&nbsp;&nbsp;&nbsp;&nbsp;
+                                    {% endfor %}
+                                </div>
+                            </div><br>
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11 textporcom"  >
+
+                                    <b>Textura de la piel: </b><input type="text" id="textpiel" onblur="guardarparmetrofac('textpiel',$(this).val(),this);" class="inpu-xxlarge" style="width: 35%;text-transform: uppercase"/>&nbsp;&nbsp;&nbsp;
+                                    <b>Poros: </b><input type="text" id="poro" onblur="guardarparmetrofac('poro',$(this).val(),this);" opc="poro" class="input-xlarge" style="text-transform: uppercase"/>&nbsp;&nbsp;&nbsp;
+                                    <b>Comedones: </b><input type="text" id="comedone" onblur="guardarparmetrofac('comedones',$(this).val(),this);" opc="comedones" class="input-xlarge" style="text-transform: uppercase"/>&nbsp;&nbsp;&nbsp;
+                                </div>
+                            </div>
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11" >
+                                    <b>Alteraciones cut&aacute;neas:</b>
+                                        <input type='text' id='altecutaneas' onblur="guardarparmetrofac('altcutanea',$(this).val(),this);"  style="text-transform: uppercase;width: 85%;height: 3em"  >
+
+                                </div>
+                            </div><br/>
+
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11" >
+                                    <div class="span1"><b>ID:</b></div>
+                                    <div class="span9">
+                                        <textarea type='text' id='diagnostico' opc="diagnostico" onblur="guardarparmetrofac('diagnostico',$(this).val(),this);" style="text-transform:uppercase;width: 95%" rows="4" cols="35" ></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><br/>
+
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <div class="row-fluid">
+                                <h3>TRATAMIENTO FACIAL SUGERIDO</h3><hr style="margin: 1% 5% 1% 5%">
+                            </div>
+
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11 tratsesdia"  >
+                                    <b>Tratamiento estético: </b><input type='text' id='tratfacial' myval="0" opc="tratamientofac" class="input-xxlarge" autocomplete="off">&nbsp;&nbsp;&nbsp;
+                                    <b>N° Sesiones: </b><input type="text" class="input-mini" id='sesiones' value="0" onblur="guardarparmetrofac('sesiones',$(this).val(),this);" onchange="valida_numeros(this);"/>&nbsp;&nbsp;&nbsp;
+                                    <b>N° Dias: </b><input type="text" class="input-mini" id='cantdias' value="0" onblur="guardarparmetrofac('cantdias',$(this).val(),this);" onchange="valida_numeros(this);"/>&nbsp;&nbsp;&nbsp;
+                                </div>
+                            </div>
+
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11" >
+                                    <b>Descripción: </b><textarea type='text' id='desctratamiento' onblur="guardarparmetrofac('desctratamiento',$(this).val(),this);" style="text-transform: uppercase;width: 95%" rows="4" cols="35" ></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div><br/>
+
+                </div>
+{#                      ///////////////////////////////////////////CORPORAL//////////////////////////////////////#}
+{#                      ///////////////////////////////////////////CORPORAL//////////////////////////////////////#}
+                <div class="tab-pane fade" id="corporal">
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <div class="row-fluid">
+
+                                <h3>ANTECEDENTES ESTÉTICOS CORPORAL</h3><hr style="margin: 1% 5% 1% 5%">
+                            </div>
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11">
+                                    <div class="span6">
+                                        <div class="span3"><b>Cirug&iacute;as:</b></div>
+                                        <div class="span9 bordediv" id='corpcirugi'>
+                                            {% if anteestetcorpcirugia %}
+                                                <a id="agregarcircorp" mensj="Cirug&iacute;a est&eacute;tica" tabindex="1" con="0" divid="corpcirugi" class="agregpat" onclick="funagregpat(this);" title="Agregar Cirug&iacute;a est&eacute;tica">&nbsp;+&nbsp; </a>
+                                                {% for f in anteestetcorpcirugia %}
+                                                    <a con="{{ forloop.counter }}" class="btn btn-secondary" style="cursor:default" id="agregarcircorp{{ forloop.counter }}"> {{ f.descripcion }} &nbsp;&nbsp;<span class="clsremovepat" id="remopa{{ forloop.counter }}" mensj="Cirug&iacute;a est&eacute;tica" opc="agregarcircorp" con="1" divid="corpcirugi" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a>
+                                                {% endfor %}
+                                            {% else %}
+                                                Ingrese Cirug&iacute;a est&eacute;tica <a id="agregarcircorp" mensj="Cirug&iacute;a est&eacute;tica" tabindex="1" con="0" divid="corpcirugi" class="agregpat" onclick="funagregpat(this);" title="Agregar Cirug&iacute;a est&eacute;tica">&nbsp;+&nbsp; </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="span6">
+                                        <div class="span3"><b>Tratamientos Y/O control de peso:</b></div>
+                                        <div class="span9 bordediv" id='corptratat'>
+                                            {% if anteestetcorptratamiento %}
+                                                <a id='agregarcorp' mensj="Tratamiento est&eacute;tico Y/O control de peso" tabindex="1" con="0"  divid="corptratat" class='agregpat' onclick="funagregpat(this);" title="Agregar Tratamiento est&eacute;tico Y/O control de peso">&nbsp;+&nbsp; </a>
+                                                {% for f in anteestetcorptratamiento %}
+                                                    <a con="{{ forloop.counter }}" class="btn btn-secondary" style="cursor:default" id="agregarcorp{{ forloop.counter }}"> {{ f.descripcion }} &nbsp;&nbsp;<span class="clsremovepat" id="remopa{{ forloop.counter }}" mensj="Tratamiento est&eacute;tico Y/O control de peso" opc="agregarcorp" con="1" divid="corptratat" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a>
+                                                {% endfor %}
+                                            {% else %}
+                                                Ingrese Tratamiento est&eacute;tico Y/O control de peso <a id='agregarcorp' mensj="Tratamiento est&eacute;tico Y/O control de peso" tabindex="1" con="0"  divid="corptratat" class='agregpat' onclick="funagregpat(this);" title="Agregar Tratamiento est&eacute;tico Y/O control de peso">&nbsp;+&nbsp; </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div><br/>
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11">
+                                    <div class="span6">
+                                        <div class="span3"><b>Autotratamientos Y/O control de peso:</b></div>
+                                        <div class="span9 bordediv" id='autotratacorp'>
+                                            {% if anteestetcorpauttratamiento %}
+                                                <a id="agregarautotratcorp" mensj="Autotratamiento est&eacute;tico Y/O control de peso" tabindex="1" con="0" divid="autotratacorp" class="agregpat" onclick="funagregpat(this);" title="Agregar Autotratamiento est&eacute;tico Y/O control de peso">&nbsp;+&nbsp; </a>
+                                                {% for f in anteestetcorpauttratamiento %}
+                                                    <a con="{{ forloop.counter }}" class="btn btn-secondary" style="cursor:default" id="agregarautotratcorp{{ forloop.counter }}"> {{ f.descripcion }} &nbsp;&nbsp;<span class="clsremovepat" id="remopa{{ forloop.counter }}" mensj="Autotratamiento est&eacute;tico Y/O control de peso" opc="agregarautotratcorp" con="1" divid="autotratacorp" onclick="removepat(this);"> &nbsp; x &nbsp; </span></a>
+                                                {% endfor %}
+                                            {% else %}
+                                                Ingrese Autotratamiento est&eacute;tico Y/O control de peso <a id="agregarautotratcorp" mensj="Autotratamiento est&eacute;tico Y/O control de peso" tabindex="1" con="0" divid="autotratacorp" class="agregpat" onclick="funagregpat(this);" title="Agregar Autotratamiento est&eacute;tico Y/O control de peso">&nbsp;+&nbsp; </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div><br/>
+
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <div class="row-fluid">
+                                <h3>HÁBITOS ALIMENTICIOS</h3><hr style="margin: 1% 5% 1% 5%">
+                            </div>
+
+                            <div class="row-fluid" >
+                                <div class="span1"></div>
+                                <div class="span11">
+                                    {% for h in habitocorporal %}
+                                        {% if fichamedica %}
+                                            {% with hbit1=fichamedica|args:h.id|call:"habitoficha" %}
+                                                <b>{{ h.nombres }}: </b>
+                                                <input id="habgener{{ h.id }}" con="{{ h.id }}" onblur="guardarfichcont(this)" type="text" class="{{ h.clas }}" {% if hbit1 %} {% if hbit1.cant %}value="{{ hbit1.cant }}" {% else %}value="{{ hbit1.descripcion }}" {% endif %}{% endif %} {% if h.porcen %}style="text-transform: uppercase;width: {{ h.porcen }}%"{% else %}style='text-transform: uppercase'{% endif %}/>&nbsp;&nbsp;&nbsp;<br/>
+
+                                            {% endwith %}
+                                        {% else %}
+                                            <b>{{ h.nombres }}: </b><input id="habgener{{ h.id }}" con="{{ h.id }}" onblur="guardarfichcont(this)" type="text" class="{{ h.clas }}" {% if h.porcen %}style="width: {{ h.porcen }}%;text-transform: uppercase"{% else %}style='text-transform: uppercase'{% endif %}/>&nbsp;&nbsp;&nbsp;<br/>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div><br/>
+                        </div>
+                    </div>
+
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <div class="row-fluid">
+                                <h3>EVALUACIÓN ESTÉTICO CORPORAL <span style="float:right" class="btn btn-info" onclick="eliminardato('corporal')">Limpiar Datos</span></h3><hr style="margin: 1% 5% 1% 5%">
+                            </div>
+
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11 pestalimcgr" >
+                                    <b>Peso: </b><input type='text' id='peso' onblur="guardarparmetrocorp('peso',$(this).val(),this);" onchange="valida_numerosdec(this);" class="input-medium">&nbsp;&nbsp;&nbsp;
+                                    <b>Talla: </b><input type="text" id='talla' onblur="guardarparmetrocorp('talla',$(this).val(),this);" onchange="valida_numerosdec(this);" class="input-medium"/>&nbsp;&nbsp;&nbsp;
+                                    <b>IMC: </b><input type="text" id='imc' onblur="guardarparmetrocorp('imc',$(this).val(),this);" onchange="valida_numerosdec(this);" class="input-medium"/>&nbsp;&nbsp;&nbsp;
+                                    <b>%Grasa Corporal: </b><input type="text" id='grascorp' onblur="guardarparmetrocorp('grascorp',$(this).val(),this);" onchange="valida_numerosdec(this);" class="input-medium"/>&nbsp;&nbsp;&nbsp;
+                                </div>
+                            </div><br/>
+
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11 cueabcinabmusbra" >
+                                    <h4>Medidas</h4><br/>
+                                    Cuello: <input type='text' id='cuello'  onblur="guardarparmetrocorp('cuello',$(this).val(),this);" onchange="valida_numerosdec(this);" class="input-small">&nbsp;&nbsp;&nbsp;
+                                    Ab. Alto: <input type="text" id='abalto' onblur="guardarparmetrocorp('abalto',$(this).val(),this);" onchange="valida_numerosdec(this);" class="input-small"/>&nbsp;&nbsp;&nbsp;
+                                    Cintura: <input type="text" id='cintura' onblur="guardarparmetrocorp('cintura',$(this).val(),this);" onchange="valida_numerosdec(this);" class="input-small"/>&nbsp;&nbsp;&nbsp;
+                                    Ab. Bajo: <input type="text" id='abbajo' onblur="guardarparmetrocorp('abbajo',$(this).val(),this);" onchange="valida_numerosdec(this);" class="input-small"/>&nbsp;&nbsp;&nbsp;
+                                    Muslo: <input type="text" id='muslo' onblur="guardarparmetrocorp('muslo',$(this).val(),this);" onchange="valida_numerosdec(this);" class="input-small"/>&nbsp;&nbsp;&nbsp;
+                                    Brazo: <input type='text' id='brazo' onblur="guardarparmetrocorp('brazo',$(this).val(),this);" onchange="valida_numerosdec(this);" class="input-small">&nbsp;&nbsp;&nbsp;<br/>
+
+                                    Peso ideal: <input type="text" onblur="guardarparmetrocorp('pesoideal',$(this).val(),this);" id='pesideal' onchange="valida_numerosdec(this);" class="input-small"/>&nbsp;&nbsp;&nbsp;
+                                    Peso deseado: <input type="text" onblur="guardarparmetrocorp('pesodesado',$(this).val(),this);" id='pesdeseado' onchange="valida_numerosdec(this);" class="input-small"/>&nbsp;&nbsp;&nbsp;
+
+                                </div>
+                            </div><br/>
+
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11" >
+                                    <div class="span1"><b>ID:</b></div>
+                                    <div class="span9">
+                                        <textarea type='text' id='diagnosticocorp' onblur="guardarparmetrocorp('diagnostico',$(this).val(),this);" style="text-transform: uppercase;width: 95%" rows="4" cols="35" ></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><br/>
+
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <div class="row-fluid">
+                                <h3>TRATAMIENTO CORPORAL SUGERIDO</h3><hr style="margin: 1% 5% 1% 5%">
+                            </div>
+
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11 corptratsesdia" >
+                                    <b>Tratamiento estético: </b><input type='text' id='tratcorporal' myval='0' class="input-xxlarge" autocomplete="off">&nbsp;&nbsp;&nbsp;
+                                    <b>N° Sesiones: </b><input type="text" id="sesioncorp" value="0" onblur="guardarparmetrocorp('sesiones',$(this).val(),this);" class="input-mini"/>&nbsp;&nbsp;&nbsp;
+                                    <b>N° Dias: </b><input type="text" id="diascorp" value="0" onblur="guardarparmetrocorp('cantdias',$(this).val(),this);" class="input-mini"/>&nbsp;&nbsp;&nbsp;
+                                </div>
+                            </div>
+
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span11" >
+                                    <b>Descripción: </b><textarea type='text' id='desctratamientocorp' onblur="guardarparmetrocorp('desctratamiento',$(this).val(),this);" style="text-transform: uppercase;width: 95%" rows="4" cols="35" ></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div><br/>
+                </div>
+            </div>
+        </div>
+        <div class="panel-footer">
+            <a id="eliminarconsulta" class="btn btn-danger" style="float: right;display: none">Cancelar Consulta</a>
+        </div>
+    </div>
+
+
+
+{% endblock %}

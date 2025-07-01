@@ -1,0 +1,101 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <script type="text/javascript">
+        $(function(){
+            $("#cerrarexam").click(function(){window.close();});
+            var ctrlKeyDown = false;
+
+            $(document).ready(function(){
+                $(document).on("keydown", keydown);
+                $(document).on("keyup", keyup);
+                $(window).on("keydown",keydown);
+                $(window).on("keyup",keyupwin);
+
+            });
+
+            $('ul[class=nav]').hide();
+            $('a[class=brand]').hide();
+            function keydown(e) {
+
+                if ((e.which || e.keyCode) == 116 || ((e.which || e.keyCode) == 82 && ctrlKeyDown)) {
+                    // Pressing F5 or Ctrl+R
+                    e.preventDefault();
+                } else if ((e.which || e.keyCode) == 17) {
+                    // Pressing  only Ctrl
+                    ctrlKeyDown = true;
+                }
+            }
+
+            function keyup(e){
+                // Key up Ctrl
+                if ((e.which || e.keyCode) == 17){
+                    ctrlKeyDown = false;}
+            }
+
+
+
+            document.oncontextmenu = new Function("return false");
+
+            history.pushState(null, null, location.href);
+
+            window.addEventListener('popstate', function(event) {
+                history.pushState(null, null, location.href);
+
+            });
+        });
+
+    </script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' style="text-align: center" >
+        <div class="offset2 span8" >
+            <h3>Escuela de Capacitación de Conductores Profesionales "CONDUCE ECUADOR"</h3>
+            <h4>{{ tipotest.descripcion }}</h4>
+            <br/>
+        </div>
+        <div class='span1'>
+            <h3>PUNTOS:</h3><a class="btn btn-large btn-success" style="font-size: 32px">
+                {{ resulttest.puntaje }}
+            </a>
+        </div>
+
+    </div>
+
+
+        <div class='row-fluid'>
+        <div class='offset2 span8' >
+            <form class='form' method="POST">
+                <table class='table' cellpadding="0" cellspacing="0" id="tablepregunto">
+
+                        {% for p in listpreguntarespu %}
+                            {% with num=forloop.counter %}
+                                        <thead num="{{ num }}" id="cabecera{{ num }}">
+                                            <tr>
+                                                <th>
+                                                    <h4 style="white-space: pre-wrap;text-align: justify;">{{ forloop.counter }}.- {{ p.pregunta }}<br>
+                                                        {% with verificarest=p|args:inscripcion.id|call:"verificarespuesta" %}
+                                                            <span style="float: right">Descripción:{{ verificarest.nombre_parametro }}</span> <br>
+                                                            <span style="float: right">Puntaje: {{ verificarest.respuesta }}</span>
+                                                        {% endwith %}
+                                                   </h4>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                            {% endwith %}
+                        {% endfor %}
+
+                </table>
+                 <a id="cerrarexam"  class="btn btn-danger" >Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+
+
+{% endblock %}

@@ -1,0 +1,228 @@
+{% extends "layout/basebs.html" %}
+{% load sga_extras %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block atras %}{{ request.path }}{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        const obtener_materia_selecionadas = () => {
+            let lista = [];
+            $("input[name=check_materia]:checked").each(function () {
+                lista.push($(this).val())
+            });
+            return lista;
+        }
+
+        const simbolo = (pos) => {
+            if (pos == 0){
+                return '?';
+            }else{
+                return '&';
+            }
+        }
+
+        const tiene_materias_seleccionadas = () => {
+            if ($("input[name=check_materia]:checked").length > 0){
+                $(".conponente_boton").show();
+            }
+            else{
+                $(".conponente_boton").hide();
+            }
+        }
+
+        $(function() {
+
+            $("#selectMalla").change(function () {
+                let idm = $(this).val();
+                location.href = '/adm_cronogramaacademico?action=listamaterias&id={{ cronograma.id }}&idm='+idm;
+            });
+
+            $("#selectNivel").change(function () {
+                let idn = $(this).val();
+                let idm = $("#selectMalla").val();
+                location_href = '/adm_cronogramaacademico?action=listamaterias&id={{ cronograma.id }}';
+
+                if (idm){
+                    location_href = location_href + '&idm='+idm;
+                }
+                if (idn){
+                    location_href = location_href + '&idn='+idn;
+                }
+                location.href = location_href;
+            });
+
+            $("#selectProfesor").change(function () {
+                let idp = $(this).val();
+                let idm = $("#selectMalla").val();
+                let idn = $("#selectNivel").val();
+                location_href = '/adm_cronogramaacademico?action=listamaterias&id={{ cronograma.id }}';
+
+                if (idm){
+                    location_href = location_href  +  '&idm='+idm;
+                }
+                if (idn){
+                    location_href = location_href  +  '&idn='+idn;
+                }
+                if (idp){
+                    location_href = location_href  + '&idp='+idp;
+                }
+                location.href = location_href;
+            });
+
+            $(".check_todo").click(function () {
+                $(".check_materia").prop('checked', $(this).is(":checked"));
+                tiene_materias_seleccionadas();
+            });
+
+            $(".check_materia").change(function () {
+                tiene_materias_seleccionadas();
+            })
+
+            $("#btn-guardar").click(function () {
+                QuestionLayout('¿Está Seguro que desea adicionar las materias al cronograma?', () => {
+                    const idp = $("#selectProfesor").val();
+                    const idm = $("#selectMalla").val();
+                    const idn = $("#selectNivel").val();
+                    const lista = obtener_materia_selecionadas();
+                    //console.log(lista);
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': 'asignarmateria', 'id': '{{ cronograma.id }}', 'idm': idm, 'idn': idn, 'idp': idp, 'lista': JSON.stringify(lista)}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: 'Se han asignado correctamente las materias selecionadas',
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.href = "{{ request.path }}?action=listamaterias&id={{ cronograma.id }}"
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, () => {
+                    console.log('Usuario canceló');
+                });
+
+            })
+
+            {% for idmateria in materias_asignadas %}
+                $(".check_materia_{{ idmateria }}").prop('checked', true);
+            {% endfor %}
+
+            tiene_materias_seleccionadas()
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="container-fluid ">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                    <h6>Cronograma: {{ cronograma.nombre }}</h6>
+                    <h6>Periodo: {{ periodo }}</h6>
+                </div>
+            </div>
+        </div>
+        <div class='row mb-2'>
+            <div class='col-6'>
+                <select class="form-select" id="selectMalla">
+                    <option value="">Seleccione la malla</option>
+                    {% for malla in mallas %}
+                        <option {% if malla.id == idm %}selected{% endif %} value="{{ malla.id }}">{{ malla }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class='col-6'>
+                <select class="form-select" id="selectNivel">
+                    <option value="">Seleccione el nivel</option>
+                    {% for nivel in niveles %}
+                        <option {% if nivel.0 == idn %}selected{%  endif %} value="{{ nivel.0 }}">{{ nivel.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class='row mb-2'>
+            <div class='col-12'>
+                <select class="form-select" id="selectProfesor">
+                    <option value="" hidden="hidden">Seleccione profesor</option>
+                    {% for profesor in profesores %}
+                        <option {% if profesor.id == idp %}selected{% endif %} value="{{ profesor.id }}">{{ profesor }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class='row mb-3 justify-content-center conponente_boton' style="display: none">
+            <div class='col-12 col-md-6 d-grid gap-2 d-flex justify-content-around'>
+                <a href="{{ request.path }}" class="btn mb-1 waves-effect waves-light btn-danger w-100 w-sm-auto lock_screen">
+                    <i class="ti ti-x fs-4 me-2"></i>
+                    Cancelar
+                </a>
+                <button type="button" id="btn-guardar" class="btn mb-1 waves-effect waves-light btn-success w-100 w-sm-auto ms-sm-2">
+                    <i class="ti ti-send fs-4 me-2"></i>
+                    Asignar materias
+                </button>
+            </div>
+        </div>
+
+        <div class='row mb-3'>
+            <div class='col-12'>
+                <table class='table table-bordered table-striped text-nowrap customize-table mb-0 align-middle'>
+                    <thead>
+                    <tr>
+                        <th style="text-align: justify; vertical-align:middle">Asignatura</th>
+                        <th style="text-align: center; width: 50px; vertical-align:middle">Nivel</th>
+                        <th style="text-align: center; width: 80px; vertical-align:middle">Paralelo</th>
+                        <th style="text-align: center; width: 130px; vertical-align:middle">Fecha Inicio</th>
+                        <th style="text-align: center; width: 300px; vertical-align:middle">Profesor</th>
+                        <th style="text-align: center; width: 20px; vertical-align:middle"><input type="checkbox" style="font-size: 30px" class="check_todo"></th>
+                    </tr>
+                    </thead>
+                    <tbody style="word-wrap: break-word; white-space: normal;">
+                    {% for materia in materias %}
+                        {% with nivel=materia.nivel %}
+                            <tr>
+                                <td>
+                                    {{ materia.asignatura.nombre }}
+                                    <br>{{ materia.nivel.malla }}
+                                </td>
+                                <td class="text-center">{{ nivel.nivelmalla.nombre }}</td>
+                                <td class="text-center">{{ nivel.paralelo }}</td>
+                                <td class="text-center">{{ materia.inicio|date:'d-m-Y' }} <br> {{  materia.fin|date:'d-m-Y' }}</td>
+                                <td>{{ materia.profesor_principal }}</td>
+                                <td class="text-center"><input type="checkbox" style="font-size: 30px" class="check_materia check_materia_{{ materia.id }}" name="check_materia" value="{{ materia.id }}"></td>
+                            </tr>
+                        {% endwith %}
+                    {% empty %}
+                        <tr><td colspan="6" class="text-center">No existen registros de materias planificadas</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+        <div class='row justify-content-center conponente_boton' style="display: none">
+            <div class='col-12 col-md-6 d-grid gap-2 d-flex justify-content-around'>
+                <a href="{{ request.path }}" class="btn mb-1 waves-effect waves-light btn-danger w-100 w-sm-auto lock_screen">
+                    <i class="ti ti-x fs-4 me-2"></i>
+                    Cancelar
+                </a>
+                <button type="button" id="btn-guardar" class="btn mb-1 waves-effect waves-light btn-success w-100 w-sm-auto ms-sm-2">
+                    <i class="ti ti-send fs-4 me-2"></i>
+                    Asignar materias
+                </button>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}

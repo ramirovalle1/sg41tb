@@ -1,0 +1,196 @@
+{% extends "layout/basebs.html" %}
+{% load sga_extras %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        $(function() {
+            $(".action_change_estado").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const value = $(this).data('value');
+                let question = `¿Está seguro de inactivar el plan analítico de la asignatura <span class="badge bg-info">${name}</span>?`;
+                if (value === 'activate')
+                {
+                    const question = `¿Está seguro de activar el plan analítico de la asignatura <span class="badge bg-info">${name}</span>?`;
+                }
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id, 'value': value}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            });
+
+            $(".action_delete").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const question = `Al eliminar el registro no podra volver a recuperar los datos. <br>¿Está seguro de eliminar el registro <span class="text-info">${name}</span>?`;
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            });
+
+            $(".minimo").change(function () {
+                const id = $(this).attr('id');
+                const valor = $(this).val();
+                if (valor < 0) {
+                    return false;
+                }
+                actualizarValor('addminimo', id, valor)
+            })
+            
+            $(".maximo").change(function () {
+                const id = $(this).attr('id');
+                const valor = $(this).val();
+                if (valor < 0) {
+                    return false;
+                }
+                actualizarValor('addmaximo', id, valor)
+            })
+
+        });
+        function actualizarValor(action, id, valor) {
+            console.log('f')
+            const question = `Esta seguro que desea cambiar el valor. <span class="badge bg-info">${valor}</span>?`;
+            QuestionLayout(question, ()=> {
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id, 'value': valor}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: `${response.message}`,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.hide();
+                        });
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+            }, ()=>{})
+        }
+    </script>
+{% endblock %}
+{% block atras %}{{ request.path }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid ">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                    <h6>Periodo: {{ periodo }}</h6>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="btn-group">
+                    <div class="dropdown">
+                        <a href="#" class="btn btn-outline-warning dropdown-toggle" id="dropdownMenuDist" data-bs-toggle="dropdown">Acciones <span class="caret"></span></a>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownMenuPA_{{ silabo.id }}" data-popper-placement="left-start">
+                            <li><a class="dropdown-item" href="{{ request.path }}?action=criterio"><i class="fa fa-list me-2"></i>Criterios de actividades </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class='row bm-4'>
+            <div class='col-12 col-md-12 col-sm-12'>
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    {% for item in lista %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if forloop.counter == 1 %}active{% endif %}" id="{{ item.0 }}-tab" data-bs-toggle="tab" data-bs-target="#{{ item.0 }}" type="button" role="tab" aria-controls="{{ item }}" aria-selected="true"><i class="fa fa-list"></i> {{ item.1 }}</button>
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                <div class="tab-content" id="myTabContent">
+                    {% for item in lista %}
+                        <div class="tab-pane fade show {% if forloop.counter == 1 %}active{% endif %}" id="{{ item.0 }}" role="tabpanel" aria-labelledby="home-tab">
+                            <div class='row bm-4 mt-3 mb-3'>
+                                <div class='col-12 col-md-12 col-sm-12'>
+                                    <a class="btn btn-rounded btn-success" href="{{ request.path }}?action=addcriterioperiodo&item={{ item.0 }}"><i class="fa fa-plus"></i> Adionar Nuevo criterio</a>
+                                </div>
+                            </div>
+                            <div class='row bm-4'>
+                                <div class='col-12 col-md-12 col-sm-12'>
+                                    <table class='table table-bordered text-nowrap customize-table mb-0 align-middle' cellpadding="0" cellspacing="0">
+                                        <thead>
+                                        <tr>
+                                            <th class="text-left" width="55%">Criterio</th>
+                                            <th class="text-center" width="10%">Mínimo</th>
+                                            <th class="text-center" width="10%">Máximo</th>
+                                            {#                                            <th class="text-center" width="20%">Habilitar tutorias?</th>#}
+                                            <th class="text-center" width="5%">Acciones</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% with criterioperiodos=periodo|args:item.0|call:'criterios_periodo_tipo' %}
+                                            {% for cp in criterioperiodos %}
+                                                <tr>
+                                                    <td class="text-left">{{ cp.criterio }}</td>
+                                                    <td class="text-center"><input type="number" class="form-control text-center minimo" id="{{ cp.id }}" value="{{ cp.minimo }}"></td>
+                                                    <td class="text-center"><input type="number" class="form-control text-center maximo" id="{{ cp.id }}" value="{{ cp.maximo }}"></td>
+                                                    <td class="text-center">
+                                                        <a class="btn btn-sm btn-danger action_delete" data-id="{{ cp.id }}" data-action="delcriterioperiodo" data-name="{{ cp.criterio.nombre }}" href="javascript:void(0);"><i class="fa fa-trash"></i></a>
+                                                    </td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr>
+                                                    <td colspan="3" style="text-align: center">No existe registros</td>
+                                                </tr>
+                                            {% endfor %}
+                                        {% endwith %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

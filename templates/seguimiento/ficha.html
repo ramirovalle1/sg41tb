@@ -1,0 +1,531 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+        $("#hora").addClass("input-small");
+        $("#fecha").addClass("input-small");
+{#            {%  if efectiva %}#}
+{#                $("#iden,#opc,#nombre,#apellidos,#celular,#email,#ciudad,#fonod,#ext,#rnombre1,#rcel1,#remail1,#rnombre2,#rcel2,#remail2,#rnombre3,#rcel3,#remail3,#info,#enviado,#obs,#estado,#opcestado,#nota,#motivor,#lugart,#fonot,#sexo").attr("disabled", true);#}
+{#            {% endif %}#}
+
+
+
+            $("#verregistro").click(function() {
+               $("#registros").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+               $("#registros").modal('show');
+            });
+
+            $("#verregistrocita").click(function() {
+               $("#registroscita").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+               $("#registroscita").modal('show');
+            });
+
+            var op2 = $("#opc").val();
+            if (op2 != 1){
+                    $("#mot").show();
+            };
+
+            $("#opc").change(function(){
+                $("#motivor").val("");
+                var op = $("#opc").val();
+
+                if (op != 1){
+                    $("#mot").show();
+                }else{
+                    $("#mot").hide();
+                }
+
+            });
+            $("#cita").click(function(){
+                $("#fecha").datepicker({format:'dd-mm-yyyy'}).mask("99-99-9999");
+                if ($("#cita").is(':checked')){
+                    $("#fecha").attr('disabled',false);
+                    $("#hora").attr('disabled',false);
+                    $("#departamentos").attr('disabled',false);
+                }else{
+                    $("#fecha").attr('disabled',true);
+                    $("#fecha").val("");
+                    $("#hora").val("");
+                    $("#departamentos").val("");
+                    $("#hora").attr('disabled',true);
+                    $("#departamentos").attr('disabled',true);
+                }
+            });
+
+            $("#cerrar").click(function(){
+                if ($("#cerrar").is(':checked')){
+                    $("#cita").attr('checked',false);
+                    $("#fecha").attr('disabled',true);
+                    $("#cita").attr('disabled',true);
+                    $("#hora").attr('disabled',true);
+                    $("#fecha").val("");
+                    $("#hora").val("");
+                    $("#departamentos").val("0");
+                    $("#departamentos").attr('disabled',true);
+                }else{
+                    $("#cita").attr('disabled',false);
+                }
+            });
+
+            $("#estado").change(function(){
+                var est = $("#estado").val();
+
+{#                $("#opc_es").show();#}
+
+                $.post("/seguimien_inscrip",{"action": "consulta","id":est},function(data){
+
+                     if(data.result=='ok'){
+                        var html=''
+                        for (var i in data.lista) {
+                            var dato = data.lista[i];
+                            html = html + "<option value='"+ dato[0] +"'> " + dato[1] +" </option>"  ;
+                        }
+                         $("#opc_es").html("<b></b> <select id='opcestado' class='form-control'> "+
+                                " <option value='0'> ----- </option> "+ html +"</select> ");
+                         $("#opc_es").show();
+                       }else
+                            if(data.result=='bad'){
+                            alert('Error Inesperado!')
+                             }else{
+                                $("#opc_es").hide();
+                                $("#opcestado").val("");
+                            }
+
+                 },"json");
+            });
+
+
+            $("#registros .btn-cerrar").click(function() {
+                $("#registros").modal('hide');
+
+            });
+
+            $("#registroscita .btn-cerrar").click(function() {
+                $("#registroscita").modal('hide');
+
+            });
+            $("#guardardatos").click(function() {
+                $("#guardardatos").hide();
+                 var cita = false;
+                 var fecha = '';
+                 var hora = '';
+                 var dpto='';
+                 var finaliza=false;
+                 var iden = $("#iden").val();
+                 var opc = $("#opc").val();
+                 var nomb = $("#nombre").val();
+                 var ape = $("#apellidos").val();
+                 var cel = $("#celular").val();
+                 var  email = $("#email").val();
+                 var ciu = $("#ciudad").val();
+                 var fonod = $("#fonod").val();
+                 var sexo = $("#sexo").val();
+                 var lugart = $("#lugart").val();
+                 var fonot = $("#fonot").val();
+                 var ext = $("#ext").val();
+                 var rnombre1 = $("#rnombre1").val();
+                 var rcel1 = $("#rcel1").val();
+                 var remail1 = $("#remail1").val();
+                 var rnombre2 = $("#rnombre2").val();
+                 var rcel2 = $("#rcel2").val();
+                 var remail2 = $("#remail2").val();
+                 var rnombre3 = $("#rnombre3").val();
+                 var rcel3 = $("#rcel3").val();
+                 var remail3 = $("#remail3").val();
+                 if ($("#info").is(':checked')) {
+                    var info = 'on';
+                }
+                else{
+                    var info = 'off';
+                }
+                if ($("#enviado").is(':checked')) {
+                    var enviado = 'on';
+                }
+
+                else{
+                    var enviado = 'off';
+                }
+
+                if ($("#cita").is(':checked')) {
+                    cita = true;
+                    fecha = $("#fecha").val();
+                    hora = $("#hora").val();
+                    dpto=$("#departamentos").val();
+                }
+                if ($("#cerrar").is(':checked')) {
+                    finaliza = true;
+                }
+
+
+
+                 var obs = $("#obs").val();
+                 var estado = $("#estado").val();
+                 var opcestado = $("#opcestado").val();
+                 var rid1 =  $("#rid1").val();
+                 var rid2 =  $("#rid2").val();
+                 var rid3 =  $("#rid3").val();
+                 var nota =  $("#nota").val();
+                 var motivor =  $("#motivor").val();
+                 if (estado != 0)  {
+
+                     if (cita == true && fecha == '' && hora == '' && dpto == 0){
+                         alert('Llene Datos de la Cita');
+                         $("#guardardatos").show();
+                     }else{
+                         $.post("/seguimien_inscrip",{"action": "guardar","id":'{{ registro.id }}',"iden": iden, "opc":opc,"nomb": nomb,"ape": ape,"cel": cel,"email": email,"ciu": ciu,"fonod": fonod,'sexo':sexo,
+                         'lugart':lugart,'fonot':fonot,'ext':ext,'rnombre1':rnombre1,'rcel1':rcel1,'remail1':remail1,'rnombre2':rnombre2,'rcel2':rcel2,'remail2':remail2,"nota":nota,"motivor":motivor,
+                         'rnombre3':rnombre3,'rcel3':rcel3,'remail3':remail3,'info':info, 'enviado':enviado,'obs':obs,'estado':estado,'opcestado':opcestado,'rid1':rid1,'rid2':rid2,'rid3':rid3,'op':'{{ op }}','ids':'{{ solicitud.id }}',
+                         'cita':cita, 'fecha':fecha,'hora':hora,'dpto':dpto,'finaliza':finaliza},function(data) {
+                             if(data.result=='ok'){
+                                 if ('correo' == '{{ op }}'){
+                                     location.href='/seguimien_inscrip?action=correos&s='+iden;
+                                 }else{
+                                    location.href='/seguimien_inscrip?action=online&s='+iden;
+                                 }
+
+                               }else{
+                                alert('Error Inesperado!');
+                                $("#guardardatos").show();
+                             }
+                         },"json");
+                     }
+                 }else{
+                     alert('Escoja Estado de Llamada');
+                     $("#guardardatos").show();
+                 }
+             });
+        });
+
+    </script>
+    <style>
+        hr {
+            margin: 10px 0;
+        }
+
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3 style="text-align: center"> REGISTRO DE LLAMADA</h3>
+{#            <h3 style="text-align: center"> {{ nee }}</h3>#}
+        </div>
+
+        <div class='span1'>
+            <a href="/seguimien_inscrip?action=online" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='row-fluid'>
+            <div class='span11'>
+                <div class='span4'>
+
+                </div>
+                <div class='span6'>
+                    <table class='table ' cellpadding="0" cellspacing="0" >
+                        <thead>
+                        </thead>
+                        <tbody>
+                        <tr style="text-align: center">
+                            <td><b>Entonces mi estimado/a se inscribir&aacute; usted?</b>
+                            <select id="opc" class="form-control">
+                                <option {% if  registro.opcionrespuesta %} value="{{ registro.opcionrespuesta.id }} {% else %} 0 {% endif %}"> {% if  registro.opcionrespuesta %} {{  registro.opcionrespuesta.descripcion }} {%  else %} ---- {% endif %} </option>
+                                {% for op in opcrespuesta %}
+                                   <option value="{{ op.id }}">
+                                      {{ op.descripcion }}
+                                   </option>
+                                {% endfor %}
+                            </select></td>
+{#                             <td style="display: None"  id='mot'><b>Por que NO?</b> <br><input  type="text"  id = 'motivor' value=" {% if registro.motivorespuesta %} {{ registro.motivorespuesta }} {% endif %}" style="text-transform: uppercase;width: 400px"></td>#}
+                             <td style="display: None"  id='mot'><b>Por que NO?</b> <br>
+                              <select class="form-control" id = 'motivor'>
+                                <option {% if  registro.tiporespuesta %} value="{{ registro.tiporespuesta.id }}" {% else %}  value=0 {% endif %}> {% if  registro.tiporespuesta %} {{  registro.tiporespuesta.descripcion }} {%  else %} ---- {% endif %} </option>
+                                {% for tr in tiporespuesta %}
+                                   <option value="{{ tr.id }}">
+                                      {{ tr.descripcion }}
+                                   </option>
+                                {% endfor %}
+                            </select>
+                             </td>
+
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div><div class='span12'>
+            <div class='span2'>
+            </div>
+            <div class='span8'>
+           <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    <th colspan="3">Datos Personales</th>
+                    </thead>
+
+           </table>
+            </div>
+            </div>
+        <div class='span12'>
+            <div class='span2'>
+            </div>
+
+            <div class="span4">
+                <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>
+                            <b>Identificaci&oacute;n: </b> <input type="text" value="{{ registro.identificacion }}" id="iden" style="text-transform: uppercase;width: 200px"/>
+                            <hr ><b>Nombres: </b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" value="{{ registro.nombres }}" id="nombre" style="text-transform: uppercase;width: 400px"/>
+                            <hr><b>Apellidos: </b>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" value="{{ registro.apellidos }}" id="apellidos" style="text-transform: uppercase;width: 400px"/>
+                            <hr><b>Email: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; </b><input type="text" value="{{ registro.email }}" id="email"style=";width:400px" />
+                            <hr><b>Ciudad: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b> <input type="text" value="{% if registro.ciudad  %}{{ registro.ciudad }} {% endif %}" id="ciudad" style="text-transform: uppercase;width: 400px"/>
+                             <hr><b>G&eacute;nero: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b>
+                            <select id="sexo" class="form-control">
+                                <option value="{% if  registro.sexo.id %}{{ registro.sexo.id }} {% else %}0{% endif %}">{% if  registro.sexo.id %}{{ registro.sexo }} {% else %}0{% endif %} </option>
+                                {% for s in sexo %}
+                                   <option value="{{ s.id }}">
+                                      {{ s.nombre }}
+                                   </option>
+                                {% endfor %}
+                            </select>
+
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="span4">
+                <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    </thead>
+                    <tbody>
+                    </tr>
+                        <tr>
+                            <td>
+                                <b>Celular:&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; </b> <input type="text" value="{{ registro.celular }}" id="celular" style="text-transform: uppercase;width: 180px"/>
+                                <hr><b>Fono Domicilio: </b>   <input type="text" value="{{ registro.fonodomicilio }}" id="fonod" style="text-transform: uppercase;width: 180px"/>
+                                <hr>    <b>Lugar Trabajo: </b>  <input type="text" value="{%  if registro.lugartrabajo  %}{{ registro.lugartrabajo }}{% endif %}" id="lugart" style="text-transform: uppercase;width: 380px"/>
+                                <hr><b>Fono Trabajo: &nbsp;</b> <input type="text" value="{%  if registro.fonotrabajo  %}{{ registro.fonotrabajo }}{% endif %}" id="fonot" style="text-transform: uppercase;width: 180px"/>
+                                <hr><b>Extensi&oacute;n:  &nbsp;&nbsp; &nbsp;&nbsp;&nbsp; </b>  <input type="text" value=" {%  if registro.ext  %}{{ registro.ext }}{% endif %}" id="ext" style="text-transform: uppercase;width: 180px"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class='span12'>
+                <div class='span2'>
+                </div>
+                <div class='span8'>
+                    <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    <th colspan="3">Referidos</th>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <th>Nombres</th>
+                        <th>Celular</th>
+                        <th>Email</th>
+
+                    </tr>
+                    </tr>
+
+                        <tr >
+
+                            <td> <input id='rid1' value="{{ ref.0.0 }}" type="hidden"/><input type="text" value="{{ ref.0.1 }}" id="rnombre1" style="text-transform: uppercase;width: 420px"/>   </td>
+                            <td> <input type="text" value="{{ ref.0.2 }}" id="rcel1" style="width: 200px"/>   </td>
+                            <td><input  type="text" value="{{ ref.0.3 }}" id="remail1" style="width:350px"/>   </td>
+
+                        </tr>
+                         <tr >
+                            <td><input id='rid2' value="{{ ref.1.0 }}" type="hidden"/><input type="text" value="{{ ref.1.1 }}" id="rnombre2"  style="text-transform: uppercase;width: 420px"/>   </td>
+                            <td><input type="text" value="{{ ref.1.2 }}" id="rcel2" style="width: 200px"/>   </td>
+                            <td><input  type="text" value="{{ ref.1.2 }}" id="remail2" style="width:350px"/>   </td>
+
+                        </tr>
+                         <tr >
+                            <td><input id='rid3' value="{{ ref.2.0 }}" type="hidden"/><input type="text" value="{{ ref.2.1 }}" id="rnombre3" style="text-transform: uppercase;width: 420px"/>   </td>
+                            <td><input type="text" value="{{ ref.2.2 }}" id="rcel3" style="width: 200px"/>   </td>
+                            <td><input  type="text" value="{{ ref.2.3 }}" id="remail3" style="width:350px"/>   </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+                </div>
+        </div>
+         <div class='span12'>
+                <div class='span2'>
+                </div>
+                <div class='span8'>
+                    <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    <th colspan="3">Informaci&oacute;n</th>
+                    </thead>
+                    <tbody>
+
+                        <tr style="width: 1024px">
+{#                            <td><b> Enviar Informacion Por Correo:</b><input value="{{ registro.enviarinformacion }}  " id="rnombre" style="text-transform: uppercase;width: 420px"/>   </td>#}
+                            <td><b> Enviar Informaci&oacute;n Por Correo: </b><input type="checkbox" {% if registro.enviarinformacion %} checked {% endif %} id="info">  </td>
+                            <td ro> <b> &nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;Enviado?</b> <input type="checkbox" {% if registro.enviado %} checked {% endif %} id=enviado>  </td>
+                            <td colspan="3"><b> &nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;Observaci&oacute;n:<br>  </b>&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;<textarea    id="obs" style="text-transform: uppercase;width: 500px;" rows="3">{%  if registro.observacion  %}{{ registro.observacion }}{% endif %} </textarea>
+                        </tr>
+                        <tr>
+                            <td colspan="3"><b> Se Inscribi&oacute;?  </b>{% if registro.inscripcion  %}SI - <b>Fecha: </b> {{ registro.inscripcion.fecha|date:'d-m-Y' }}{% else %}NO{% endif %}  </td>
+                        </tr>
+                        <tr>
+                            <td colspan="3"><b> Pag&oacute;? </b> {% if registro.pago_ins  %}SI - <b>Fecha Pago: </b>{{ registro.pago_rubro.fecha|date:'d-m-Y' }} {% else %}NO{% endif %} </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+                </div>
+            </div>
+            <div class='span12'>
+                <div class='span2'>
+                </div>
+                <div class='span8'>
+                <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    <th colspan="8">Estado Llamada</th>
+                    </thead>
+                    <tbody>
+                    <tr><td><a href="#" id='verregistro'>Ver Registro de Llamadas</a></td></tr>
+                    <tr>
+                    <hr>
+{#                    {%  if not efectiva %}#}
+                    <td colspan="4"><b>Estado Llamada </b> <select id="estado" class="form-control">
+                                <option value="0"> ----- </option>
+                                {% for l in estadollamada %}
+                                   <option value="{{ l.id }}">
+                                      {{ l.descripcion }}
+                                   </option>
+                                {% endfor %}
+                            </select>
+                    </td>
+                    <td style="display: none" id='opc_es'>
+                    </td>
+                    <td>  <td colspan="3"><b>Nota:<br>  </b><textarea  id="nota" style="text-transform: uppercase;width: 500px;" rows="3"> </textarea></td>
+                    </tr>
+                    <tr style="width: 1024px">
+                        <td colspan="8" style="font-size: 16px;color: red"><b>Cerrar Ficha </b> <input type='checkbox' id="cerrar"></td>
+                    </tr>
+
+                    </tbody>
+                </table>
+                </div>
+        </div>
+        <div class='span12'>
+            <div class='span2'>
+            </div>
+            <div class='span8'>
+                <table class='table' cellpadding="0" cellspacing="0" >
+                    <thead>
+                        <th colspan="3">Cita</th>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="3"><a href="#" id='verregistrocita'>Ver Registro de Cita</a></td>
+                        </tr>
+                        <tr>
+                            <td colspan="3"><b>Ralizar Cita? </b> <input type='checkbox' id="cita"></td>
+                        </tr>
+                        <tr>
+                            <td><b>Fecha</b> <input id='fecha' type="text" disabled></td>
+                            <td><b>Hora </b><input id='hora' type="text" disabled></td>
+                            <td> <b>Departamento</b>
+                                <select id='departamentos' disabled/>
+                                    <option value='0'>-----</option>
+                                    {% for d in departamentos %}
+                                        <option value="{{ d.id }}" >{{ d.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                   </tbody>
+                </table>
+            </div>
+        </div>
+        <div class='span12'>
+            <div class='span2'>
+            </div>
+            <div class='span8' style="text-align: center">
+               <span class="btn btn-danger" id="guardardatos" style="text-align: center"><b>GUARDAR DATOS </b></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="registros" style="display: none;">
+        <div class="modal-header alert-info">
+            <h3 class="paneltitle" style="color: #333333;">&nbsp; <output id="titmodal"> REGISTRO DE LLAMADAS</output> </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <div id="formulario" class='form-horizontal'>
+                <fieldset class="control-group nomargins">
+                    <output style="display: none" id="idvideo"></output>
+                    <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    <th>Estado LLamada</th>
+                    <th>Nota</th>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    </thead>
+                    <tbody>
+                    {% for ll in llamada %}
+                        <tr>
+                        <td>{{ ll.estadollamada }} {% if ll.opcionllamada %} - {{ ll.opcionllamada  }} {% endif %}</td>
+                        <td>{{ ll.nota }}</td>
+                        <td>{{ ll.fecha|date:'Y-m-d' }}</td>
+                        <td>{{ ll.usuario }}</td>
+
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+
+                </fieldset>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="btn_cerrar" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="registroscita" style="display: none;">
+        <div class="modal-header alert-info">
+            <h3 class="paneltitle" style="color: #333333;">&nbsp; <output id="titmodal"> REGISTRO DE CITAS</output> </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <div id="formulario" class='form-horizontal'>
+                <fieldset class="control-group nomargins">
+                    <output style="display: none" id="idvideo"></output>
+                    <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Departamento</th>
+                    </thead>
+                    <tbody>
+                    {% for c in citas %}
+                        <tr>
+                        <td>{{ c.fecha|date:'d-m-Y' }}</td>
+                        <td>{{ c.hora }}</td>
+                        <td>{{ c.departamento }}</td>
+
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+
+                </fieldset>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="btn_cerrar" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+
+{% endblock %}

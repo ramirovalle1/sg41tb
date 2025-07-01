@@ -1,0 +1,63 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+{#     <script type="text/javascript">#}
+{##}
+{#    $(function() {#}
+        var band=0;
+        $("#id_fecha").datepicker({format:"dd-mm-yyyy"});
+        $("#id_numeropagos,#id_nombre").addClass("validate[required]");
+        $("#id_numeropagos").addClass("input-large");
+    {#    $("#id_numeropagos").addClass("validate[required]");#}
+
+
+        $('#id_numeropagos').keypress(function(e) {
+{#                alert(e.keyCode);#}
+                if(e.keyCode == 13) {
+{#                    alert(6);#}
+                    band=1;
+                    $("#id_numeropagos").change();
+                }
+        });
+        $("#id_numeropagos").change(function(){
+        if ($(this).val() != ''){
+                var npagos=0;
+                if(band==0){
+                    npagos = $(this).val();}
+                else{
+{#                    alert($("#id_numeropagos").val());#}
+                    npagos = $("#id_numeropagos").val()
+                }
+                band=0;
+                if (npagos != ''){
+{#                    alert(45454);#}
+                    $.post("/gruposcurso", {'action': 'verificanumero', 'numero': npagos ,'grupo':{{ grupocurso.id }}}, function(data){
+                        alert(data.result);
+                        if (data.result=='ok'){
+    {#                            $("#id_numeropagos").val(data.nombre);#}
+                        }
+                        if (data.result=='bad'){
+                            $("#id_numeropagos").val("");
+                            $("#id_numeropagos").focus()
+                            alert("Tiene Materias o Pagos mayores al numero ingresado");
+
+                        }
+                    }, "json");
+{#                    return false;#}
+                }
+            }
+
+        });
+{#    });#}
+{#    </script>#}
+{% endblock %}
+{% block titulo %}
+    Editar Curso: {{ grupocurso }}
+    {% if  error  %}<span class="label label-important bigger">El numero de pagos es menor a los pagos creados  </span>{% endif %}
+{% endblock %}
+{% block formaction %}/gruposcurso{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='editcurso'/>
+    <input type='hidden' name='id' value='{{ grupocurso.id }}'/>
+{% endblock %}
+{% block formback %}/gruposcurso {% endblock %}
+{% block buttonname %}Guardar Cambios{% endblock %}

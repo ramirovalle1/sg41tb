@@ -1,0 +1,282 @@
+{% extends "basebs.html" %}
+{% load func_extras %}
+{% block heading %}
+
+
+<script type="text/javascript" >
+
+$(function() {
+  $("#search").click(function() {
+    var term = $("#searchfield").val().toUpperCase();
+    location.href = "/evaluaciondirectivo?s="+term+"&acc={{ acc }}";
+    });
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+
+    $("#txtdescripcion,#txtpuntaje").addClass("input-large");
+    $("#txtnombre,#txtpuntaje").attr({"autocomplete":"off"});
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+     $("#salirrespu").click(function() {
+               location.reload()
+            });
+     $("#salireje").click(function() {
+                location.reload()
+            });
+     $("#salirpregu").click(function() {
+               location.reload()
+            });
+     $("#salirejepre").click(function() {
+                location.reload()
+            });
+
+
+
+     $(".respuestas").click(function(){
+
+         $("#ingresarespuesta").modal({"backdrop":"static",width:'40%'});
+               $("#ingresarespuesta").modal("show");
+           });
+    agregarrespuesta=function () {
+             $.get("/encuestasevaluacion", {'action':'verrespuestas', "acc":{{ acc }}}, function(data) {
+                         $("#ventformacion .modal-body").html(data);
+                         $("#ventformacion").modal({backdrop: 'static', keyboard: false});
+             }, "html");
+             return false;
+          };
+    agregareje=function () {
+             $.get("/encuestasevaluacion", {'action':'verrejes', "acc":{{ acc }}}, function(data) {
+                         $("#ejesver .modal-body").html(data);
+                         $("#ejesver").modal({backdrop: 'static', keyboard: false});
+             }, "html");
+             return false;
+          };
+    agregarpreguntas=function () {
+             $.get("/encuestasevaluacion", {'action':'verpreguntas', "acc":{{ acc }}}, function(data) {
+                         $("#verpreguntas .modal-body").html(data);
+                         $("#verpreguntas").modal({backdrop: 'static', keyboard: false});
+             }, "html");
+             return false;
+          };
+    agregarejerespuesta=function () {
+             $.get("/encuestasevaluacion", {'action':'verejerespuesta', "acc":{{ acc }}}, function(data) {
+                         $("#verejerespuesta .modal-body").html(data);
+                         $("#verejerespuesta").modal({backdrop: 'static', keyboard: false});
+             }, "html");
+             return false;
+          };
+
+
+
+
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+
+
+});
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+
+{% endblock %}
+{% block canvas %}
+    <div class="pd-ltr-20 xs-pd-20-10">
+        <div class="min-height-50px">
+            <div class="page-header">
+                <div class="row">
+                    <div class="col-md-10 col-sm-10">
+                        <div class="title">
+                            <h3 >Preguntas de Evaluacion {{ evaluacion.descripcion }} </h3>
+                        </div>
+                        </div>
+                        <div class="col-md-2 col-sm-2">
+                            {% if b %}
+                            <a href="/evaluaciondirectivo?acc={{ acc }}" class='btn btn-black'><i class="icon-copy ion-arrow-left-a"></i> Atras</a>
+                            {% else %}
+                            <a href="/areasevaluacion?acc={{ acc }}" class='btn btn-black'><i class="icon-copy ion-arrow-left-a"></i> Atras</a>
+                            {% endif %}
+
+                        </div>
+
+                </div>
+            </div>
+            <div class="card-box mb-30">
+                <div class="pb-20">
+                    <div id="DataTables_Table_0_wrapper" class="dataTables_wrapper dt-bootstrap4 no-footer">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <table  class="data-table table stripe hover nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th ></th>
+{#                                            <th style="text-align: center;" colspan="11">Respuestas</th>#}
+                                             {% for r in rescargo  %}
+                                                  <td colspan="5" style="text-align: center">
+                                                    {% for re  in  r.ejerespuestascargo_general %}
+                                                    {{ re.puntaje }}={{ re.nombre }}<br>
+                                                    {% endfor %}
+                                                  </td>
+                                                {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for d in ejes %}
+
+                                            <tr >
+
+{#                                                {% for r in d.respuestas  %}#}
+                                                <td></td>
+                                                    {% for r in rescargo  %}
+                                                        <td {% if forloop.last  %}colspan="6"{% else %}colspan="5"{% endif %} style="text-align: center">  <b >{{ r.descripcion }}</b></td>
+
+                                                    {% endfor %}
+{#                                                {% endfor %}#}
+
+                                            </tr>
+                                            <tr>
+                                                <td ><b>{{ d.descripcion }}</b></td>
+                                                {% for r in rescargo  %}
+                                                    {% for re  in  r|args:d|call:'ejerespuestascargo' %}
+                                                        <td {% if forloop.last  %}{% endif %}> <b >{{ re.respuesta.puntaje }}</b></td>
+                                                    {% endfor %}
+                                                {% endfor %}
+                                            </tr>
+
+
+                                            {% for p in d.preguntas_evaluacion  %}
+                                                <tr>
+                                                    <td> {{ p.nombre }}</td>
+                                                    <td colspan="11"></td>
+                                                </tr>
+                                            {% endfor %}
+
+
+
+                                        {% endfor %}
+                                        {% if not ejes %}
+                                            <tr>
+                                                <td colspan="10">
+                                                    NO EXISTE REGISTRO
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                            </table>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+<section>
+    <div  class="modal fade " id="ventformacion" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="width: 1000px;left: -100px">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Respuestas</h4>
+
+                </div>
+
+
+                <div class="modal-body" style="width:1000px;min-height: 550px;max-height: 550px;overflow: auto">
+
+                </div>
+
+                <div class="modal-footer">
+                <button type="button" id="salirrespu" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+<section>
+    <div  class="modal fade " id="ejesver" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="width: 1000px;left: -100px">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Ejes de Evaluacion</h4>
+
+                </div>
+
+
+                <div class="modal-body ejever" style="width:1000px;min-height: 550px;max-height: 550px;overflow: auto">
+
+                </div>
+
+                <div class="modal-footer">
+                <button type="button" id="salireje" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+<section>
+        <div  class="modal fade " id="verpreguntas" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="width: 1000px;left: -100px">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="myLargeModalLabel">Preguntas de Evaluacion</h4>
+
+                    </div>
+
+
+                    <div class="modal-body" style="width:1000px;min-height: 550px;max-height: 550px;overflow: auto">
+
+                    </div>
+
+                    <div class="modal-footer">
+                <button type="button" id="salirpregu" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+</section>
+<section>
+     <div  class="modal fade " id="verejerespuesta" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="width: 1000px;left: -100px">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="myLargeModalLabel">Ejes y Respuestas de Evaluacion</h4>
+
+                    </div>
+
+
+                    <div class="modal-body" style="width:1000px;min-height: 550px;max-height: 550px;overflow: auto">
+
+                    </div>
+
+                    <div class="modal-footer">
+                <button type="button" id="salirejepre" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+</section>
+{% endblock %}

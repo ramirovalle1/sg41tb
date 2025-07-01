@@ -1,0 +1,517 @@
+{% load sga_extras %}
+{% block heading %}
+<style>
+    .sortable-list {
+      min-height: 100px;
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .sortable-item {
+      padding: 10px;
+      margin-bottom: 5px;
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: grab;
+    }
+
+    .sortable-item-otro {
+      padding: 10px;
+      margin-bottom: 5px;
+      background-color: #f4f4f4;
+      border: 1px solid #FFFFFF;
+      border-radius: 4px;
+      cursor: grab;
+    }
+    .alinear{
+    display: flex;
+    align-items: center;
+    }
+
+</style>
+{% endblock %}
+{% block canvas %}
+<div class="row-fluid">
+    <div class="span12">
+        <!-- Navegación de Pestañas -->
+        <ul class="nav nav-tabs" id="tests">
+         {% for test in tests %}
+             <li class="nav-item">
+                 <a class="nav-link {% if forloop.first %}active{% endif %}" alt="test{{ test.idtest }}_tab" id="base_test{{ test.idtest }}" data-toggle="tab" href="#test{{ test.idtest }}" role="tab" aria-controls="test{{ test.idtest }}_tab" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}">{{ test.test_nombre }}</a>
+             </li>
+        {% endfor %}
+        </ul>
+
+        <!-- Contenido de las Pestañas -->
+        <div class="tab-content px-1 pt-1" id="tabpanelcontenido">
+            {% for test in tests %}
+                <div class="tab-pane {% if forloop.first %}active{% endif %}" id="test{{ test.idtest }}" aria-labelledby=base_test{{ test.idtest }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}">
+                    <div class="row-fluid">
+                        <div class="span10"></div>
+                        <div class="span2">
+                            <h3>TOTAL</h3>
+                            <h4>{{ test.puntaje }} <span> puntos </span></h4>
+                        </div>
+                    </div>
+                    {% for xlistapreguntas in test.listapreguntas %}
+                        {#  PREGUNTAS  #}
+                        <div class="row-fluid">
+                            <div class="span12">
+                                {% if xlistapreguntas.descripcion %}
+                                    <strong>{{ xlistapreguntas.orden }}.- {{ xlistapreguntas.pregunta }}</strong> <br>
+                                    <p style="margin-left: 20px;font-size: 15px"> {{ xlistapreguntas.descripcion }}</p><br>
+                                {% else %}
+                                    <strong>{{ xlistapreguntas.orden }}.- {{ xlistapreguntas.pregunta }}</strong> <br>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {#  RESPUESTAS  #}
+                        <div class="row-fluid">
+                            {#  TIPOS DE RESPUESTAS #}
+                            {#  TIPO RADIOBOX   #}
+                            {% if xlistapreguntas.radiobox %}
+                                <div class="span1" ></div>
+                                {% for x1 in xlistapreguntas.respuestapregunta %}
+                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                        <div class="span2" >
+                                            <div class="form-group">
+                                                {% if respseleccionada.puntaje > 0   %}
+                                                    <div class="custom-control custom-radio mb-5">
+                                                        {% if respseleccionada.validada %}
+                                                           <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                                        {% endif %}
+                                                        <input type="radio" id="radio_{{ x1.id }}" name="radio_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}"
+                                                        {% if respseleccionada.validada %} checked {% endif %} disabled class="custom-control-input">
+                                                        <label class="custom-control-label" for="radio_{{ x1.id }}"><span class="d-block d-sm-block d-md-none"></span> {{ x1.respuesta }}</label>
+                                                     </div>
+                                                {% else %}
+                                                    <div class="custom-control custom-radio mb-5">
+                                                        {% if respseleccionada.validada %}
+                                                           <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                                        {% endif %}
+                                                        <input type="radio" id="radio_{{ x1.id }}" name="radio_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}"
+                                                               {% if respseleccionada.validada %} checked {% endif %} disabled class="custom-control-input">
+                                                        <label class="custom-control-label" for="radio_{{ x1.id }}"><span class="d-block d-sm-block d-md-none" > </span>{{ x1.respuesta }}</label>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endwith %}
+                                {% endfor %}
+                            {% endif %}
+                            {# TIPO INPUT matematica  #}
+                            {% if test.idtest == 1 %}
+                                {% if  xlistapreguntas.cajatexto %}
+                                    {% if xlistapreguntas.orden == 3 %}
+                                        <div class="span1"></div>
+                                    {% endif%}
+                                        {% for x1 in xlistapreguntas.respuestapregunta %}
+                                        {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                            {% if xlistapreguntas.orden == 3 %}
+                                                <div class="span2">
+                                                    <div class="form-group">
+                                                        {% if respseleccionada.validada %}
+                                                            {% if respseleccionada.puntaje > 0  %}
+                                                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                                            {% else %}
+                                                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+{#                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" disabled />#}
+                                                            {% endif %}
+                                                             <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{ respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" disabled />
+
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <div class="span2">
+                                                    <div class="form-group">
+                                                        {% if respseleccionada.validada %}
+                                                            {% if respseleccionada.puntaje > 0 %}
+                                                                <img src='/static/images/16/true.png' alt='No' border='0'/>
+                                                            {% else %}
+                                                                <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                                            {%endif  %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{ respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" type="text" class="form-control input-small" disabled />
+                                                        {% else %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" type="text" class="form-control input-small" disabled />
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                {% endif %}
+                            {% endif %}
+                        
+                            {% if xlistapreguntas.checkbox %}
+                                <div class="span1" ></div>
+                                {% for x1 in xlistapreguntas.respuestapregunta %}
+                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                        {% if xlistapreguntas.checkbox %}
+                                            <div class="span2" >
+                                                <div class="form-group alinear">
+                                                    {% if respseleccionada%}
+                                                       <div class="custom-control custom-checkbox mb-5">
+                                                           {% if respseleccionada.puntaje > 0 %}
+                                                               <img src='/static/images/16/true.png' alt='No' border='0'/>
+                                                           {% else %}
+                                                               <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                                           {% endif %}
+                                                            <input type="checkbox" id="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" name="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}" disabled checked  class="custom-control-input">
+                                                            <label class="custom-control-label" for="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}"><span class="d-block d-sm-block d-md-none" style="font-size: 11px"> </span> {{ x1.respuesta }} </label>
+                                                       </div>
+                                                    {% else %}
+                                                        <div class="custom-control custom-checkbox mb-5">
+                                                            <input type="checkbox" id="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" name="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}" disabled required class="custom-control-input">
+                                                            <label class="custom-control-label" for="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}"><span class="d-block d-sm-block d-md-none" style="font-size: 11px"> </span>{{ x1.respuesta }}</label>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endfor %}
+                            {% endif %}
+
+                            {% if xlistapreguntas.cajatextoleyenda  %}
+                                {% if xlistapreguntas.orden == 5 %}
+                                    {% for x1 in xlistapreguntas.respuestapregunta %}
+                                        <div class="span5" >
+                                        <table style="margin-left: 15%">
+                                            {% if x1.orden == 1 %}
+                                                {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                <tr>
+                                                    <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                    <td>¡Qué </td>
+                                                    <td><div class="form-group">
+                                                            {% if respseleccionada %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium">
+                                                            {% else %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% endif %}
+                                                    </div></td>
+                                                    <td> paisaje contemplamos desde el Mirador!</td>
+                                                </tr>
+                                                {% endwith %}
+                                            {% endif %}
+                                            {% if x1.orden == 2 %}
+                                                {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                <tr>
+                                                    <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                    <td>Hay una crema que elimina el </td>
+                                                    <td><div class="form-group">
+                                                            {% if respseleccionada %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% else %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% endif %}
+                                                    </div></td>
+                                                    <td> de las piernas.</td>
+                                                </tr>
+                                                {% endwith %}
+                                            {% endif %}
+                                            {% if x1.orden == 3 %}
+                                                {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                <tr>
+                                                    <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                    <td>Mi hermano es </td>
+                                                    <td><div class="form-group">
+                                                            {% if respseleccionada %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% else %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% endif %}
+                                                    </div></td>
+                                                    <td> de la Policia Nacional.</td>
+                                                </tr>
+                                                {% endwith %}
+                                            {% endif %}
+                                            {% if x1.orden == 4 %}
+                                                {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                <tr>
+                                                    <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                    <td>Podré </td>
+                                                    <td><div class="form-group">
+                                                            {% if respseleccionada %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{ respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}"  disabled type="text" class="form-control input-medium" >
+                                                            {% else %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% endif %}
+                                                    </div>
+                                                    </td>
+                                                    <td> en las próximas elecciones.</td>
+                                                </tr>
+                                                {% endwith %}
+                                            {% endif %}
+                                            {% if x1.orden == 5 %}
+                                                {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                <tr>
+                                                    <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                    <td>La modista a va a </td>
+                                                    <td><div class="form-group">
+                                                            {% if respseleccionada %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% else %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% endif %}
+                                                    </div> </td>
+                                                    <td> mi uniforme.</td>
+                                                </tr>
+                                                {% endwith %}
+                                            {% endif %}
+                                            {% if x1.orden == 6 %}
+                                                {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                <tr>
+                                                    <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                    <td>Agarró el hacha por el </td>
+                                                    <td><div class="form-group">
+                                                        {% if respseleccionada %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                        {% else %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                        {% endif %}
+                                                    </div>
+                                                    </td>
+                                                </tr>
+                                                {% endwith %}
+                                            {% endif %}
+                                            {% if x1.orden == 7 %}
+                                                {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                <tr>
+                                                    <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                    <td>Las plantas tienen </td>
+                                                    <td><div class="form-group">
+                                                        {% if respseleccionada %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                        {% else %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                        {% endif %}
+                                                    </div></td>
+                                                </tr>
+                                                {% endwith %}
+                                            {% endif %}
+                                            {% if x1.orden == 8 %}
+                                                {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                <tr>
+                                                    <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                    <td>Mi deber es </td>
+                                                    <td><div class="form-group">
+                                                            {% if respseleccionada %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% else %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% endif %}
+                                                    </div></td>
+                                                    <td> la basura.</td>
+                                                </tr>
+                                                {% endwith %}
+                                            {% endif %}
+                                            {% if x1.orden == 9 %}
+                                            {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                            <tr>
+                                                <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                <td>Debemos </td>
+                                                <td><div class="form-group">
+                                                    {% if respseleccionada %}
+                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                    {% else %}
+                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                    {% endif %}
+                                                </div></td>
+                                                <td> bien las habichuelas.</td>
+                                            </tr>
+                                            {% endwith %}
+                                            {% endif %}
+                                        </table>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                                
+                                {% if xlistapreguntas.orden == 7 %}
+                                    {% for x1 in xlistapreguntas.respuestapregunta %}
+                                        <div class="span5" >
+                                            <table style="margin-left: 15%">
+                                                {% if x1.orden == 1 %}
+                                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                    <tr>
+                                                        <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                        <td>carter </td>
+                                                        <td><div class="form-group">
+                                                                {% if respseleccionada %}
+                                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                                {% else %}
+                                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                                {% endif %}
+                                                        </div></td>
+                                                    </tr>
+                                                    {% endwith %}
+                                                {% endif %}
+                                                {% if x1.orden == 2 %}
+                                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                    <tr>
+                                                        <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                        <td>honrad </td>
+                                                        <td><div class="form-group">
+                                                                {% if respseleccionada %}
+                                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                                {% else %}
+                                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                                {% endif %}
+                                                        </div></td>
+                                                    </tr>
+                                                    {% endwith %}
+
+                                                {% endif %}
+                                                {% if x1.orden == 3 %}
+                                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                    <tr>
+                                                        <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                        <td>niñ </td>
+                                                        <td><div class="form-group">
+                                                                {% if respseleccionada %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                                {% else %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                                {% endif %}
+                                                        </div></td>
+                                                    </tr>
+                                                    {% endwith %}
+                                                {% endif %}
+                                                {% if x1.orden == 4 %}
+                                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                    <tr>
+                                                        <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                        <td>timid </td>
+                                                        <td><div class="form-group">
+                                                        {% if respseleccionada %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                        {% else %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                        {% endif %}
+                                                        </div></td>
+                                                    </tr>
+                                                    {% endwith %}
+                                                {% endif %}
+                                                {% if x1.orden == 5 %}
+                                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                    <tr>
+                                                        <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                        <td>desnud</td>
+                                                        <td><div class="form-group">
+                                                            {% if respseleccionada %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% else %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% endif %}
+                                                        </div></td>
+                                                    </tr>
+                                                    {% endwith %}
+                                                {% endif %}
+                                                {% if x1.orden == 6 %}
+                                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                    <tr>
+                                                        <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                        <td>sensat </td>
+                                                        <td><div class="form-group">
+                                                                {% if respseleccionada %}
+                                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                                {% else %}
+                                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                                {% endif %}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    {% endwith %}
+                                                {% endif %}
+                                                {% if x1.orden == 7 %}
+                                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                    <tr>
+                                                        <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                        <td>gentil </td>
+                                                        <td><div class="form-group">
+                                                        {% if respseleccionada %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                        {% else %}
+                                                            <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                        {% endif %}
+                                                        </div></td>
+                                                    </tr>
+                                                    {% endwith %}
+
+                                                {% endif %}
+                                                {% if x1.orden == 8 %}
+                                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                    <tr>
+                                                        <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                        <td>port </td>
+                                                        <td><div class="form-group">
+                                                            {% if respseleccionada %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% else %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% endif %}
+                                                        </div></td>
+                                                    </tr>
+                                                   {% endwith %}
+
+                                                {% endif %}
+                                                {% if x1.orden == 9 %}
+                                                    {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                                    <tr>
+                                                        <td>{% if respseleccionada.puntaje > 0 %}<img src='/static/images/16/true.png' alt='No' border='0'/>{% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>{%endif  %}</td>
+                                                        <td>torp </td>
+                                                        <td><div class="form-group">
+                                                            {% if respseleccionada %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% else %}
+                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control input-medium" >
+                                                            {% endif %}
+                                                        </div> </td>
+                                                    </tr>
+                                                    {% endwith %}
+
+                                                {% endif %}
+                                            </table>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endif %}
+
+                            {% if xlistapreguntas.arrastarsoltar %}
+                                <div class="span2" ></div>
+                                <div class="span4" class="sortable-list" >
+                                    {% for x3 in xlistapreguntas.tienecolumna %}
+                                        {% if x3.lado == 1 %}
+                                            <div  class="sortable-item-otro"> {{ x3.descripcion }}</div>
+                                       {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="span4" id="availableItems_{{ xlistapreguntas.id }}" >
+                                    {% for x1 in xlistapreguntas.respuestapregunta %}
+                                        {% with respseleccionada=xlistapreguntas|args:test.testestudiante|args:x1.orden|call:"validar_respuesta" %}
+                                            {% if xlistapreguntas.arrastarsoltar %}
+                                                   <div class="sortable-item" id=drag_{{ respseleccionada.id }}  >
+                                                    {% if respseleccionada.puntaje > 0 %}
+                                                        <img src='/static/images/16/true.png' alt='No' border='0'/>
+                                                    {% else %}
+                                                        <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                                    {% endif %}
+                                                    {{ respseleccionada.respuesta }}
+                                                  </div>
+                                           {% endif %}
+                                       {% endwith %}
+                                    {% endfor %}
+                                </div>
+                                <br>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

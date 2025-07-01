@@ -1,0 +1,309 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <script type="text/javascript">
+        $(function(){
+            var userid = 0;
+            var usercruceid = 0;
+            var edita = 0;
+            $("#id_asistente").addClass("validate[required]");
+            $($("#id_fecha").get(0).parentNode.parentNode).hide();
+            $($("#id_estado").get(0).parentNode.parentNode).hide();
+            $("#id_asistente").attr({"autocomplete":"off"});
+
+
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/asistente_estudiantiles?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $('.nuevosoli').click(function(){
+                edita = 0;
+                $($("#id_asistente").get(0).parentNode).find(".help-text").html('');
+                $("#id_asistente").val('');
+                $("#idsolici").val('');
+                $("#nuevoasigpanel #paneltitle2").html('Nuevo Asistente');
+                $("#nuevoasigpanel").modal({"backdrop":"static","width":"40%"});
+                $("#nuevoasigpanel").modal("show");
+                $("#puedereasignar").val(0);
+            });
+
+            function verificapuedeasignar(){
+               if ($("#id_puedereasignar").is(':checked')){
+                   $("#puedereasignar").val(1);
+               }else{
+                   $("#puedereasignar").val(0);
+               }
+            }
+            $("#id_puedereasignar").change(function(){
+                verificapuedeasignar();
+            });
+
+
+
+            $("#nuevoasigpanel .btn-cerrar").click(function(){
+                $(".formError").removeClass('aparece');
+                $(".formError").addClass('oculta');
+                $("#nuevoasigpanel").modal("hide");
+                return false;
+            });
+
+            buscar_asistente = function(query, process) {
+
+                $.get("/reportes", {'action':'datafilt', 'model': 'Persona',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_asistente").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#id_asistente').typeahead({source: buscar_asistente, updater: function(item) {
+                var results = $("#id_asistente").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_asistente").attr("myval",datos.id);
+                        $("#idsolici").val(datos.id);
+                        $.post("/especies_admin", {"action":'existe', "editar":edita,"idasis":datos.id,"departamento":{{ departamento.id }} }, function(data) {
+                            if (data.result=='ok') {
+                              $($("#id_asistente").get(0).parentNode).find(".help-text").html('Ya existe esta persona como asistente');
+                                $("#id_asistente").val("");
+                                $("#idsolici").val("");
+                            }
+                            else
+                            {
+                                $($("#id_asistente").get(0).parentNode).find(".help-text").html("");
+                            }
+                        }, "json");
+                    }
+                }
+
+                return item;
+            }});
+
+            {% if error %}
+                smoke.alert('{{ error }}');
+            {% endif %}
+
+            $("#formbutton").click(function(){
+                if ($("#idsolici").val()== '')
+                {
+                    $("#id_asistente").val('');
+                }
+                $(".formError").removeClass('oculta');
+                $(".formError").addClass('aparece');
+            });
+
+            $(".elimina").click(function(){
+                var idasi=$(this).attr('idasist');
+                smoke.confirm('Esta seguro de Eliminar el Asistente',function(e)
+                    {
+                        if(e)
+                        {
+                            location.href = 'especies_admin?action=eliminarasistente&aid='+idasi;
+                        }
+                    },
+                    {
+                        ok:'SI',
+                        cancel:'NO',
+                        reverseButtons:true
+                    }
+
+                );
+            });
+
+        });
+    </script>
+    <style>
+        .oculta{
+            display: none;
+        }
+        .aparece{
+            display: block;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' style="margin-top: 50px">
+        <div class='atright'>
+            <div class='span2'></div>
+            <div class='span6'> <h2> {{ departamento }}</h2></div>
+            <div class='span1'>
+                <a href="/especies_admin?action=departamentos" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            </div>
+        </div>
+    </div>
+
+    <div class='row-fluid' style="margin-top: 50px">
+        <div class='atright'>
+            <div class='span2'></div>
+            <div class='span2' >
+                {% if not persona.pertenece_soporte %}
+                    <table class="table table-condensed table-bordered smaller2 tabla">
+                        <thead>
+                            <tr>
+                                <th title="Ingreso de Solicitud" class="nuevosoli" style="cursor: pointer" ><a><i class="icon-edit icon-white"></i> Nuevo Asistente </a></th>
+                            </tr>
+                        </thead>
+                    </table>
+                {% endif %}
+            </div>
+            <div class='span5'>
+                <form class="form-search">
+{#                <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>#}
+{#                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>#}
+{#                {% if search %}#}
+{#                    <a href="/especies_admin?action=verasistentes&did={{ departamento.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>#}
+{#                {% endif %}#}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row-fluid" style="margin-top: 45px">
+        <div class="span2"></div>
+        <div class="span8">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Asistente</th>
+                        <th>Usuario</th>
+                        <th>Tr&aacute;mites Por Gestionar</th>
+                        <th>Tr&aacute;mites Gestionados</th>
+                        <th>Solicitudes Por Gestionar</th>
+                        <th>Solicitudes Gestionadas</th>
+                        <th style="text-align: center">Puede Reasignar</th>
+{#                        <th>Activo</th>#}
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asis in asistentes %}
+                        <tr>
+                            <td> {{ asis.persona }}   </td>
+                            <td> {{ asis.persona.usuario }}   </td>
+                            <td> {% if asis.cantidad %}{{ asis.cantidad }} {% else %}0 {% endif %}  </td>
+                            <td> {{ asis.gestionados }}   </td>
+                            <td> {% if asis.cantidadsol %}{{ asis.cantidadsol }} {% else %}0 {% endif %}  </td>
+                            <td> {{ asis.solicitudes_gestionados }}   </td>
+                            <td style="text-align: center">
+                                {% if asis.puedereasignar %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+{#                                        <li><a style="cursor: pointer" class="reasignar" asisid='{{ asis.id }}' nom='{{ asis.asistente.nombre_completo_simple }}' userid='{{ asis.asistente.usuario.id }}' ><i class="icon-upload"></i> Reasignar </a></li>#}
+{#                                        <li><a style="cursor: pointer" class="cruzar" asisid='{{ asis.id }}' nom='{{ asis.asistente.nombre_completo_simple }}' userid='{{ asis.asistente.usuario.id }}' ><i class="icon-upload"></i> Cruce de Cartera </a></li>#}
+{#                                        {% if not  asis.existe_asisten %}#}
+                                        {% if not persona.pertenece_soporte %}
+                                            <li><a style="cursor: pointer" href="#" class="elimina" idasist="{{ asis.id }}"><i class="icon-remove"></i> Eliminar </a></li>
+                                        {% endif %}
+{#                                        {% endif %}#}
+
+                                    </ul>
+
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not asistentes %}
+                        <tr>
+                            <td colspan="4">NO EXISTEN REGISTRO</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class="span6">
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/asistente_estudiantiles?page=1">1</a></li>
+                            <li><a href="/asistente_estudiantiles?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/asistente_estudiantiles?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/asistente_estudiantiles?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/asistente_estudiantiles?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/especies_admin?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="nuevoasigpanel">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ><i>  </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/especies_admin" method="POST"  >
+                <input type='hidden' name='action' value='addasistente'/>
+                <input type='hidden'  name='idsolici' id='idsolici' />
+                <input type='hidden'  name='puedereasignar' id='puedereasignar' />
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='departamento' id='departamento' value="{{ departamento.id }}"/>
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

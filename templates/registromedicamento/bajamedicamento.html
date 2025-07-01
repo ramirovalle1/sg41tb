@@ -1,0 +1,158 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+           $("#nuevo").click(function() {
+
+                location.href = "/registromedicamento?action=add";
+            });
+           $("#tipo").click(function() {
+
+                location.href = "/tipomedicamento";
+            });
+           $("#sumin").click(function() {
+
+                location.href = "/suministrobox";
+            });
+
+           $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/registromedicamento?s="+term;
+            });
+
+           $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+           $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/registromedicamento?g='+id;
+                }else{
+                    location.href = '/registromedicamento';
+                }
+
+            });
+
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span10"  style="text-align: center">
+            {% if entrega %}
+            <h3 >Registro de Entrega de Medicinas y Suministros</h3></br>
+            {% else %}
+                <h3 >Registro de Baja de Medicinas</h3></br>
+            {% endif %}
+
+        </div>
+        <div class="span1">
+            <a href="/registromedicamento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+
+    <div class="row-fluid">
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Bodega</th>
+                        <th style="text-align: center;">Nombre</th>
+                        <th style="text-align: center;">Lote</th>
+                        <th style="text-align: center;">Cantidad</th>
+                        <th style="text-align: center;">Motivo</th>
+                        {% if entrega %}
+                            <th style="text-align: center;">Fecha de Entrega</th>
+                            <th style="text-align: center;">Usuario de Entrega</th>
+                        {% else %}
+                            <th style="text-align: center;">Fecha de Baja</th>
+                            <th style="text-align: center;">Usuario de Baja</th>
+                        {% endif %}
+                        {% if entrega %}
+                            <th style="text-align: center;">Recibe</th>
+                        {% endif %}
+
+                        <th style="text-align: center;">Observaci&oacute;n</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+{#                    <tr>#}
+{#                        <td style="text-align: center;"><a >{{ registro.nombre }}</a></td>#}
+{#                        <td style="text-align: center;">{{ registrovisita }}</td>#}
+{#                        <td style="text-align: center;">BAJA X RECETAS</td>#}
+{#                        <td style="text-align: center;">  </td>#}
+{#                    </tr>#}
+                    {% for m in detalle %}
+                        <tr>
+                            <td style="text-align: center;"><a >{{ m.registromedicamento.bodega }}</a></td>
+                            <td style="text-align: center;"><a >{{ m.registromedicamento.nombre }}</a></td>
+                            <td style="text-align: center;">{{ m.lote }}</td>
+                            <td style="text-align: center;">{{ m.cantidad }}</td>
+                            <td style="text-align: center;">{{ m.motivo }}</td>
+                            <td style="text-align: center;">{{ m.fecha }}</td>
+                            <td style="text-align: center;">{% if m.usuario %}{{ m.usuario }}{% else %}{% endif %}</td>
+                            {% if entrega %}
+                                <td style="text-align: center;">{{ m.profesor }}</td>
+                            {% endif %}
+                            <td style="text-align: center;">{{ m.observacion }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class="span8">
+
+            {% if perms.med.change_personafichamedica %}
+{#            <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>#}
+            {% endif %}
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/registromedicamento?action=baja&reg={{ registro.id }}&page=1">1</a></li>
+                            <li><a href="/registromedicamento?action=baja&reg={{ registro.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/registromedicamento?action=baja&reg={{ registro.id }}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/registromedicamento?action=baja&reg={{ registro.id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/registromedicamento?action=baja&reg={{ registro.id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/registromedicamento?action=baja&reg={{ registro.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+{% endblock %}

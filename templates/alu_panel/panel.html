@@ -1,0 +1,181 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            var mensaje = '';
+            $(".btn-info").click(function(){
+                var id = $(this).attr("pid");
+                $.post("/alu_panel",{"action": "consulta_pago", "id": id,"matricula":'{{ matricula.id }}' },function(data) {
+                    if (data.result=='ok') {
+                        smoke.confirm( 'Esta seguro de matricularse en este panel?', function(e){
+                    if (e){
+                            location.href = '/alu_panel?action=matricularse&id='+id + "&matricula="+{{ matricula.id }};
+                        }else{
+                        }
+                        }, {
+                        ok: "CONTINUAR",
+                        cancel: 'CANCELAR',
+                        classname: "custom-class",
+                        reverseButtons: true
+                        });
+                    }else{
+                        if (data.result=='bad2') {
+                            smoke.alert('Ya tiene seleccionado un Curso');
+                        }else{
+                            smoke.alert('para escoger un curso debe cancelar la inscripcion');
+                        }
+                    }
+                },"json");
+            });
+
+
+
+            $("#search").click(function() {
+                    var term = $("#searchfield").val().toUpperCase();
+                    location.href = "/alu_panel?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Listado de Paneles </h3>
+            <h4>{{ matricula.inscripcion }} </h4>
+            <h4>Carrera: {{ matricula.nivel.carrera }}</h4>
+            <h4>Nivel: {{ matricula.nivel.nivelmalla }} - {{ matricula.nivel.paralelo }} ({{ matricula.nivel.sesion }}) </h4>
+            <h5>Per&iacute;odo: {{ matricula.nivel.periodo }} </h5><br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+     <div class='row-fluid'>
+        <div class='span12'>
+            <form class="form-search">
+                <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/alu_panel" id='allresults' class='btn btn-warning'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+                    <a href="/alu_panel?miscursos={{ matricula.id }}" id='allresults' class='btn btn-danger'><i class="icon-refresh icon-white"></i> Mis Paneles</a>
+            </form>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                 <tr>
+                <th>Nombre</th>
+                <th style="text-align: center">Fecha</th>
+                <th style="text-align: center">Inicio</th>
+                <th style="text-align: center">Fin</th>
+                <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for p in panel %}
+{#                    {% if s.esta_disponible %}#}
+                    <tr>
+                        <td>{{ p.nombre }}</td>
+                        <td style="text-align: center">{{ p.fecha|date:'d-m-Y' }}</td>
+                        <td style="text-align: center">{{ p.horainicio|time:"H:i" }} </td>
+                        <td style="text-align: center">{{ p.horafin|time:"H:i"}}</td>
+                        <td >
+                            {% if not p|args:matricula|call:'esta_matriculado' and  p.esta_disponible%}
+                                <a class="btn btn-info" style="text-align: center"   pid={{p.id }} >Matricularse</a>
+                            {% else %}
+                                {% if p|args:matricula|call:'esta_matriculado' %}
+                                        <a class="btn btn-success">Matriculado</a>
+                                {% else %}
+                                    {% if not p.esta_disponible %}
+                                        <a class="btn btn-warning">No Disponible</a>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+{#                    {% endif %}#}
+                {% endfor %}
+                </tbody>
+                 {% if not panel %}
+                    <tr>
+                        <td colspan="11">
+                            NO HAY REGISTROS
+                        </td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% if paging.num_pages > 20 %}
+                    <div class='pagination'>
+                        <ul>
+                            {% if paging.primera_pagina %}
+                                <li><a href="/alu_seminario?page=1">1</a></li>
+                                <li><a href="/alu_seminario?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                            {% endif %}
+                            {% for pagenumber in paging.paginas %}
+                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/alu_seminario?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                            {% endfor %}
+                            {% if paging.ultima_pagina %}
+                                <li><a href="/alu_seminario?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                                <li><a href="/alu_seminario?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% else %}
+
+                    <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/alu_seminario?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade static" id="titulo_panel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Cambiar Titulo</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in form %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+
+
+{% endblock %}

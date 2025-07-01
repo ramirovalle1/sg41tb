@@ -1,0 +1,518 @@
+{% extends "formbs.html" %}
+{% block heading %}
+     <script type="text/javascript">
+{#      Shadowbox.init({#}
+{#            overlayColor: "#000",#}
+{#            overlayOpacity: "0.6",#}
+{##}
+{#            });#}
+        $(function() {
+            $('#id_inscripcion,#id_coautor').addClass('input-xxlarge');
+            $("#id_institucion").attr({rows:3 , style:'width:90%;font-size:12px'});
+            $($("#id_inscripcion_id").get(0).parentNode.parentNode).hide();
+            $("#id_coautor").attr({style:'text-transform: none'});
+            var ponencia = 0;
+            var integrante = 0;
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                {%  if  not estado%}
+                    location.href = "/ponencia?s="+term;
+                {% else %}
+                    location.href = "/ponencia?inactivos&s="+term;
+                {% endif %}
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $("#id_autor").change(function(){
+                if ($("#id_autor").is(':checked')){
+                    $("#id_inscripcion").attr("disabled",false);
+                    $("#id_coautor").attr("disabled",true);
+                }
+                else{
+                    $("#id_inscripcion").val("");
+                    $("#id_inscripcion_id").val("");
+                    $("#id_inscripcion").attr("disabled",true);
+                    $("#id_coautor").attr("disabled",false);
+                    $($("#id_coautor").get(0).parentNode).find(".help-text").html("<span style='color: red'><i>Ingresar Apellidos y Nombres</i></span>" );
+                }
+            });
+
+
+            buscar_participante = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        if(data.results.length > 0)
+                        {
+                            $("#id_inscripcion").get(0).results = data.results;
+                            listing = [];
+                            for (var i in data.results) {
+                                var dato = data.results[i];
+                                listing.push(dato.name);
+                            }
+                            process(listing);
+                        }
+                        else{
+                            $("#id_inscripcion").attr("myval","");
+                            $("#id_inscripcion").val("");
+                            $("#id_inscripcion").attr("alias","");
+                        }
+                    }
+                }, 'json');
+            };
+
+                $('#id_inscripcion').typeahead({source: buscar_participante, updater: function(item) {
+                    var results = $("#id_inscripcion").get(0).results;
+                    $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("");
+                    for (var i in results) {
+                        var datos = results[i];
+                        if (item==datos.name) {
+                            $("#id_inscripcion").attr("myval",datos.id);
+                            d=datos.id;
+                            $("#id_inscripcion_id").val(d);
+                        }
+                    }
+                    return item;
+                }});
+
+            $(".eliminaponencia").click(function(){
+                 var id = $(this).attr("po");
+
+                 smoke.confirm('Se eliminar&aacute; la ponencia', function(e){
+                    if (e){
+                        location.href = '/ponencia?action=eliminar&id='+id;
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: "CANCELAR",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+            $(".agregari").click(function(){
+               ponencia= $(this).attr("pid");
+               $("#integrantepanel").modal({width: '800px', backdrop: 'static'});
+               $("#integrantepanel").modal("show");
+            });
+
+            $("#integrantepanel .btn-cerrar").click(function() {
+                $("#integrantepanel").modal("hide");
+                $("#id_inscripcion").val("");
+                $("#id_inscripcion_id").val("");
+                $("#id_institucion").val("");
+                $("#id_autor").attr('checked',false);
+                $("#id_coautor").val("");
+                $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("" );
+                location.reload();
+                return false;
+            });
+
+            $("#integrantepanel .btn-adicionar").click(function() {
+                var inscrip = $("#id_inscripcion_id").val();
+                var institucion = $("#id_institucion").val();
+                var coautor=$("#id_coautor").val();
+
+                $.get("/ponencia", {action: 'addparticipantes', id: ponencia,inscripcion:inscrip,insti:institucion,coautor:coautor }, function(data) {
+                     if (data.result=='bad1') {
+                            $("#id_inscripcion").val("");
+                            $("#id_coautor").val("");
+                            $($("#id_coautor").get(0).parentNode).find(".help-text").html("");
+                            $("#id_institucion").val("");
+                            $("#id_inscripcion").attr("disabled",true);
+                            $("#id_coautor").attr("disabled",true);
+                            $("#id_institucion").attr("disabled",true);
+                            $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("<span style='color: red'><i>El numero de integrantes de esta Comisi&oacute;n ya esta completo " +  data.integrantes + "</i></span>" );
+                            $("#integrantepanel").modal("show");
+                     }
+                     if (data.result=='autor') {
+                            $("#id_inscripcion").val("");
+                            $("#id_coautor").val("");
+                            $($("#id_coautor").get(0).parentNode).find(".help-text").html("");
+                            $("#id_institucion").val("");
+                            $("#id_inscripcion").attr("disabled",true);
+                            $("#id_coautor").attr("disabled",true);
+                            $("#id_institucion").attr("disabled",false);
+                            $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("<span style='color: red'><i>Existe un autor en esta Ponencia " +  data.autorponencia + "</i></span>" );
+                            $("#integrantepanel").modal("show");
+                     }
+                     if (data.result=='bad2') {
+                            $("#id_inscripcion").val("");
+                            $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("<span style='color: darkblue'><i>No se encuentra matriculado en el Congreso actual " +  data.inscrip + "</i></span>" );
+                            $("#integrantepanel").modal("show");
+                     }
+                     if (data.result=='bad3') {
+                            $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("<span style='color: red'><i>Ya pertenece a esta Comisi&oacute;n " +  data.inscrip2 + "</i></span>" );
+                            $("#integrantepanel").modal("show");
+                     }
+                     if (data.result=='mag') {
+                        alert("Se procedió a agregar la ponencia por el valor de: " + data. costo);
+                        $("#id_inscripcion").val("");
+                        $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("");
+                        $("#integrantepanel").modal({width: '800px', backdrop: 'static'});
+                        $("#integrantepanel").modal("show");
+                     }
+                     if (data.result=='ok') {
+                        $("#id_inscripcion").val("");
+                        $("#id_coautor").val("");
+                        $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("");
+                        $("#integrantepanel").modal({width: '800px', backdrop: 'static'});
+                        $("#integrantepanel").modal("show");
+                        }
+                     }, "json");
+            });
+
+{#            -----------------------------------------------------EDITAR ESTADO-----------------------------------------------------#}
+            $('.estado_ponencia').click(function(){
+                var id = $(this).attr('id');
+                var mensaje = '';
+                if($(this).attr('estad')){
+                    if($(this).attr('tipo')){
+                        mensaje = 'Esta seguro de desactivar el ensayo científico con código ' + $(this).attr('codigo');
+                    }else{
+                        mensaje = 'Esta seguro de desactivar la ponencia con  código ' + $(this).attr('codigo');
+                    }
+                }
+                else{
+                    if($(this).attr('tipo')){
+                        mensaje = 'Esta seguro de activar el ensayo científico con código ' + $(this).attr('codigo');
+                    }else{
+                        mensaje = 'Esta seguro de activar la ponencia con  código ' + $(this).attr('codigo');
+                    }
+                }
+                smoke.confirm(mensaje,function(e){
+                    if(e){
+                        $.post("/ponencia", {"action":'activar_estado', "id":id}, function(data) {
+                            if (data.result=='ok') {
+                                smoke.alert('Estado modificado');
+                           }else{
+                                smoke.alert('Error. Intente de nuevo');
+                           }
+                        }, "json");
+                    }
+                    else
+                    {
+
+                    }
+                },
+                {
+                   ok:"SI",
+                   cancel:"NO",
+                   classname: "custom-class",
+                   reverseButtons: true
+                });
+            });
+
+{#          -----------------------------------------------------DESACTIVAR TODAS LAS PONENCIAS-----------------------------------------------------#}
+            $('.desactiva_todas').click(function(){
+                smoke.confirm('Esta seguro de desactivar todos los ensayos científicos existentes?',function(e){
+                    if(e){
+                        $.post("/ponencia", {"action":'desactivar_todas'}, function(data) {
+                            if (data.result=='ok') {
+                                smoke.alert('Todos los ensayos científicos existentes han sido desactivados');
+                           }else if (data.result=='bad'){
+                               smoke.alert('Error, intente nuevamente');
+                           }else{
+                               smoke.alert(data.result);
+                           }
+                        }, "json");
+                    }
+                    else
+                    {
+
+                    }
+                },
+                {
+                   ok:"SI",
+                   cancel:"NO",
+                   classname: "custom-class",
+                   reverseButtons: true
+                });
+            });
+
+        });
+     </script>
+{% endblock %}
+{% block canvas %}
+     <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Listado de Ensayos científicos </h3>
+            {%  if  not estado_inactivos %}
+                <h4 style='color: green'>ACTIVOS</h4>
+            {%  else %}
+                <h4 style='color: red'>INACTIVOS</h4>
+            {%  endif %}
+        </div>
+        <div class='span1'>
+            <a href="/adm_grupos" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span6'>
+        <div class="btn-group">
+            <a href="/ponencia?action=comisiones" class='btn btn-info'><i class="icon-share-alt"></i> Comisiones</a>
+        </div>
+        {% if perms.sga.add_grupoponencia %}
+            <div class="btn-group">
+                <a href="/ponencia?action=add" class='btn btn-success'><i class="icon-plus"></i> Añadir Ensayo Cientifico / Ponencia</a>
+            </div>
+        {% endif %}
+        </div>
+        <div class='span6'>
+            <h4 style="text-align: right">Total de participantes: {{ total_participantes }}</h4>
+            <h4 style="text-align: right">Participantes de ensayos cientificos: {{ num_ensayos }}</h4>
+            <h4 style="text-align: right">Participantes de ponencias: {{ num_ponencias }}</h4><br>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        {%  if estado_inactivos %}<div class='span11'></div>{% else %}<div class='span7'></div>{% endif %}
+        <div class="btn-group btn-group-justified">
+            {% if perms.sga.add_noticia %}
+                {%  if  not estado_ensayos and not estado_inactivos %}
+                    <div class="btn-group">
+                        <a href="/ponencia?ensayos" class='btn btn-info'><i class="icon-list"></i> Ver Ensayos</a>
+                    </div>
+                {% endif %}
+                {%  if  not estado_ponencias and not estado_inactivos %}
+                    <div class="btn-group">
+                        <a href="/ponencia?ponencias" class='btn btn-success'><i class="icon-list"></i> Ver Ponencias</a>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {%  if  not estado_inactivos %}
+                <div class="btn-group">
+                    <a href="/ponencia?inactivos " class='btn btn-warning'><i class="icon-list"></i> Ver Inactivos</a>
+                </div>
+            {% endif %}
+            {%  if  estado_inactivos or estado_ponencias or estado_ensayos%}
+                <div class="btn-group">
+                    <a href="/ponencia " class='btn btn-success'><i class="icon-list"></i> Ver Activos</a>
+                </div>
+            {% endif %}
+            {%  if  not estado_inactivos and ponencia and perms.sga.add_grupoponencia %}
+                <div class="btn-group">
+                    <a class='btn btn-danger desactiva_todas'><i class="icon-remove"></i> Desactivar Todos</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <form class="form-search">
+                <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    {%  if  not estado%}
+                        <a href="/ponencia" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+                    {% else %}
+                        <a href="/ponencia?inactivos" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+                    {% endif %}
+
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th style="text-align: center">Codigo</th>
+                <th style="text-align: center">T&iacute;tulo Ponencia</th>
+                <th style="text-align: center">Hora</th>
+                <th style="text-align: center">Capacidad</th>
+                <th style="text-align: center">Integrantes</th>
+                <th style="text-align: center">Costo</th>
+                <th style="text-align: center">Revisado</th>
+                <th style="text-align: center">Comisi&oacute;n</th>
+                <th style="text-align: center">Moderador</th>
+                <th style="text-align: center">Modalidad</th>
+                <th style="text-align: center">Tipo</th>
+                <th style="text-align: center"># Ensayo</th>
+                <th style="text-align: center">Estado</th>
+{#                <th style="text-align: center">Ubicaci&oacute;n</th>#}
+                <th style="width: 50px"></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for p in ponencia %}
+                <tr>
+                    <td style="text-align: center">{{ p.codigo }}</td>
+                    <td style="text-align: left">{{ p.nombre }}</td>
+                    <td style="width: 85px; text-align: center">{{ p.horainicio|time:"H\hi" }}-{{ p.horafin|time:"H\hi"}}</td>
+                    <td style="text-align: center">{{ p.integrantes }}</td>
+                    <td style="text-align: center">{{ p.inscritos }}</td>
+                    <td style="text-align: center">{{ p.precio|floatformat:"2" }}</td>
+                    <td style="text-align: left">{{ p.revisadopor }}</td>
+                    <td style="text-align: left">{{ p.comision }}</td>
+                    <td style="text-align: left">{{ p.comision.moderador }}</td>
+                    <td style="text-align: left">{{ p.modalidad }}</td>
+                        {% if p.tipo.id == 2 %}
+                             <td style="text-align: center; color: navy">Ensayo Cientifico</td>
+                        {% else %}
+                             {% if p.tipo.id == 1 %}
+                                <td style="text-align: center; color: maroon">Ponencia</td>
+                            {% endif %}
+                       {% endif %}
+                    {% if p.numero %}
+                        <td style="text-align: center"> {{ p.numero }} </td>
+                    {% else %}
+                        <td style="text-align: center"></td>
+                    {% endif %}
+                    <td style="text-align: center">
+                        {%  if p.activo %}
+                            <a style="cursor: pointer" class="btn btn-default estado_ponencia"  data-toggle="tooltip" data-placement="bottom" title="Desactivar estado" id='{{ p.id }}' estad='true' {% if p.tipo.id == 2 %} tipo='ensayo'{% endif %} codigo='{{ p.codigo }}'><img src='/static/images/16/true.png' border='0'/></a>
+                        {% else %}
+                            <a style="cursor: pointer" class="btn btn-default estado_ponencia"  data-toggle="tooltip" data-placement="bottom" title="Activar estado" id='{{ p.id }}' {% if p.tipo.id == 2 %} tipo='ensayo'{% endif %} codigo='{{ p.codigo }}'><img src='/static/images/16/false.png' border='0'/></a>
+                        {% endif %}
+                    </td>
+{#                    <td style="width: 13%; text-align: center">{% if p.comision.ubicacion %}{{ p.comision.ubicacion }}<a href="{{ p.comision.imgubicacion.url }}" rel="shadowbox, width=700;height=400;float=left  " title="{{ p.comision.ubicacion }}"><br><i class="icon-map-marker"></i> Ver Ubicacion</a></td>{% endif %}#}
+{#                    <td style="text-align: center">{% if p.comision.ubicacion %}{{ p.comision.ubicacion }}<a href="{{ p.comision.imgubicacion }}" rel="shadowbox, width=700;height=400;float=left  " title="{{ p.comision.ubicacion }}"><br><i class="icon-map-marker"></i> Ver Ubicacion</a>{% endif %}</td>#}
+
+                    <td>
+                        <div class="btn-group">
+                            <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+                                {% if  p.puede_eliminarse and perms.sga.add_noticia %}
+                                    <li><a href="#" class=eliminaponencia po={{ p.id }}><i class="icon-remove"></i>  Eliminar</a></li>
+                                {% else %}
+                                    <li><a href='/reportes?action=run&direct=true&n=certificados_ponencias&rt=pdf&ponencia={{ p.id }}'><i class="icon-print icon-white"></i> Certificados en Grupo</a></li>
+{#                                        <li><a href='/reportes?action=run&direct=true&n=inscritos_por_ponencia&rt=pdf&ponencia={{ p.id }}'><i class="icon-print icon-white"></i> Listado Inscritos</a></li>#}
+                                {% endif %}
+                                {% if perms.sga.add_noticia %}
+                                    <li><a  href="/ponencia?action=editar&id={{ p.id }} "> <i class='icon-edit'></i> Editar </a></li>
+                                    {% if not p.puede_eliminarse %}
+                                        <li><a href="/ponencia?action=ver&id={{ p.id }}"> <i class='icon-edit'></i> Ver Integrantes </a></li>
+                                    {% endif %}
+                                    <li><a href="#" class=agregari pid={{ p.id }}><i class="icon-share-alt"></i> Agregar Autor y Coautores</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not ponencia %}
+                <tr>
+                    <td colspan="11">
+                        NO HAY REGISTROS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    {% if estado_inactivos %}
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% if paging.num_pages > 20 %}
+                    <div class='pagination'>
+                        <ul>
+                            {% if paging.primera_pagina %}
+                                <li><a href="/ponencia?inactivos&page=1">1</a></li>
+                                <li><a href="/ponencia?inactivos&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                            {% endif %}
+                            {% for pagenumber in paging.paginas %}
+                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/ponencia?inactivos&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                            {% endfor %}
+                            {% if paging.ultima_pagina %}
+                                <li><a href="/ponencia?inactivos&page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                                <li><a href="/ponencia?inactivos&page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% else %}
+
+                    <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/ponencia?inactivos&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% if paging.num_pages > 20 %}
+                    <div class='pagination'>
+                        <ul>
+                            {% if paging.primera_pagina %}
+                                <li><a href="/ponencia?page=1">1</a></li>
+                                <li><a href="/ponencia?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                            {% endif %}
+                            {% for pagenumber in paging.paginas %}
+                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/ponencia?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                            {% endfor %}
+                            {% if paging.ultima_pagina %}
+                                <li><a href="/ponencia?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                                <li><a href="/ponencia?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% else %}
+
+                    <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/ponencia?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+{% endblock  %}
+{% block moreblock %}
+
+    <div class="modal fade static" id="integrantepanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Adicionar Integrantes</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario" class='form-horizontal' action="" method="POST" style="text-align:  left;">
+
+                {% for field in docuform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Adicionar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+{% endblock %}

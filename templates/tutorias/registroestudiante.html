@@ -1,0 +1,176 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+     <script type="text/javascript">
+        $(function() {
+
+
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+     <div class='row-fluid' id="title">
+        <div class='span9' style="text-align: center">
+           <h3>DATOS GENERALES DEL ESTUDIANTES</h3>
+        </div>
+        <div class='span3'>
+            <a href="/alum_tutorias?action=addseguimiento&id={{ matricula.id }}" class='btn btn-success'><i class="icon-plus"></i> Ingresar Seguimiento</a>
+            <a href="/alum_tutorias?s={{ inscripcion.persona.cedula }}" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div> <br>
+     <div class="row-fluid">
+    {% if not error%}
+
+        <div class='span12 '>
+            <div class='span4' style="overflow-x: auto" >
+                {% if matricula and not error%}
+                    <table class='table'>
+                        <thead>
+                            <tr><th><h3>Datos de Matricula</h3></th></tr>
+                        </thead>
+                        <tbody>
+
+                            <tr>
+                            <td>
+                                <li class="span12">
+                                    <div class="thumbnail" style="height: 270px">
+                                        {% if matricula.inscripcion.persona.foto %}
+                                            <img src="{{ matricula.inscripcion.persona.foto.foto.url }}" alt="" style="width: 300px;height: 200px">
+                                        {% else %}
+                                            {% if matricula.inscripcion.persona.sexo_id == 1 %}
+                                                <img src="../../sgaonline/static/staticsga/images/nofotofem.jpg" alt="" style="height: 200px">
+                                            {% else %}
+                                                <img src="../../sgaonline/static/staticsga/images/nofotomas.jpg" alt="" style="height: 200px">
+                                           {% endif %}
+                                        {% endif %}
+                                        <h5 style="text-align: center;">{{ matricula.inscripcion.persona }}</h5>
+                                        <h5 style="text-align: center; color: #003bb3">{% if matricula.inscripcion.persona.emailinst %}({{ matricula.inscripcion.persona.emailinst }}){% endif %}</h5>
+                                    </div>
+                                </li>
+                            </td></tr>
+                            <tr><td >
+                                 <strong>Nivel - Grupo:</strong>&nbsp;{{ matricula.nivel.nivelmalla }} - {{ matricula.nivel.paralelo }}
+                            </td></tr>
+                            <tr><td >
+                                 <strong>Carrera:</strong>&nbsp;{{ matricula.nivel.carrera }}
+                            </td></tr>
+
+
+                    </table>
+                {% endif %}
+            </div>
+
+            <div class='span8'>
+                {% if rubros %}
+                    <div class='row-fluid'>
+                        <div class='span11' style="overflow-x: auto" >
+                            <table class='table' cellpadding="0" cellspacing="0" >
+                                    <thead>
+                                        <tr>
+                                            <th colspan="7" style="text-align: center"><h3>Datos de Finanza</h3></th>
+                                        </tr>
+                                        <tr >
+                                            <th>Descripcion</th>
+                                            <th>Fecha</th>
+                                            <th>Vence</th>
+                                            <th>Valor</th>
+                                            <th>Abono</th>
+                                            <th>Saldo</th>
+                                            <th>Cancelado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for rubro in rubros %}
+                                        <tr>
+                                            <td>{{ rubro.nombre }} </td>
+                                            <td>{{ rubro.fecha|date:"d-m-Y"  }}</td>
+                                            <td>
+                                                {% if not rubro.cancelado %}
+                                                    {% if perms.sga.add_rubro %}
+                                                        <a href="#" class='updatefecha' rid='{{ rubro.id }}'>{{ rubro.fechavence|date:"d-m-Y" }}</a>
+                                                    {% else %}
+                                                        {{ rubro.fechavence|date:"d-m-Y" }}
+                                                    {% endif %}
+                                                    {% if rubro.vencido %}
+                                                        <br/><span class="label label-important">VENCIDO</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    {{ rubro.fechavence|date:"d-m-Y" }}
+                                                {% endif %}
+                                            </td>
+                                            <td>${{ rubro.valor|floatformat:2 }}</td>
+                                            <td>${{ rubro.total_pagado|floatformat:2 }}</td>
+                                            <td><b>${{ rubro.adeudado|floatformat:2 }}</b></td>
+                                            <td>
+                                                {% if rubro.cancelado %}
+                                                <span class="label label-success">Si</span>
+                                                {% else %}
+                                                <span class='label label-important'>No</span>
+                                                {% endif %}
+                                            </td>
+
+                                        </tr>
+
+                                    {% endfor %}
+
+                                    {% if not rubros %}
+                                        <tr>
+                                            <td colspan="7">NO EXISTEN RUBROS</td>
+                                        </tr>
+                                    {% endif %}
+                                    </tbody>
+
+                                </table>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if materiasignada %}
+                    <div class='row-fluid'>
+                        <div class='span11' style="overflow-x: auto"  >
+                            <table class='table'>
+                                <thead >
+                                    <tr>
+                                        <th colspan="7" style="text-align: center"><h3>Cronograma</h3></th>
+                                    </tr>
+                                    <tr>
+
+                                        <th>Asignatura</th>
+                                        <th>Inicio</th>
+                                        <th>Fin</th>
+                                        <th>Docente</th>
+                                    </tr>
+                                </thead>
+
+                                {% for mate in materiasignada %}
+                                    <tbody>
+                                    <td>
+                                        {{ mate.materia.asignatura.nombre }}
+                                    </td>
+                                    <td>
+                                        {{ mate.materia.inicio|date:'d-m-Y' }}
+                                    </td>
+                                    <td>
+                                        {{ mate.materia.fin|date:'d-m-Y' }}
+                                    </td>
+                                    <td>
+                                         {% if mate.materia.profesormateria_set.count %}
+                                            {% for profesormateria in mate.materia.profesores_materia %}
+                                                       {{ profesormateria.profesor.persona.nombre_completo }}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    </tbody>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+    {% endif %}
+ </div>
+{% endblock %}

@@ -1,0 +1,949 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        var c=0;
+        $(function() {
+            var idmateriaasignada = 0;
+            var idasisten = 0;
+            var valcheck = false;
+
+            $(".verabs").click(function(){
+               var obs =   $(this).attr("idabs");
+                smoke.alert(obs);
+            });
+            $("#syllabus").click(function(){
+                $("#syllabus_panel").modal({backdrop: 'static', keyboard: 'false', width: "50%",maxHeight: ($(window).height()*3)/4  });
+                $("#syllabus_panel").modal("show");
+            });
+            $("#cerrar_panel").click(function(){
+                 $("#syllabus_panel").modal("hide");
+            });
+            $(".delplanclase").click(function(){
+                smoke.confirm('Esta seguro de eliminar el plan de clase', function(e){
+                    if (e){
+                        location.href = '/pro_clases?action=delplanclase&id='+{{ lecciongrupo.id }};
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+            $(".delmaterial").click(function(){
+                smoke.confirm('Esta seguro de eliminar el material de apoyo', function(e){
+                    if (e){
+                        location.href = '/pro_clases?action=delmaterial&id='+{{ lecciongrupo.id }};
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+            $(".deldeber").click(function(){
+                smoke.confirm('Esta seguro de eliminar el Deber', function(e){
+                    if (e){
+                        location.href = '/pro_clases?action=deldeber&id='+{{ lecciongrupo.id }};
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+             $(".dstema").click(function(){
+                 var op = $(this).attr("op");
+                 var id = $(this).attr("iddst");
+                 $.post("/pro_clases", {action: 'detsubtema', 'id':id , 'op':op,'lec':{{ lecciongrupo.id }}}, function(data) {
+                        if (data.result=='ok') {
+                            location.reload() ;
+                            $("#syllabus_panel").modal("show");
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                   }, "json");
+             });
+
+            $(".stema").click(function(){
+                 var op = $(this).attr("op");
+                 var id = $(this).attr("idst");
+                 $.post("/pro_clases", {action: 'subtema', 'id':id , 'op':op,'lec':{{ lecciongrupo.id }}}, function(data) {
+                        if (data.result=='ok') {
+                            location.reload() ;
+                            $("#syllabus_panel").modal("show");
+                        }
+                        else{
+                           smoke.alert('Error vuelva a intentarlo');
+                        }
+
+                   }, "json");
+             });
+
+
+             {% if profesormateria.segmento.id == 2 %}
+               function showLocation(pos) {
+                  var latitude = pos.coords.latitude;
+                  var longitude = pos.coords.longitude;
+                  if (pos.coords.latitude!='' && pos.coords.longitude!=''){
+                       $.post("/localizacion_gps",{"action": "direccion", "latitu": pos.coords.latitude,"longi":pos.coords.longitude,"id":'{{ lecciongrupo.id }}' },function(data) {
+{#                           alert(data.result);#}
+{#                            if (data.result=='bad') {#}
+{#                               smoke.alert("No se encuentra la ubicacion")#}
+{#                            }                           #}
+
+                        },"json");
+
+                   }
+                    else{
+                       smoke.alert("No se encuentra activo el GPS")
+                   }
+               }
+
+               function errorHandler(err) {
+                  if(err.code == 1) {
+{#                      location.href = "/pro_horarios?action=horariobs&error=Acceso Denegado encienda el gps";#}
+                    alert("Error: Acceso Denegado encienda el gps!");
+                  }else if( err.code == 2) {
+                      $.post("/localizacion_gps",{"action": "error", "mensajee":" la posición no está disponible","id":'{{ lecciongrupo.id }}' },function(data) {
+{#                           alert(data.result);#}
+{#                            if (data.result=='bad') {#}
+{#                               smoke.alert("No se encuentra la ubicacion")#}
+{#                            }                           #}
+
+                        },"json");
+{#                    alert("Error: la posición no está disponible!");#}
+                  }
+               }
+                {# OCastillo 17-06-2021 se quita funcion          #}
+{#               getLocation();#}
+               function getLocation(){
+
+                   if(navigator.geolocation){
+                      // timeout at 60000 milliseconds (60 seconds)
+                      var options = {timeout:60000};
+                      navigator.geolocation.getCurrentPosition(showLocation,
+                                                               errorHandler,
+                                                               options);
+                   }else{
+                      alert("Lo sentimos, navegador no soporta geolocalización!");
+                   }
+               }
+            {% endif %}
+            $("#cerrarclase").click(function() {
+                var lec = {{ lec }};
+                var archi =  "{{ ARCHIVO_TIPO_PLANCLASE   }}";
+                var plan = "{{ planclase }}";
+                if (plan == 'None' && lec == 1 && archi != '0' ) {
+
+                    smoke.alert("No se ha subido el plan de clase");
+                }else{
+                    var contenido = $("#contenido").val();
+                // TODO: Validar la hora de cierre
+                if (contenido.trim()) {
+{#                    $.blockUI({message: null});#}
+{#                    $.post("/pro_clases", {'action':'cerrar', 'id':'{{ lecciongrupo.id }}'} , function(data) {#}
+{#                        $.unblockUI();#}
+{#                        if (data.result=='ok') {#}
+                        location.href = "/pro_clases?action=cerrar&id={{ lecciongrupo.id }}";
+{#                        } else {#}
+{#                            smoke.alert("No se puede cerrar la Clase antes del tiempo establecido");#}
+{#                        }#}
+{#                    });#}
+                } else {
+                    smoke.alert("Antes de Cerrar la Leccion introduzca el contenido de la misma.");
+                }
+                }
+
+            });
+
+            $(".btn-cerrar").click(function() {
+                $("#incidenciaspanel").modal('hide');
+                return false;
+            });
+
+            $("#incidenciaspanel .btn-ejecutar").click(function() {
+                var tipo = $("#id_tipo").val();
+                var contenido = $("#id_contenido").val();
+                $("#incidenciaspanel").modal('hide');
+                $.post("/pro_clases", {action: 'addincidencia', lecciongrupo: {{ lecciongrupo.id }}, tipo: tipo, contenido: contenido}, function(data) {
+                    if (data.result=='ok') {
+                        // Mostrar en la lista
+                        $("#listaincidencias").append("<tr><td><h4>"+data.tipo+"</h4><p>"+data.contenido+"</p></td></tr>");
+                    }
+                }, "json");
+                return false;
+            });
+
+            $("#addincidencia").click(function() {
+                $('#id_contenido').val("");
+                $('#incidenciaspanel').modal({keyboard: false, backdrop: 'static'});
+                $('#incidenciasspanel').modal("show");
+                return false;
+            });
+
+            {% if lecciongrupo.abierta %}
+                $("#observaciones").blur(function() {
+                    var id = $(this).attr("idleccion");
+                    var val = this.value;
+                    var parent = $(this);
+                    parent.addClass("ajaxed");
+                    $.post("/pro_clases",{id: id, action: 'observaciones', val: val}, function() {
+                        parent.removeClass("ajaxed");
+                    }, "json");
+                });
+                $("#contenido").blur(function() {
+                    var id = $(this).attr("idleccion");
+                    var val = this.value.trim();
+                    var parent = $(this);
+                    parent.addClass("ajaxed");
+                    $.post("/pro_clases",{id: id, action: 'contenido', val: val}, function() {
+                        parent.removeClass("ajaxed");
+                    }, "json");
+                });
+
+                $("#id_contenido").change(function() {
+                    var id = $(this).attr("idleccion");
+                    var val = this.value.trim();
+                    var parent = $(this);
+                    parent.addClass("ajaxed");
+                    $.post("/pro_clases",{id: id, action: 'contenido', val: val}, function() {
+                        parent.removeClass("ajaxed");
+                    }, "json");
+                });
+
+                $("#id_observaciones").change(function() {
+                    var id = $(this).attr("idleccion");
+                    var val = this.value.trim();
+                    var parent = $(this);
+                    parent.addClass("ajaxed");
+                    $.post("/pro_clases",{id: id, action: 'observaciones', val: val}, function() {
+                        parent.removeClass("ajaxed");
+                    }, "json");
+                });
+
+                $(".asist").click(function() {
+                    var id = $(this).attr("idasis");
+                    var val = $(this).is(":checked");
+                    var parent = $(this.parentNode);
+                    parent.addClass("ajaxed");
+                    $.post("/pro_clases",{id: id, action: 'asistencia', val: ((val)?"y":"n")}, function(data) {
+                        parent.removeClass("ajaxed");
+                        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                            $("#porcientoasist"+id).html(data.porcientoasist+"h");
+                            if (data.porcientoasist < 16){
+                                $("#porcientoasist"+id).removeClass("badge-success");
+                                $("#porcientoasist"+id).addClass("badge-important");
+                            }else{
+                                $("#porcientoasist"+id).removeClass("badge-important");
+                                $("#porcientoasist"+id).addClass("badge-success");
+                            }
+                        {% else %}
+                            $("#porcientoasist"+id).html(data.porcientoasist+"%");
+                            if (data.porcientoasist < {{ ASISTENCIA_APROBAR }}){
+                                $("#porcientoasist"+id).removeClass("badge-success");
+                                $("#porcientoasist"+id).addClass("badge-important");
+                            }else{
+                                $("#porcientoasist"+id).removeClass("badge-important");
+                                $("#porcientoasist"+id).addClass("badge-success");
+                            }
+                       {% endif %}
+
+                    }, "json");
+                });
+
+                claseNota = function(v) {
+                    if (v>=0 && v<5) {
+                        return "badge-error";
+                    } else if (v>=5 && v<8) {
+                        return "badge-warning";
+                    } else {
+                        return "badge-success";
+                    }
+                };
+
+                $(".removeevalbutton").click(function() {
+                    var id = $(this).attr("idasis");
+                    var parent = $(this.parentNode);
+                    var ultima = parent.find("#eval"+id+" span.badge").last();
+                    var evalid = ultima.attr("evalid");
+                    $.post("/pro_clases", {action:'borrarevaluacion', 'asisid': id, 'evalid': evalid}, function(data) {
+                        ultima.remove();
+                        if (parent.find("#eval"+id+" span.badge").size()==0) {
+                            $(".removeevalbutton"+id).hide();
+                        } else {
+                            $(".removeevalbutton"+id).show();
+                        }
+                        $("span#prom"+id).html("<span class='badge "+claseNota(data.promedio)+"'>"+data.promedio+"</span>");
+
+                    }, "json");
+                    return false;
+                });
+
+                $(".evalbutton").click(function() {
+                    var id = $(this).attr("idasis");
+                    var parent = $(this.parentNode);
+                    smoke.prompt("Digite Evaluacion", function(v) {
+                        if (v && parseInt(v)>0 && parseInt(v)<=10) {
+                            parent.addClass("ajaxed");
+                            $.post("/pro_clases",{action:'evaluar', id: id, val: v}, function(data) {
+                                $("span#eval"+id).append(" <span class='badge "+claseNota(v)+"' evalid='"+data.evalid+"'>"+v+"</span>");
+                                $("span#prom"+id).html("<span class='badge "+claseNota(data.promedio)+"'>"+data.promedio+"</span>");
+                                if (parent.find("#eval"+id+" span.badge").size()==0) {
+                                    $(".removeevalbutton"+id).hide();
+                                } else {
+                                    $(".removeevalbutton"+id).show();
+                                }
+                                parent.removeClass("ajaxed");
+
+                            }, "json");
+                        } else {
+
+                        }
+                    });
+                    return false;
+                });
+
+            {% endif %}
+
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var dia = $this.attr('dia');
+                var turno = $this.attr('turno');
+                var clase = findClases(dia, turno);
+                for (i in clase) {
+                    var c = clase[i];
+                    $(this).html("<div class='row smaller' style='text-align: center;'><div class='pd'><b>"+c.asignatura+"</b><br/>"+
+                            c.profesor+"<br/>Aula: "+c.aula+"<br/>"+
+                            " <a href='/horarios?action=editclase&id="+c.id+"'><img src='/static/images/16/edit2.png' alt='' border=''/></a>" +
+                            " <a href='/horarios?action=delclase&id="+c.id+"'><img src='/static/images/16/delete2.png' alt='' border=''/></a>" +
+                            "</div></div>");
+                }
+
+            });
+
+            var tienedeuda;
+
+            $(".absentismo").click(function()
+                {
+                   $('#observacion').val("");
+                   $("#mensaj").html("").removeClass('alert alert-danger');
+                   $("#addpanel").modal({"backdrop":"static"});
+                   $('#addpanel').show();
+                   $("#addpanel .ingresar").show();
+                   idmateriaasignada = $(this).attr("idmateriasig");
+                   idasisten = $(this).attr('idasisten');
+                   tienedeuda = $(this).attr('deuda');
+                   if ($("#checke"+idmateriaasignada).is(":checked")) {
+                       $("#addpanel #tit").html('Utilizar cuando se detecte reiterada ausencia de los estudiantes a su materia..');
+                       $("#check"+idasisten).attr('disabled',true);
+                       valcheck = $("#check"+idasisten).is(':checked');
+                       $("#check"+idasisten).attr('checked',false);
+                       var val = $("#check"+idasisten).is(":checked");
+                       var parent = $($("#check"+idasisten).parentNode);
+                       parent.addClass("ajaxed");
+                       if (valcheck){
+                           $.post("/pro_clases",{id: idasisten, action: 'asistencia', val: ((val)?"y":"n")}, function(data) {
+                                parent.removeClass("ajaxed");
+
+                                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                                    $("#porcientoasist"+idasisten).html(data.porcientoasist+"h");
+                                    if (data.porcientoasist < 16){
+                                        $("#porcientoasist"+idasisten).removeClass("badge-success");
+                                        $("#porcientoasist"+idasisten).addClass("badge-important");
+                                    }else{
+                                        $("#porcientoasist"+idasisten).removeClass("badge-important");
+                                        $("#porcientoasist"+idasisten).addClass("badge-success");
+                                    }
+                                {% else %}
+                                    $("#porcientoasist"+idasisten).html(data.porcientoasist+"%");
+                                    if (data.porcientoasist < {{ ASISTENCIA_APROBAR }}){
+                                        $("#porcientoasist"+idasisten).removeClass("badge-success");
+                                        $("#porcientoasist"+idasisten).addClass("badge-important");
+                                    }else{
+                                        $("#porcientoasist"+idasisten).removeClass("badge-important");
+                                        $("#porcientoasist"+idasisten).addClass("badge-success");
+                                    }
+                               {% endif %}
+
+                           }, "json");
+                       }
+
+                   }
+                   else {
+
+                       $("#addpanel #tit").html('Desactivar cuando el estudiante asista a su materia..');
+                       if( $(this).attr('bloq') == 'no')
+                       {
+                           $("#check"+idasisten).attr('disabled',false);
+                       }
+                   }
+                }
+            );
+
+            $("#addpanel .btn-cerrar").click(function(){
+               $("#addpanel").modal("hide");
+               if ($("#checke"+idmateriaasignada).is(":checked")) {
+                   $("#checke"+idmateriaasignada).attr('checked',false);
+                   if (tienedeuda=='false'){
+                    $("#check"+idasisten).attr('disabled',false);
+                   }
+
+                   if (valcheck)
+                   {
+                       $("#check"+idasisten).attr('checked',true);
+                       var val = $("#check"+idasisten).is(":checked");
+                       var parent = $($("#check"+idasisten).parentNode);
+                       parent.addClass("ajaxed");
+                       $.post("/pro_clases",{id: idasisten, action: 'asistencia', val: ((val)?"y":"n")}, function(data) {
+                            parent.removeClass("ajaxed");
+
+                            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                                $("#porcientoasist"+idasisten).html(data.porcientoasist+"h");
+                                if (data.porcientoasist < 16){
+                                    $("#porcientoasist"+idasisten).removeClass("badge-success");
+                                    $("#porcientoasist"+idasisten).addClass("badge-important");
+                                }else{
+                                    $("#porcientoasist"+idasisten).removeClass("badge-important");
+                                    $("#porcientoasist"+idasisten).addClass("badge-success");
+                                }
+                            {% else %}
+                                $("#porcientoasist"+idasisten).html(data.porcientoasist+"%");
+                                if (data.porcientoasist < {{ ASISTENCIA_APROBAR }}){
+                                    $("#porcientoasist"+idasisten).removeClass("badge-success");
+                                    $("#porcientoasist"+idasisten).addClass("badge-important");
+                                }else{
+                                    $("#porcientoasist"+idasisten).removeClass("badge-important");
+                                    $("#porcientoasist"+idasisten).addClass("badge-success");
+                                }
+                           {% endif %}
+
+                       }, "json");
+                   }
+               } else {
+                   $("#checke"+idmateriaasignada).attr('checked',true);
+                   $("#check"+idasisten).attr('disabled',true);
+               }
+                return false;
+            });
+
+            $("#addpanel .ingresar").click(function(){
+{#                alert($('#observacion').val());#}
+                $("#addpanel .ingresar").hide();
+                if($('#observacion').val() != '')
+                {
+                    $("#mensaj").html("").removeClass('alert alert-danger');
+                    $.post("/pro_clases", {action: 'addabsen', 'observacion': $('#observacion').val(), 'absencheck':$("#checke"+idmateriaasignada).is(":checked"), 'idmateriasig':idmateriaasignada}, function(data) {
+                        if (data.result=='ok') {
+                           $("#addpanel").modal("hide");
+                            smoke.alert("INGRESO REALIZADO CON EXITO");
+{#                            setInterval(function(){#}
+{#                                $.unblockUI();#}
+{#                                location.reload();#}
+{#                            }, 2000);#}
+                            return false;
+
+                        }
+                        else
+                        {
+                            $("#addpanel").modal("hide");
+                            smoke.alert("ERROR EN EL INGRESO");
+                            return false;
+                        }
+                    }, "json");
+
+                }
+                else
+                {
+                   $("#mensaj").html("Ingrese observacion").addClass('alert alert-danger');
+                   $("#addpanel .ingresar").show();
+                }
+
+            });
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Lecci&oacute;n: {{ lecciongrupo.materia.nombre_completo }}</h3>
+            <h3>
+                Aula: {{ lecciongrupo.aula }},
+                Fecha: {{ lecciongrupo.fecha|date:"d-m-Y" }}, Hora Inicio: {{ lecciongrupo.horaentrada }} {% if not lecciongrupo.abierta %}Hora Fin: {{ lecciongrupo.horasalida }}{% endif %}
+            </h3>
+        </div>
+        <div class='span1'>
+            {% if reg %}
+                <a href="{{ reg }}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            {% else %}
+                <a href="{% if ret %}{{ ret }}{% else %}/pro_clases{% endif %}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span8'>
+            {% for leccion in lecciones %}
+                <h4>Listado de Alumnos: {{ leccion.clase.materia.nivel.carrera }} - {{ leccion.clase.materia.nivel.paralelo }}</h4>
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>Alumno</th>
+                        <th>Asistencia</th>
+                        <th style="text-align: center;"> Asist.</th>
+
+                        <th colspan="2">Evaluaciones</th>
+                          {% if DEFAULT_PASSWORD == 'itb' or DEFAULT_PASSWORD == 'itf' or DEFAULT_PASSWORD == 'conduccion'  %}
+                            <th>Absentismo</th>
+                        {% endif %}
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for asistencia in leccion.asistencia_de_leccion %}
+                        {% if not asistencia.matricula.esta_retirado %}
+                            <tr>
+                                <td>
+                                    <span {% if not asistencia.matricula.pago and incluyepago or asistencia.matricula.inscripcion.persona.datos_incompletos and incluyedatos %}class='error'{% endif %}>
+                                        {# OCastillo 17-04-2023 se quita info de cedula por proteccion de datos      #}
+{#                                        {{ asistencia.matricula.inscripcion.persona }}#}
+                                        {{ asistencia.matricula.inscripcion.persona.nombre_completo_inverso }}
+                                    </span>
+                                    {% if asistencia.matricula.inscripcion.persona.datos_incompletos and incluyedatos %}
+                                        <br/><span class='label label-info'>DATOS INCOMPLETOS</span>
+                                    {% endif %}
+                                    {% if asistencia.matricula.inscripcion.persona.datos_medicos_incompletos and incluyedatosmedicos %}
+                                        <br/><span class='label label-warning'>FICHA MEDICA INCOMPLETA</span>
+                                    {% endif %}
+                                    {# OCastillo 17-04-2023 se quita info de deuda por proteccion de datos      #}
+{#                                    {% if modulofinanzas %}#}
+{#                                        {% if asistencia.matricula.inscripcion.tiene_deuda %}#}
+{#                                        <br/><span class='label label-important'>ADEUDA A LA FECHA ${{ asistencia.matricula.inscripcion.adeuda_a_la_fecha|floatformat:2 }}</span>#}
+{#                                        {% endif %}#}
+{#                                    {% endif %}#}
+                                    {% if asistencia.matricula.inscripcion.persona.documentos_sin_entregar %}
+                                        <br/><span class='label label-inverse'>NO HA DEVUELTO {{ asistencia.matricula.inscripcion.persona.documentos_sin_entregar }} LIBROS A LA BIBLIOTECA </span>
+                                    {% endif %}
+                                    {% if asistencia.matricula.inscripcion.suspension %}
+                                        <br/><span class='label label-important tl'>SUSPENDIDO</span>
+                                    {% endif %}
+{#                                    {% if asistencia.matricula.inscripcion.plagiotarjeta %}#}
+{#                                        <br/><span style="color: #0000ff" >Suspendido</span>#}
+{#                                    {% endif %}#}
+                                    {% if asistencia.matricula|args:lecciongrupo|call:'numero_matricula'  %}
+                                        <br/><span class='label label-important tl'>Matricula No {{ asistencia.matricula|args:lecciongrupo|call:'numero_matricula' }} </span>
+                                    {% endif %}
+                                </td>
+                                 <td>
+                                    {% if not asistencia.matricula.inscripcion.suspension %}
+                                        {% if leccion.abierta %}
+                                            {% if modulofinanzas %}
+                                                <input type='checkbox' idasis='{{ asistencia.id }}' class="asist" id='check{{ asistencia.id }}' {% if asistencia.asistio %}checked="true"{% endif %} {% if asistencia.matricula.inscripcion.tiene_deuda and incluyepago and VALIDA_DEUDA_EXAM_ASIST or asistencia.matricula.inscripcion.persona.datos_incompletos and incluyedatos or asistencia.matricula.inscripcion.persona.documentos_sin_entregar %}disabled="disabled"{% endif %}/>
+                                            {% else %}
+                                                <input type='checkbox' idasis='{{ asistencia.id }}' class="asist" id='check{{ asistencia.id }}' {% if asistencia.asistio %}checked="true"{% endif %} {% if not asistencia.matricula.pago and incluyepago or asistencia.matricula.inscripcion.persona.datos_incompletos and incluyedatos or asistencia.matricula.inscripcion.persona.documentos_sin_entregar %}disabled="disabled"{% endif %}/>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if asistencia.asistio %}<img src='/static/images/16/true.png' alt='' border="0"/>{% else %}<img src='/static/images/16/false.png' alt='' border="0"/>{% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+
+                                <td style="text-align: center;">
+                                    {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                                        <span id='porcientoasist{{ asistencia.id }}' class="badge {% if asistencia.horas_asistencia_actual < 16 %}badge-important{% else %}badge-success{% endif %}">{{ asistencia.horas_asistencia_actual|floatformat:0 }}h</span>
+                                    {% else %}
+                                        <span id='porcientoasist{{ asistencia.id }}' class="badge {% if asistencia.porciento_asistencia_actual < ASISTENCIA_APROBAR %}badge-important{% else %}badge-success{% endif %}">{{ asistencia.porciento_asistencia_actual }}%</span>
+                                   {% endif %}
+
+                                </td>
+
+                                <td>
+                                    {% if not modulofinanzas %}
+                                        {% if not asistencia.matricula.pago and incluyepago %}
+                                            <span class='label label-important'>MATRICULA NO PAGADA</span>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if not asistencia.matricula.inscripcion.suspension %}
+                                        {% if asistencia.matricula.pago and not asistencia.matricula.inscripcion.persona.datos_incompletos or not incluyedatos or not incluyepago%}
+                                            {% if leccion.abierta %}
+                                                <a href="#" idasis='{{ asistencia.id }}' class='evalbutton btn btn-mini'><i class="icon-plus-sign"></i></a>
+                                            {% endif %}
+                                            <span id='eval{{ asistencia.id }}'>{% for evaluacion in asistencia.evaluaciones %} <span class='badge {{ evaluacion.clase_nota }}' evalid="{{ evaluacion.id }}">{{ evaluacion.evaluacion|floatformat }}</span>{% endfor %}</span>
+                                            {% if leccion.abierta %}
+                                                <a href="#" idasis='{{ asistencia.id }}' class='removeevalbutton removeevalbutton{{ asistencia.id }} btn btn-mini' {% if not asistencia.evaluaciones  %}style='display: none'{% endif %}><i class="icon-caret-left"></i></a>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if asistencia.matricula.pago and not asistencia.matricula.inscripcion.persona.datos_incompletos or not incluyepago or not incluyedatos%}
+                                        <span id='prom{{ asistencia.id }}'><span class='badge {{ asistencia.promedio_evaluacion_clase_nota }}'>{{ asistencia.promedio_evaluacion|floatformat }}</span></span>
+                                    {% endif %}
+                                </td>
+                                {% if DEFAULT_PASSWORD == 'itb' or  DEFAULT_PASSWORD == 'itf' or DEFAULT_PASSWORD == 'conduccion' %}
+                                    <td>
+                                        {% if not asistencia.matricula.inscripcion.suspension %}
+                                            {% with materiaasignada=asistencia.matricula|args:lecciongrupo.materia|call:'materiaasignada_existe' %}
+    {#                                            {% if materiaasignada.existe_absentismo %}#}
+    {#                                                {% with absen=materiaasignada.existe_absentismo %}#}
+                                                <input type='checkbox' style="border-bottom-color: red"
+                                                       deuda='{% if asistencia.matricula.inscripcion.tiene_deuda %} true {% else %}false{% endif %}' idasisten='{{ asistencia.id }}' {% if not materiaasignada.absentismo %} title="Utilizar cuando se detecte reiterada ausencia de los estudiantes a su materia." {% else  %}title="Desactivar cuando el estudiante asista a su materia." {% endif %} class='absentismo' id='checke{{ materiaasignada.id }}' idmateriasig='{{ materiaasignada.id }}' {% if materiaasignada.absentismo %}checked{% endif %} {% if not leccion.abierta %} disabled="True" {% endif %} {% if asistencia.matricula.inscripcion.tiene_deuda and incluyepago or asistencia.matricula.inscripcion.persona.datos_incompletos and incluyedatos or asistencia.matricula.inscripcion.persona.documentos_sin_entregar %}bloq="si"{% else %} bloq="no" {% endif %}  />
+                                                {% if materiaasignada.absentismo %}<a href="#" class="verabs" idabs="{{  materiaasignada.existe_absentismo.observacion }}"> Ver</a>{% endif %}
+    {#                                                {% endwith %}#}
+    {#                                            {% else %}#}
+    {#                                            {% else %}#}
+    {#                                                <input type='checkbox' class='absentismo' id='check{{ materiaasignada.id }}' idmateriasig='{{ materiaasignada.id }}' />#}
+    {#                                            {% endif %}#}
+                                            {% endwith %}
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+
+            {% endfor %}
+        </div>
+
+        <div class='span4'>
+
+            <form class='well'>
+{#            <h3>Tema Syllabus</h3>#}
+            {% if SEGUIMIENTO_SYLLABUS %}
+            {% if seguimiento %}
+                <table class="table table-striped">
+                    <tbody >
+                        <tr>
+                            <td>
+                               <a id='syllabus' href="#">Ver Syllabus</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            {% endif %}
+            {% endif %}
+            <h3>Contenido</h3>
+            <textarea idleccion='{{ lecciongrupo.id }}' id='contenido' rows="10" style="width: 100%;" {% if not lecciongrupo.abierta %}disabled="true"{% endif %}>{{ lecciongrupo.contenido }}</textarea>
+            <hr/>
+            <h3>Observaciones</h3>
+            <textarea idleccion='{{ lecciongrupo.id }}' id='observaciones' rows="10" style="width: 100%;" {% if not lecciongrupo.abierta %}disabled="true"{% endif %}>{{ lecciongrupo.observaciones }}</textarea>
+            <hr/>
+            <h3>Deber de Clase</h3>
+                <table class="table table-striped">
+                    <tbody id="deber">
+                        {% if deber %}
+                            <tr>
+                                <td>
+                                    {{ deber.nombre }}
+                                    {% if lecciongrupo.abierta %}
+                                        <a href='{{ deber.download_link }}' class='btn btn-success btn-mini'><i class="icon-download icon-white"></i>Descargar</a>
+                                        <a href="#"  class='btn btn-danger btn-mini deldeber'> <i class='icon-remove icon-white'></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                        </tbody>
+                        {% else %}
+                            {% if lecciongrupo.abierta %}
+                                <tfoot>
+                                <tr>
+                                    <td>
+                                        <a href="/pro_clases?action=adddeberes&id={{ lecciongrupo.id }}" class="btn btn-info btn-mini"><i class="icon-plus icon-white"></i>Subir Deber</a>
+                                    </td>
+                                </tr>
+                                </tfoot>
+                            {% endif %}
+                        {% endif %}
+                </table>
+
+
+            <hr/>
+            {% if ARCHIVO_TIPO_PLANCLASE > 0 %}
+            {% if lec == 1 or planclase %}
+                <h3>Plan de Clase</h3>
+                    <table class="table table-striped">
+                        <tbody id="planclase">
+                            {% if planclase %}
+                                <tr>
+                                    <td>
+                                        {{ planclase.nombre }}
+                                        {% if lecciongrupo.abierta %}
+                                            <a href='{{ planclase.download_link }}' class='btn btn-success btn-mini plan'><i class="icon-download icon-white"></i>Descargar</a>
+                                           <a href="#"  class='btn btn-danger btn-mini delplanclase'><i class='icon-remove icon-white'></i></a>
+{#                                            <a href='/pro_clases?action=delplanclase&id={{ lecciongrupo.id }}' class='btn btn-danger btn-mini'><i class='icon-remove icon-white'></i></a>#}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                            {% else %}
+                                {% if lecciongrupo.abierta %}
+                                    <tfoot>
+                                    <tr>
+                                        <td>
+{#                                            <a href="#" lid="{{ lecciongrupo.id }}" class="btn btn-info btn-mini addplanclase"><i class="icon-plus icon-white"></i>Subir Plan de Clase</a>#}
+                                            <a href="/pro_clases?action=addplanclase&id={{ lecciongrupo.id }}" class="btn btn-info btn-mini"><i class="icon-plus icon-white"></i>Subir Plan de Clase</a>
+                                        </td>
+                                    </tr>
+                                    </tfoot>
+                                {% endif %}
+                            {% endif %}
+                    </table>
+
+                {% endif %}
+            <hr/>
+            <h3>Material de Apoyo</h3>
+                <table class="table table-striped">
+                    <tbody id="material">
+                        {% if material %}
+                            <tr>
+                                <td>
+                                    {{ material.nombre }}
+                                    {% if lecciongrupo.abierta %}
+                                        <a href='{{ material.download_link }}' class='btn btn-success btn-mini'><i class="icon-download icon-white"></i>Descargar</a>
+                                        <a href="#"  class='btn btn-danger btn-mini delmaterial'> <i class='icon-remove icon-white'></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                        </tbody>
+                        {% else %}
+                            {% if lecciongrupo.abierta %}
+                                <tfoot>
+                                <tr>
+                                    <td>
+                                        <a href="/pro_clases?action=addmaterial&id={{ lecciongrupo.id }}" class="btn btn-info btn-mini"><i class="icon-plus icon-white"></i>Material de Apoyo</a>
+                                    </td>
+                                </tr>
+                                </tfoot>
+                            {% endif %}
+                        {% endif %}
+                </table>
+
+
+            <hr/>
+            {% endif %}
+            <h3>Incidencias</h3>
+            <table class="table table-striped">
+                <tbody id="listaincidencias">
+
+                      {% if incidencias %}
+                        {% for incidencia in incidencias %}
+                            <tr>
+                                <td>
+                                    <h4>{{ incidencia.tipo.nombre }}</h4>
+                                    <p>{{ incidencia.contenido }}</p>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                      {% endif %}
+                    </tbody>
+                {% if lecciongrupo.abierta %}
+                    <tfoot>
+                        <tr>
+                            <td>
+                                <a href="#" id="addincidencia" class="btn btn-danger btn-mini"><i class="icon-white icon-plus"></i> Incidencia</a>
+                            </td>
+                        </tr>
+                    </tfoot>
+                {% endif %}
+            </table>
+
+            </form>
+        </div>
+    </div>
+    {% if lecciongrupo.abierta %}
+        <div class='row-fluid'>
+            <div class='span12'>
+                <a id="cerrarclase" href="#" class='btn btn-success'><i class="icon-time icon-white"></i> Cerrar Clase</a>
+            </div>
+        </div>
+    {% endif %}
+
+
+
+    <div class="modal fade static" id="incidenciaspanel" style="display: none;">
+        <div class="modal-header">
+            <!-- <a class="close" data-dismiss="modal">×</a> -->
+            <h3 id="paneltitle">Adicionar Incidencia de Clase</h3>
+        </div>
+        <div class="modal-body">
+            <form class="form-horizontal">
+
+                <fieldset class="control-group nomargins">
+                    <label class="control-label" for="id_tipo">Tipo</label>
+                    <div class="controls">
+                        <select id="id_tipo">
+                            {% for tipoincidencia in tiposincidencias %}
+                                <option value="{{ tipoincidencia.id }}">{{ tipoincidencia.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </fieldset>
+
+                <fieldset class="control-group nomargins">
+                    <label class="control-label" for="id_contenido">Descripci&oacute;n</label>
+                    <div class="controls">
+                        <textarea name="id_contenido" id="id_contenido"></textarea>
+
+                    </div>
+                </fieldset>
+
+
+            </form>
+            <div id="panelalert">
+
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-ejecutar"><i class="icon-plus icon-white"></i> Adicionar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="addpanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle" >Ingrese Observacion</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <div id="tit" class="alert-danger" style="padding-left: 13%"> Utilizar cuando se detecte reiterada ausencia de los estudiantes a su materia..</div><br/>
+            <h4>
+                <div style="width:100%;padding-left: 13%">Observaci&oacute;n: <textarea type='text' id='observacion' style="width:60%;text-transform: uppercase" rows="4" cols="50" > </textarea></div>
+            </h4>
+            <div style="padding-left: 13%"> <p id='mensaj' ></p></div>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-info ingresar"> Ingresar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="syllabus_panel" style="display: none;">
+        <div class="modal-body panelbody">
+            <div  style="overflow-y:auto;">
+                <table class='table table-bordered table-striped'>
+                    <thead>
+                        <tr>
+                            <th colspan="6" style="text-align: center">Syllabus</th>
+                            <th  style="text-align: center">Avanzar</th>
+                            <th  style="text-align: center">Finalizar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if seguimiento.capitulo.temas %}
+                            {% for t in seguimiento.capitulo.temas %}
+                                <tr>
+                                <td colspan="8">
+                                    <div style="text-align: justify;padding-left: 15px"><b>{{ t.numero }}. {{ t.nombre }}1 </b> </div>
+                                    {% if t.contenido %}
+                                        <div style="text-align: justify;padding-left: 39px">{{ t.contenido }} 2</div>
+                                    {% endif %}
+                                    {% if t.detalltema %}
+                                        {% for dt in t.detalltema %}
+                                            <div style="text-align: justify;padding-left: 35px">{{ dt.descripcion }}3 </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if t.subtema %}
+                                        {% for st in t.subtema %}
+                                            <tr>
+                                                <td colspan="8" style="text-align: justify;padding-left: 33px">
+                                                {% if st.detalle %}
+                                                    <b>{{ st.numero }}. {{ st.contenido }} 4</b>
+                                                {% else %}
+                                                    <tr>
+                                                        <td colspan="6" style="text-align: justify;padding-left: 33px">
+                                                             {{ st.numero }}. {{ st.contenido }} 5  </td>
+                                                        <td style="text-align: center"><input class='stema' idst="{{ subtema.id }}"  op="0" type="checkbox"
+                                                            {% for segsubtema in seguimientosubtema %}
+                                                                {% if not lecciongrupo.abierta %}
+                                                                     disabled
+                                                                 {% else %}
+                                                                    {% if segsubtema.subtema.id == st.id and not segsubtema.subtema.id == subtema.subtema.id  %} disabled {% endif %}
+                                                                {% endif %}
+                                                                {% if segsubtema.subtema.id == st.id and lecciongrupo == subtema.leccion and not  segsubtema.finalizado and  segsubtema.leccion %}
+                                                                    checked
+{#                                                                {% else %}#}
+{#                                                                    {% if not lecciongrupo.abierta and not  segsubtema.finalizado and segsubtema.leccion %} lec="{{ segsubtema.id }}" checked {% endif %}#}
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                        ></td>
+                                                        <td style="text-align: center"><input class='stema' idst="{{ subtema.id }}"   op="1" type="checkbox"
+                                                            {% for segsubtema in seguimientosubtema %}
+                                                                 {% if not lecciongrupo.abierta %}
+                                                                     disabled
+                                                                 {% else %}
+                                                                    {% if segsubtema.subtema.id == st.id and not segsubtema.subtema.id == subtema.subtema.id  %} disabled  {% endif %}
+                                                                 {% endif %}
+                                                                {% if segsubtema.subtema.id == st.id and   segsubtema.finalizado  and  segsubtema.leccion %} checked {% endif %}
+                                                            {% endfor %}
+                                                        ></td>
+                                                    </tr>
+                                                {% endif %}
+                                            {% if st.detalle %}
+                                                {% for dst in st.detalle %}
+                                                    <tr>
+                                                       <td colspan="6">
+                                                           <div style="text-align: justify;padding-left: 43px">
+
+                                                            {{ dst.numero }}. {{ dst.contenido }} </div>
+                                                       </td>
+
+                                                            <td style="text-align: center"><input class='dstema' iddst="{{ detsubtema.id }}" lec="{{ segdetsubtema.leccion.id  }}"op="0" type="checkbox"
+                                                               {% for segdetsubtema in seguimientodetsubtema %}
+                                                                    {% if not lecciongrupo.abierta %}
+                                                                        disabled
+                                                                    {% else %}
+                                                                        {% if segdetsubtema.detsubtema.id == dst.id   and  not detsubtema.detsubtema.id == dst.id and   not leccion.abierta %}disabled {% endif %}
+                                                                    {% endif %}
+                                                                   {% if segdetsubtema.detsubtema.id == dst.id  and lecciongrupo == detsubtema.leccion   and not  segdetsubtema.finalizado and segdetsubtema.leccion  %}
+                                                                          checked
+{#                                                                   {% else %}#}
+{#                                                                          {% if   not lecciongrupo.abierta  and segdetsubtema.leccion and not segdetsubtema.finalizado  %}checked{% endif %}#}
+                                                                   {% endif %}
+                                                               {% endfor %}/>
+                                                            </td>
+                                                            <td style="text-align: center">
+                                                                <input id='hk' class='dstema'  iddst="{{ detsubtema.id }}" op="1"  type="checkbox"
+                                                               {% for segdetsubtema in seguimientodetsubtema %}
+                                                                   {% if not lecciongrupo.abierta %}
+                                                                        disabled
+                                                                    {% else %}
+                                                                       {% if segdetsubtema.detsubtema.id == dst.id  and  not detsubtema.detsubtema.id == dst.id  and   not leccion.abierta %} disabled {% endif %}
+                                                                   {% endif %}
+                                                                   {% if segdetsubtema.detsubtema.id == dst.id and  segdetsubtema.finalizado and  segdetsubtema.leccion %} checked{% endif %}
+                                                                {% endfor %}/>
+                                                            </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            {% endif %}
+                                            </td></tr>
+                                        {% endfor %}
+                                    {% endif %}
+                                </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+     <div class="modal-footer" id="cerrar_panel" style="text-align: center">
+
+        <a href="#" class="btn btn-success"> Salir</a>
+    </div>
+    </div>
+
+{% endblock %}

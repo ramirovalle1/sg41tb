@@ -1,0 +1,286 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src="/static/js/smoke.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+
+            {% if info %}
+                 smoke.alert("{{ info }}");
+            {% endif %}
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/listaexamen?s="+term;
+            });
+
+
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+            var idpersexter =0;
+            var nombres = 0;
+
+
+            $(".persoexamen").click(function(){
+                idpersexter = $(this).attr('idpersonaexter');
+                nombres = $(this).attr("nombre");
+                modalexamen();
+               return false;
+
+            });
+            {% if personexter %}
+                idpersexter = '{{ personexter.id }}';
+                {% if DEFAULT_PASSWORD == 'conduccion' %}
+                    nombres = '{{ personexter.nombres }}';
+                {% else %}
+                    nombres = '{{ personexter.persona.nombre_completo }}';
+                {% endif %}
+                modalexamen();
+            {% endif %}
+
+            function modalexamen(){
+                $.get("/listapersonaexter",{"action": "personaexamen","id":idpersexter},function(data) {
+                        $("#examenexterno_panel .modal-body").html(data);
+                        $("#examenexterno_panel #paneltitle1").html(" Nombres:   "+nombres);
+                        $("#examenexterno_panel").modal({"backdrop":"static", keyboard: 'false', width: "60%" });
+                        $("#examenexterno_panel").modal("show");
+               }, "html");
+               return false;
+            }
+
+
+
+
+            $("#cerrarexamen").click(function() {
+                $("#examenexterno_panel").modal('hide');
+            });
+
+            $("#cerrardetvalexa").click(function() {
+                $("#detallevalid_panel").modal('hide');
+                modalexamen();
+            });
+
+
+            $("#validaexamendesac_panel #cerrarvalidaexa").click(function() {
+
+                $("#validaexamendesac_panel").modal('hide');
+                modalexamen();
+               return false;
+            });
+
+            $('#validaexamendesac_panel #validar').click(function(){
+                var observacionvali = $("#observalidadesac").val();
+                var idpersonaexam = $('#idpersonaexamval').val();
+                $.post("/listapersonaexter",{'idpersonaexam':$('#idpersonaexamval').val(),'observacionvali':observacionvali, 'action': 'validoexamen'}, function(data) {
+                    if (data.result=='ok'){
+                        location.href="/listapersonaexter?idpersonexter="+idpersexter;
+                    }
+
+                }, "json");
+            });
+        });
+    </script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                Lista de Personas Externas
+            </h3>
+
+        </div>
+        <div class='atright'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+
+
+        </div>
+    </div>
+    <div class="row-fluid" >
+        <div class='span2' style="width: 400px">
+            <form class="form-search"> <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/listaexamen" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombres</th>
+                <th>Nº Documento</th>
+                <th>Fecha</th>
+                <th> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for p in personaexternas %}
+                    <tr>
+                        <td>
+                            {% if DEFAULT_PASSWORD == 'conduccion' %}
+                                {{ p.nombres }}
+                            {% else %}
+                                {{ p.persona.nombre_completo }}
+                            {% endif %}
+                        </td >
+
+                        <td>
+                            {% if DEFAULT_PASSWORD == 'conduccion' %}
+                                {% if p.pasaporte %}
+                                    <span class="label label-important" title="Pasaporte">P</span>
+                                {% else %}
+                                    <span class="label label-warning" title="Cédula">C</span>
+                                {% endif %} &nbsp; {{ p.numdocumento }}
+                            {% else %}
+                                {% if p.persona.pasaporte %}
+                                    <span class="label label-important" title="Pasaporte">P</span>
+                                {% else %}
+                                    <span class="label label-warning" title="Cédula">C</span>
+                                {% endif %}
+                                {% if p.persona.pasaporte %}
+                                    &nbsp; {{ p.persona.pasaporte }}
+                                {% else %}
+                                    &nbsp; {{ p.persona.cedula }}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+
+                        <td style="font-size: 11px" nowrap>
+                            {% if DEFAULT_PASSWORD == 'conduccion' %}
+                                {{ p.fecha|date:"d-m-Y"  }}
+                            {% else %}
+                                {{ p.fecha }}
+                            {% endif %}
+                        </td>
+
+
+                        <td>
+
+                            <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    {% if DEFAULT_PASSWORD == 'conduccion' %}
+                                        {% if p.existe_personaexamen %}
+                                            <ul class="dropdown-menu pull-right">
+                                                <li><a style="cursor: pointer" class="persoexamen" idpersonaexter="{{ p.id }}" nombre="{{ p.nombres }}"><i class="icon-eye-open"></i> Ver Examenes </a></li>
+                                            </ul>
+                                        {% endif %}
+                                    {% else %}
+                                        <ul class="dropdown-menu pull-right">
+                                            <li><a style="cursor: pointer" class="persoexamen" idpersonaexter="{{ p.id }}" nombre="{{ p.nombre_completo }}"><i class="icon-eye-open"></i> Ver Examenes </a></li>
+                                        </ul>
+                                    {% endif %}
+                            </div>
+
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/listaexamen?page=1">1</a></li>
+                            <li><a href="/listaexamen?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/listaexamen?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/listaexamen?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/listaexamen?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/listaexamen?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+
+
+
+    <div class="modal fade static" id="examenexterno_panel"   >
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                <a style="float: left"  id="cerrarexamen" class="btn btn-danger  btn-aceptar">   <b> SALIR</b></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="validaexamendesac_panel"   >
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i>Ingrese Observaci&oacute;n</i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <input type='hidden' name='idpersonaexamval' id="idpersonaexamval" value='0'/>
+            <textarea type='text' id='observalidadesac' style="width:98%;" rows="6" cols="50" > </textarea><br/><br/>
+        </div>
+        <div class="modal-footer">
+            <a style="float: left;cursor: pointer" id="cerrarvalidaexa"  class="btn btn-danger">   <b> Cancelar</b></a>
+            <a style="float: left;cursor: pointer"  id="validar" class="btn btn-success">   <b> Enviar</b></a>
+        </div>
+    </div>
+
+
+
+
+    <div class="modal fade static" id="detallevalid_panel"   >
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle2'><i>Detalle de Desactivaci&oacute;n y Activaci&oacute;n del Ex&aacute;men</i></h4>
+            <h5 id='paneltitle1'></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                <a style="float: left"  id="cerrardetvalexa" class="btn btn-danger  btn-aceptar">   <b> SALIR</b></a>
+            </div>
+        </div>
+    </div>
+
+
+
+
+{% endblock %}

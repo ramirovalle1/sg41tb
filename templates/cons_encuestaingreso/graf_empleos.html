@@ -1,0 +1,1225 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+<style>
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color:  #184679; }
+
+.btn-primary {
+  color: #fff;
+  background-color: #184679;
+  border-color: #184679;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover, .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color:#184679;
+    color: #fff;
+    border-color: #184679;
+}
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover,.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #184679;
+}
+</style>
+<script src="../../static/sganuevo/src/plugins/apexcharts/apexcharts.min.js"></script>
+<script src="../../static/sganuevo/src/plugins/sweetalert2/sweetalert2.all.js"></script>
+<script src="../../static/sganuevo/src/plugins/sweetalert2/sweet-alert.init.js"></script>
+<script type="text/javascript">
+    $(function () {
+    {#        colors: ['#F44336', '#E91E63', '#9C27B0', '#008FFB', '#F86624', '#F9CE1D', '#2B908F', '#662E9B', '#7D02EB', '#546E7A', '#16deee'],#}
+        $( document ).ready(function() {
+            {# ------------------- INGRESO HOGAR POR CARRERA ----------------   #}
+            var tiposingresoh = [];
+            var listcarrera = [];
+            var listingresohxcarr = [];
+            var totalingresoh=0;
+            tiposingresoh.push([{% for lih in listingresoh %}"{{ lih.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]); {# TIPOS DE ingresoh #}
+            {% for ls in lista_carreras_ingresoh %}
+                listcarrera.push('{{ ls.carreranombre }}');
+                var ingresoh = [];
+                {% for lsdata in ls.data %}
+                    var cantidadingresoh = parseInt('{{ lsdata.cantidad }}')
+                    ingresoh.push(cantidadingresoh);
+                    totalingresoh+= cantidadingresoh
+                {% endfor %}
+                listingresohxcarr.push(ingresoh);
+            {% endfor %}
+
+            var listado_ingresohxcarrera = [{"carreras": listcarrera, "lista": listingresohxcarr, "tiposingresoh": tiposingresoh}];
+
+            var seriesData = [];
+            for (var i = 0; i < listado_ingresohxcarrera[0].tiposingresoh[0].length; i++) {
+                seriesData.push({
+                    name: listado_ingresohxcarrera[0].tiposingresoh[0][i],
+                    data: listingresohxcarr.map(function(ingresoh) { return ingresoh[i]; })
+                });
+            }
+            var optionsxcarrera = {
+                series: seriesData,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalingresoh *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {  
+                    y: {
+                        formatter: function (val) {
+                          return  val 
+                        }
+                      }
+                }, 
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_ingresohxcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+            var chartxcarrera  = new ApexCharts(document.querySelector("#chart_div_ingresohxcarrera"), optionsxcarrera);
+            chartxcarrera.render();
+
+        {# --------------------POR COORDINACION INGRESO HOGAR------------------------    #}
+            var listcoordinacion=[]
+            var listinghxcoord =[]
+            var totalingresoh2=0
+            {% for ls in lista_coordinaciones_ingresoh %}
+                listcoordinacion.push('{{ ls.coordnombre }}');
+                var inghcoord = [];
+                {% for lsdata in ls.data %}
+                    var cantidadingresoh2 =parseInt('{{ lsdata.cantidad }}')
+                    inghcoord.push(cantidadingresoh2);
+                    totalingresoh2 += cantidadingresoh2
+                {% endfor %}
+                listinghxcoord.push(inghcoord);
+            {% endfor %}
+
+            var listado_ingresohxcoordinacion = [{"coordinacion": listcoordinacion, "lista": listinghxcoord, "tiposingresoh": tiposingresoh}];
+            var seriesData2 = [];
+            for (var lc = 0; lc < listado_ingresohxcoordinacion[0].tiposingresoh[0].length; lc++) {
+                seriesData2.push({
+                    name: listado_ingresohxcoordinacion[0].tiposingresoh[0][lc],
+                    data: listinghxcoord.map(function(inghcoord) { return inghcoord[lc]; })
+                });
+            }
+            var optionsxcoordinacion = {
+                series:seriesData2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalingresoh2 *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {  
+                    y: {
+                        formatter: function (val) {
+                          return  val 
+                        }
+                      }
+                }, 
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_ingresohxcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+
+            var chartxcoordinacion  = new ApexCharts(document.querySelector("#chart_div_ingresohxcoordinacion"), optionsxcoordinacion);
+            chartxcoordinacion.render();
+
+            {# --------------------FILTRAR------------------------    #}
+            $("#btnbuscarxcarrera").click(function() {
+                buscaringresohxcarrera();
+            });
+            function buscaringresohxcarrera(){
+                var filt_inghxcarrera=[];
+                var listcarrera2=[];
+                var lista1 = [];
+                var totalfiltcarr= 0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscaringresohxcarrera",
+                    idanio: $("#cmbaniocarrera_ingresoh").val(),
+                    idcarrera: $("#cmbihcarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarreraxih.forEach(function(item) {
+                                listcarrera2.push(item.carreranombre);
+                                var ingresh = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidad1 =parseInt(infoItem.cantidad)
+                                    ingresh.push(cantidad1);
+                                    totalfiltcarr +=cantidad1;
+                                });
+                                lista1.push(ingresh);
+                            });
+                            filt_inghxcarrera.push({"carreras": listcarrera2,  "lista": lista1, "tiposingresoh":tiposingresoh});
+                            var seriesData3 = [];
+                            for (var fi = 0; fi < filt_inghxcarrera[0].tiposingresoh[0].length; fi++) {
+                                seriesData3.push({
+                                    {#name: filt_nucleoxcarrera[0].tiposnucleos[0][i],#}
+                                    data: lista1.map(function (ingresh) {return ingresh[fi];})
+                                });
+                            }
+                            chartxcarrera.updateOptions({
+                                series: seriesData3,
+                                xaxis: {
+                                    categories: filt_inghxcarrera[0].carreras
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcarr *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinacion").click(function (){
+                buscaringresohsxcoordinacion()
+            })
+            function buscaringresohsxcoordinacion(){
+                var filt_ingresohxcoordinacion=[];
+                var listcoordinacion2=[];
+                var lista2 = [];
+                var totalfiltcord =0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscaringresohxcoordinacion",
+                    idanio: $("#cmbaniocoord_ingresoh").val(),
+                    idcoordinacion: $("#cmbidcoordinacion").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxingh.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var ingrhc = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadcord= parseInt((infoItem.cantidad))
+                                    ingrhc.push(cantidadcord);
+                                    totalfiltcord += cantidadcord
+                                });
+                                lista2.push(ingrhc);
+                            });
+                            filt_ingresohxcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": lista2, "tiposingresoh": tiposingresoh});
+                            var seriesData4 = [];
+                            for (var fi = 0; fi < filt_ingresohxcoordinacion[0].tiposingresoh[0].length; fi++) {
+                                seriesData4.push({
+                                    data: lista2.map(function (ingrhc) {return ingrhc[fi];})
+                                });
+                            }
+                            chartxcoordinacion.updateOptions({
+                                series: seriesData4,
+                                xaxis: {
+                                    categories: filt_ingresohxcoordinacion[0].coordinaciones
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcord *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+        {# -----------------------INGRESO HOGAR RESUMEN ------------------------#}
+            var listadoxresumen =[]
+            var nombresingresoh=[]
+            var cantidadresumen=[]
+            {% for xlista_ingresoh_resumen in lista_ingresoh_resumen  %}
+                    cantidadresumen.push(parseInt('{{ xlista_ingresoh_resumen.cantidad  }}'));
+                    nombresingresoh.push('{{ xlista_ingresoh_resumen.ingresohnombre  }}');
+
+            {% endfor %}
+             listadoxresumen.push({"nombresingresoh":nombresingresoh,"cantidad":cantidadresumen });
+             var optionsresumenxih = {
+                series:listadoxresumen[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                labels: listadoxresumen[0].nombresingresoh,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        },
+
+                    }
+                }],
+                legend: {
+                    position: 'bottom'
+                }
+            };
+            var chart = new ApexCharts(document.querySelector("#chart_resumen"), optionsresumenxih);
+            chart.render();
+
+            {# ------------------- INGRESO PROPIO POR CARRERA ----------------   #}
+            var tiposingresop = [];
+            var listcarreraip = [];
+            var listingresopxcarr = [];
+            var totalingresop=0;
+
+            tiposingresop.push([{% for lih in listingresop %}"{{ lih.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]);
+            {% for li in lista_carreras_ingresop %}
+                listcarreraip.push('{{ li.carreranombre }}');
+                var ingresop = [];
+                {% for lsdatai in li.data %}
+                    var cantidadingresop = parseInt('{{ lsdatai.cantidad }}')
+                    ingresop.push(cantidadingresop);
+                    totalingresop+= cantidadingresop
+                {% endfor %}
+                listingresopxcarr.push(ingresop);
+            {% endfor %}
+            var listado_ingresopxcarrera = [{"carreras": listcarreraip, "lista": listingresopxcarr, "tiposingresop": tiposingresop}];
+
+            var seriesDataip = [];
+            for (var ip = 0; ip < listado_ingresopxcarrera[0].tiposingresop[0].length; ip++) {
+                seriesDataip.push({
+                    name: listado_ingresopxcarrera[0].tiposingresop[0][ip],
+                    data: listingresopxcarr.map(function(ingresop) { return ingresop[ip]; })
+                });
+            }
+            var optionsingresopxcarrera = {
+                series: seriesDataip,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalingresop *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_ingresopxcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+            var chartxcarrerapropio  = new ApexCharts(document.querySelector("#chart_div_ingresopxcarrera"), optionsingresopxcarrera);
+            chartxcarrerapropio.render();
+            {# ------------------- INGRESO PROPIO POR COORDINACION -------------------  #}
+            var listcoordinacionip=[]
+            var listingpxcoord =[]
+            var totalingresop2=0
+            {% for ls in lista_coordinaciones_ingresop %}
+                listcoordinacionip.push('{{ ls.coordnombre }}');
+                var ingpcoord = [];
+                {% for lsdata in ls.data %}
+                     var cantidadingresop2 = parseInt('{{ lsdata.cantidad }}')
+                    ingpcoord.push(cantidadingresop2);
+                    totalingresop2 += cantidadingresop2
+                {% endfor %}
+                listingpxcoord.push(ingpcoord);
+            {% endfor %}
+
+            var listado_ingresopxcoordinacion = [{"coordinacion": listcoordinacionip, "lista": listingpxcoord, "tiposingresop": tiposingresop}];
+            var seriesDataip2 = [];
+            for (var lp = 0; lp < listado_ingresopxcoordinacion[0].tiposingresop[0].length; lp++) {
+                seriesDataip2.push({
+                    name: listado_ingresopxcoordinacion[0].tiposingresop[0][lp],
+                    data: listingpxcoord.map(function(ingpcoord) { return ingpcoord[lp]; })
+                });
+            }
+            var optionsxcoordinacionip = {
+                series:seriesDataip2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalingresop2 *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_ingresopxcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+
+            var chartxcoordinacionpropio  = new ApexCharts(document.querySelector("#chart_div_ingresopxcoordinacion"), optionsxcoordinacionip);
+            chartxcoordinacionpropio.render();
+
+            {# --------------------FILTRAR------------------------    #}
+            $("#btnbuscarxcarreraip").click(function() {
+                buscaringresopxcarrera();
+            });
+            function buscaringresopxcarrera(){
+                var filt_ingpxcarrera=[];
+                var listcarreraip2=[];
+                var listaip1 = [];
+                var totalfiltcarr1= 0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscaringresopxcarrera",
+                    idanio: $("#cmbaniocarrera_ingresop").val(),
+                    idcarrera: $("#cmbipcarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarreraxip.forEach(function(item) {
+                                listcarreraip2.push(item.carreranombre);
+                                var ingresp = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidad1 =parseInt(infoItem.cantidad)
+                                    ingresp.push(cantidad1);
+                                    totalfiltcarr1 +=cantidad1;
+                                });
+                                listaip1.push(ingresp);
+                            });
+                            filt_ingpxcarrera.push({"carreras": listcarreraip2,  "lista": listaip1, "tiposingresop":tiposingresop});
+                            var seriesDataip3 = [];
+                            for (var fi = 0; fi < filt_ingpxcarrera[0].tiposingresop[0].length; fi++) {
+                                seriesDataip3.push({
+                                    {#name: filt_nucleoxcarrera[0].tiposnucleos[0][i],#}
+                                    data: listaip1.map(function (ingresp) {return ingresp[fi];})
+                                });
+                            }
+                            chartxcarrerapropio.updateOptions({
+                                series: seriesDataip3,
+                                xaxis: {
+                                    categories: filt_ingpxcarrera[0].carreras
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcarr1 *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinacionip").click(function (){
+                buscaringresoipxcoordinacion()
+            })
+            function buscaringresoipxcoordinacion(){
+                var filt_ingresopxcoordinacion=[];
+                var listcoordinacion2=[];
+                var listaip2 = [];
+                var totalfiltcord =0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscaringresopxcoordinacion",
+                    idanio: $("#cmbaniocoord_ingresop").val(),
+                    idcoordinacion: $("#cmbidcoordinacion_ip").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxingp.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var ingripc = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadcord= parseInt((infoItem.cantidad))
+                                    ingripc.push(cantidadcord);
+                                    totalfiltcord += cantidadcord
+                                });
+                                listaip2.push(ingripc);
+                            });
+                            filt_ingresopxcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": listaip2, "tiposingresop": tiposingresop});
+                            var seriesDataipc = [];
+                            for (var fi = 0; fi < filt_ingresopxcoordinacion[0].tiposingresop[0].length; fi++) {
+                                seriesDataipc.push({
+                                    data: listaip2.map(function (ingripc) {return ingripc[fi];})
+                                });
+                            }
+                            chartxcoordinacionpropio.updateOptions({
+                                series: seriesDataipc,
+                                xaxis: {
+                                    categories: filt_ingresopxcoordinacion[0].coordinaciones
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcord *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            {# ------------ INGRESO PROPIO RESUMEN ------------  #}
+            var listadoxresumenip =[]
+            var nombresingresoip=[]
+            var cantidadresumenip=[]
+            {% for xlista_ingresop_resumen in lista_ingresop_resumen  %}
+                    cantidadresumenip.push(parseInt('{{ xlista_ingresop_resumen.cantidad  }}'));
+                    nombresingresoip.push('{{ xlista_ingresop_resumen.ingresopnombre  }}');
+
+            {% endfor %}
+             listadoxresumenip.push({"nombresingresop":nombresingresoip,"cantidad":cantidadresumenip});
+             var optionsresumenxip = {
+                series:listadoxresumenip[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                labels: listadoxresumenip[0].nombresingresop,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        },
+
+                    }
+                }],
+                legend: {
+                    position: 'bottom'
+                }
+            };
+            var chart2 = new ApexCharts(document.querySelector("#chart_resumen2"), optionsresumenxip);
+            chart2.render();
+            
+            {# --------- EMPLEOS POR CARRERA ---------  #}
+            var tiposempleos = [];
+            var listcarreraemp = [];
+            var listempxcarr = [];
+            var totalempleo=0;
+
+            tiposempleos.push([{% for ls in listempeo %}"{{ ls.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]);
+
+            {% for li in lista_carreras_empleo %}
+                listcarreraemp.push('{{ li.carreranombre }}');
+                var empleo = [];
+                {% for lsdatai in li.data %}
+                    var cantidadempleo = parseInt('{{ lsdatai.cantidad }}')
+                    empleo.push(cantidadempleo);
+                    totalempleo+= cantidadempleo
+                {% endfor %}
+                listempxcarr.push(empleo);
+            {% endfor %}
+
+            var listado_empleoxcarrera = [{"carreras": listcarreraemp, "lista": listempxcarr, "tiposempleos": tiposempleos}];
+
+            var seriesDataemp = [];
+
+            for (var e = 0; e < listado_empleoxcarrera[0].tiposempleos[0].length; e++) {
+                seriesDataemp.push({
+                    name: listado_empleoxcarrera[0].tiposempleos[0][e],
+                    data: listempxcarr.map(function(empleo) { return empleo[e]; })
+                });
+            }
+            var optionsempleoxcarrera = {
+                series: seriesDataemp,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalempleo *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_empleoxcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+            var chartxcarreraempleo  = new ApexCharts(document.querySelector("#chart_div_empleoxcarrera"), optionsempleoxcarrera);
+            chartxcarreraempleo.render();
+
+            {# ---------- EMPLEO POR COORDINACION ----------   #}
+            var listacoordemp=[];
+            var listempxcoord=[];
+            var totalempleo2 =0;
+            {% for l in lista_coordinaciones_empleo %}
+                listacoordemp.push('{{ l.coordnombre }}');
+                var empleocor = [];
+                {% for li in l.data %}
+                    var cantidadempleo2 = parseInt('{{ li.cantidad }}')
+                    empleocor.push(cantidadempleo2);
+                    totalempleo2+= cantidadempleo2
+                {% endfor %}
+                listempxcoord.push(empleocor);
+            {% endfor %}
+
+            var listado_empleoxcoordinacion =[{"coordinacion":listacoordemp,"lista":listempxcoord, "tiposempleos": tiposempleos}];
+            var seriesDataemp2 = [];
+            for (var em = 0; em < listado_empleoxcoordinacion[0].tiposempleos[0].length; em++) {
+                seriesDataemp2.push({
+                    name: listado_empleoxcoordinacion[0].tiposempleos[0][em],
+                    data: listempxcoord.map(function(empleocor) { return empleocor[em]; })
+                });
+            }
+
+            var optionsempleoxcoordinacion={
+                series: seriesDataemp2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalempleo2 *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_empleoxcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            }
+            var chartxcoordinacionempleo  = new ApexCharts(document.querySelector("#chart_div_empleoxcoordinacion"), optionsempleoxcoordinacion);
+            chartxcoordinacionempleo.render();
+
+            {# filtar x carrera x coordinacion #}
+            $("#btnbuscarxcarreraemp").click(function (){
+                buscarxcarreraemp();
+            })
+            function buscarxcarreraemp(){
+                var filt_emplxcarrera=[];
+                var listcarreraemp=[];
+                var listaemp1 = [];
+                var totalfiltemp1= 0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarxcarreraemp",
+                    idanio: $("#cmbaniocarrera_empleo").val(),
+                    idcarrera: $("#cmbempcarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarreraxemp.forEach(function(item) {
+                                listcarreraemp.push(item.carreranombre);
+                                var empl = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidad1 =parseInt(infoItem.cantidad)
+                                    empl.push(cantidad1);
+                                    totalfiltemp1 +=cantidad1;
+                                });
+                                listaemp1.push(empl);
+                            });
+                            console.log(listaemp1)
+                            filt_emplxcarrera.push({"carreras": listcarreraemp,  "lista": listaemp1, "tiposempleos":tiposempleos});
+                            var seriesDataemp3 = [];
+                            for (var fi = 0; fi < filt_emplxcarrera[0].tiposempleos[0].length; fi++) {
+                                seriesDataemp3.push({
+                                    {#name: filt_nucleoxcarrera[0].tiposnucleos[0][i],#}
+                                    data: listaemp1.map(function (empl) {return empl[fi];})
+                                });
+                            }
+                            chartxcarreraempleo.updateOptions({
+                                series: seriesDataemp3,
+                                xaxis: {
+                                    categories: filt_emplxcarrera[0].carreras
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltemp1 *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinacionemp").click(function (){
+                buscarxcoordinacionemp();
+            })
+            function buscarxcoordinacionemp(){
+                var filt_empleoxcoordinacion=[];
+                var listcoordinacion2=[];
+                var listaemp2 = [];
+                var totalfiltcord =0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarxcoordinacionemp",
+                    idanio: $("#cmbaniocoord_empleo").val(),
+                    idcoordinacion: $("#cmbidcoordinacion_emp").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxemp.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var emplc = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadcord= parseInt((infoItem.cantidad))
+                                    emplc.push(cantidadcord);
+                                    totalfiltcord += cantidadcord
+                                });
+                                listaemp2.push(emplc);
+                            });
+                            filt_empleoxcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": listaemp2, "tiposempleos": tiposempleos});
+                            var seriesDataemp = [];
+                            for (var fi = 0; fi < filt_empleoxcoordinacion[0].tiposempleos[0].length; fi++) {
+                                seriesDataemp.push({
+                                    data: listaemp2.map(function (emplc) {return emplc[fi];})
+                                });
+                            }
+                            chartxcoordinacionempleo.updateOptions({
+                                series: seriesDataemp,
+                                xaxis: {
+                                    categories: filt_empleoxcoordinacion[0].coordinaciones
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcord *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                    Loader.close();
+                }, 'json');
+
+            }
+
+            {# EMPLEOS DE ESTUDIANTES RESUMEN    #}
+            var listadoxresumenemp =[]
+            var nombresempleo=[]
+            var cantidadresumenemp=[]
+            {% for xlista_empleo_resumen in lista_empleo_resumen  %}
+                    cantidadresumenemp.push(parseInt('{{ xlista_empleo_resumen.cantidad  }}'));
+                    nombresempleo.push('{{ xlista_empleo_resumen.empleonombre  }}');
+
+            {% endfor %}
+             listadoxresumenemp.push({"nombresempleo":nombresempleo,"cantidad":cantidadresumenemp});
+             var optionsresumenemp = {
+                series:listadoxresumenemp[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                labels: listadoxresumenemp[0].nombresempleo,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        },
+
+                    }
+                }],
+                legend: {
+                    position: 'bottom'
+                }
+            };
+            var chart3 = new ApexCharts(document.querySelector("#chart_resumen3"), optionsresumenemp);
+            chart3.render();
+        });
+    });
+</script>
+
+{% endblock %}
+
+{% block canvas %}
+<div class="main-container">
+    <div class="xs-pd-20-10 pd-ltr-20">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-10 col-sm-12">
+                    <div class="title">
+                        <h4>Estad&iacute;sticas de Ingreso a ITB - Empleo, ingreso y gastos de los estudiantes</h4>
+                    </div>
+                </div>
+                 <div class="col-lg-2 col-md-2 col-sm-2">
+                    <div class="title">
+                        <a href="/cons_encuestaingreso" style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+                 </div>
+            </div>
+        </div>
+
+        {# ----------  INGRESO HOGAR POR CARRERA  -------------  #}
+        <div class="row clearfix" >
+            <div class="col-md-8 mb-5" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Ingresos del hogar por Carrera</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarrera_ingresoh" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbihcarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listadocarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarrera" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_ingresohxcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-5" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Ingresos del hogar Resumen</h4>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div  id="chart_resumen"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {# ----------INGRESO HOGAR POR COORDINACION        #}
+        <div class="row clearfix" >
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Ingresos del hogar por Coordinaci&oacute;n</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocoord_ingresoh" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinacion" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_ingresohxcoordinacion" ></div>
+                </div>
+            </div>
+        </div>
+        {# ----------INGRESO PROPIO POR CARRERA #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-5">
+                <div class="pd-20 card-box  height-100-p">
+                    <h4 class="h4 text-blue"> Ingresos propios por Carrera</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarrera_ingresop" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbipcarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listadocarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarreraip" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_ingresopxcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-5" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Ingresos propios Resumen</h4>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div  id="chart_resumen2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {#---------- INGRESO PROPIO POR COORDINACION #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Ingresos propios por Coordinaci&oacute;n</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocoord_ingresop" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion_ip" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinacionip" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_ingresopxcoordinacion" ></div>
+                </div>
+            </div>
+        </div>
+        {# ---------- EMPLEO POR CARRERA ----------  #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30">
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Empleos de estudiantes por Carrera</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarrera_empleo" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbempcarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listadocarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarreraemp" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_empleoxcarrera"></div>
+
+                </div>
+            </div>
+            <div class="col-md-4 mb-30">
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Empleos de estudiantes Resumen</h4>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div  id="chart_resumen3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        {# ---------- EMPLEO POR COORDINACION ----------  #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30">
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Empleos de estudiantes por Coordinaci&oacute;n</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocoord_empleo" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion_emp" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinacionemp" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_empleoxcoordinacion" ></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

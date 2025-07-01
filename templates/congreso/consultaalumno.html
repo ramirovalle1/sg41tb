@@ -1,0 +1,767 @@
+{#{% extends "basebs.html" %}#}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{% block pagetitle %}{{ title }}{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ISAG">
+    <meta name="author" content="JASA">
+
+    <link rel="stylesheet" href="/static/css/smoke.css" type="text/css" media="screen" />
+    <script src="/static/js/smoke.min.js" type="text/javascript"></script>
+
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="/static/css/bootstrap-responsive.css" rel="stylesheet"/>
+    <link href='/static/css/font-awesome.css' rel='stylesheet'/>
+
+    <link href="/static/css/stylesbs.css" rel='stylesheet'/>
+    <link href="/static/css/datepicker.css" rel='stylesheet'/>
+    <link href="/static/css/bootstrap-modal.css" rel='stylesheet'/>
+
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link rel="shortcut icon" href="/static/images/itb/favicon.ico">
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/bs/bootstrap.min.js"></script>
+
+    <script src="/static/js/jquery.blockUI.js"></script>
+    <script src="/static/js/jquery.maskedinput.min.js"></script>
+    <script src="/static/js/bootstrap-datepicker.js"></script>
+    <script src="/static/js/bootstrap-modal.js"></script>
+    <script src="/static/js/bootstrap-modalmanager.js"></script>
+    <script src="/static/js/big.min.js"></script>
+    <link href="/static/js/shadowbox.css" rel="stylesheet" type="text/css"/>
+    <script src="/static/js/shadowbox.js" type="text/javascript"> </script>
+    <script src="http://maps.google.com/maps/api/js?sensor=false&callback=iniciar"></script>
+{#    <script>#}
+{% load sga_extras %}
+{#{% block heading %}#}
+    <script type="text/javascript" src="/static/js/jquery.editinplace.js"></script>
+    <script type="text/javascript">
+        $(function() {
+
+            {% if bandera == 1 and not personal%}
+
+                smoke.alert('NO EXISTE INFORMACION');
+            {% endif %}
+            {% if error %}
+
+                smoke.alert('{{ error }}');
+            {% endif %}
+
+            buscar_alumno = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#searchinput").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#searchinput').typeahead({source: buscar_alumno, updater: function(item) {
+                var results = $("#searchinput").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        //$("#searchinput").attr("myval",datos.id);
+                        location.href = "/consultaalumno?id="+datos.id;
+                    }
+                }
+
+                return item;
+            }});
+
+            $("#cerrar").click(function(){
+                $("#mapapanel").modal("hide");
+                return false;
+            });
+
+            $(".vermap").click(function(){
+               $("#mapapanel").modal({backdrop: 'static', width:'620px'});
+               $("#mapapanel").modal("show");
+               $(".panelbody").html($(this).attr("url"));
+               return false;
+            });
+
+
+
+
+        });
+     Shadowbox.init({
+            overlayColor: "#000",
+            overlayOpacity: "0.6",
+
+            });
+    </script>
+{#{% endblock %}#}
+</head>
+
+<body data-spy="scroll" data-target=".subnav" data-offset="50">
+<div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container-fluid">
+            <a class="brand" href="/"><img src='/static/images/itb/logobolivariano.png' alt=''/></a>
+
+        </div>
+    </div>
+</div>
+
+
+<div id="content" class='{% block contentextraclass %}{% endblock %}'>
+<div class='container{% block containertype %}-fluid{% endblock %}'>
+
+     <div class="row-fluid">
+        <div class="span4">
+        </div>
+        <div class="span4" style="text-align: center;">
+            <h3>Busqueda de Estudiante</h3>
+        </div>
+        <div class='atright'>
+            <div class='span3'>
+            </div>
+            <div class='span1'>
+                <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            </div>
+        </div>
+
+     </div>
+     <div class="row-fluid">
+         <div class="span12 atright" style="text-align: center;">
+                <input type="text" id="searchinput" class="searchinput input-xxlarge search-query" data-provide="typeahead"/>
+        </div>
+     </div><br>
+
+
+
+ <div class="row-fluid">
+    {% if not error%}
+
+    <div class='span12 '>
+        {% if matricula and not error%}
+            <div class='span4' style="overflow-x: auto" >
+                <table class='table'>
+                        <thead>
+                            <tr><th><h3>Datos de Matricula</h3></th></tr>
+                        </thead>
+                        <tbody>
+
+                            <tr>
+                            <td>
+                                <li class="span12">
+                                    <div class="thumbnail" style="height: 270px">
+                                        {% if matricula.inscripcion.persona.foto %}
+                                            <img src="{{ matricula.inscripcion.persona.foto.foto.url }}" alt="" style="width: 300px;height: 200px">
+                                        {% else %}
+                                            {% if matricula.inscripcion.persona.sexo_id == 1 %}
+                                                <img src="/static/images/nofotofem.jpg" alt="" style="height: 200px">
+                                            {% else %}
+                                                <img src="/static/images/nofotomas.jpg" alt="" style="height: 200px">
+                                           {% endif %}
+                                        {% endif %}
+                                        <h5 style="text-align: center;">{{ matricula.inscripcion.persona }}</h5>
+                                        <h5 style="text-align: center; color: #003bb3">{% if matricula.inscripcion.persona.emailinst %}({{ matricula.inscripcion.persona.emailinst }}){% endif %}</h5>
+                                    </div>
+                                </li>
+                            </td></tr>
+                            <tr><td >
+                                 <strong>Nivel - Grupo:</strong>&nbsp;{{ matricula.nivel.nivelmalla }} - {{ matricula.nivel.paralelo }}
+                            </td></tr>
+                            <tr><td >
+                                 <strong>Carrera:</strong>&nbsp;{{ matricula.nivel.carrera }}
+                            </td></tr>
+                            <tr><td >
+                                 <strong>Seccion:</strong>&nbsp;{{ matricula.nivel.sesion }}
+                            </td></tr>
+
+                            </tbody>
+                            {% if matricula.tipobeneficio %}
+                                <thead>
+                                    <tr><th><h3>Beneficios</h3></th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td >
+                                         <strong>Beneficio:</strong>&nbsp;{{ matricula.tipobeneficio }}
+                                    </td></tr>
+                                    {% endif %}
+                                    {% if matricula.motivobeca %}
+                                        <tr><td >
+                                             <strong>Motivo:</strong>&nbsp;{{ matricula.motivobeca }}
+                                        </td></tr>
+                                    {% endif %}
+                                    {% if matricula.tipobeca %}
+                                        <tr><td >
+                                             <strong>Tipo:</strong>&nbsp;{{ matricula.tipobeca }}
+                                        </td></tr>
+                                    {% endif %}
+                                    {% if matricula.porcientobeca %}
+                                        <tr><td >
+                                             <strong>Porcentaje:</strong>&nbsp;{{ matricula.porcientobeca }}
+                                        </td></tr>
+                                    {% endif %}
+                                    {% if matricula.observaciones %}
+                                        <tr><td >
+                                             <strong>Observaci&oacute;:</strong>&nbsp;{{ matricula.observaciones }}
+                                        </td></tr>
+                                    {% endif %}
+
+                                </tbody>
+                    </table>
+            </div>
+        {% endif %}
+        <div {% if matricula and not error%} class='span8' {% else %} class='span12'{% endif %}>
+            {% if malla_inscripcion and not 'CONGRESO' in matricula.nivel.carrera.nombre %}
+                <div class="row-fluid">
+                    <div class="span11 " style="overflow-x: auto">
+                        <table class='table' cellpadding="0" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th colspan="7" style="text-align: center"><h3>Estado Actual del Estudiante: {{ malla_inscripcion }} (<a href="/inscripciones?action=alumalla&id={{ inscripcion.id }}"> Ir a Malla</a>)</h3></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+            {% if rubros %}
+                <div class='row-fluid'>
+                    <div class='span11' style="overflow-x: auto" >
+                        <table class='table' cellpadding="0" cellspacing="0" >
+                            <thead>
+                                <tr>
+                                    <th colspan="7" style="text-align: center"><h3>Estudiante: {{ inscripcion.persona }}</h3></th>
+                                </tr>
+                                <tr>
+                                    <th colspan="7" style="text-align: center"><h3>Datos de Finanza</h3></th>
+                                </tr>
+                                <tr >
+                                    <th>Descripcion</th>
+                                    <th>Fecha</th>
+                                    <th>Vence</th>
+                                    <th>Valor</th>
+                                    <th>Abono</th>
+                                    <th>Saldo</th>
+                                    <th>Cancelado</th>
+                                </tr>
+
+                            </thead>
+                                <tbody>
+                                {% for rubro in rubros %}
+                                    <tr>
+
+                                        <td>
+                                            {{ rubro.nombre }}
+                                        </td>
+
+                                        <td>{{ rubro.fecha|date:"d-m-Y"  }}</td>
+                                        <td>
+                                            {% if not rubro.cancelado %}
+                                                {% if perms.sga.add_rubro %}
+                                                    <a href="#" class='updatefecha' rid='{{ rubro.id }}'>{{ rubro.fechavence|date:"d-m-Y" }}</a>
+                                                {% else %}
+                                                    {{ rubro.fechavence|date:"d-m-Y" }}
+                                                {% endif %}
+                                                {% if rubro.vencido %}
+                                                <br/><span class="label label-important">VENCIDO</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>${{ rubro.valor|floatformat:2 }}</td>
+                                        <td>${{ rubro.total_pagado|floatformat:2 }}</td>
+                                        <td><b>${{ rubro.adeudado|floatformat:2 }}</b></td>
+                                        <td>
+                                            {% if rubro.cancelado %}
+                                            <span class="label label-success">Si</span>
+                                            {% else %}
+                                            <span class='label label-important'>No</span>
+                                            {% endif %}
+                                        </td>
+
+                                    </tr>
+
+                                {% endfor %}
+
+                                {% if not rubros %}
+                                    <tr>
+                                        <td colspan="7">NO EXISTEN RUBROS</td>
+                                    </tr>
+                                {% endif %}
+                                </tbody>
+
+                            </table>
+                    </div>
+                </div>
+            {% endif %}
+            {% if materiasignada %}
+                <div class='row-fluid'>
+                    <div class='span11' style="overflow-x: auto"  >
+                        <table class='table'>
+                                    <thead >
+                                        <tr>
+                                            <th colspan="7" style="text-align: center"><h3>Cronograma</h3></th>
+                                        </tr>
+                                        <tr>
+
+                                            <th>Curso</th>
+                                            <th>Dia</th>
+                                            <th>Hora - Aula - Campus</th>
+                                            <th>Docente</th>
+                                        </tr>
+                                    </thead>
+
+                                    {% for mate in materiasignada %}
+                                        <tbody>
+
+                                        <td>
+                                            {{ mate.materia.asignatura.nombre }}
+                                            <br><b>Inicio:</b> {{ mate.materia.inicio|date:'d-m-Y' }} <br><b>Fin: </b>{{ mate.materia.fin|date:'d-m-Y' }}
+    {#                                        {{ mate.materia.profesor_actual }}#}
+                                        </td>
+
+                                        <td>
+                                        {% for clase in mate.materia.clase_congre %}
+                                             {{ clase.dia_semana }} </br>
+                                        {% endfor %}
+                                        </td>
+                                        <td>
+                                        {% for clase in mate.materia.clase_congre %}
+                                             {{ clase.turno.comienza }} a {{ clase.turno.termina }} -
+                                            {% if clase.virtual %}
+                                                <b style="color: red">  CLASE VIRTUAL </b>
+                                            {% else %}
+                                                {{ clase.aula.nombre }} -{{ clase.aula.sede }}&nbsp;&nbsp;<span class="icon-map-marker vermap" url="{{ clase.aula.sede.mapaurl }}" style="cursor: pointer;color: #b94b49" title="Ver mapa"></span>
+                                            {% endif %}
+
+                                            </br>
+                                        {% endfor %}
+                                        </td>
+                                        <td>
+                                             {% if mate.materia.profesormateria_set.count %}
+                                                {% for profesormateria in mate.materia.profesores_materia %}
+                                                        {% if profesormateria.profesor_aux %}
+                                                           {{ profesormateria.profesor_auxiliar.persona.nombre_completo  }}
+                                                        {% else %}
+                                                           {{ profesormateria.profesor.persona.nombre_completo }}
+                                                        {% endif %}
+                                                {% endfor %}
+                                            {% endif %}
+                                        </td>
+                                        </tbody>
+
+                                    {% endfor %}
+                            </table>
+                    </div>
+                </div>
+            {% endif %}
+            {% if seminario %}
+                <div class='row-fluid'>
+                    <div class='span11'>
+                        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                            <thead>
+                               <tr>
+                                    <th colspan="9" style="text-align: center"><h3>PreCongresos</h3></th>
+                               </tr>
+                               <tr>
+                                <th >C&oacute;digo</th>
+                                <th >Taller</th>
+                                <th>Objetivo</th>
+                                <th>Inicio</th>
+                                <th style="text-align: center">Fin</th>
+                                <th style="text-align: center">Hora</th>
+                                <th>Expositor</th>
+                                <th>Ubicaci&oacute;n</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for s in seminario %}
+                                    <tr>
+                                        <td style="width: 5%;text-align: center">{{ s.id }}</td>
+                                        <td style="width: 30%">{{ s.taller }}</td>
+                                        <td style="width: 30%">{{ s.objetivo  }}</td>
+                                        <td style="width: 7%; text-align: center">{{ s.inicio|date:'d-m-Y' }}</td>
+                                        <td style="width: 7%; text-align: center">{{ s.fin|date:'d-m-Y'}}</td>
+                                        <td style="width: 7%; text-align: center">{{ s.horainicio|time:"H:i" }} - {{ s.horafin|time:"H:i"}}</td>
+                                        <td style="width: 10%">{{ s.expositor }}  {% if s.procedencia %} </br> ({{ s.procedencia }}){% endif %}</td>
+                                        <td style="width: 10%"> {% if s.ubicacion %} {{ s.ubicacion }}
+                                        {% if  s.imgubicacion %}<a href="{{ s.imgubicacion.url }}" rel="shadowbox, width=700;height=400;float=left  " title="{{ s.ubicacion }}"><i class="icon-map-marker"></i> Ver Ubicacion</a>{% endif %}</td>{% endif %}
+
+                                        </td>
+
+                                    </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+            {% if ponencia %}
+                <div class='row-fluid'>
+                    <div class='span12'>
+                    <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                        <thead>
+                        <tr>
+                            <th colspan="9" style="text-align: center"><h3>Ponencias</h3></th>
+                        </tr>
+                        <tr>
+                            <th style="text-align: center">Codigo</th>
+                            <th style="text-align: center">T&iacute;tulo Ponencia</th>
+                            <th style="text-align: center">Hora</th>
+
+                            <th style="text-align: center">Comisi&oacute;n</th>
+                            <th style="text-align: center">Moderador</th>
+                            <th style="text-align: center">Modalidad</th>
+                            <th style="text-align: center">Ubicaci&oacute;n</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for p in ponencia %}
+                            <tr>
+                                <td style="width: 7%; text-align: center">{{ p.codigo }}</td>
+                                <td style="width: 35%">{{ p.nombre }}</td>
+                                <td style="width: 7%; text-align: center">{{ p.horainicio|time:"H:i" }} - {{ p.horafin|time:"H:i"}}</td>
+                                <td style="width: 20%; text-align: center">{{ p.comision }}</td>
+                                <td style="width: 10%; text-align: center">{{ p.comision.moderador }}</td>
+                                <td style="width: 13%; text-align: center">{{ p.modalidad }}</td>
+                                <td style="width: 13%; text-align: center">{% if p.comision.ubicacion %}{{ p.comision.ubicacion }}
+                                <a href="{{ p.comision.imgubicacion.url }}" rel="shadowbox, width=700;height=400;float=left  " title="{{ p.comision.ubicacion }}"><i class="icon-map-marker"></i> Ver Ubicacion</a></td>{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            {% endif %}
+            {# practicas #}
+            {% if not 'CONGRESO' in matricula.nivel.carrera.nombre %}
+              {% if practicas %}
+                <div class='row-fluid'>
+                    <div class='span11'>
+                        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th colspan="8" style="text-align: center"><h3>Datos de Pr&aacute;cticas Preprofesionales</h3></th>
+                                </tr>
+                                <tr>
+                                    <th>Lugar</th>
+                                    <th>Horas</th>
+                                    <th>Docente</th>
+                                    <th>Fechas</th>
+                                    <th>Equipos</th>
+                                    <th>Archivos</th>
+                                    <th>Observaciones </th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for practica in practicas %}
+                                <tr>
+                                    <td>{{ practica.lugar }}</td>
+                                    <td>{{ practica.horas }}</td>
+                                    <td>{{ practica.profesor }}</td>
+                                    <td>{{ practica.inicio|date:'d-m-Y' }} <br/> {{ practica.fin|date:'d-m-Y' }}</td>
+                                    <td>{{ practica.equipamiento }}</td>
+                                    <td>
+                                        {% if practica.archivo %}
+                                            <a href='{{ practica.download_link }}' class='btn btn-success btn-mini'><i class="icon-download  icon-white"></i> Descargar</a>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ practica.observaciones }}</td>
+                                    <td nowrap>
+                                        {% if perms.sga.change_inscripcionpracticas %}
+                                            <a href='/inscripciones?action=editpracticas&id={{ practica.id }}' class="btn btn-info btn-mini"><i class="icon-edit icon-white"></i></a>
+                                            <a href='/inscripciones?action=delpracticas&id={{ practica.id }}' class="btn btn-danger btn-mini"><i class="icon-remove icon-white"></i></a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                                <tr class="alert">
+                                    <td>TOTAL DE HORAS DE PRACTICA</td>
+                                    <td class="bigger"><b>{% if totalhoras %}{{ totalhoras }}{% else %}0{% endif %}</b></td>
+                                    <td colspan="6"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                {% if inscripcion %}
+                    <div class='row-fluid'>
+                        <div class='span11'>
+                            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                                <thead >
+                                    <tr>
+                                        <th colspan="6" style="text-align: center"><h3>No hay datos de pr&aacute;cticas preprofesionales del estudiante</h3></th>
+                                    </tr>
+                                </thead>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+            {% endif %}
+{#            Vinculacion #}
+          {% if not 'CONGRESO' in matricula.nivel.carrera.nombre %}
+            {% if vinculacion %}
+{#                <br>#}
+                <div class='row-fluid'>
+                    <div class='span11'>
+                        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                            <thead>
+                                <th colspan="7" style="text-align: center"><h3>Detalle de Actividades de Vinculaci&oacute;n</h3></th>
+                                <br>
+                            <tr>
+                                <th>Actividad</th>
+                                <th>Horas</th>
+                                <th>Descargar</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for v in vinculacion %}
+                                <tr>
+                                    <td>{{ v.actividad }}</td>
+                                    <td>{{ v.horas }}</td>
+                                    <td>{% if v.actividad.archivo %}<a href="{{ v.actividad.archivo.url }}"> Descargar</a>{% endif %}</td>
+                                </tr>
+                            {% endfor %}
+                                <tr class="alert">
+                                    <td>TOTAL DE HORAS DE VINCULACION</td>
+                                    <td class="bigger"><b>{{ tohorasvin }}</b></td>
+                                    <td colspan="6"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                {% if inscripcion %}
+                    <div class='row-fluid'>
+                        <div class='span11'>
+                            <table class='table'>
+                               <thead >
+                                    <tr>
+                                        <th colspan="7" style="text-align: center"><h3>No hay datos de actividades de vinculaci&oacute;n</h3></th>
+                                    </tr>
+                               </thead>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+          {% endif %}
+            {# Tutorias #}
+          {% if not 'CONGRESO' in matricula.nivel.carrera.nombre %}
+            {% if tutorias %}
+                <div class='row-fluid'>
+                    <div class='span11'>
+                        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                            <thead>
+                                <th colspan="8" style="text-align: center"><h3>Detalle de Tutor&iacute;as </h3></th>
+                                <br>
+                                <tr>
+                                    <th style="text-align: center;">Progreso</th>
+                                    <th style="text-align: center;">Observaci&oacute;n</th>
+                                    <th style="text-align: center;">Tarea</th>
+                                    <th style="text-align: center;">Asistencia</th>
+                                    <th style="text-align: center;">Fecha Tutor&iacute;a</th>
+                                    <th style="text-align: center;">Estado</th>
+                                    <th style="text-align: center;">Fecha Aprobaci&oacute;n</th>
+                                    <th style="text-align: center;">Observaciones del Estudiante</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tutoria in tuto_estudiante %}
+                                    <tr>
+                                        <td>{{ tutoria.progreso }}</td>
+                                        <td>{{ tutoria.observacion }}</td>
+                                        <td>{{ tutoria.tarea }}</td>
+                                        <td style="text-align: center;">
+                                             {% if tutoria.asistencia  %}
+                                                <img src='/static/images/16/true.png' width="14px" alt='' border="0"/>
+                                             {% else %}
+                                                 <img src='/static/images/16/false.png' width="14px" alt='' border="0"/>
+                                             {% endif %}
+                                        </td>
+
+                                        <td style="text-align: center;">{{ tutoria.fecha|date:'d-m-Y' }}</td>
+                                        <td style="text-align: center;">
+                                            {% if tutoria.aprobar  %}
+                                                 <img src='/static/images/16/true.png' width="14px" alt='' border="0"/>
+                                            {% else %}
+                                                 <img src='/static/images/16/false.png' width="14px" alt='' border="0"/>
+                                            {% endif %}
+                                        </td>
+                                        <td style="text-align: center;">{{ tutoria.fechaaprobar|date:'d-m-Y' }}</td>
+                                        <td style="text-align: center;">
+                                            {%  if tutoria.observacionestudia %}
+                                                {{ tutoria.observacionestudia }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                {% if inscripcion %}
+                    <div class='row-fluid'>
+                        <div class='span11'>
+                            <table class='table'>
+                               <thead >
+                                    <tr>
+                                        <th colspan="7" style="text-align: center"><h3>No hay datos de tutor&iacute;as del estudiante</h3></th>
+                                    </tr>
+                               </thead>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+          {% endif %}
+            {# Ver Profilaxis anual #}
+          {% if not 'CONGRESO' in matricula.nivel.carrera.nombre %}
+               {% if profilaxis %}
+                <div class='row-fluid'>
+                    <div class='span11'>
+                        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                            <thead>
+                                <th colspan="7" style="text-align: center"><h3>Profilaxis Anual</h3></th>
+                                <br>
+                                <tr>
+                                    <th style="text-align: center;">Fecha Atenci&oacute;n</th>
+                                    <th style="text-align: center;">Descripci&oacute;n</th>
+                                    <th style="text-align: center;">Atendido por</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                    <tr>
+                                        <td style="text-align: center;">{{ profilaxis.fecha|date:'d-m-Y' }}</td>
+                                        <td style="text-align: center;">
+                                            {%  if profilaxis.motivo %}
+                                                {{ profilaxis.motivo }}
+                                            {% endif %}
+                                        </td>
+                                        <td style="text-align: center;">
+                                            {%  if profilaxis.usuario.username %}
+                                                {{ atendido.nombre_completo }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                            </tbody>
+                        </table>
+            {% else %}
+                {% if inscripcion %}
+                    <div class='row-fluid'>
+                        <div class='span11'>
+                            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                                <thead>
+                                    <th colspan="7" style="text-align: center"><h3>Estudiante NO se ha realizado profilaxis anual</h3></th>
+                                </thead>
+                            </table>
+                        </div>
+                    </div>            
+                {% endif %}
+            {% endif %}
+          {% endif %}
+            {# Ver Examen Complexivo #}
+          {% if not 'CONGRESO' in matricula.nivel.carrera.nombre %}
+                {% if examenpracticos %}
+                <div class="row-fluid">
+                    <div class="span11">
+                        <table class="table table-condensed ">
+                            <thead>
+                                    <th colspan="7" style="text-align: center"><h3>Examen Complexivo</h3></th>
+                                    <br>
+                                <tr>
+                                    <th>Examen</th>
+                                    <th>Puntaje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for e in examenpracticos %}
+                                    <tr>
+                                        <td > Pr&aacute;ctico
+                                            {% if   e.puntaje < nota_examen_pract %} <span class="label label-important">Reprobado</span>{% else %} <span class="label label-success">Aprobado</span> {% endif %}
+                                        </td>
+                                        <td > {{ e.puntaje }}</td>
+                                    </tr>
+                                {% endfor %}
+                                {% for i in inscripcionexamen %}
+                                    <tr>
+                                        <td >  Te&oacute;rico
+                                            {% if i.finalizado %}
+                                                {% if   i.puntaje < nota_examen_teorico %} <span class="label label-important">Reprobado</span>{% else %} <span class="label label-success">  Aprobado </span> {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td > {{ i.puntaje }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                     </div>
+                </div>
+            {% else %}
+                {% if inscripcion %}
+                    <div class='row-fluid'>
+                        <div class='span11'>
+                            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                                <thead>
+                                    <th colspan="7" style="text-align: center"><h3>Estudiante NO tiene registrado examen complexivo</h3></th>
+                                </thead>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+          {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+ </div>
+</div>
+</div>
+<div id="footer" class='wide'>
+    <div class="container-fluid">
+        <div class='row-fluid'>
+            <div class='span12' style="text-align: center;">
+                <p>Sistema de Gesti&oacute;n Acad&eacute;mica, {{ institucion }}<br/>
+                    Todos los derechos reservados(c) 2012</p>
+                <p>{{ remoteaddr }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade static" id="waitpanel" style="display: none;">
+    <div class="modal-header">
+        <h3 id="paneltitle">Titulo</h3>
+    </div>
+    <div class="modal-body">
+        <p id="panelbody">One fine body…</p>
+    </div>
+
+</div>
+<div class="modal fade static" id="mapapanel" style="display: none;">
+
+        <div class="modal-header" style="text-align: right">
+            <span class="icon-remove-circle" style="cursor: pointer;font-size: 24px;" id="cerrar" ></span>
+
+        </div>
+        <div class="modal-body panelbody">  </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,477 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+<script src="/static/js/notificacionpanel.js"></script>
+<link type="text/css" rel="stylesheet" href="/static/css/datepicker.css"/>
+<script type='text/javascript' src='/static/js/bootstrap-datepicker.js'></script>
+
+<script type="text/javascript">
+
+
+
+    $(function() {
+
+        var idexamen = 0;
+        $(".examenejc").click(function(){
+            idexamen = $(this).attr("idexamen");
+            idpersonaexter = '{{ idexaext }}';
+            $("#examenmodal .observa").html($(this).attr('descripcion'));
+            $("#examenmodal").modal({backdrop: 'static', keyboard: 'false', width: "517px", maxHeight: ($(window).height()*3)/4 });
+            $("#examenmodal").modal("show");
+
+        });
+        $("#continuarex").click(function(){
+            $("#suspensionpanel").modal("hide");
+            $("#examenmodal .observa").html(descripcionex);
+            $("#examenmodal").modal({backdrop: 'static', keyboard: 'false', width: "517px", maxHeight: ($(window).height()*3)/4 });
+            $("#examenmodal").modal("show");
+
+        });
+
+        $("#cerrar").click(function() {
+            idexamen=0;
+            $("#examenmodal").modal("hide");
+        });
+        $("#continuar").click(function(){
+            window.open('/examenexterno?action=examen&id='+idexamen+'&idexaext='+idpersonaexter,"Examen", 'width='+(screen.availWidth)+',height ='+(screen.availHeight)+',fullscreen=yes,menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=no');
+            location.href = '/';
+        });
+        $(".finalizaexamenbtn").click(function(){
+            $("#finalizamodal").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+            $("#finalizamodal").modal("show");
+
+        });
+        $("#cerrarmodal").click(function() {
+            $("#finalizamodal").modal("hide");
+        });
+
+        {% if not idexaext %}
+            $("#suspensionpanel").modal({backdrop: 'static', keyboard: false, width: "617px", maxHeight: ($(window).height()*3)/4 });
+            $("#suspensionpanel").modal("show");
+
+            $( window ).on( "load", function() {
+                document.getElementsByClassName("hidden-phone")[0].innerHTML = '';
+            });
+
+        {% endif %}
+
+        $("#pasaporte").click(function(){
+            if ($("#pasaporte").is(':checked')) {
+                $("#nombres").val('');
+                $("#numdocu").val('');
+                $("#numdocu").attr({"placeholder":"Pasaporte","maxlength":"20"});
+            }else{
+                $("#nombres").val('');
+                $("#numdocu").val('');
+                $("#numdocu").attr({"placeholder":"Cédula","maxlength":"10"});
+            }
+        });
+        $("#formdocu").hide();
+        $("#formnom").hide();
+        var idespecie = 0;
+        var idpersonaexter = 0;
+        var descripcionex = '';
+        $("#especie").blur(function(){
+            $("#examenmodal .observa").html('');
+            idespecie = 0;
+            idpersonaexter=0;
+            idexamen = 0;
+            var pasapor;
+            if($("#especie").val() != ""){
+                $(".help-text").html("");
+                $.post("/examenexterno", {action: 'consultespecie',"especie": $("#especie").val()}, function(data) {
+                    if(data.result == "ok"){
+                        pasapor = false;
+                        if(data.pasaporte == 'true')
+                            pasapor = true;
+                        idespecie = data.especieid;
+                        idpersonaexter = data.idpersonaexter;
+                        $("#pasaporte").attr('checked',pasapor).attr('disabled',data.existe);
+                        $("#numdocu").val(data.numdoc).attr('readonly',data.existe);
+                        $("#nombres").val(data.nombres).attr('readonly',data.existe);
+                        $("#continuarex").hide();
+                        $("#ingresar").show();
+                        $("#formdocu").show();
+                        $("#formnom").show();
+                    }
+                    else if(data.result == "continuaexa"){
+                        pasapor = false;
+                        if(data.pasaporte == 'true')
+                            pasapor = true;
+                        idespecie = data.especieid;
+                        idpersonaexter = data.idpersonaexter;
+                        $("#pasaporte").attr('checked',pasapor).attr('disabled',true);
+                        $("#numdocu").val(data.numdoc).attr('readonly',true);
+                        $("#nombres").val(data.nombres).attr('readonly',true);
+                        idexamen = data.idexamenext;
+                        descripcionex = data.descripcionexa;
+                        $("#continuarex").show();
+                        $("#ingresar").hide();
+                        $("#formdocu").show();
+                        $("#formnom").show();
+                    }
+                    else{
+                        idespecie = 0;
+                        idpersonaexter = 0;
+                        $("#pasaporte").attr('checked',false).attr('disabled',false);
+                        $("#numdocu").val('').attr('readonly',false);
+                        $("#nombres").val('').attr('readonly',false);
+                        $("#continuarex").hide();
+                        $("#ingresar").hide();
+                        $("#formdocu").hide();
+                        $("#formnom").hide();
+                        if(data.result == 'deuda')
+                            $(".help-text").html("La especie no se encuentra cancelada");
+                        else if(data.result == 'finalizado')
+                            $(".help-text").html("La especie ya fue utilizada");
+                        else
+                            $(".help-text").html("No existe Esa Especie")
+                    }
+                }, "json");
+            }
+            else{
+                $("#formdocu").hide();
+                $("#formnom").hide();
+            }
+        });
+        $("#continuarex").hide();
+        $("#ingresar").hide();
+        var numeros="0123456789";
+
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+
+        $("#numdocu").blur(function(){
+            $("#nombres").val('');
+            $(".help-text1").html('');
+            if($("#numdocu").val() != ""){
+                if (!$("#pasaporte").is(':checked')) {
+                    var v = $("#numdocu").val();
+                    var p = solo_numeros(v);
+                    if (p != v.length)
+                    {
+                        $("#numdocu").focus();
+                        $("#numdocu").val('');
+                        $(".help-text1").html('Ingrese solo números');
+                    }
+                    else{
+                        chequeaCedula();
+                    }
+                }
+                else{
+                    consultacedula($("#numdocu").val());
+                }
+            }
+            else{
+                $(".help-text1").html('Ingrese número de documento');
+            }
+
+        });
+
+        $("#ingresar").click(function(){
+            var pasaport = "False";
+            if ($("#pasaporte").is(':checked')) {
+                pasaport = "True";
+            }
+            if (idespecie != 0 && $("#numdocu").val() != "" && $("#nombres").val() != "" ){
+                $.post("/examenexterno", {action: 'ingresar',"especie": idespecie,"idpersonaexter": idpersonaexter,"numdoc": $("#numdocu").val(),"nombres": $("#nombres").val(),"pasaport": pasaport}, function(data) {
+                    if(data.result == "ok"){
+                        location.href = "/examenexterno?idexaext="+data.idexaext;
+                    }
+                    else{
+                        $(".help-text").html("No existe Esa Especie")
+                    }
+                }, "json");
+            }
+            else{
+                if(idespecie == 0){
+                    $(".help-text").html("Ingrese especie")
+                }
+                else if($("#numdocu").val() == ""){
+                    $(".help-text1").html('Ingrese número de documento');
+                }
+                else{
+                    $(".help-text2").html('Ingrese Nombres y Apellidos');
+                }
+
+
+            }
+        });
+        {% if info %}
+            {% if idexaext %}
+                smoke.alert('{{ info }}');
+            {% else %}
+                alert('{{ info }}');
+            {% endif %}
+        {% endif %}
+
+{#        ///////////////////////////////CHEQUEA CEDULA///////////////////////////////////////////////////////////////////////////////////#}
+        chequeaCedula = function(){
+            numero = $("#numdocu").val();
+            var suma = 0;
+            var residuo = 0;
+            var pri = false;
+            var pub = false;
+            var nat = false;
+            var numeroProvincias = 24;
+            var modulo = 11;
+
+            prov = numero.substr(0,2);
+            if (parseInt(prov)>numeroProvincias || parseInt(prov)<=0){
+                $(".help-text1").html('El código de la provincia (dos primeros dígitos) es inválido');
+                $("#numdocu").focus();
+                $("#numdocu").val("");
+            }
+
+            /* Aqui almacenamos los digitos de la cedula en variables. */
+            d1 = numero.substr(0,1);
+            d2 = numero.substr(1,1);
+            d3 = numero.substr(2,1);
+            d4 = numero.substr(3,1);
+            d5 = numero.substr(4,1);
+            d6 = numero.substr(5,1);
+            d7 = numero.substr(6,1);
+            d8 = numero.substr(7,1);
+            d9 = numero.substr(8,1);
+            d10 = numero.substr(9,1);
+
+            /* El tercer digito es: */
+            /* 9 para sociedades privadas y extranjeros */
+            /* 6 para sociedades publicas */
+            /* menor que 6 (0,1,2,3,4,5) para personas naturales */
+
+            if (d3==7 || d3==8){
+                $(".help-text1").html('El tercer dígito ingresado es inválido');
+                $("#numdocu").focus();
+                $("#numdocu").val("");
+            }
+
+            /* Solo para personas naturales (modulo 10) */
+            if (d3 < 6){
+                nat = true;
+                p1 = d1 * 2; if (p1 >= 10) p1 -= 9;
+                p2 = d2 * 1; if (p2 >= 10) p2 -= 9;
+                p3 = d3 * 2; if (p3 >= 10) p3 -= 9;
+                p4 = d4 * 1; if (p4 >= 10) p4 -= 9;
+                p5 = d5 * 2; if (p5 >= 10) p5 -= 9;
+                p6 = d6 * 1; if (p6 >= 10) p6 -= 9;
+                p7 = d7 * 2; if (p7 >= 10) p7 -= 9;
+                p8 = d8 * 1; if (p8 >= 10) p8 -= 9;
+                p9 = d9 * 2; if (p9 >= 10) p9 -= 9;
+                modulo = 10;
+            }
+
+            /* Solo para sociedades publicas (modulo 11) */
+            /* Aqui el digito verficador esta en la posicion 9, en las otras 2 en la pos. 10 */
+            else if(d3 == 6){
+                pub = true;
+                p1 = d1 * 3;
+                p2 = d2 * 2;
+                p3 = d3 * 7;
+                p4 = d4 * 6;
+                p5 = d5 * 5;
+                p6 = d6 * 4;
+                p7 = d7 * 3;
+                p8 = d8 * 2;
+                p9 = 0;
+            }
+
+            /* Solo para entidades privadas (modulo 11) */
+            else if(d3 == 9) {
+                pri = true;
+                p1 = d1 * 4;
+                p2 = d2 * 3;
+                p3 = d3 * 2;
+                p4 = d4 * 7;
+                p5 = d5 * 6;
+                p6 = d6 * 5;
+                p7 = d7 * 4;
+                p8 = d8 * 3;
+                p9 = d9 * 2;
+            }
+
+            suma = p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+            residuo = suma % modulo;
+
+            /* Si residuo=0, dig.ver.=0, caso contrario 10 - residuo*/
+            digitoVerificador = residuo==0 ? 0: modulo - residuo;
+
+            /* ahora comparamos el elemento de la posicion 10 con el dig. ver.*/
+            if (pub==true){
+                if (digitoVerificador != d9){
+                    $(".help-text1").html('El ruc de la empresa del sector público es incorrecto.');
+                    $("#numdocu").focus();
+                    $("#numdocu").val("");
+                }
+                /* El ruc de las empresas del sector publico terminan con 0001*/
+                if ( numero.substr(9,4) != '0001' ){
+                    $(".help-text1").html('El ruc de la empresa del sector público debe terminar con 0001');
+                    $("#numdocu").focus();
+                    $("#numdocu").val("");
+                }
+            }
+
+            else if(pri == true){
+                if (digitoVerificador != d10){
+                    $(".help-text1").html('El ruc de la empresa del sector privado es incorrecto.');
+                    $("#numdocu").focus();
+                    $("#numdocu").val("");
+                }
+                if ( numero.substr(10,3) != '001' ){
+                    $(".help-text1").html('El ruc de la empresa del sector privado debe terminar con 001');
+                    $("#numdocu").focus();
+                    $("#numdocu").val("");
+                }
+            }
+
+            else if(nat == true){
+                if (digitoVerificador != d10){
+                    $(".help-text1").html('El número de cédula de la persona natural es incorrecto.');
+                    $("#numdocu").focus();
+                    $("#numdocu").val("");
+                }
+                if (numero.length >10 && numero.substr(10,3) != '001' ){
+                    $(".help-text1").html('El ruc de la persona natural debe terminar con 001');
+                    $("#numdocu").focus();
+                    $("#numdocu").val("");
+                }
+            }
+            if($(".help-text1").html()=='')
+                consultacedula($("#numdocu").val());
+            return true;
+        };
+        function consultacedula(num){
+            $("#nombres").attr('readonly',false);
+            $.post("/examenexterno", {action: 'consultacedula',"numdoc": $("#numdocu").val()}, function(data) {
+                if(data.result == "ok"){
+                    $("#nombres").attr('readonly',data.existe);
+                    $("#nombres").val(data.nombres);
+                }
+
+            }, "json");
+        }
+{#        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+    });   {# Fin de Function#}
+
+</script>
+{% endblock %}
+{% block canvas %}
+    {% if idexaext %}
+        <div class='row-fluid'>
+            <div class="span3"></div>
+            <div class='span6'>
+                {% if DEFAULT_PASSWORD == 'conduccion' %}
+                    <h3 style="text-align: center">Nombre: {{ personaextern.nombres }}</h3>
+                    <h3 style="text-align: center">Cedula: {{ personaextern.numdocumento }}</h3>
+                {% endif %}
+                <h3 style="text-align: center">Lista de Exámenes</h3>
+                <hr/>
+            </div>
+            <div class='span1'>
+                <a href="{% if DEFAULT_PASSWORD == 'casade' %}/{% else %}/examenexterno{% endif %}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            </div>
+        </div>
+        <br/>
+        <div class="row-fluid">
+            <div class="span3"></div>
+            <div class="span6">
+                <table class="table table-condensed table-bordered">
+                    <thead>
+                        <tr class="alert alert-info">
+                            <th colspan="4" style="text-align: center; font-size: 17px;"><b>Lista</b></th>
+                        </tr>
+                        <tr class="alert alert-info">
+                            <th style="font-size: 16px;text-align: center">Comenzar</th>
+                            <th style="font-size: 16px;">Examen</th>
+                            <th style="font-size: 16px;">Descripci&oacute;n</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in  examenexterno %}
+                            <tr style="height: 50px;">
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <a style="cursor: pointer" idexamen="{{ t.id }}" descripcion="{{ t.descripcion }}" class="examenejc"><img src="/static/images/circle_arrow1.png" class="modimage"/></a>&nbsp;&nbsp;
+                                </td>
+                                 <td class="bigger" style="vertical-align: middle;">
+                                    <b> {{ t.titulo }} </b>
+                                </td>
+                                <td style="vertical-align: middle;">
+                                    <i>{{ t.subtitulo }}</i>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        {% if not examenexterno %}
+                            <tr>
+                                <td colspan="3">NO HAY EXAMENES POR REALIZAR</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    {% endif %}
+
+    <div class="modal fade static" id="examenmodal" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante</h3>
+        </div>
+        <div class="modal-body">
+            <p class="observa">  </b>
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer" id="continuar" class="btn btn-info"><i class=""></i> CONTINUAR</a>
+            <a style="cursor: pointer" id='cerrar' class="btn btn-success"><i class=""></i> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade" id="suspensionpanel" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="text-align: center;">
+                    <h3 class="paneltitle">Ingrese Información</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="row-fluid">
+                        <div class="span4"></div>
+                        <div class="span8">
+                            <div class="form-group">
+                                <label for="recipient-name" class="col-form-label"><b>Especie:</b></label>
+                                <input type="number" class="form-control" id="especie" placeholder="Especie">
+                                <p class="help-text"></p>
+                            </div>
+                            <div class="form-group" id="formdocu">
+                                <b>Pasaporte</b> &nbsp;<input type="checkbox" class="form-control" id="pasaporte" ><br/><br/>
+                                <label for="recipient-name" class="col-form-label"><b>Nº Documento:</b></label>
+                                <input type="text" class="form-control" placeholder="Cédula"  id="numdocu" maxlength="10">
+                                <p class="help-text1"></p>
+                            </div>
+                        </div>
+
+                        <div class="span1" ></div>
+                        <div class="span11" id="formnom">
+                            <label for=""><b>Nombres:</b></label>
+                            <input type="text" class="" placeholder="Nombres" style="width: 98%;text-transform: uppercase"  id="nombres"><br/>
+                            <p class="help-text2"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="/" class="btn btn-secondary" >Cerrar</a>
+                    <button type="button" class="btn btn-primary" id="ingresar">Ingresar</button>
+                    <button type="button" class="btn btn-info" id="continuarex" >Continuar Examen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+

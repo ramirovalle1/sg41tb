@@ -1,0 +1,329 @@
+<table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+    <thead style="position: sticky; top: 40px; z-index:10;">
+        <tr>
+            <th style="text-align: center;">Fecha</th>
+            <th>Estudiante</th>
+            <th>Materia</th>
+            <th style="text-align: center; width: 50px">Nota1<br>{{ cod1.alias }} </th>
+            <th style="text-align: center; width: 50px">Nota2 <br>{{ cod2.alias }}</th>
+            <th style="text-align: center; width: 50px">Nota3<br>{{ cod3.alias }}</th>
+            <th style="text-align: center; width: 50px">Nota4<br>{{ cod4.alias }}</th>
+            <th style="text-align: center; width: 50px">Examen</th>
+            <th style="text-align: center; width: 50px">Recup./Mej.</th>
+            <th style="text-align: center; width: 50px">Nota Final</th>
+            <th style="text-align: center; width: 50px">Asist.</th>
+            <th style="text-align: center">Estado</th>
+            <th style="width: 50px"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for e in evaluaciones %}
+            <tr>
+                <td>
+                    <div style="text-align: center">{{ e.fecha|date:'d-m-Y' }}</div>
+                    <div style="text-align: center">
+                         <span class="label label-warning">
+                            Especie:  {{ e.rubroespecie.serie }}<br>
+                            Caduca en: {{ e.rubroespecie.dias_disponibles }} dias
+                        </span><br>
+                        <span class="label label-success">Autorizado por {{ e.rubroespecie.usrautoriza }}</span>
+                    </div>
+                </td>
+                <td>
+                    {{ e.materiaasignada.matricula.inscripcion.persona }}
+                    {% if e.materiaasignada.matricula.inscripcion.tiene_deuda_temp %}
+                        <div><span class='label label-important'>Deuda: ${{ e.materiaasignada.matricula.inscripcion.adeuda_a_la_fecha|floatformat:2 }}</span></div>
+                    {% endif %}
+                    <div>
+                        <span class="label label-inverse">
+                            Grupo: {{ e.materiaasignada.matricula.nivel.paralelo }} - {{ e.materiaasignada.matricula.nivel.nivelmalla }}<br>
+                            Carrera: {{ e.materiaasignada.matricula.inscripcion.carrera }}<br>
+                        </span>
+                    </div>
+                </td>
+                <td>
+                    <div>{{ e.materiaasignada.materia.asignatura.nombre }}</div>
+                    <div>
+                        <span class="label label-inverse">
+                            Docente: {{ e.profesor_alcance }}<br>
+                            Periodo: {{ e.materiaasignada.materia.nivel.periodo.nombre }}
+                        </span>
+                    </div>
+                </td>
+                {% if e.observaciones and e.motivo and e.materiaasignada.obtener_rubroespecie_asentamientonotas %}
+                    <td style="text-align: center">
+                        <b>{{ e.materiaasignada.ver_historiconotas.n1 }}</b><br/>
+                        <input
+                                id='n1{{ e.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if e.n1 != e.materiaasignada.ver_historiconotas.n1 %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ e.n1 }}"
+                                disabled />
+                    </td>
+                    <td style="text-align: center">
+                        <b>{{ e.materiaasignada.ver_historiconotas.n2 }}</b><br/>
+                        <input
+                                id='n2{{ e.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if e.n2 != e.materiaasignada.ver_historiconotas.n2 %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ e.n2 }}"
+                                disabled />
+                    </td>
+                    <td style="text-align: center">
+                        <b>{{ e.materiaasignada.ver_historiconotas.n3 }}</b><br/>
+                        <input
+                                id='n3{{ e.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if e.n3 != e.materiaasignada.ver_historiconotas.n3 %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ e.n3 }}"
+                                disabled />
+                    </td>
+                    <td style="text-align: center">
+                        <b>{{ e.materiaasignada.ver_historiconotas.n4 }}</b><br/>
+                        <input
+                                id='n4{{ e.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if e.n4 != e.materiaasignada.ver_historiconotas.n4 %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ e.n4 }}"
+                                disabled />
+                    </td>
+                    <td style="text-align: center">
+                        <b>{{ e.materiaasignada.ver_historiconotas.n5 }}</b><br/>
+                        <input
+                                id='examen{{ e.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if e.examen != e.materiaasignada.ver_historiconotas.n5 %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ e.examen }}"
+                                disabled />
+                        <p class="help-text"></p>
+                    </td>
+                    <td style="text-align: center">
+                        <b>{{ e.materiaasignada.ver_historiconotas.recup }}</b><br/>
+                        <input
+                                id='recuperacion{{ e.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if e.recuperacion != e.materiaasignada.ver_historiconotas.recup %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ e.recuperacion }}"
+                                disabled />
+                    </td>
+                    <td style="text-align: center">
+                        {{e.materiaasignada.ver_historiconotas.notafinal|floatformat}}<br>
+                        <input
+                                id='final{{ e.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="font-weight: bold; text-align: center"
+                                value="{{ e.notafinal }}"
+                                disabled/>
+                    </td>
+                    <td style="text-align: center">
+                        <span style="{% if e.materiaasignada.ver_recordmateria.asistencia < asistencia_aprobar %} color:#dc143c; {% else %} color:#006400;{% endif %}">
+                            <b>{{ e.materiaasignada.ver_recordmateria.asistencia|floatformat }}%</b>
+                        </span>
+                    </td>
+                    <td style="text-align: center">
+                        <span style="{% if e.materiaasignada.ver_historiconotas.estado.id == reprobado %}color: #dc143c; {% else %}color:#006400;{% endif %}">
+                            <b>{{ e.materiaasignada.ver_historiconotas.estado.nombre }} </b><br>
+                        </span>
+                        <span style="{% if e.estado.id == reprobado %}color: #dc143c; {% else %}color:#006400;{% endif %}">
+                            <b>{{ e.estado.nombre }} </b><br>
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+                                {% if e.materiaasignada.ver_asentamiento and e.motivo %}
+                                    <li>
+                                        <a href="#"id='{{ e.id }}'
+                                           onclick="verMotivoNivelCerrado(event,
+                                                   '{{ e.materiaasignada.matricula.inscripcion.persona }}',
+                                                   '{{ e.evidencia }}',
+                                                   '{{ e.observaciones }}',
+                                                   '{{ e.motivo.motivo }}',
+                                                   '{{ e.usuario.username }}'
+                                           )"
+                                        >
+                                            <i class="icon-eye-open"></i>
+                                            Ver motivo
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                <li>
+                                    <a href="#" onclick="addMotivoAprobacion(event, '{{ e.id }}')">
+                                        <i class="icon-save"></i> Aporbar/Rechazar alcance de notas
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+        {% if not evaluaciones %}
+            <tr>
+                <td colspan="6" align='center'>NO EXISTEN REGISTROS</td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+
+<div class="modal fade static" id="motivoAprobacionAlcanceNotas" style="position: relative">
+    <div style="position: absolute; right: .5em; top: .2em;">
+        <a href="#" onclick="cerrarModal('motivoAprobacionAlcanceNotas')"><span class="icon-remove"></span></a>
+    </div>
+    <div class="modal-header">
+        <h3>Aprobar/Desaprobar Alcance de notas</h3>
+    </div>
+    <div class="modal-body">
+        <textarea id="observacionAprobacion" cols="30" rows="10" style="width: 97%;" placeholder="Ingrese una observación"></textarea>
+        <span class="opcion-radio">
+            <input type="radio" id="rechazar" name="tipo">
+            <label for="rechazar">Rechazar</label>
+        </span>
+
+        <span class="opcion-radio">
+            <input type="radio" id="devolver" name="tipo">
+            <label for="devolver">Devolver al docente</label>
+        </span>
+
+        <span class="opcion-radio">
+            <input type="radio" id="aprobar" name="tipo" checked="">
+            <label for="aprobar">Aprobar</label>
+        </span>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn btn-primary" onclick="saveAprobacionAlcanceNotas(event)"><span class="icon-save"></span> Enviar</a>
+    </div>
+</div>
+
+<script type="text/javascript">
+    evaluacion_id = null
+
+    verMotivoNivelCerrado = function(event, nombre, evidencia, observacion, motivo, usuario) {
+        let table = "<table class='table' style='margin-top:2em'>" +
+                        "<tr>" +
+                            "<th>Realizado por</th>" +
+                            "<th>Motivo</th>" +
+                            "<th>Observación</th>" +
+                            "<th style='text-align:center'>Soporte</th>" +
+                        "</tr>" +
+                        "<tr>" +
+                            "<td>"+usuario+"</td>" +
+                            "<td>"+motivo+"</td>" +
+                            "<td>"+observacion+"</td>" +
+                            "<td style='text-align:center'><a href='/media/"+evidencia+"' target='_blank' class='btn btn-primary'><i class='icon-download-alt'></i></a></td>" +
+                        "</tr>" +
+                    "</table>"
+        Swal.fire({
+              title: "ALUMNO SOLICITA<h3>"+nombre+"</h3>",
+              width: 800,
+              padding: "1em",
+              color: "#111",
+              html: table
+        });
+        event.preventDefault();
+    }
+
+    saveAprobacionAlcanceNotas = function(event) {
+        event.preventDefault()
+        const observacion = document.querySelector('#observacionAprobacion').value
+        let tipo = document.getElementById('rechazar').checked ? 'rechazado' :
+               document.getElementById('devolver').checked ? 'devuelto' :
+               document.getElementById('aprobar').checked ? 'aprobado' : '';
+        if (observacion!='') {
+            swal.fire({
+                title: 'Guadar alcance de notas',
+                text: tipo=='rechazado'?'Va a rechazar los cambios ingresados por el docente, las notas no serán actualizadas en el record académico del alumno. Desea continuar?':
+                      tipo=='devuelto'?'Va a devolver la gestión al docente para que realice los cambios necesarios, ya se en motivo o cambio de notas. Desea continuar?':
+                      tipo=='aprobado'?'Va a aprobar los cambios ingresados por el docente, las notas serán actualizadas en el record académico del alumno. Desea continuar?':'',
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si!',
+                cancelButtonText: 'No',
+                confirmButtonClass: 'btn btn-success margin-5',
+                cancelButtonClass: 'btn btn-danger margin-5'
+            }).then(function (isConfirm) {
+                if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                    $.post("/alcance_notas", {'action':'saveAlcanceNivelCerrado', 'id':evaluacion_id, 'observacion':observacion, 'tipo':tipo}, function(data) {
+                        console.log(data)
+                        if (data.result=="ok") {
+                            swal.fire("Notas actualizadas", data.mensaje, "info").then(function(){
+                                location.reload()
+                            })
+                        } else {
+                            swal.fire("Alerta!", data.mensaje, "warning")
+                        }
+                    }, "json");
+                }
+            });
+        } else {
+            swal.fire('Faltan datos', 'Debe ingresar una observación', 'warning')
+        }
+
+    }
+
+    addMotivoAprobacion = function(event, id) {
+        event.preventDefault
+        evaluacion_id = id
+        $("#motivoAprobacionAlcanceNotas").modal('show');
+    }
+
+    cerrarModal = function(modal) {
+        $('#'+modal).modal('hide')
+    }
+</script>
+
+<style type="text/css">
+    .opcion-radio {
+      display: inline-block;
+      margin-right: 18px;
+    }
+
+    .opcion-radio input {
+      margin-right: 5px;
+    }
+
+
+    .opcion-radio input[type=radio] {
+        position: absolute;
+        opacity: 0;
+    }
+    .opcion-radio input[type=radio] + label:before {
+        content: '';
+        background: #F4F5F8;
+        border-radius: 100%;
+        border: 1px solid #a6aec6;
+        display: inline-block;
+        width: 1.4em;
+        height: 1.4em;
+        position: relative;
+        top: -.2em;
+        margin-right: .5em;
+        vertical-align: top;
+        cursor: pointer;
+        text-align: center;
+        -webkit-transition: all 250ms ease;
+        transition: all 250ms ease;
+        display: inline-block;
+        vertical-align: middle;
+    }
+    .opcion-radio input[type=radio]:checked + label:before {
+        background-color: #8879FF;
+        box-shadow: inset 0 0 0 4px #F4F5F8;
+    }
+    .opcion-radio label {
+        display: inline-block;
+        vertical-align: middle;
+        line-height: 32px;
+    }
+</style>

@@ -1,0 +1,175 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+            $('.subirimg').click(function(e) {
+                idrequer = 0;
+                $("#imagenpanel #action").val("addimg");
+                $("#idnoticia").val($(this).attr('idn'));
+                $("#id_archivo").val("");
+                $("#imagenpanel").modal({width: '40%', backdrop: 'static'});
+                $("#imagenpanel").modal("show");
+            });
+
+            $('#cerrar').click(function(e) {
+                $("#imagenpanel").modal("hide");
+                return false;
+            });
+
+            $('#imagenpanel #ingresar').click(function(e) {
+                var valida = true;
+                $('#imagenpanel #ingresar').hide();
+                if($("#id_archivo").val() == ''){
+                    valida = false;
+                    $($("#id_archivo").get(0).parentNode).find(".help-text2").html("<h6 style='color:red' >Ingrese Archivo</h6>");
+                }
+                if(valida){
+                    var inputFileImage = document.getElementById("id_archivo");
+                    var file = inputFileImage.files[0];
+                    var data = new FormData();
+
+                    data.append('archivo',file);
+                    data.append('action',$("#imagenpanel #action").val());
+                    data.append('idnoticia',$("#idnoticia").val());
+                    var url = "/noticias";
+                    $.ajax({
+                        url:url,
+                        type:"POST",
+                        contentType:false,
+                        data:data,
+                        processData:false,
+                        cache:false,
+                        success: function(data)
+                           {
+                            if(data.result=="ok")
+                                location.reload();
+                            else
+                                $($("#id_archivo").get(0).parentNode).find(".help-text2").html("<h6 class='alert alert-danger'>Error Intentelo Nuevamente</h6>");
+                           }
+                    });
+                    $('#imagenpanel #ingresar').show();
+                    return false;
+                }
+                else{
+                    $('#imagenpanel #ingresar').show();
+                }
+
+            });
+
+            $('.delimg').click(function(){
+                var idn = $(this).attr('idn');
+                smoke.confirm("Esta seguro de eliminar la imagen", function(e){
+                    if (e){
+                            location.href = '/noticias?action=delimg&id='+idn;
+                        }else{
+                        }
+                        }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Noticias publicadas</h3>
+            <h5>breves notas publicadas en la pagina de entrada y en el perfil de los usuarios.</h5>
+            <a href="/noticias?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Noticia</a>
+        </div>
+        <div class='atright'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Titular</th>
+                    <th>Publicada</th>
+                    <th>Tipo</th>
+                    <th>Desde</th>
+                    <th>Hasta</th>
+                    <th>Publica</th>
+                    <th> </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for noticia in noticias %}
+                    <tr>
+                        <td>
+                              {# OCastillo 23-07-2024 se da acceso a personal de soporte a la edicion de noticias                       #}
+{#                            {% if not persona.pertenece_soporte %}#}
+                                <a href='/noticias?action=edit&id={{ noticia.id }}'>{{ noticia.titular }}</a>
+{#                            {% else %}#}
+{#                                {{ noticia.titular }}#}
+{#                            {% endif %}#}
+                            {% if noticia.archivo %} <span class="label label-info" title="Imagen">Img</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if noticia.publicada %}
+                                <span class="label">Publicada</span>
+                            {% else %}
+                                <span class="label label-important">No Publicada</span>
+                            {% endif %}</td>
+                        <td>{{ noticia.tiporepr }}</td>
+                        <td>{{ noticia.desde|date:"d-m-Y" }}</td>
+                        <td>{{ noticia.hasta|date:"d-m-Y" }}</td>
+                        <td>{{ noticia.publica }}</td>
+                        <td>
+                            {% if not persona.pertenece_soporte %}
+                                <a href='/noticias?action=delete&id={{ noticia.id }}' class='btn btn-danger btn-mini'><i class="icon-remove icon-white"></i> Borrar</a>
+                                <a idn="{{ noticia.id }}" class='btn btn-success btn-mini subirimg'><i class="icon-arrow-up icon-white"></i> Img</a>
+                                {% if noticia.archivo %}
+                                    <a idn='{{ noticia.id }}' class='btn btn-danger btn-mini delimg' title="Eliminar Imagen"><i class="icon-remove icon-white"></i> Img</a>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not noticias %}
+                    <tr>
+                        <td colspan="6">NO EXISTEN NOTICIAS</td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+{#            <a href="/noticias?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Noticia</a>#}
+            <div class='pagination'>
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/noticias?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade static" id="imagenpanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle1"> Agregar Imagen</h3>
+        </div>
+        <div class="modal-body">
+
+            <input type="file" name="archivo" id="id_archivo" >
+            <p class="help-text">Tamano Maximo permitido 40Mb, en formato png, jpg </p>
+            <p class="help-text2"></p>
+            <input type='hidden' id='action' value='addimg'/>
+            <input type='hidden' id='idnoticia' name='idnoticia'/>
+        </div>
+        <div class="modal-footer">
+            <a  style="cursor: pointer;" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+            <a style="cursor: pointer;" id="ingresar" class="btn btn-primary btn-resetear"> Ingresar</a>
+        </div>
+    </div>
+{% endblock %}

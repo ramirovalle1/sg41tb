@@ -1,0 +1,198 @@
+<script type="text/javascript">
+    $(function(){
+
+{#------------------------------------------------------ ELIMINAR TUTOR----------------------------------------------------------------#}
+        $(".eliminar_niveltutor").click(function(){
+            $("#ver_groups").modal("hide");
+            var id = $(this).attr('idtutor');
+            var idtutornivel = $(this).attr('idtutornivel');
+            var nombretutor = $(this).attr("nombretutor");
+            var nivel = $(this).attr("nivel");
+            smoke.confirm('Esta seguro de eliminar el grupo "'+nivel+'" al tutor "'+nombretutor+'"', function(e){
+            if (e){
+                $.post("/tutor_grupo",{"action": "eliminar","idtutornivel":idtutornivel},function(data) {
+                    if(data.result=='ok'){
+                        alert("Registro Eliminado");
+                        $.get("/tutor_grupo",{"action": "ver_grupos","id":id},function(data) {
+                            $("#ver_groups .modal-body").html(data);
+                            $("#ver_groups #paneltitle1").html('Grupos del tutor "'+nombretutor+'"');
+                            $("#ver_groups").modal({"backdrop":"static","width":"70%"});
+                            $("#ver_groups").modal("show");
+                        }, "html");
+                   }else{
+                        smoke.alert('Error. Intente de nuevo');
+                   }
+
+                },"json");
+
+            }else{
+                $.get("/tutor_grupo",{"action": "ver_grupos","id":id},function(data) {
+                    $("#ver_groups .modal-body").html(data);
+                    $("#ver_groups #paneltitle1").html('Grupos del tutor "'+nombretutor+'"');
+                    $("#ver_groups").modal({"backdrop":"static","width":"70%"});
+                    $("#ver_groups").modal("show");
+                }, "html");
+            }
+            }, {
+            ok: "Si",
+            cancel: "No",
+            classname: "custom-class",
+            reverseButtons: true
+            });
+
+        });
+
+
+{#------------------------------------------------------ ACTIVAR / DESACTIVAR TUTOR----------------------------------------------------------------#}
+        $('.estado_tutor').click(function(){
+            $("#ver_groups").modal("hide");
+            var id = $(this).attr('idtutor');
+            var idtutornivel = $(this).attr('idtutornivel');
+            var nombretutor = $(this).attr("nombretutor");
+            var nivel = $(this).attr("nivel");
+            var mensaje = '';
+            if($(this).attr('estad')){
+                mensaje = 'Esta seguro de desactivar el grupo "'+nivel+'" del tutor "'+nombretutor+'"';
+            }
+            else{
+                mensaje = 'Esta seguro de activar el grupo "'+nivel+'" del tutor "'+nombretutor+'"';
+            }
+            smoke.confirm(mensaje,function(e)
+                {
+                    if(e)
+                    {
+                        $.post("/tutor_grupo", {"action":'activar_estado', "idtutornivel":idtutornivel}, function(data) {
+                            if (data.result=='ok') {
+                                $.get("/tutor_grupo",{"action": "ver_grupos","id":id},function(data) {
+                                    $("#ver_groups .modal-body").html(data);
+                                    $("#ver_groups #paneltitle1").html('Grupos del tutor "'+nombretutor+'"');
+                                    $("#ver_groups").modal({"backdrop":"static","width":"70%"});
+                                    $("#ver_groups").modal("show");
+                                }, "html");
+                           }else{
+                               smoke.alert('Error. Intente de nuevo');
+                           }
+                        }, "json");
+                    }
+                    else
+                    {
+                        $.get("/tutor_grupo",{"action": "ver_grupos","id":id},function(data) {
+                            $("#ver_groups .modal-body").html(data);
+                            $("#ver_groups #paneltitle1").html('Grupos del tutor "'+nombretutor+'"');
+                            $("#ver_groups").modal({"backdrop":"static","width":"70%"});
+                            $("#ver_groups").modal("show");
+                        }, "html");
+                    }
+                },
+                {
+                   ok:"SI",
+                   cancel:"NO",
+                   classname: "custom-class",
+                   reverseButtons: true
+                }
+
+            );
+        });
+
+{#------------------------------------------------------ CAMBIAR TUTOR----------------------------------------------------------------#}
+        $('.cambiar_tutor').click(function(){
+            $("#idtutornivel").val($(this).attr('idtutornivel'));
+            $("#cambiar_tutor #paneltitle2").html('Cambiar tutor');
+            $("#cambiar_tutor").modal({"backdrop":"static","width":"40%"});
+            $("#cambiar_tutor").modal("show");
+        });
+
+        $("#cambiar_tutor .btn-cerrar").click(function(){
+            $("#cambiar_tutor").modal("hide");
+        });
+
+    });
+
+
+
+
+
+</script>
+
+<div class="row-fluid">
+    <div class="span12 ">
+        <table class="table table-condensed">
+            <thead>
+                <tr>
+                    <th>Grupo</th>
+                    <th style="text-align: center">Nivel</th>
+                    <th style="text-align: center">Carrera</th>
+                    <th style="text-align: center">Jornada</th>
+                    <th style="text-align: center">Facultad</th>
+                    <th style="text-align: center">Activo</th>
+{#                    <th style="text-align: center">Eliminar</th>#}
+                    <th style="width: 50px"></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for n in niveltutores %}
+                    <tr>
+                        <td> {{ n.nivel.paralelo }} </td>
+                        <td style="text-align: left"> {{ n.nivel.nivelmalla.nombre }} </td>
+                        <td style="text-align: left"> {{ n.nivel.carrera.nombre }} </td>
+                        <td style="text-align: left"> {{ n.nivel.sesion.nombre }} </td>
+                        <td style="text-align: left"> {{ n.nivel.carrera.coordinacion_pertenece }} </td>
+                        <td style="text-align: center">
+                            {% if n.activo %}
+                                <a href="#" class="btn estado_tutor" style="cursor: pointer" idtutornivel='{{ n.id }}' idtutor='{{ n.tutor.id }}' nombretutor='{{ n.tutor.persona.nombre_completo_inverso }}' nivel='{{ n.nivel.paralelo }}' estad='true'><img src='/static/images/16/true.png' border='0'/></a>
+                            {% else %}
+                                <a href="#" class="btn estado_tutor" style="cursor: pointer" idtutornivel='{{ n.id }}' idtutor='{{ n.tutor.id }}' nombretutor='{{ n.tutor.persona.nombre_completo_inverso }}' nivel='{{ n.nivel.paralelo }}'><img src='/static/images/16/false.png' border='0'/></a>
+                            {% endif %}
+                        </td>
+{#                        <td style="text-align: center">#}
+{#                            <a href="#" class="btn btn-danger eliminar_niveltutor" idtutornivel='{{ n.id }}' idtutor='{{ n.tutor.id }}' nombretutor='{{ n.tutor.persona.nombre_completo_inverso }}' nivel='{{ n.nivel.paralelo }}'> <i  class="icon-remove icon-white"></i></a>#}
+{#                        </td>#}
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    <li><a href="#" class='cambiar_tutor' idtutornivel='{{ n.id }}' idtutor='{{ n.tutor.id }}' nombretutor='{{ n.tutor.persona.nombre_completo_inverso }}' nivel='{{ n.nivel.paralelo }}'><i class="icon-edit"></i> Cambiar Tutor</a></li>
+                                    <li><a href="#" class="eliminar_niveltutor" idtutornivel='{{ n.id }}' idtutor='{{ n.tutor.id }}' nombretutor='{{ n.tutor.persona.nombre_completo_inverso }}' nivel='{{ n.nivel.paralelo }}'> <i  class="icon-remove icon-white"></i> Eliminar</a></li>
+                                </ul>
+                            </div>
+                        </td>
+
+                    </tr>
+                {% endfor %}
+
+                {% if not niveltutores %}
+                    <tr>
+                        <td colspan="10">NO EXISTE REGISTRO</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+ <div class="modal fade static" id="cambiar_tutor">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/tutor_grupo" method="POST"  >
+                <input type='hidden' name='action' value='add_tutor' />
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>

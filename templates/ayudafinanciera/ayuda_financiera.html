@@ -1,0 +1,669 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <link rel="stylesheet" type="text/css" href="../../static/vendors/sweetalert/sweetalert2.css">
+    <!-- js -->
+    <script src="../../static/vendors/sweetalert/sweetalert2.all.js"></script>
+    <script src="../../static/vendors/sweetalert/sweet-alert.init.js"></script>
+
+    <script type="text/javascript">
+        $(function() {
+            var insespe=0;
+            var inssolic=0;
+            var fechaespe="";
+            var fechaespecie="";
+
+            fecha = new Date({{ hoy.year }},{{ hoy.month }} - 1, {{ hoy.day}});
+            $("#id_numeroe, #id_codigoe, #id_fechae, #id_observaciones").addClass("validate[required]");
+            $("#id_numeroe, #id_codigoe, #id_fechae").addClass('input-small');
+            $("#id_codigoe").mask('******');
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/admin_ayudafinanciera?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $("#nuevoresp").click(function() {
+                location.href = "/admin_ayudafinanciera?action=addrespsolici";
+            });
+
+            $(".nuevosoli").click(function() {
+                if($(this).attr('opc') == '1'){
+                    location.href = "/admin_ayudafinanciera?action=fichasocioecono&id="+ $(this).attr('idins')+"&opc=1";
+                }
+                else{
+                    location.href = "/admin_ayudafinanciera?action=fichasocioecono&id="+ $(this).attr('idins');
+                }
+            });
+
+            $(".nuevosoli2").click(function() {
+                    location.href = "/admin_ayudafinanciera?action=verfichasocioecono&id="+ $(this).attr('idins');
+
+            });
+
+            $("#tipo").click(function() {
+
+                location.href = "/admin_ayudafinanciera?action=tipodocumenbeca";
+            });
+
+            var idsolic = 0;
+            var cerrardeta = 0;
+            var opc = 0
+
+            $("form").validationEngine();
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/resoluciones?action=resolucion&id{{ inscripcion.id }}&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $('.addarchivo').click(function(){
+                $($("#id_tipo").get(0).parentNode).find(".help-text").html("").removeClass('alert-error');
+                $("#id_archivo,#id_tipo").addClass('validate[required]');
+                $("#id_tipo").attr('disabled',false);
+                $($("#id_motivo").get(0).parentNode.parentNode).hide();
+                $("#editar").val('0');
+                $("#id_tipo").val('');
+                $('#id_archivo').val('');
+                cerrardeta = 0;
+                $("#idsolici").val($(this).attr('pid'));
+                $("#archivopanel").modal({"backdrop":"static","width":"40%"});
+                $("#archivopanel").modal("show");
+            });
+
+            $("#archivopanel .btn-cerrar").click(function(){
+                if (cerrardeta == 0){
+                    $("#archivopanel").modal("hide");
+                }
+                else
+                {
+                    cerrardeta == 0;
+                    $("#archivopanel").modal("hide");
+                    detallearchi ();
+                }
+                return false;
+            });
+
+
+            var validos = " abcdefghijklmnopqrstuvwxyz0123456789-_%,";
+
+            function soloLetrasYNum(campo) {
+               var letra;
+               var bien = true;
+               for (var i=0; i<campo.length; i++) {
+                letra=campo.charAt(i).toLowerCase()
+                if (validos.indexOf(letra) == -1){bien=false;};
+               }
+               if (!bien) {
+                return 1;
+
+               }else{
+                 return 0;
+               }
+            }
+
+            $("#archivopanel #id_archivo").change(function(){
+
+                var x = document.getElementById("id_archivo");
+                var fileExt = x.value;
+                var validExts = new Array(".pdf");
+                var fileExt1 = fileExt.substring(fileExt.lastIndexOf('.'));
+                var nombre= fileExt.substring(fileExt.indexOf(x.files[0].name),fileExt.lastIndexOf('.'));
+                if (parseInt(soloLetrasYNum(nombre))==1){
+                    $("#archivopanel #id_archivo").val('');
+                    $($("#archivopanel #id_archivo").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El Nombre del Archivo contiene Tilde, espacios en blanco o Caracteres Especiales</h6>");
+                }else if (validExts.indexOf(fileExt1) < 0){
+                    $("#archivopanel #id_archivo").val('');
+                    $($("#archivopanel #id_archivo").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El formato del archivo solo debe ser PDF</h6>");
+                }else{
+                    $($("#archivopanel #id_archivo").get(0).parentNode).find(".help-text").html("");
+                }
+            });
+
+            $("#detalle_archivo .btn-cerrar").click(function(){
+                $("#detalle_archivo").modal("hide");
+                return false;
+            });
+
+
+            function detallearchi (){
+                    $.get("/admin_ayudafinanciera", {'action':'detallearch', 'id': idsolic, 'opc':opc}, function(data) {
+                    $("#detalle_archivo .modal-body").html(data);
+                    $("#detalle_archivo").modal({"backdrop":"static",width:'40%'});
+                    $("#detalle_archivo").modal("show");
+                   }, "html");
+                   return false;
+            }
+
+            $("#id_tipo").blur(function() {
+                $.post("/admin_ayudafinanciera", {action: 'existtipo', 'idsoli': $("#idsolici").val(), 'idtipo':$("#id_tipo").val()}, function(data) {
+                    if (data.result=='ok') {
+                       $($("#id_tipo").get(0).parentNode).find(".help-text").html("Ya existe un archivo con ese tipo de documento").addClass('alert-error');
+                       $("#id_tipo").val('');
+                    }
+                    else{
+                        $($("#id_tipo").get(0).parentNode).find(".help-text").html("").removeClass('alert-error');
+                    }
+
+                }, "json");
+
+            });
+            $(".detallearch").click(function() {
+
+               idsolic = $(this).attr("id");
+               opc = $(this).attr("opc");
+               cerrardeta = 1;
+               $("#paneltitle").html($(this).attr('asun'));
+               detallearchi ();
+            });
+
+            {% if error %}
+                smoke.alert('{{ error }}');
+            {% endif %}
+            {% if edit %}
+               idsolic = {{ edit.solicitudbeca.id }};
+               opc = '1';
+               cerrardeta = 1;
+               $("#paneltitle").html('{{ edit.solicitudbeca.motivo }}');
+               detallearchi ();
+            {% endif %}
+
+
+            verresolucion= function(id,nivelnombre) {
+                inssolic = id;
+                nombrenivel=nivelnombre;
+
+                       $.get("/admin_ayudafinanciera", {'action':'verresolucionbeca', 'idpreregistro': inssolic}, function(data) {
+
+                       $("#verresolucion .modal-body").html(data);
+                       $("#verresolucion").modal({"backdrop":"static",keyboard: false,width:'50%'});
+                       $("#verresolucion").modal("show");
+                       }, "html");
+                       return false;
+            };
+
+
+            $("#verresolucion .btn-cerrar").click(function() {
+                $("#verresolucion").modal("hide");
+                return false;
+            });
+
+
+
+            $('.verobserv').click(function(){
+                $("#observacionpanel .modal-body").html('<textarea name="textarea" rows="10" cols="50" style="width:98%" readonly>'+$(this).attr('asun')+'</textarea><br/>' +
+                        '<p class="btn btn-reverse" style="cursor:none">Usuario: '+$(this).attr('usuario') +'</p>');
+
+                $("#observacionpanel").modal({"backdrop":"static","width":"30%"});
+                $("#observacionpanel").modal("show");
+            });
+
+
+            $("#observacionpanel .btn-cerrar").click(function(){
+                $("#observacionpanel").modal("hide");
+                return false;
+            });
+
+            ingresargestionayuda = function (id, nombres){
+                idsolicayuda = id;
+                detalletipogestion(nombres);
+            }
+            function detalletipogestion(nombres){
+                 $.get("/admin_ayudafinanciera", {'action':'ingresar_gestion', 'idpreregistro': idsolicayuda}, function(data) {
+                        $("#lblnombreestudiante").html(nombres);
+                        $("#ingr_gestion .modal-body").html(data);
+                        $("#ingr_gestion").modal({"backdrop":"static",width:'40%'});
+                        $("#ingr_gestion").modal("show");
+                       }, "html");
+                       return false;
+            }
+
+            vergestionayuda = function(id,nombres) {
+                idsolicayuda = id;
+                detallegestion(nombres);
+            }
+
+            function detallegestion (nombres){
+
+                    $.get("/admin_ayudafinanciera", {'action':'ver_gestionayuda', 'idpreregistro': idsolicayuda}, function(data) {
+{#                    $("#lblnombreestudiante").html(nombres);#}
+                    $("#ver_gestion .modal-body").html(data);
+                    $("#ver_gestion").modal({"backdrop":"static",width:'40%'});
+                    $("#ver_gestion").modal("show");
+                   }, "html");
+                   return false;
+            }
+
+            $("#ver_gestion .btn-cerrar").click(function() {
+                $("#ver_gestion").modal("hide");
+                return false;
+            });
+
+            aprobarestudiante= function(id,nivelnombre) {
+                inssolic = id;
+                nombrenivel=nivelnombre;
+                smoke.confirm("Esta seguro que desea aprobar la solicitud?", function(e){
+                        if (e){
+
+
+                               $.get("/admin_ayudafinanciera", {'action':'verresolucionbeca', 'idpreregistro': inssolic}, function(data) {
+
+                               $("#aprobarestudiante .modal-body").html(data);
+                               $("#aprobarestudiante").modal({"backdrop":"static",keyboard: false,width:'40%'});
+                               $("#aprobarestudiante").modal("show");
+                               }, "html");
+                               return false;
+
+
+
+
+                        }
+                        }, {
+                        ok: "SI",
+                        cancel: "NO",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+
+
+            }
+
+            $("#aprobarestudiante .btn-adicionar").click(function() {
+
+
+                        $.post("/admin_ayudafinanciera", {"action":'aprobarsolicitudestudiante', "contenido":'APROBADO POR EL ESTUDIANTE',"idssolic":inssolic}, function(data) {
+                                    if (data.result=='ok') {
+                                        $("#aprobarestudiante").modal("hide");
+                                        smoke.alert('Se aprobo correctamente la solicitud');
+                                        location.href = data.cargarurl;
+                                    }
+                                    else{
+                                           $("#aprobarestudiante").modal("hide");
+                                        if(data.result == 'bad')
+                                        {
+                                            smoke.alert('No se pudo aprobar la solicitud');
+                                        }
+
+                                    }
+
+                        }, "json");
+
+
+             });
+
+             $("#aprobarestudiante .btn-cerrar").click(function() {
+                $("#aprobarestudiante").modal("hide");
+                return false;
+             });
+
+
+
+
+
+
+
+
+       });
+
+
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span1'></div>
+        <div class='span9' style="text-align: center">
+            {% if inscripcion %}
+                <h3>AYUDA FINANCIERA</h3>
+                <br>
+                <h3>ESTUDIANTE: {{ inscripcion.persona.nombre_completo }}</h3>
+                <br>
+            {% else %}
+                <h3>REGISTRO DE SOLICITUD DE AYUDA FINANCIERA</h3>
+                <br>
+            {% endif %}
+        </div>
+        <div class='span1'>
+            <a {% if inscripcion %} href="/" {% else %} href="/admin_ayudafinanciera" {% endif %} class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span1'></div>
+        <div class='span9' style="width: 80%">
+
+            <table class="table table-condensed table-bordered smaller4 tabla">
+               <thead>
+                <tr>
+                  <b>  Requisitos importante para Solicitar una Ayuda Financiera. </b>
+
+                </tr><br>
+                <tr>
+                   <b> 1.-</b> Estar matriculado al nuevo nivel de estudio y no tener valores pendientes de pago. Si
+                        necesita matriculación, puede acceder en el Sistema de Gestión Académica (SGA)
+                        modulo matrícula en línea.
+                </tr>
+                <tr><br>
+                   <b> 2.- </b>  Revisar y actualizar todos sus datos personales en el SGA: <img width="30px" height="30px" src='/static/images/iconos/account.png' alt=''/>
+                </tr><br>
+                <tr>
+                   <b> 3.- </b>  Acceder al SGA, módulo SOLICITUD AYUDA FINANCIERA <img width="30px" height="30px" src='/static/images/iconos/solicibeca.png' alt=''/> y seguir
+                        el proceso de llenado que se le indica con información estrictamente apegada a la verdad. El estudiante que no pueda ingresar al SGA al módulo SOLICITUD DE AYUDA FINANCIERA debe
+                        enviar una solicitud <img width="30px" height="30px" src='/static/images/iconos/socioecon.png' alt=''/>
+                        (tipo de solicitud: REQUERIMIENTO A TICS, descripción: NO PUEDO INGREASAR A SGA O A SOLICITUD DE AYUDA FINANCIERA).
+                        Si posee duda para rellenar la SOLICITUD DE AYUDA FINANCIERA, pude auxiliarse del MANUAL DE
+                        SOLICITUD DE BECA ONLINE que le estamos adjuntando. En el paso No. 4 le
+                        especificamos los documentos que no debe dejar de adjuntar en formato PDF: <br>
+                      <b>
+                        <table class="table table-condensed table-bordered smaller8 tabla">
+                           <thead>
+                            <tr>
+                              <b> <span class="label label-success"> Documento que debe adjuntar a la Solicitud. </span></b>
+
+                            </tr><br>
+                            <tr>
+                                1.-  Subir cédula ambos lados en formato PDF (que sea lo más visible).
+                            </tr><br>
+                            <tr>
+                                2.-  Subir carnet de discapacidad en formato PDF (del estudiante o familiar que viva con el estudiante si tuviera discapacidad).
+                            </tr>
+                            <tr><br>
+                                3.-  Subir cédula o partida de nacimiento en formato PDF (si tuviera hijos,que sea lo más visible).
+                            </tr><br>
+                            <tr>
+                                4.-  Subir rol de pago o certificado laboral donde indique el sueldo de la persona que cubre sus estudios en formato PDF (que sea lo más visible).
+                            </tr><br>
+
+                           </thead>
+                        </table>
+                      </b>
+
+
+
+                </tr>
+
+                <tr>
+                   <b> 4.-</b> Llenar la Ficha Socio-Económica en el SGA con información estrictamente apegada a la
+                        verdad <img width="30px" height="30px" src='/static/images/iconos/socioecon.png' alt=''/>
+                         Para cualquier otra aclaración ingrese al módulo : <b>BANDEJA DE ATENCIÒN</b>
+                        <b> IMPORTANTE: Las becas son otorgadas tomando en consideración el promedio y el estudio socio-económico
+                        del estudiante. Los estudiante se compromente y se responsabilizan de subir los requisitos al sistama,máximo hasta el día de la fecha del vencimiento de la couta #1 de su nivel actual. Vía correo electrónico se le notificará la respuesta en un plazo de 7 días.</b>
+                </tr><br>
+
+               </thead>
+            </table><br>
+
+            <table class="table table-condensed table-bordered smaller2 tabla">
+               <thead>
+                <tr>
+                {% if inscripcion %}
+                    <th title="Ingreso de Solicitud" class="nuevosoli" idins='{{ inscripcion.id }}' style="cursor: pointer" ><a><i class="icon-share-alt icon-white"></i> Nueva Solicitud de Ayuda Financiera  </a></th>
+                    {% if inscripcion.existe_fichabeca %}
+                          <th class="nuevosoli2" {% if inscripcion.persona.usuario == user %} idins='{{ inscripcion.id }}' {% else %} idins='{{ inscrificha.id }}' {% endif %}  style="cursor: pointer" title="Ver ficha-SocioEconomico de Beca"><a> <i class='icon-eye-open'></i> Ver Ficha-Socioeconomica de Dobe </a></th>
+                    {% endif %}
+                {% else %}
+                    <th class="nuevosoli2" {% if inscripcion.persona.usuario == user %} idins='{{ inscripcion.id }}' {% else %} idins='{{ inscrificha.id }}' {% endif %}  style="cursor: pointer" title="Ver ficha-SocioEconomico de Beca"><a> <i class='icon-eye-open'></i> Ver Ficha-Socioeconomica de Ayuda Financiera </a></th>
+                {% endif %}
+
+                </tr>
+               </thead>
+            </table>
+
+
+        </div><br/><br/>
+    </div>
+    <div class='row-fluid'>
+        <div class='span1'></div>
+        <div class='span10'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                {% if not inscripcion %}
+                    <th>Nombre</th>
+                {% endif %}
+                <th>Motivo</th>
+                <th>Nivel - Carrera</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Fecha Envio Correo</th>
+                <th>Fecha de Respuesta</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+                {% for solicitbeca in solicitudbecas %}
+                    <tr>
+                        {% if not inscripcion %}
+                            <td>{{ solicitbeca.inscripcion.persona }}</td>
+                        {% endif %}
+                        <td>{% if not solicitbeca.inscripcion.verhistorialayudafinanciera  %}<a href="/admin_ayudafinanciera?action=editsolibeca&id={{ solicitbeca.id }}">{{ solicitbeca.motivo}}</a>{% else %}{{ solicitbeca.motivo}}{% endif %}</td>
+                        <td>{{ solicitbeca.nivel.paralelo }} - {{ solicitbeca.nivel.nivelmalla }} - {{ solicitbeca.nivel.carrera}} </td>
+                        <td> {{ solicitbeca.fecha|date:'d-m-Y' }} </td>
+                        <td> {{ solicitbeca.estadosolicitud.nombre }} </td>
+                        <td>  {% if solicitbeca.fechaenviocorreo %} {{ solicitbeca.fechaenviocorreo|date:'d-m-Y' }} {% else %} ------ {% endif %}</td>
+                        <td> {{ solicitbeca.fechaproces|date:'d-m-Y' }} </td>
+
+                        <td>
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+
+                                        {% if inscripcion %}
+{#                                            {% if not inscripcion.existe_solicitud.fechaproces %}#}
+                                                {% if not solicitbeca.estadoverificaciondoc  %}
+                                                    <li><a class="addarchivo" pid="{{ solicitbeca.id }}" style="cursor: pointer"> <i class='icon-edit'></i> Agregar Archivo </a></li>
+                                                {% endif %}
+{#                                            {% endif %}#}
+
+                                             {% with veraprobacionestudi=solicitbeca.inscripcion|args:solicitbeca.id|call:"veraprobacionestudianteayuda" %}
+                                                        {% if veraprobacionestudi %}
+{#                                                    {% if solicitbeca.inscripcion.verhistorialabecaeliminasolicitud  %}#}
+                                                        <li><a onclick="aprobarestudiante('{{ solicitbeca.id }}','{{ solicitbeca.nivel }}')"> <i class="icon-check"></i> Aceptar Tèrminos y Condiciones de Beca </a></li>
+                                                        {% endif %}
+                                             {% endwith %}
+
+                                               {% with veregetion=solicitbeca.inscripcion|args:solicitbeca.id|call:"verhistorialayudafinanciera" %}
+                                                    {% if veregetion %}
+                                                        <li><a onclick="vergestionayuda('{{ solicitbeca.inscripcion.tienesolicitudayudafinanceira.id }}','{{ inscripcion.persona.nombre_completo }}')"> <i class="icon-eye-close"></i> Ver Gestion </a></li>
+                                                    {% endif %}
+
+                                               {% endwith %}
+                                        {% endif %}
+
+                                        {% if solicitbeca.asignaciontarficadescuento  %}
+                                            {% with verresolucion=solicitbeca.inscripcion|args:solicitbeca.id|call:"verresolucionbeca" %}
+                                                {% if verresolucion %}
+                                                    <li><a onclick="verresolucion('{{ solicitbeca.id }}','{{ solicitbeca.nivel }}')"> <i class="icon-check"></i> Ver Resolución de Ayuda </a></li>
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% endif %}
+
+                                        <li><a class="detallearch" {% if inscripcion %} opc='1'{% else %} opc='0' {% endif %} id="{{ solicitbeca.id }}" asun='{{ solicitbeca.motivo }}' style="cursor: pointer"> <i class='icon-eye-open'></i> Ver Archivos </a></li>
+
+
+                                        {% if solicitbeca.observacion %}
+                                            <li><a class="verobserv" {% if inscripcion %} opc='1'{% else %} opc='0' {% endif %} id="{{ solicitbeca.id }}" asun='{{ solicitbeca.observacion }}' {% if solicitbeca.usuario %} usuario="{{ solicitbeca.usuario }}" {% else %}  usuario="" {% endif %} style="cursor: pointer"> <i class='icon-eye-open'></i> Ver Observaci&oacute;n </a></li>
+                                        {% endif %}
+
+                                    </ul>
+                                </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not solicitudbecas %}
+                    <tr>
+                        <td colspan="7">
+                            NO HAY REGISTRO
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span1'></div>
+        <div class="span10">
+            <div class='pagination'>
+                <ul>
+
+                    {% if paging.num_pages > 20 %}
+                        <div class='pagination'>
+                            <ul>
+                                {% if paging.primera_pagina %}
+                                    <li><a href="/admin_ayudafinanciera?page=1">1</a></li>
+                                    <li><a href="/admin_ayudafinanciera?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                                {% endif %}
+                                {% for pagenumber in paging.paginas %}
+                                    <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_ayudafinanciera?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                                {% endfor %}
+                                {% if paging.ultima_pagina %}
+                                    <li><a href="/admin_ayudafinanciera?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                                    <li><a href="/admin_ayudafinanciera?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    {% else %}
+
+                        <div class='pagination'>
+                            <ul>
+                                {% for pagenumber in paging.page_range %}
+                                    <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_ayudafinanciera?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="archivopanel"   >
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle1'><i> Ingrese Archivo </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well {% block form-type %}form-horizontal{% endblock %}' action="/admin_ayudafinanciera" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addarchivoestudiante' />
+                <input type='hidden' name='idsolici' id='idsolici' />
+                <input type='hidden' name='editar' id='editar' value="0" />
+                <input type='hidden' name='inscripcion' value='{{ inscripcion.id }}' />
+                {% for field in form31 %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+
+                <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">{% block buttonname %}Guardar{% endblock %}</button>
+                {% block extrabuttons %}
+                    <a href="#" class="btn btn-cerrar"> Cerrar</a>
+                {% endblock %}
+            </form>
+        </div>
+    </div>
+
+
+    <div class="modal fade static " id="observacionpanel" style="margin-left: -500"  >
+        <div class="row-fluid modal-header" style="text-align: center">
+            <h4  id="paneltitle"><i> Observaci&oacute;n </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a href="#" id="cerrar" class="btn btn-cerrar  btn-aceptar">Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+     <div class="modal fade static " id="detalle_archivo" style="margin-left: -500"  >
+        <div class="modal-header" style="text-align: center;word-wrap: break-word">
+            <h4  id="paneltitle"><i> Ver Archivos Subidos </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a href="#" id="cerrar" class="btn btn-cerrar  btn-aceptar">Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+     <div class="modal fade static " id="ingr_gestion"  >
+        <div class="modal-header" style="text-align: center;word-wrap: break-word">
+            <h3 id="paneltitle1" style="text-align: center"> Ingresar Gestión</h3>
+            <h3 id="lblnombreestudiante" style="text-align: center"> </h3>
+        </div>
+        <div class="modal-body panelbody"  >
+
+        </div>
+
+     </div>
+
+    <div class="modal fade static " id="ver_gestion"   >
+        <div class="modal-header" style="text-align: center;word-wrap: break-word">
+            <h3 id="paneltitle1" style="text-align: center"> Ver Gestión</h3>
+            <h3 id="lblnombreestudiante" style="text-align: left"> </h3>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="aprobarestudiante" >
+
+        <h3 id="paneltrech" style="text-align: center"> APROBAR SOLICITUD </h3>
+        <div class="modal-body panelbody">
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-inverse" style="background: #49afcd">Aprobar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="verresolucion" >
+
+        <h3 id="paneltrech" style="text-align: center"> VER RESOLUCIÒN AYUDA FINANCIERA </h3>
+        <div class="modal-body panelbody">
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+{% endblock %}

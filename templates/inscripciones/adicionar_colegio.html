@@ -1,0 +1,34 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input #id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_nombre,#id_provincia, #id_canton, #id_tipo").addClass("validate[required]");
+    $("#id_provincia, #id_canton, #id_tipo").addClass("input-large");
+    $("#formbutton").hide();
+
+    $($("#id_nombre").get(0).parentNode.parentNode).after("<span class='alert alert-info' style='color: darkblue'><i>ALERTA: <b>El nombre del Colegio</b> debe tener un m&aacute;ximo de <b>300 caracteres</b> </i></span><br/><br/>");
+
+    $("#id_tipo").change(function(){
+        $.post("/colegio", {action: 'buscarcolegio', colegio: $("#id_nombre").val(), provincia: $("#id_provincia").val(),canton: $("#id_canton").val(), tipo: $("#id_tipo").val()}, function(data) {
+                if (data.result=='bad') {
+                   $($("#id_nombre").get(0).parentNode).find(".help-text").html("<span style='color: red'><i>Colegio " +  data.colegio + " ya está ingresado " +" </i></span>" );
+                   $("#formbutton").hide()
+                }else{
+                   $("#formbutton").show()
+                   $($("#id_nombre").get(0).parentNode).find(".help-text").html("" );
+                };
+        }, "json");
+    });
+
+{% endblock %}
+{% block titulo %}Adicionar Colegio{% endblock %}
+{% block formaction %}/colegio{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='addcolegio'/>
+{% endblock %}
+{% block formback %}/colegio?action=addcolegio{% endblock %}
+{% block buttonname %}Guardar Colegio{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            asignaturasMallas = [{% for asignaturamalla in asignaturasmallas %}
+                {"id":"{{ asignaturamalla.id }}", "rectora": "{{ asignaturamalla.rectora }}", identificacion:"{% if asignaturamalla.identificacion %}{{ asignaturamalla.identificacion }}{% else %}###{% endif %}",
+                    "asignatura": "{{ asignaturamalla.asignatura }}", "nivel": "{{ asignaturamalla.nivelmalla.id }}", "eje": "{{ asignaturamalla.ejeformativo.id }}","horas":"{{ asignaturamalla.horas }}",
+                    "creditos": "{{ asignaturamalla.creditos }}","costo":"{% if asignaturamalla.costoasignatura %}{{ asignaturamalla.costoasignatura.valor }}{% else %}0{% endif %}"}
+                    {% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            findMaterias = function(n, e) {
+                var l = [];
+                for (i in asignaturasMallas) {
+                    var am = asignaturasMallas[i];
+                    if (am.nivel==n && am.eje==e) {
+                        l.push(am);
+                    }
+                }
+                return l;
+            };
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var nivel = $this.attr('nivel');
+                var eje = $this.attr('eje');
+                var materias = findMaterias(nivel, eje);
+                for (i in materias) {
+                    var materia = materias[i];
+                    $(this).append("<tr><td><strong>"+materia.identificacion+"-"+materia.asignatura+"</strong>, " + materia.horas +"H, "+materia.creditos+"Cred."+((materia.rectora=='True')?"<span class='label label-info'>RECTORA</span>":"")+
+                    {% if perms.sga.change_asignaturamalla  %}
+                         ((materia.costo)==0?"<a onclick='valorasignatura("+materia.id+")'  class='btn btn-mini btn-success'>Valor Materia</a>":"")+
+                         ((materia.costo)>0?"<a onclick='vervalores("+materia.id+")'  class='btn btn-mini btn-info'>Ver Valor</a>":"")+
+                    {% endif %}
+                    "</td></tr>"
+                    );
+                }
+            });
+            $("#content").height($("#title").height() + $("#tabledata").height());
+            fix_height();
+
+            valorasignatura=function(idmateriasignada){
+                 smoke.confirm('Desea agregar valor en la asignatura?', function(e){
+                    if (e){
+                        $("#valor_panel").modal({"backdrop":"static","width":"500px"});
+                        $("#id_valor").val('');
+                        $("#valor_panel").modal("show");
+                        idasignatura=idmateriasignada;
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: "CANCELAR",
+                    classname: "custom-class",
+                    reverseButtons: true
+                    });
+            };
+
+            $("#valor_panel .btn-agregar").click(function() {
+                valor = $("#id_valor").val();
+                $("#valor_panel").modal('hide');
+                $.post("/cons_mallas", {"action": "valorasignatura",id:idasignatura,costo:valor}, function (data) {
+                        if (data.result == 'ok') {
+                           smoke.alert("Se agreg&oacute; el valor correctamente");
+                        } else {
+                           smoke.alert(data.mensaje);
+                        }
+                }, 'json');
+            });
+
+            $("#valor_panel .btn-cerrar").click(function() {
+               $("#id_valor").val('');
+               $("#valor_panel").modal('hide');
+            });
+
+
+            vervalores=function(idmateriasignada){
+                idasignatura=idmateriasignada;
+{#                alert(idasignatura);#}
+                 $.get("/cons_mallas",{"action": "vervalores",'id':idasignatura},function(data) {
+                        $("#modal_consultavalores .modal-body").html(data);
+                        $("#modal_consultavalores #paneltitle1").html('Valores de Materia');
+                        $("#modal_consultavalores").modal({"backdrop":"static", keyboard: false, width: "800px", height: "200px" });
+                        $("#modal_consultavalores").modal("show");
+                       }, "html");
+                 return false;
+            };
+
+            $(".salirpanel").click(function(){
+               $("#modal_consultavalores").modal("hide");
+                return false;
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' id="title">
+        <div class='span11'>
+            <h3>Consulta de Malla: {{ malla.carrera }}, {{ malla.inicio|date:'d-m-Y' }}</h3>
+            <h5>{{ malla.niveles_vigentes.count }} Niveles en actual per&iacute;odo</h5>
+        </div>
+        <div class='span1'>
+            <a href="/cons_mallas" class='btn linkback'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid' id="tabledata">
+        <div class='span12'>
+        <table class='table table-bordered' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th> Ejes Formativos </th>
+                {% for nivelmalla in nivelesdemallas %}
+                    <th>{{ nivelmalla }}</th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for eje in ejesformativos %}
+                <tr>
+                    <td>{{ eje.nombre }}</td>
+                    {% for nivelmalla in nivelesdemallas %}
+                        <td>
+                            <table class="table table-condensed table-bordered cell" nivel='{{ nivelmalla.id }}' eje='{{ eje.id }}'>
+
+                            </table>
+
+<!--                            <div class='cell' nivel='{{ nivelmalla.id }}' eje='{{ eje.id }}'>
+
+                            </div> -->
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            <tr></tr>
+            <tr>
+                <td class='footertable'><b> Totales </b></td>
+                {% for resumen in resumenes %}
+                    <td class='footertable'><b>{{ resumen.horas }}</b> Horas, <b>{{ resumen.creditos }}</b> Creditos</td>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    </div>
+
+    <div class="modal fade static" id="valor_panel" style="display: none; width: 250%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese Valor </h3>
+        </div>
+        <div class="modal-body " style="text-align: center">
+            <input id='id_valor' style="width: 100%;border-bottom: 3px;border-radius: 4px;text-align: center"> </input>
+            <p class="help-text"> </p>
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="" class="btn btn-primary btn-agregar"> Guardar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modal_consultavalores">
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                <a style="float: left" href="#" class="btn btn-danger salirpanel">  <b> SALIR</b></a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

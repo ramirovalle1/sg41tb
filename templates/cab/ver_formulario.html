@@ -1,0 +1,344 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#txt_valoreco").addClass('input-small');
+        $("#txt_descripcioneco").addClass('input-xlarge');
+        $("#txt_nombre_referencia, #slct_ciudad_referencia").addClass('input-xxlarge');
+        $("#txt_relacion_referencia,#txt_telefono_referencia").addClass('input-large');
+        $("#txt_nombres_beneficiario, #txt_apellidos_beneficiario").addClass('input-xlarge');
+        $("#txt_tipodentificacion_beneficiario,#txt_identificacion_beneficiario, #txt_parentesco_beneficiario, #txt_telefono_beneficiario").addClass('input-medium');
+
+    });
+</script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span9">
+            <h3><b>Formulario de Inclusi&oacute;n de la Contraparte - Persona Natural</b></h3>
+            <h4>{{ persona }}</h4>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/alumnos_cab" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <br><br><br>
+
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span10">
+{#            ----------------------------------------------------------------------DATOS PERSONALES---------------------------------------------------------------#}
+            <h4 class='alert alert-success'>DATOS PERSONALES</h4>
+            <table class="table table-condensed" style="width: 100%">
+                <tr>
+                    <th>Ciudad</th>
+                    <th colspan="4">Fecha</th>
+                </tr>
+                <tr>
+                    <td><input type="text" id="txt_ciudad" value="{{ inscripcion_cab.ciudad }}" disabled/></td>
+                    <td colspan="4"><input type="text" id="" value="{{ inscripcion_cab.fecha|date:'d/m/Y' }}" disabled/></td>
+                </tr>
+                <tr>
+                    <th>Apellidos</th>
+                    <th>Nombre</th>
+                    <th>Tipo de Identificaci&oacute;n</th>
+                    <th>Numero de Identificaci&oacute;n</th>
+                    <th>Nacionalidad</th>
+                </tr>
+                <tr>
+                    <td><input type="text" id="txt_apellidos" value="{{ persona.apellido1 }} {{ persona.apellido2 }}" disabled/></td>
+                    <td><input type="text" id="txt_nombre" value="{{ persona.nombres }}" disabled/></td>
+                    <td><input type="text" id="txt_tipoidentificacion" value="{% if persona.cedula %}CEDULA{% else %}PASAPORTE{% endif %}" disabled/></td>
+                    <td><input type="text" id="txt_identificacion" value="{% if persona.cedula %}{{ persona.cedula }}{% else %}{{ persona.pasaporte }}{% endif %}" disabled/></td>
+                    <td><input type="text" id="txt_nacionalidad" value="{{ persona.nacionalidad }}" disabled/></td>
+                </tr>
+
+                <tr>
+                    <th colspan="1">Ciudad de Nacimiento</th>
+                    <th colspan="1">Fecha de Nacimiento</th>
+                    <th colspan="1">Estado Civil</th>
+                    <th colspan="4"># Cargas Familiares</th>
+                </tr>
+                <tr>
+                    <td colspan="1"><input type="text" id="txt_ciudadnacimiento" value="{{ persona.canton }}" disabled/></td>
+                    <td colspan="1"><input type="text" id="txt_fechanacimiento" value="{{ persona.nacimiento|date:'d/m/Y' }}" disabled/></td>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.estado_civil }}" disabled/></td>
+                    <td colspan="4"><input type="number" style="width: 3em" min="0" id="num_cargas" value="{{ inscripcion_cab.num_cargasfam }}" disabled/><p class="ht_cargas" style="color:red"></p></td>
+                </tr>
+            </table>
+            <br>
+{#            ----------------------------------------------------------------------INFORMACION DEL CONYUGE---------------------------------------------------------------#}
+           {% if inscripcion_cab.estado_civil == 'CASADO' %}
+                <span id="conyuge">
+                <h4 class='alert alert-success'>INFORMACION DEL CONYUGE</h4>
+                <table class="table table-condensed" style="width: 100%">
+                    <tr>
+                        <th colspan="1">Apellidos</th>
+                        <th colspan="1">Nombre</th>
+                        <th colspan="1">Tipo de Identificaci&oacute;n</th>
+                        <th colspan="2">Numero de Identificaci&oacute;n</th>
+                        <th colspan="2">Pais de Nacimiento</th>
+                    </tr>
+                    <tr>
+                        <td><input type="text" id="txt_apellidosconyuge" required onkeyup="mayus(this)" value="{{ inscripcion_cab.apellidos_conyuge }}" disabled/><p class="ht_apellidosconyuge" style="color:red"></p></td>
+                        <td><input type="text" id="txt_nombreconyuge" onkeyup="mayus(this)" value="{{ inscripcion_cab.nombres_conyuge }}" disabled/><p class="ht_nombreconyuge" style="color:red"></p></td>
+                        <td><input type="text" id="" value="{{ inscripcion_cab.tipo_identificacion_conyuge }}" disabled/><p class="ht_nombreconyuge" style="color:red"></p></td>
+                        <td colspan="2"><input type="text" id="txt_identificacionconyuge" value="{{ inscripcion_cab.num_identificacion_conyuge }}" disabled/><p class="ht_identificacionconyuge" style="color:red"></p></td>
+                        <td colspan="2"><input type="text" id="" value="{{ inscripcion_cab.pais_conyuge.nombre }}" disabled/><p class="ht_identificacionconyuge" style="color:red"></p></td>
+
+                    </tr>
+                </table>
+                <br></span>
+            {% endif %}
+{#            -----------------------------------------------------------------DIRECCIÓN DOMICILIARIA DEL SOCIO/CLIENTE---------------------------------------------------------------#}
+            <h4 class='alert alert-success'>DIRECCIÓN DOMICILIARIA DEL SOCIO/CLIENTE</h4>
+            <table class="table table-condensed" style="width: 100%">
+                <tr>
+                    <th colspan="1">Pais de Residencia</th>
+                    <th colspan="1">Provincia</th>
+                    <th colspan="1">Canton</th>
+                    <th colspan="1">Parroquia</th>
+                    <th colspan="1">Correo Electr&oacute;nico</th>
+                </tr>
+                <tr>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.pais_resid.nombre }}" disabled/></td>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.provincia_resid.nombre }}" disabled/></td>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.canton_resid.nombre }}" disabled/></td>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.parroquia_resid.nombre }}" disabled/></td>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.email }}" disabled/><p class="ht_email" style="color:red"></p></td>
+                </tr>
+                <tr>
+                    <th colspan="2">Direccion de Domicilio</th>
+                    <th colspan="1">Telefono Domicilio</th>
+                    <th colspan="2">Telefono Celular</th>
+                </tr>
+                <tr>
+                    <td colspan="2"><input type="text" id="" value="{{ inscripcion_cab.domicilio }}" style="width: 92%" disabled/></td>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.convencional }}" disabled/></td>
+                    <td colspan="2"><input type="text" id="" value="{{ inscripcion_cab.celular }}" disabled/></td>
+                </tr>
+            </table>
+            <br>
+{#            ----------------------------------------------------------------------ACTIVIDAD ECONOMICA--------------------------------------------------------------#}
+            <h4 class='alert alert-success'>ACTIVIDAD ECONOMICA</h4>
+            <table class="table table-condensed" style="width: 100%">
+                <tr>
+                    <th colspan="1">Tipo</th>
+                    <th colspan="1">Nombre de la Empresa</th>
+                    <th colspan="1">Actividad Económica de la Empresa</th>
+                </tr>
+                <tr>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.actecon_tipo }}" disabled/></td>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.actecon_empresa }}" disabled/></td>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.actecon_empresaactividad }}" disabled/></td>
+                </tr>
+                <tr>
+                    <th colspan="1">Dirección  del Trabajo</th>
+                    <th colspan="1">Teléfono del Trabajo</th>
+                    <th colspan="1">Ud. ha ocupado en el último año un cargo de elección popular o de responsabilidad politica y social?</th>
+                </tr>
+                <tr>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.actecon_direccion }}" disabled/></td>
+                    <td colspan="1"><input type="text" id="" value="{{ inscripcion_cab.actecon_telefono }}" disabled/></td>
+                    <td colspan="1"><input type="text" id="" value="{% if inscripcion_cab.actecon_cargopolitico %}SI{% else %}NO{% endif %}" disabled/></td>
+                    <td></td>
+                </tr>
+            </table>
+            <br>
+{#            ----------------------------------------------------------------------INFORMACIÓN ECONÓMICA---------------------------------------------------------------#}
+            <h4 class='alert alert-success'>INFORMACIÓN ECONÓMICA</h4>
+            <div class="row-fluid">
+                <div class="span5">
+                    <table class="table table-condensed" style="width: 80%" id="tbl_ingresos">
+                        <thead>
+                            <tr>
+                                <th>Ingresos</th>
+                                <th style="text-align: center">Valor</th>
+                            </tr>
+                        </thead>
+                        {% with prueba=inscripcion_cab|args:'ingresos'|call:"informacion_economica" %}
+                        <tbody>
+                            {% for i in prueba.0 %}
+                                <tr>
+                                    <td>{{ i.descripcion }}</td>
+                                    <td style="text-align: right">${{ i.valor }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>Total</th>
+                                <th style="text-align: right">${{ prueba.1 }}</th>
+                            </tr>
+                        </tfoot>
+                        {% endwith %}
+                    </table><br>
+                    <table class="table table-condensed" style="width: 80%" id="">
+                        <thead>
+                            <tr>
+                                <th>Gastos</th>
+                                <th style="text-align: center">Valor</th>
+                            </tr>
+                        </thead>
+                        {% with prueba=inscripcion_cab|args:'gastos'|call:"informacion_economica" %}
+                        <tbody>
+                            {% for i in prueba.0 %}
+                                <tr>
+                                    <td>{{ i.descripcion }}</td>
+                                    <td style="text-align: right">${{ i.valor }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>Total</th>
+                                <th style="text-align: right">${{ prueba.1 }}</th>
+                            </tr>
+                        </tfoot>
+                        {% endwith %}
+                    </table>
+                </div>
+                <div class="span5">
+                    <table class="table table-condensed" style="width: 80%" id="tbl_ingresos">
+                        <thead>
+                            <tr>
+                                <th>Activos</th>
+                                <th style="text-align: center">Valor</th>
+                            </tr>
+                        </thead>
+                        {% with prueba=inscripcion_cab|args:'activos'|call:"informacion_economica" %}
+                        <tbody>
+                            {% for i in prueba.0 %}
+                                <tr>
+                                    <td>{{ i.descripcion }}</td>
+                                    <td style="text-align: right">${{ i.valor }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>Total</th>
+                                <th style="text-align: right">${{ prueba.1 }}</th>
+                            </tr>
+                        </tfoot>
+                        {% endwith %}
+                    </table><br>
+                    <table class="table table-condensed" style="width: 80%" id="">
+                        <thead>
+                            <tr>
+                                <th>Pasivos</th>
+                                <th style="text-align: center">Valor</th>
+                            </tr>
+                        </thead>
+                        {% with prueba=inscripcion_cab|args:'pasivos'|call:"informacion_economica" %}
+                        <tbody>
+                            {% for i in prueba.0 %}
+                                <tr>
+                                    <td>{{ i.descripcion }}</td>
+                                    <td style="text-align: right">${{ i.valor }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>Total</th>
+                                <th style="text-align: right">${{ prueba.1 }}</th>
+                            </tr>
+                        </tfoot>
+                        {% endwith %}
+                    </table>
+                </div>
+                <div class="span2">
+                    <table class="table table-condensed" style="width: 40%" id="tbl_ingresos">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center">Disponible</th>
+                                <th style="text-align: center">Patrimonio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="text-align: right">${{ inscripcion_cab.disponible }}</td>
+                                <td style="text-align: right">${{ inscripcion_cab.patrimonio }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+                <br>
+
+{#            ----------------------------------------------------------------------REFERENCIAS--------------------------------------------------------------#}
+            <h4 class='alert alert-success'>REFERENCIAS</h4>
+            <table class="table table-condensed" style="width: 100%">
+                <thead>
+                    <tr id="tr_referencias">
+                        <th colspan="1">Nombres Completos</th>
+                        <th colspan="1">Relación</th>
+                        <th colspan="1">Telefono</th>
+                        <th colspan="1">Ciudad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in inscripcion_cab.referencias %}
+                        <tr>
+                            <td>{{ i.nombre }}</td>
+                            <td>{{ i.relacion }}</td>
+                            <td>{{ i.telefono }}</td>
+                            <td>{{ i.ciudad.nombre }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <br>
+{#            ----------------------------------------------------------------------PROPOSITO DE LA CUENTA--------------------------------------------------------------#}
+            <h4 class='alert alert-success'>PROPOSITO DE LA CUENTA</h4>
+            <table class="table table-condensed" style="width: 100%">
+                <tr>
+                    <th colspan="2">Proposito</th>
+                    <th colspan="2">Origen de Fondo</th>
+                    <th>Monto de Aportación Mensual </th>
+                </tr>
+                <tr>
+                    <td colspan="2"><input type="text" id="" style="width: 92%" value="{{ inscripcion_cab.proposito }}" disabled/></td>
+                    <td colspan="2"><input type="text" id="" style="width: 92%" value="{{ inscripcion_cab.origen }}" disabled/></td>
+                    <td><label><input type="number" style="width: 4em; font-size: 120%" id="monto" min="3" value="{{ inscripcion_cab.monto }}" disabled/>USD</label></td>
+                </tr>
+            </table>
+            <br>
+{#            -----------------------------------------------------------------------------BENEFICIARIO EN CASO DE FALLECIMIENTO--------------------------------------------------------------#}
+            <h4 class='alert alert-success'>DATOS DEL BENEFICIARIO EN CASO DE FALLECIMIENTO</h4>
+            <table class="table table-condensed" style="width: 100%">
+                <thead>
+                    <tr id="tr_beneficiario">
+                        <th colspan="1">Apellidos</th>
+                        <th colspan="1">Nombres</th>
+                        <th colspan="1">%</th>
+                        <th colspan="1">Numero de Contacto</th>
+                        <th colspan="1">Tipo de Identificacion</th>
+                        <th colspan="1"># de Identificacion</th>
+                        <th colspan="1">Parentesco</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in inscripcion_cab.beneficiarios %}
+                        <tr>
+                            <td>{{ i.apellidos }}</td>
+                            <td>{{ i.nombres }}</td>
+                            <td>{{ i.porcentaje }}</td>
+                            <td>{{ i.telefono }}</td>
+                            <td>{{ i.tipo_identificacion }}</td>
+                            <td>{{ i.numero_identificacion }}</td>
+                            <td>{{ i.parentesto }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <br>
+
+{% endblock %}

@@ -1,0 +1,354 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+{#    <script src="../../ube/static/src/scripts/bootstrap3-typeahead.js"></script>#}
+
+    <script>
+
+        $(function () {
+
+
+            $(document).ready(function () {
+
+
+            });
+
+
+            function buscar() {
+
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/evaluacionesdocentes?action=vercoordinadores&s=" + term  +
+                    '&periodoev={{ periodoev }}&periodo={{ periodo }}'+'&coord='+ $('#cmbcoordiandores').val() {% if pagenumer %}
+                    +"&page={{ pagenumer }}"{% endif %};
+            }
+
+
+            $("#search").click(function () {
+                buscar();
+            });
+            $("#cmbcoordiandores").change(function () {
+                buscar();
+
+            });
+
+            verCoordinador = function (id, nomprofesor) {
+                $('#idevaluacioncoordinadordocente').val(id)
+                $('#idnomprofesor').html(nomprofesor)
+{#                 $("#cmbaddcoordinador").select2({dropdownParent: $("#modal_coordinador .modal-body-coordinador")});#}
+            }
+        Actualizar= function(id){
+        var ideval=id;
+                swal.fire({
+                    title: 'Esta seguro de actualizar los docentes?',
+                    {#text: "# Número: "+idpersonadobe,#}
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5'
+                    }).then(function (isConfirm) {
+                        if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                            showWaiting("Buscando Docentes");
+
+{#                            $("#login-modal4").modal({backdrop: 'static', keyboard:/ false});#}
+{#                             $('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../ube/static/imagen/loader.gif"/><br/> espere un momento...</div>');#}
+                             var formData = new FormData();
+                             formData.append('action', 'actualizar');
+                             formData.append('id', ideval );
+                             $.ajax({
+                                     url: '/evaluacionesdocentes',
+                                     type: "POST",
+                                     contentType: false,
+                                     data: formData,
+                                     processData: false,
+                                     cache: false,
+                                     success: function (data) {
+
+                                         if (data.result == "ok") {
+                                             swal.fire("Notificacion", 'Informacion registrada correctamente', "success");
+                                             hideWaiting()
+                                             location.href='/evaluacionesdocentes'
+
+                                         } else {
+                                             hideWaiting();
+                                             swal.fire("Error", data.message, "error");
+                                             cambiarTab('base-tab'+data.eje,'tab'+data.eje+'edit');
+                                             $("#login-modal4").remove();//ocultamos el modal
+                                             $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                             $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                             $('#content').html('');
+                                         }
+
+                                     },
+                                     error: function (xhr, ajaxOptions, thrownError) {
+                                         hideWaiting();
+                                         swal("Error", "Error Conexion en el Servidor", "error");
+                                         $("#login-modal4").remove();//ocultamos el modal
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+                                     },
+
+                                     complete: function(){
+                                         hideWaiting();
+                                         $("#login-modal4").remove();//ocultamos el modal
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+
+                                      }
+
+
+                             });
+
+                            }
+
+                         });
+
+
+            }
+
+            $('#idagregarcoordinador').click(function () {
+                if ($('#cmbaddcoordinador').val() != '0') {
+                    $('.helptxtcoordinador').html()
+                    $.post("/evaluacionesdocentes", {
+                        'action': 'addcoordinador',
+                        'evacorpro': $('#idevaluacioncoordinadordocente').val(),
+                        'coordinador_id': $('#cmbaddcoordinador').val(),
+                        'evaluacion_id': {{ periodoev }}
+                    }, function (data) {
+                        if (data.result == "ok") {
+                            $('#modal_coordinador').modal("hide");
+                            swal.fire('Registrado!', 'Coordinador Registrado Correctamente...', 'success').then(function (isConfirm) {
+
+
+                                if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+                                    buscar();
+                                }
+                            })
+
+                        } else {
+                            swal('Error!', data.result, 'error')
+                        }
+                    }, "json");
+                } else {
+
+                    $(".helptxtcoordinador").html('(*) Debe seleccionar un coordinador')
+
+                }
+
+            })
+        });
+
+    </script>
+
+    <style>
+        .select2-close-mask {
+            z-index: 2099;
+        }
+
+        .custom-select2 {
+            z-index: 3051;
+        }
+        .modal-body-coordinador {
+        position: relative;
+        -ms-flex: 1 1 auto;
+        -webkit-box-flex: 1;
+        flex: 1 1 auto;
+        padding: 1rem;
+        }
+
+    </style>
+{% endblock %}
+{#{% block containertype %}{% endblock %}#}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span9">
+            <div class="title">
+                <h4> {{ title }}</h4>
+            </div>
+        </div>
+        <div class="span2">
+            <div class="title">
+                <a href="#" class='btn btn-success' onclick="Actualizar('{{ periodoev }}')"><i class="dw dw-list"></i>Actualizar Docentes sin Coordinación</a>
+            </div>
+        </div>
+        <div class="span1">
+            <div class="title">
+                <a href="/evaluacionesdocentes "  class="btn "><i class="icon-arrow-left "></i> Atrás</a>
+            </div>
+        </div>
+
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span12'>
+            <form class="form-search">
+            <input class='searchfield input-xlarge search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/evaluacionesdocentes?action=verevaluacionalumno&id={{ evaluacion.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+    <br>
+     <div class='row-fluid'>
+        <div class='span12'>
+            COORDINADORES:
+                <select id='cmbcoordiandores' class="custom-select2 form-control">
+                    <option value='0' {% if coord == 0  %}selected="selected"{% endif %}> TODOS</option>
+                     <option value='-1' {% if coord < 0  %}selected="selected"{% endif %}> NINGUNO</option>
+                    {% for lcd in listcoordinadoresdisponibles %}
+                        <option value="{{ lcd.id }}"
+                                {% if coord == lcd.id %}selected="selected"{% endif %}>{{ lcd.persona.nombre_completo}}</option>
+                    {% endfor %}
+                </select>
+        </div>
+    </div>
+
+        <div class='row-fluid'>
+            <div class='span12'>
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th class="table-plus datatable-nosort">Profesor</th>
+                            <th scope="col" style="text-align: center">Coordinador</th>
+
+
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for evaluacion in listEvaluacion %}
+
+                            {% with nombrecoordinador=evaluacion.coordinador.persona.nombre_completo_inverso nombreprofesor=evaluacion.profesor.persona.nombre_completo_inverso %}
+                                <tr>
+                                    <td class="table-plus">
+                                        {{ nombreprofesor }}
+                                    </td>
+
+                                    <td class="table-plus">
+                                        {% if nombrecoordinador %}
+                                            {{ nombrecoordinador }}
+                                        {% else %}
+                                            <a onclick="verCoordinador({{ evaluacion.id }},'{{ nombreprofesor }}')"
+                                               data-toggle="modal" data-target="#modal_coordinador"
+                                               class="btn btn-sm btn-info " title="Agregar Coordinador"><i
+                                                    class="icon-plus icon-white"></i></a>
+                                        {% endif %}
+                                    </td>
+
+                                </tr>
+                            {% endwith %}
+                        {% endfor %}
+
+                        {% if not listEvaluacion %}
+                            <tr>
+                                <td colspan="10"> NO EXISTEN PERSONAS</td>
+                            </tr>
+                        {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+     <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+
+                        {% if paging.primera_pagina %}
+                            <li><a href="/evaluacionesdocentes?action=vercoordinadores&periodo={{ periodo }}&periodoev={{ periodoev}}&page=1">1</a></li>
+                            <li><a href="/evaluacionesdocentes?action=vercoordinadores&periodo={{ periodo }}&periodoev={{ periodoev}}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/evaluacionesdocentes?action=vercoordinadores&periodo={{ evaluacion.id }}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/evaluacionesdocentes?action=vercoordinadores&periodo={{ periodo }}&periodoev={{ periodoev }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/evaluacionesdocentes?action=vercoordinadores&periodo={{ periodo }}&periodoev={{ periodoev }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/evaluacionesdocentes?action=vercoordinadores&periodo={{ periodo }}&periodoev={{ periodoev }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+        </div>
+
+
+
+    <section>
+    <div class="modal fade static" id="modal_coordinador">
+{#        <div class="modal fade" id="modal_coordinador" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel"#}
+{#             aria-hidden="true">#}
+            <input type="text" id="idevaluacioncoordinadordocente" style="display: none;">
+            <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width: 100%">
+                <div class="modal-content">
+                    <div class="modal-header">
+                            <h4 style="color: #373a3c">Agregar Coordinador</h4>
+                            <hr>
+                        </div>
+                        <div class="modal-body-coordinador">
+                         <div class="row-fluid">
+                            <div class="span 12">
+
+
+                                    <label>PROFESOR: </label>
+                                    <br>
+                                    <label style="margin-left: 10px; color: #373a3c; font-size: 18px; font-size:larger;" id="idnomprofesor"></label>
+
+                                    <span class="helptxtcoordinador text-red"
+                                          style="font-size: 12px; color: red;font-weight: bold; "></span>
+                                </div>
+                            </div>
+                        <br>
+                            <div class="row-fluid">
+                                <div class="span 12">
+
+
+                                    <label>COORDINADORES <a style="color: #d92550">(*)</a>: </label>
+                                    <select style="width: 100%" id='cmbaddcoordinador' class="custom-select2 form-control">
+                                        <option value='0'> SELECCIONAR</option>
+
+                                        {% for coord in listcoordinadores %}
+                                            <option value="{{ coord.id }}">{{ coord.persona.nombre_completo_inverso }}</option>
+                                        {% endfor %}
+                                    </select>
+
+                                    <span class="helptxtcoordinador text-red"
+                                          style="font-size: 12px; color: red;font-weight: bold; "></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-center">
+                            <button class="btn btn-success" id="idagregarcoordinador">Agregar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+{#        </div>#}
+    </section>
+{% endblock %}
+{% block sectorjs %}
+    <!-- buttons for Export datatable -->
+    <script src="../../ube/static/src/plugins/datatables/js/dataTables.buttons.min.js"></script>
+    <script src="../../ube/static/src/plugins/datatables/js/buttons.bootstrap4.min.js"></script>
+    <script src="../../ube/static/src/plugins/datatables/js/buttons.print.min.js"></script>
+    <script src="../../ube/static/src/plugins/datatables/js/buttons.html5.min.js"></script>
+    <script src="../../ube/static/src/plugins/datatables/js/buttons.flash.min.js"></script>
+    <script src="../../ube/static/src/plugins/datatables/js/pdfmake.min.js"></script>
+    <script src="../../ube/static/src/plugins/datatables/js/vfs_fonts.js"></script>
+    <!-- Datatable Setting js -->
+    <script src="../../ube/static/vendors/scripts/datatable-setting.js"></script>
+{% endblock %}

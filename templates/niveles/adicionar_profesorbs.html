@@ -1,0 +1,113 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    var valormateria=0;
+    $("#id_desde, #id_hasta").datepicker({format:"dd-mm-yyyy"});
+    $("#id_segmento").addClass("input-large");
+    $($("#id_valor").get(0).parentNode.parentNode).hide();
+    $("#id_segmento, #id_profesor, #id_desde, #id_hasta").addClass("validate[required]");
+    if ( '{{  institucion  }}' != '2'  || '{{  conduccion  }}' == 'True' ) {
+                $("#id_profesor_aux").each(function() {
+                    $($(this).get(0).parentNode.parentNode).hide();
+                });
+    }
+    {% if error == '2' %}
+        smoke.alert("PROFESOR SUPERA EL MAXIMO DE ASIGNATURAS PERMITIDAS ");
+    {% endif %}
+
+    {% if error == '3' %}
+        smoke.alert("YA EXISTE UN PROFESOR REGISTRADO EN EL MISMO RANGO DE FECHA ");
+    {% endif %}
+
+    {% if not materia.nivel.cerrado %}
+        {#OCastillo 10-06-2019  #}
+        $("#id_profesor").change(function(){
+            {# OCastillo 12-09-2023 esta accion queda sin efecto luego de reunion con Facultad FASSS                                       #}
+            {#OCastillo 11-08-2021 para consultar valor ingresado  #}
+{#            $.post("/niveles",{"action": "consultarvalordocente", "id":$("#id_profesor").val(), "idseg":$("#id_segmento").val() },function(data) {#}
+{#            if(data.result == "ok"){#}
+{#                mensaje =(data.docente + ' tiene asignado el valor de:$ ' +data.valor + ', desea mantener el valor?');#}
+{#                smoke.confirm( mensaje, function(e){#}
+{#                    $("#id_valor").val(0);#}
+{#                    if (e){#}
+{#                            valormateria=data.valor;#}
+{#                            $("#id_valor").val(valormateria);#}
+{#                        }else{#}
+{#                            $("#id_valor").val(0);#}
+{#                        }#}
+{#                        }, {#}
+{#                        ok: "ACEPTAR",#}
+{#                        cancel: 'CANCELAR',#}
+{#                        classname: "custom-class",#}
+{#                        reverseButtons: true#}
+{#                        });#}
+{#                    }else{#}
+{#                        $($("#id_profesor").get(0).parentNode).find(".help-text").html("");#}
+{#                        $("#id_valor").val(0);#}
+{#                    }#}
+{#            },"json");#}
+
+
+            $.post("/niveles",{"action": "consulta_docente", "id":$("#id_profesor").val() },function(data) {
+            if(data.result == "ok"){
+                $($("#id_profesor").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Docente " +  data.docente + " tiene actas sin entregar </i></h6>");
+                $("#id_profesor").val("");
+                }
+            else{
+                $($("#id_profesor").get(0).parentNode).find(".help-text").html("");
+            }
+            },"json");
+
+            $.post("/niveles",{"action": "docentepracticahospital", "id":$("#id_profesor").val(), "idmat":{{ materia.id }},"idseg":$("#id_segmento").val() },function(data) {
+                if(data.result == "ok"){
+                    $($("#id_profesor").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Docente  pertenece a pr&aacute;cticas hospitalarias, no puede ser asignado a materia te&oacute;rica   </i></h6>");
+                    $("#id_profesor").val("");
+                    }
+                if(data.result == "ok2"){
+                    $($("#id_profesor").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Docente  de pr&aacute;cticas hospitalarias </i></h6>");
+                }
+                if(data.result == "no"){
+                    $($("#id_profesor").get(0).parentNode).find(".help-text").html("");
+                }
+                },"json");
+            });
+    {% else %}
+        $($("#id_profesor").get(0).parentNode.parentNode).show();
+        $("#id_enviar").attr("disabled",true);
+        $("#id_desde").attr("disabled",true);
+        $("#id_hasta").attr("disabled",true);
+        $($("#id_enviar").get(0).parentNode.parentNode).hide();
+        $($("#id_profesor_aux").get(0).parentNode.parentNode).hide();
+    {% endif %}
+
+    {#OCastillo 27-06-2019  #}
+    $("#id_profesor_aux").change(function(){
+       $.post("/niveles",{"action": "consulta_docente", "id":$("#id_profesor_aux").val() },function(data) {
+        if(data.result == "ok"){
+            $($("#id_profesor_aux").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Docente " +  data.docente + " tiene actas sin entregar </i></h6>");
+            $("#id_profesor_aux").val("");
+            }
+        else{
+            $($("#id_profesor_aux").get(0).parentNode).find(".help-text").html("");
+        }
+        },"json");
+    });
+
+{% endblock %}
+{% block titulo %}
+    {% if not materia.nivel.cerrado %}
+        Adicionar Profesor a Materia de Nivel Curricular
+    {% else %}
+        <span style="color: #dc143c;"><b>Adicionar Profesor a Materia en Nivel Cerrado</b></span>
+    {% endif %}
+{% endblock %}
+{% block formaction %}/niveles{% endblock %}
+{% block formextra %}
+    {% if not materia.nivel.cerrado %}
+        <input type='hidden' name='action' value='addprofesor'/>
+    {% else %}
+        <input type='hidden' name='action' value='addprofesornivelcerrado'/>
+    {% endif %}
+    <input type='hidden' name='mid' value='{{ materia.id }}'/>
+{% endblock %}
+{% block formback %}/niveles?action=materias&id={{ materia.nivel.id }}{% endblock %}
+{% block buttonname %}Adicionar Profesor{% endblock %}

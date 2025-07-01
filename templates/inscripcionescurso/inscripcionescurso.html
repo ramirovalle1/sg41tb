@@ -1,0 +1,211 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+
+            $(".btn-desactivar").click(function() {
+                var ins = $(this).attr("ins");
+                location.href = '/inscripcionescurso?action=desactivar&id='+ins;
+            });
+
+            $(".resetearusuario").click(function() {
+                var ins = $(this).attr("ins");
+                $(".btn-resetear").attr("ins",ins);
+                $("#resetear").modal("show");
+            });
+            $("#cursos #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#cursos").modal("hide");
+            });
+
+            $(".cursos").click(function() {
+               var vid = $(this).attr("pid");
+                   $.get("/inscripcionescurso", {'action':'vercurso', 'id': vid}, function(data) {
+                        $("#cursos .modal-body").html(data);
+                        $("#cursos").modal({"backdrop":"static"});
+                        $("#cursos").modal("show");
+                   }, "html");
+               return false;
+              });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/inscripcionescurso?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/inscripcionescurso?g='+id;
+                }else{
+                    location.href = '/inscripcionescurso';
+                }
+
+            });
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                Inscripciones de Cursos
+
+            </h3>
+
+            <br>
+        </div>
+        <div class='atright'>
+            {% if grupo %}
+                <a href="/adm_grupos" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% else %}
+                <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="row-fluid" >
+        {% if perms.sga.change_inscripcion %}
+            <div class='span2' style="width: 160px">
+                <a href="/inscripcionescurso?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Inscripci&oacute;n</a>
+            </div>
+        {% endif %}
+
+        <div class='span5' style="width: 450px">
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/inscripcionescurso" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Cedula/Pasap</th>
+                <th>Tel&eacute;fonos</th>
+                <th>Emails</th>
+                <th>Fecha</th>
+                <th> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for inscripcioncurso in inscripcionescurso %}
+                    <tr>
+                        <td>
+                            {% if perms.sga.change_inscripcion  %}
+                                <a href='/inscripcionescurso?action=edit&id={{ inscripcioncurso.id }}'>{{ inscripcioncurso.persona }}</a>
+                            {% endif %}
+                        </td >
+
+
+                        <td>{{ inscripcioncurso.persona.cedula }} <br/> {% if inscripcioncurso.persona.pasaporte %}{{ inscripcioncurso.persona.pasaporte }}{% endif %}</td>
+                        <td>
+                            {% if inscripcioncurso.persona.telefono %}{{ inscripcioncurso.persona.telefono }}{% endif %}
+                            <br/>{% if inscripcioncurso.persona.telefono_conv %}{{ inscripcioncurso.persona.telefono_conv }}{% endif %}
+                        </td>
+                        <td>
+                            {% if inscripcioncurso.persona.email %}
+                                <a href="mailto:{{ inscripcioncurso.persona.email }}" style="color: #003bb3">
+                                    {{ inscripcioncurso.persona.email }}
+                            {% endif %}
+{#                            <br/>{{ inscripcion.persona.emails }}#}
+                        </td>
+                        <td style="font-size: 11px" nowrap>{{ inscripcioncurso.fecha|date:"d-m-Y"  }}</td>
+
+                        <td>
+                            <div class="btn-group">
+
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                    <li><a href="/inscripcionescurso?action=pagoscurso&id={{ inscripcioncurso.id }}"><i class="icon-book"></i> Ver Rubros</a></li>
+                                    <li><a href="/inscripcionescurso?action=agregar&id={{ inscripcioncurso.id }}"><i class="icon-book"></i> Agregar Cursos</a></li>
+                                    <li><a class="cursos" pid="{{ inscripcioncurso.id }}" href="#"><i class="icon-book"></i> Ver Cursos</a></li>
+                                    </ul>
+
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if perms.sga.change_inscripcion %}
+            <a href="/inscripciones?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Inscripci&oacute;n</a>
+            {% endif %}
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/inscripciones?page=1">1</a></li>
+                            <li><a href="/inscripciones?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/inscripciones?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/inscripciones?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/inscripciones?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/inscripciones?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="modal fade static" id="cursos"  style= "margin-left: -500px" >
+    <div class="row-fluid modal-header">
+        <h4 ><i> CURSOS </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a href="#" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,219 @@
+{% extends "basebs.html" %}
+{% load func_extras %}
+{% block heading %}
+
+<script type="text/javascript" >
+
+$(function() {
+    $("#search").click(function() {
+    var term = $("#searchfield").val().toUpperCase();
+    location.href='/evaluaciondocente?action=ver&id={{ evaluaciondocente.id }}&s='+term+"&acc={{ acc }}"
+    });
+    eliminarmateria = function(id){
+         swal({
+                title: 'Está Seguro que desea eliminar la materia  ',
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si,Eliminar!',
+                cancelButtonText: 'Cancel',
+                confirmButtonClass: 'btn btn-success margin-5',
+                cancelButtonClass: 'btn btn-danger margin-5',
+                buttonsStyling: false,
+                allowOutsideClick: false,
+                }).then(function (isConfirm) {
+
+                if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+        {#$("#foreditmodulo").modal("hide");#}
+                    $.post("/evaluaciondocente", {"action": "eliminarmateria",id:id}, function (data) {
+                        if (data.result == 'ok') {
+                            swal("Notificación", "Se eliminó correctamente ", "success");
+                            location.reload()
+                        } else {
+                            swal("Error",data.message,"error");
+                        }
+                        hideWaiting();
+                    }, 'json');
+                }
+            })
+
+        }
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+
+
+});
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+
+{% endblock %}
+{% block canvas %}
+    <div class="pd-ltr-20 xs-pd-20-10">
+        <div class="min-height-50px">
+            <div class="page-header">
+                <div class="row">
+                    <div class="col-lg-8 col-md-8 col-sm-8">
+                        <div class="title">
+                            <h3 > {{ evaluaciondocente.descripcion }}</h3>
+                        </div>
+                    </div>
+
+                     <div class="col-md-2 col-sm-2">
+                        <li><a href="/evaluaciondocente?action=agregar&id={{ evaluaciondocente.id }}&acc={{ acc }}&op=1" class='btn btn-success'><i class="icon-plus icon-white"></i> Asignar Materias </a></li>
+
+                </div>
+                    <div class="col-md-2 col-sm-2">
+                        <a href="/evaluaciondocente?acc={{ acc }}" class='btn btn-black'><i class="icon-copy ion-arrow-left-a"></i> Atras</a>
+
+                    </div>
+                </div>
+            </div>
+            <div class="card-box mb-30">
+            <div class="pd-20">
+                    <div class="row">
+                        <div class="col-lg-4 col-md-3">
+                            <div class="form-group">
+                                <input type="text"  id='searchfield' placeholder="Buscar el nombre del Periodo" class="form-control round" value='{{ search }}'>
+                            </div>
+                        </div>
+                        <div class="col-md-8 col-lg-8">
+                            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                             {% if search %}
+                                <a href ="/evaluaciondocente?action=ver&id={{ evaluaciondocente.id }}&acc={{ acc }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+                            {% endif %}
+
+        {#                         <button type="button"  href="/carrera?action=add" class="btn btn-success" ><i class="icon-plus icon-white"></i> Agregar</button>#}
+                        </div>
+                    </div>
+                </div>
+                <div class="pb-20">
+                    <div id="DataTables_Table_0_wrapper" class="dataTables_wrapper dt-bootstrap4 no-footer">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <table  class="data-table table stripe hover nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th >Materias </th>
+                                            <th >Nivel </th>
+                                            <th >Periodo </th>
+                                            <th style="text-align: center"></th>
+
+                                        </tr>
+                                    </thead>
+                                <tbody>
+                                {% for d in evaluacion %}
+                                    <tr>
+                                        <td >{{ d.materia }}</td>
+                                        <td >{{ d.materia.nivel}}</td>
+                                        <td >{{ d.materia.nivel.periodo }}</td>
+                                        <td style="text-align: center"><a class="btn btn-sm btn-danger eliminargrupo" title="Eliminar Materia" onclick="eliminarmateria('{{ d.id }}');" > Eliminar</a></td>
+
+
+                                    </tr>
+
+
+                                {% endfor %}
+                                {% if not evaluacion %}
+                                    <tr>
+                                        <td colspan="10">
+                                            NO EXISTE REGISTRO
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12 col-md-12">
+                        <div class="dataTables_paginate paging_simple_numbers">
+                            {% if paging.num_pages > 20 %}
+                                <ul class="pagination" style="float: right">
+                                    {% if paging.primera_pagina %}
+                                        <li class="page-item"><a class="page-link" href="/evaluaciondocente?action=ver&id={{ idpag }}&page=1&acc={{ acc }}">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="/evaluaciondocente?action=ver&id={{ idpag }}&page={{ paging.ellipsis_izquierda }}&acc={{ acc }}" class="active">...</a></li>
+                                    {% endif %}
+                                    {% for pagenumber in paging.paginas %}
+                                        <li {% if pagenumber == page.number %}class='page-item active'{% else %}class="page-item"{% endif %} ><a class="page-link" href="/evaluaciondocente?action=ver&id={{ idpag }}&page={{ pagenumber }}&acc={{ acc }}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                                    {% endfor %}
+                                    {% if paging.ultima_pagina %}
+                                        <li class="page-item"><a class="page-link" href="/evaluaciondocente?action=ver&id={{ idpag }}&page={{ paging.ellipsis_derecha }}&acc={{ acc }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                                        <li class="page-item"><a class="page-link" href="/evaluaciondocente?action=ver&id={{ idpag }}&page={{ paging.num_pages }}&acc={{ acc }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                                    {% endif %}
+                                </ul>
+                            {% else %}
+                                <ul class="pagination" style="float: right">
+                                    {% for pagenumber in paging.page_range %}
+                                        <li {% if pagenumber == page.number %}class="page-item active"{% else %} class="page-item"{% endif %}><a class="page-link" href="/evaluaciondocente?action=ver&id={{ idpag }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}&acc={{ acc }}">{{ pagenumber }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div  class="modal fade " id="crearevaluaciondocente" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content" style="width: 500px;left: -100px">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Crear Evaluacion</h4>
+
+                </div>
+
+                <div class="modal-body" style="width:900px;overflow: auto">
+                <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                 <label >Descripcion: <a style="color: #d92550">(*)</a>: </label>
+                                    <input type="text" id="txtdescripcion" style="text-transform: uppercase" placeholder="Ingrese la Descripcion "  class="form-control" value="" >
+                                    <p id="helptxtdescripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>
+                        </div>
+                    </div>
+                <div class="row">
+                    <div class="col-md-12">
+                         <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">
+                                <input type="checkbox" class="custom-control-input" id="chkestado">
+                                <label class="custom-control-label" for="chkestado"><h4 class="form-section"><i class="icon-clipboard4"></i> Estado</h4></label>
+                         </div>
+                    </div>
+
+                </div>
+
+
+
+
+                </div>
+
+                <div class="modal-footer">
+                <button type="button" id="btncancelarespuesta" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+                    <button type="button"  class="btn btn-success btn-min-width btncreaeva" ><i class="icon-floppy-disk icon-white"></i> Guardar </button>
+{#                          <button type="button" class="btn btn-success btn-min-width btnguarrespuestas" op="2" ><i class="icon-floppy-disk icon-white"></i> Guardar y Cerrar</button>#}
+
+{#                    <button type="button" id="btningresargestionespecie" class="btn" style="background: #63A836;color: white" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>#}
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

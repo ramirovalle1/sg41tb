@@ -1,0 +1,106 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script>
+        $(function() {
+            evaluados = { {% for evaluado in evaluados %}"pid{{ evaluado.0.id }}": "{{ evaluado.1 }}"{% if not forloop.last %}, {% endif %}{% endfor %} };
+            $(".consultar").each(function() {
+                var pid = $(this).attr("id");
+                if (evaluados[pid]=="True") {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+            $(".evaluar").each(function() {
+                var pid = $(this).attr("id");
+                if (evaluados[pid]=="False") {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h2>Evaluaci&oacute;n de mis Profesores</h2>
+            {% if matricula  %}<h4>Estudiante: {{ matricula.inscripcion }}</h4>
+            <h5>{{ matricula.nivel }}</h5> {% endif %}
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        {% if matricula %}
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Profesores</th>
+                    <th>Asignatura</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for materiaasignada in materiasasignadas %}
+                    {% for profesor in materiaasignada.profesores %}
+                    <tr>
+                        <td>
+                            {{ profesor }}
+                        </td>
+                        <td>
+                            {{ materiaasignada.materia.nombre_completo }}<br/>
+                            <span class="label">{{ materiaasignada.materia.inicio|date:'d-m-Y' }} - {{ materiaasignada.materia.fin|date:'d-m-Y' }}</span>
+                        </td>
+                        <td>
+                            {#ESTA SEECION ES PARA DETERMINAR SI EL DOCENTE TIENE REEMPLAZO                        #}
+
+                            {% if materiaasignada.materia|args:profesor|call:"prof_aux" != None %}
+                                {% with prof=materiaasignada.materia|args:profesor|call:"prof_aux" %}
+
+                                    <a href="/pro_aluevaluacion?action=evaluar&id={{ matricula.inscripcion.id }}&p={{ prof }}&materia={{ materiaasignada.materia.id }}&p2={{  profesor.id }}" id="pid{{ prof }}" class="evaluar btn btn-mini btn-success"><i class="icon-flag icon-white"></i>Evaluar</a>
+                                    <a href="/pro_aluevaluacion?action=conseval&id={{ matricula.inscripcion.id }}&p={{  prof }}&p2={{  profesor.id }}" id="pid{{ prof }}" class="consultar btn btn-mini btn-success btn-info"><i class="icon-flag icon-white"></i>Ver Evaluaci&oacute;n</a>
+                                {% endwith %}
+                            {% else %}
+                                <a href="/pro_aluevaluacion?action=conseval&id={{ matricula.inscripcion.id }}&p={{ profesor.id }}" id="pid{{ profesor.id }}" class="consultar btn btn-mini btn-success btn-info"><i class="icon-flag icon-white"></i>Ver Evaluaci&oacute;n</a>
+                                 <a href="/pro_aluevaluacion?action=evaluar&id={{ matricula.inscripcion.id }}&p={{ profesor.id }}&materia={{ materiaasignada.materia.id }}" id="pid{{ profesor.id }}" class="evaluar btn btn-mini btn-success"><i class="icon-flag icon-white"></i>Evaluar</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+                {% if prof_pratica %}
+                     <td>
+                            {{ prof_pratica  }}
+                    </td>
+                     <td>
+                            {{ asi_pract  }}
+                     </td>
+                    <td>
+                    {% if eval %}
+                        <a href="/pro_aluevaluacion?action=conseval&id={{ matricula.inscripcion.id }}&p={{  prof_pratica.id }}&p2={{  prof_pratica.id }}" id="pid{{ prof_pratica }}" class=" btn btn-mini btn-success btn-info"><i class="icon-flag icon-white"></i>Ver Evaluaci&oacute;n</a>
+                    {%  else %}
+                        <a href="/pro_aluevaluacion?action=evaluar&id={{ matricula.inscripcion.id }}&p={{ prof_pratica.id }}&materia={{materia_prac}}&p2={{  prof_pratica.id }}" id="pid{{ prof_pratica }}" class="btn btn-mini btn-success"><i class="icon-flag icon-white"></i>Evaluar</a>
+                    {%  endif %}
+                    </td>
+                {% endif %}
+                {% if not materiasasignadas %}
+                    <tr>
+                        <td colspan="4" align='center'>NO HAY EVALUACIONES DISPONIBLES AUN</td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="row-fluid">
+                <div class="span12 alert alert-error">{% if noalumno %}AVISO: UD. no consta como estudiante en este per&iacute;odo{% else %}AVISO: No existe Proceso Evaluativo en este per&iacute;odo.  Puede seleccionar otro per&iacute;odo si desea, que tenga un Proceso de Evaluaci&oacute;n Docente{% endif %}</div>
+            </div>
+        {% endif %}
+
+        </div>
+    </div>
+{% endblock %}

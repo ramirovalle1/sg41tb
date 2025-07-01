@@ -1,0 +1,296 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script src="../../static/sganuevo/src/plugins/apexcharts/apexcharts.min.js"></script>
+
+<style>
+
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color:  #184679; }
+
+.btn-primary {
+  color: #fff;
+  background-color: #184679;
+  border-color: #184679;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover, .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color:#184679;
+    color: #fff;
+    border-color: #184679;
+}
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover,.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #184679;
+}
+
+
+
+</style>
+
+<script>
+
+
+
+ $(function () {
+
+      function cargarInicial(){
+          {% if id %}
+              $("#cmbidperiodo").val(parseInt('{{ id }}'));
+              $('#cmbidperiodo').trigger('change.select2');
+          {% endif %}
+          {% for xlistapreguntas in listapreguntas %}
+
+                var pro_json_esta=[];
+                var seriesesta=[];
+                var labelesta=[];
+
+                {% for datadese in listadesercion  %}
+                    {% if xlistapreguntas.id == datadese.idpregunta %}
+                        seriesesta.push(parseInt('{{ datadese.cantidad  }}'));
+                        labelesta.push('{{ datadese.escala  }}');
+                    {% endif %}
+                {% endfor %}
+
+                pro_json_esta.push({"motivo":labelesta,
+                    "cantidad":seriesesta});
+
+                var optionsmoti = {
+                    series: pro_json_esta[0].cantidad,
+                    chart: {
+                        type: 'pie',
+                         width: 600
+                    },
+                    labels:pro_json_esta[0].motivo,
+                    responsive: [{
+                        breakpoint: 480,
+                        options: {
+                            chart: {
+                                width: 200
+                            },
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }]
+                };
+                var chartesta = new ApexCharts(document.querySelector("#chart_{{ xlistapreguntas.id }}"), optionsmoti);
+                chartesta.render();
+
+
+
+           {% endfor %}
+      
+           //// grafico resumen
+           var pro_json_resumen=[];
+           var seriesestaresumen=[];
+           var labelestaresumen=[];
+           
+            {% for xlistadesercionresumen in listadesercionresumen  %}
+                    seriesestaresumen.push(parseInt('{{ xlistadesercionresumen.cantidad  }}'));
+                    labelestaresumen.push('{{ xlistadesercionresumen.nompregunta  }}');
+            {% endfor %}
+      
+             pro_json_resumen.push({"labels":labelestaresumen,
+                    "cantidad":seriesestaresumen});
+           
+           var options = {
+              series: pro_json_resumen[0].cantidad,
+              chart: {
+              type: 'pie',
+            },
+               
+            labels: pro_json_resumen[0].labels,
+            responsive: [{
+              breakpoint: 480,
+              options: {
+                chart: {
+                  width: 200
+                },
+                legend: {
+                  position: 'bottom'
+                }
+              }
+            }]
+            };
+    
+            var chartresumen = new ApexCharts(document.querySelector("#chart_total"), options);
+            chartresumen.render(); 
+
+      }
+
+      $( document ).ready(function() {
+
+        cargarInicial()
+      });
+
+
+      function buscar(){
+       Loader.open();
+       location.href = "/estadisticasadmin?action=verdesercion&id=" + $("#cmbidperiodo").val() ;
+      }
+
+
+      $("#btnbuscardasboard").click(function() {
+
+          buscar();
+      });
+
+      $("#btnexcelprospecto").click(function() {
+
+               Loader.open();
+
+               var formData = new FormData();
+               formData.append('action', 'generar_excel');
+               formData.append('idperiodo',  $("#cmbidperiodo").val());
+
+
+
+               $.ajax({
+                   url: '/estadisticasadmin',
+                   type: "POST",
+                   contentType: false,
+                   data: formData,
+                   processData: false,
+                   cache: false,
+                   success: function (data) {
+
+                       if (data.result == "ok") {
+                           location.href = data.url;
+                       } else {
+                           swal("Error", data.message, "error");
+
+                       }
+
+                   },
+                   error: function (xhr, ajaxOptions, thrownError) {
+                       swal("Error", "Error Conexion en el Servidor", "error");
+
+                   },
+
+                   complete: function () {
+                        Loader.close();
+                   }
+
+               });
+      });
+
+
+
+
+
+
+
+ });
+
+
+</script>
+
+
+
+{% endblock %}
+{% block canvas %}
+      <div class="main-container">
+
+         <div class="xs-pd-20-10 pd-ltr-20">
+                <div class="page-header">
+                    <div class="row">
+                        <div class="col-md-10 col-sm-12">
+                            <div class="title">
+                                <h4>Dashboard</h4>
+                            </div>
+                        </div>
+                         <div class="col-lg-2 col-md-2 col-sm-2">
+                            <div class="title">
+                                <a href="/estadisticasadmin" style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                            </div>
+                         </div>
+                    </div>
+                </div>
+                <div class="card-box mb-30">
+                    <div class="pd-20">
+                        <div class="row">
+                             <div class="col-md-8 col-sm-12">
+                                <div class="form-group">
+                                    <label >Periodos :</label>
+                                    <select id="cmbidperiodo" style="width: 100%" class="custom-select2 form-control">
+
+                                        {% for periodo2 in periodos %}
+                                          <option value={{ periodo2.id }}>{{ periodo2 }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                             </div>
+
+
+                            <div class="col-md-2" style="margin-top: 5px">
+                                <label > <a style="color: #d92550"></a></label>
+                                <div class="form-group">
+                                    <button type="button" id="btnbuscardasboard" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+                                    <button type="button" id="btnexcelprospecto" style="margin-left: 5px" class="btn" title="Descargar Excel Prospecto" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>
+                                </div>
+                            </div>
+
+
+
+                        </div>
+                    </div>
+                </div>
+         
+                <div class="row clearfix" >
+                       <div class="col-md-3 mb-30" >
+                       </div>    
+                        <div class="col-md-6 mb-30" >
+                            <div class="pd-20 card-box height-100-p">
+                                <h4 class="h4 text-blue">Resumen</h4>
+                                <div id="chart_total" ></div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-30" >
+                       </div>
+                    
+                </div>
+
+                <div class="row clearfix" >
+                    {% for xlistapreguntas in listapreguntas %}
+                        <div class="col-md-6 mb-30" >
+                            <div class="pd-20 card-box height-100-p">
+                                <h4 class="h4 text-blue">{{ xlistapreguntas.pregunta }}</h4>
+                                <div id="chart_{{ xlistapreguntas.id }}" ></div>
+                            </div>
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+
+         </div>
+
+      </div>
+
+
+{% endblock %}

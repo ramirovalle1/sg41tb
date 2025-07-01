@@ -1,0 +1,248 @@
+{% extends "formbs.html" %}
+{% block formwidth %}12{% endblock %}
+
+{% block javascript %}
+    $("#id_inscripcion").addClass("validate[required]");
+
+
+    coordinaciones = {
+        {% for coordinacion in coordinaciones %}
+            "{{ coordinacion.0.id }}": {"id": {{ coordinacion.0.id }}, "niveles": [{% for nivel in coordinacion.1 %}{"id":"{{ nivel.id }}", "nombre": "{{ nivel }}", "sesion": "{{ nivel.sesion.id }}" }{% if not forloop.last %},{% endif %}{% endfor %}] }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    };
+
+    {% autoescape off %}
+    materias = [
+        {% for materia in materias %}
+            {"id": {{ materia.id }}, "coordinacion": "{{ materia.nivel.coordinacion.id }}", "nombre":"{{ materia.asignatura.nombre }}", "codigo":"{{ materia.identificacion }}", "sesion": "{{ materia.nivel.sesion.id }}", "profesores": "{{ materia.profesores }}", "clases":"{{ materia.clases }}", "general": {{ materia.rectora|lower }}, "asignatura": {{ materia.asignatura.id }} }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    {% endautoescape %}
+
+    buscarMateria = function(mid) {
+        for (var i in materias) {
+            var materia = materias[i];
+            if (materia.id==mid) {
+                return materia;
+            }
+        }
+        return null;
+    };
+
+    filtromaterias = [];
+
+    buscarMaterias = function(cid, sesion) {
+        var lista = [];
+        for (var i in materias) {
+            var materia = materias[i];
+            if (filtromaterias.length==0) {
+                if ((materia.coordinacion==cid && materia.sesion==sesion) || (materia.sesion==sesion && materia.general)) {
+                    lista.push(materia);
+                }
+            } else {
+                if ( (materia.coordinacion==cid && materia.sesion==sesion && filtromaterias.indexOf(materia.asignatura)>=0) ||
+                     (materia.sesion==sesion && materia.general && filtromaterias.indexOf(materia.asignatura)>=0) ||
+                     (materia.coordinacion==cid && materia.sesion==sesion && materia.general)) {
+                    lista.push(materia);
+                }
+            }
+        }
+        return lista;
+    };
+
+
+
+    buscar_alumno = function(query, process) {
+        $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+            'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_inscripcion").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+        }, 'json');
+    };
+
+
+
+    filtrarMaterias = function(id) {
+        $.post("/matriculas", {'action': 'filtrarmaterias', 'idi': id}, function(data) {
+            if (data.result=='ok') {
+                filtromaterias = data.filtromaterias;
+                $("#coord{{ micoordinacion.id }}").trigger("click");
+            } else {
+                filtromaterias = [];
+                $("#coord{{ micoordinacion.id }}").trigger("click");
+            }
+        }, "json");
+    }
+
+    chequearMatricula = function(iid, nombre) {
+        $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("");
+        $.post("/matriculas", {'action': 'checkmat', 'iid': iid}, function(data) {
+            if (data.result=='ok') {
+                $("#id_inscripcion").val("");
+                $("#id_inscripcion").removeAttr("myval");
+                showWaiting("Estudiante Matriculado","Esta matriculado en: "+data.periodo+" "+data.matricula+" con "+data.cantidadmaterias+" materias", true);
+            } else {
+                if (data.plan12) {
+                    $($("#id_inscripcion").get(0).parentNode).find(".help-text").html("Plan12 Activo, "+data['cupoplan12']+" materias pendientes (Las materias se asignan al plan segun se escojan)");
+                }
+            }
+        }, 'json');
+    };
+
+    $('#id_inscripcion').typeahead({source: buscar_alumno, updater: function(item) {
+        var results = $("#id_inscripcion").get(0).results;
+        for (var i in results) {
+            var datos = results[i];
+            if (item==datos.name) {
+                $("#inscripcion").val(datos.id);
+                filtrarMaterias(datos.id);
+                chequearMatricula(datos.id,datos.name);
+            }
+        }
+
+        return item;
+    }});
+
+    yamatriculadas = [];
+
+    existeEnArreglo = function(arr,o) {
+        for (var i in arr) {
+            if(arr[i] == o) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+
+
+    eliminarMateria = function() {
+        var mid = $(this).val();
+        $(this.parentNode).remove();
+        delete yamatriculadas[ yamatriculadas.indexOf(mid) ];
+    };
+
+    accionMatricular = function() {
+        var mid = $(this).attr('mid');
+
+        if (existeEnArreglo(yamatriculadas,mid)) {
+            smoke.alert("Materia ya adicionada para matricular");
+            return false;
+        } else {
+            nmat = buscarMateria(mid);
+            for (var i in yamatriculadas) {
+                var mate = buscarMateria(yamatriculadas[i]);
+                if (mate.nombre==nmat.nombre) {
+                    smoke.alert("Materia similar ya adicionada para matricular");
+                    return false;
+                }
+            }
+        }
+        yamatriculadas.push(mid);
+        var materia = buscarMateria(mid);
+        $("#matriculadas").append('<label class="checkbox">'+
+                                    '<input type="checkbox" name="ins" value="'+mid+'" checked>'+
+                                    materia.codigo + ' - ' + materia.nombre+' ('+materia.profesores+')'+
+                                    '</label>').find("input").click(eliminarMateria);
+
+    };
+    $('#formbutton').click(function(){
+      $("#formbutton").hide()
+    });
+
+    $(".coord").click(function() {
+        var cid = $(this).attr("cid");
+        $("#tablebody").empty();
+        $("li.coordinacionli").removeClass("active");
+        $(this.parentNode).addClass("active");
+        var niveles = coordinaciones[cid].niveles;
+        for (var i in niveles) {
+            var nivel = niveles[i];
+            $("#tablebody").append("<tr class='info'><td colspan='5'>"+nivel.nombre+"</td></tr>");
+            var mats = buscarMaterias(cid, nivel.sesion);
+            $("#tablebody").append("<tr><td><b>C&oacute;digo</b></td><td><b>Asignatura</b></td><td><b>Profesores</b></td><td><b>Horario</b></td><td></td></tr>");
+            for (var j in mats) {
+                var m = mats[j];
+                $("#tablebody").append("<tr><td>"+m.codigo+"</td><td nowrap='true'>"+m.nombre+((m.general)?" <span class='label label-warning'>MATERIA GENERAL</span>":"")+"</td><td nowrap='true'>"+m.profesores+"</td><td>"+m.clases+"</td><td nowrap='true'><a href='#' class='matricular btn btn-mini btn-info' mid='"+m.id+"'><i class='icon-arrow-up'></i>Matricular</a></td></tr>");
+            }
+
+        }
+        $(".matricular").click(accionMatricular);
+    });
+
+    $("#coord{{ micoordinacion.id }}").trigger("click");
+
+{% endblock %}
+{% block titulo %}
+    Matricular Estudiante: {{ nivel }}<br/>{% if not nivel.carrera %}{{ nivel.coordinacion }}{% endif %}<br>
+    <h4>Per&iacute;odo: {{ nivel.periodo }}</h4></br>
+
+    {% if error %}
+        <div class="alert alert-error">
+            {% if error == "1" %}
+                Ya este alumno esta matriculado !!!!
+            {% endif %}
+            {% if fail == 1 %}
+                Alumno Tiene Deuda
+            {% endif %}
+        </div>
+    {% endif %}
+
+{% endblock %}
+{% block formaction %}/matriculas{% endblock %}
+{% block formextra %}
+    <button type="submit" class="btn btn-success" id="formbutton2">Adicionar Matr&iacute;cula</button>
+    <input type='hidden' name='action' value='addmatriculalibre'/>
+    <input type="hidden" id="inscripcion" name="inscripcion_id" value=""/>
+    <input type="hidden" name="nivel" value="{{ nivel.id }}"/>
+
+{% endblock %}
+
+{% block formsuffix %}
+
+    <div class="control-group">
+        <label class="control-label">Materias Matriculadas</label>
+        <div class='controls' id="matriculadas">
+
+
+{#            {% for materia in nivel.materias %}#}
+{#                <label class="checkbox">#}
+{#                    <input type="checkbox" name="ins" value="{{ materia.id }}">#}
+{#                    {{  materia.asignatura }} ({{ materia.profesor_actual.profesor }})#}
+{#                </label>#}
+{#            {% endfor %}#}
+        </div>
+    </div>
+    <hr/>
+    <div class="control-group">
+        <label class="control-label">Materias Abiertas</label>
+        <div class="controls">
+            <ul class="nav nav-pills" style="margin-bottom: 0;">
+                {% for coordinacion in coordinaciones %}
+                <li class="coordinacionli">
+                    <a href="#" class="coord" id="coord{{ coordinacion.0.id }}" cid="{{ coordinacion.0.id }}">{{ coordinacion.0.nombre }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+            <table class="table table-bordered table-condensed table-striped">
+                <tbody id="tablebody">
+                    <tr>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block formback %}/matriculas{% endblock %}
+{% block buttonname %}Adicionar Matr&iacute;cula{% endblock %}

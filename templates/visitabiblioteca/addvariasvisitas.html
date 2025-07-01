@@ -1,0 +1,759 @@
+{% extends "basenueva.html" %}
+{% block heading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+
+    <script type="text/javascript" >
+        $(function() {
+            $(".btn-cerrarvisita").click(function () {
+                $("#modalvisita").modal("hide");
+            });
+
+            $(".btn-addvisita").click(function (){
+                var formData = new FormData();
+                formData.append('action','addtipovisitabiblioteca');
+                formData.append('descripcion',$("#descripcion").val());
+                $.ajax({
+                    url:'/visitabiblioteca',
+                    type:"POST",
+                    contentType:false,
+                    data:formData,
+                    processData:false,
+                    cache:false,
+                    success: function(data){
+                        if(data.result=="ok") {
+                           var html="";
+                           swal("Notificacion !", "Tipo de Servicio Biblioteca agregado correctamente", "success").then(function(){
+                                html = html + '<option value="">----- </option>'
+                                for(var d in data.listavisita){
+                                    var visit = data.listavisita[d]
+                                    html =html+ '<option value="'+visit.id+'">'+visit.tipovisita+'</option>'
+                                }
+                                $('#id_tipovisitabiblioteca').html(html);
+                                $("#modalvisita").modal("hide");
+                                $("#txtdescripcion").val('');
+                           });
+                        }else{
+                            swal("Error", data.mensaje, "error");
+                        }
+                    }
+                });
+            });
+
+            $(".btn-cerrararticulo").click(function () {
+                $("#modalarticulo").modal("hide");
+            });
+
+            $(".btn-addarticulo").click(function (){
+                if($('#chkestado').prop('checked')){
+                    var estado='true'
+                }else{
+                   var estado='false'
+                }
+                var formData = new FormData();
+                formData.append('action','addtipoarticulo');
+                formData.append('descripcion',$("#descripcionart").val());
+                formData.append('estado',estado);
+                formData.append('tiposervicio',$("#id_tipovisitabiblioteca").val());
+                showWaiting("Ingresando información","espere unos segundos");
+                $.ajax({
+                    url:'/visitabiblioteca',
+                    type:"POST",
+                    contentType:false,
+                    data:formData,
+                    processData:false,
+                    cache:false,
+                    success: function(data){
+                        if(data.result=="ok") {
+                            hideWaiting();
+                            swal('Notificacion !','Tipo de Articulo agregado correctamente', 'success').then(function(){
+                                $("#modaldepartamento").modal("hide");
+                                $("#descripcionart").val('');
+                                $("#chkestado").prop('checked');
+                                location.reload()
+                            })
+                        }else{
+                            hideWaiting();
+                            swal("Error", data.mensaje, "error");
+                        }
+                    }
+                });
+            });
+
+            $("#id_tipoarticulo").addClass('input-xxlarge')
+            $("#id_tipoarticulo").attr({ "multiple":"multiple" });
+            $("#id_tipoarticulo option:first").remove();
+
+            $("#addarticulo").click(function () {
+                var optiposervicio = $("#id_tipovisitabiblioteca option:selected").text();
+                console.log(optiposervicio);
+                $("#titletiposervicio").html(optiposervicio);
+            });
+
+            $("#id_tipovisitabiblioteca").change(function () {
+                var opctipoarticulo = '';
+                const id_tipoarticulo = document.getElementById('id_tipoarticulo');
+                $("#addarticulo").addClass('d-none');
+                if ($(this).val() != '0'){
+                    showWaiting("Ingresando información","espere unos segundos");
+                    $.post("/visitabiblioteca", {
+                        "action": "cargatiposervicio",
+                        "idtiposervicio": $(this).val(),
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            var hayopc = false;
+                            for(opc in data.tipoarticulos){
+                                opctipoarticulo += '<option value="'+data.tipoarticulos[opc].id+'">'+data.tipoarticulos[opc].descripcion+'</option>';
+                                hayopc = true;
+                            }
+                            $("#addarticulo").removeClass('d-none');
+                            id_tipoarticulo.innerHTML = opctipoarticulo;
+                            hideWaiting();
+                        } else {
+                            hideWaiting();
+                            swal("Error", data.message, 'error');
+                        }
+                    }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                        hideWaiting();
+                        console.log(errorThrown);
+                        console.log('getJSON request failed! ' + textStatus+ ' eroro jqk'+jqXHR.responseText);
+                        swal("Error", "Error de conexión", 'error');
+                    });
+                }
+                id_tipoarticulo.innerHTML = opctipoarticulo;
+            });
+
+            var tipopersona = 0;
+            var TIPO_DOCENTE = {{ TIPO_DOCENTE }};
+            var TIPO_ESTUDIANTE = {{ TIPO_ESTUDIANTE }};
+            var TIPO_ADMINISTRATIVO = {{ TIPO_ADMINISTRATIVO }};
+            // 0 -> nada  // TIPO_DOCENTE -> docente  // TIPO_ESTUDIANTE -> estudiante  // TIPO_ADMINISTRATIVO -> administración
+            $("#id_tipopersona").change(function () {
+                showWaiting("Obteniendo información","espere unos segundos");
+                ocultarcamposextras();
+                tipopersona = 0;
+                $.post("/visitabiblioteca", {
+                    "action": "cargainfoxperfil",
+                    "tipopersona": $(this).val(),
+                }, function (data) {
+                    if (data.result == 'ok') {
+                        if (data.estudiante){
+                            $("#divperiodo").removeClass('d-none');
+                            var opcperiodo = '<option value="0">---------</option>';
+                            for (i in data.periodos) {
+                                opcperiodo += '<option value="' + data.periodos[i].id + '">' + data.periodos[i].nombre + '</option>';
+                            }
+                            const cmbperiodo = document.getElementById("periodo");
+                            cmbperiodo.innerHTML = opcperiodo;
+
+                            tipopersona = TIPO_ESTUDIANTE; // estudiante
+                            hideWaiting();
+                        }
+                        if (data.docente){
+                            $("#divperiodo").removeClass('d-none');
+                            var opcperiodo = '<option value="0">---------</option>';
+                            for (i in data.periodos) {
+                                opcperiodo += '<option value="' + data.periodos[i].id + '">' + data.periodos[i].nombre + '</option>';
+                            }
+                            const cmbperiodo = document.getElementById("periodo");
+                            cmbperiodo.innerHTML = opcperiodo;
+
+                            tipopersona = TIPO_DOCENTE; // docente
+                            hideWaiting();
+                        }
+                        if (data.administrativo){
+                            $("#divinfoadministrativos").removeClass('d-none');
+                            $("#fechainicioadmin").html('');
+                            $("#totaladministrativos").html(data.infototaladministrativos);
+
+                            $("#divnumvisitas").removeClass('d-none');
+                            $("#numvisita").attr('max', data.totaladministrativos);
+                            $("#numvisita").val(0);
+
+                            tipopersona = TIPO_ADMINISTRATIVO; // administrativo
+                            hideWaiting();
+                        }
+
+                        hideWaiting();
+                    } else {
+                        hideWaiting();
+                        swal("Error", data.message, 'error');
+                    }
+                }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                    hideWaiting();
+                    console.log(errorThrown);
+                    console.log('getJSON request failed! ' + textStatus+ ' eroro jqk'+jqXHR.responseText);
+                    swal("Error", "Error de conexión", 'error');
+                });
+            });
+
+            $(document).on("change", "#carrera", function () {
+                ocultarinfoporagregar();
+                if ($(this).val() != '0') {
+                    showWaiting("Obteniendo información", "espere unos segundos");
+                    $.post("/visitabiblioteca", {
+                        "action": "cargainfoxcarrera",
+                        "carrera": $(this).val(),
+                        "periodo": $("#periodo").val(),
+                        "tipopersona": tipopersona
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            if (tipopersona == TIPO_ESTUDIANTE){
+                                $("#divinfoalumnos").removeClass('d-none');
+                                $("#divnumvisitas").removeClass('d-none');
+
+                                $("#fechaperiodo").html(data.infofecha);
+                                $("#totalalumnos").html(data.infototalalumnos);
+                                $("#numvisita").attr('max', data.totalalumnos);
+                                $("#numvisita").val(0);
+                            }
+                            if (tipopersona == TIPO_DOCENTE){
+                                $("#divinfodocentes").removeClass('d-none');
+                                $("#divnumvisitas").removeClass('d-none');
+
+                                $("#fechaperiododoc").html(data.infofecha);
+                                $("#totaldocente").html(data.infototaldocentes);
+                                $("#numvisita").attr('max', data.totaldocentes);
+                                $("#numvisita").val(0);
+                            }
+
+                            hideWaiting();
+                        } else {
+                            hideWaiting();
+                            swal("Error", data.message, 'error');
+                        }
+                    }, "json").fail(function (jqXHR, textStatus, errorThrown) {
+                        hideWaiting();
+                        console.log(errorThrown);
+                        console.log('getJSON request failed! ' + textStatus + ' eroro jqk' + jqXHR.responseText);
+                        swal("Error", "Error de conexión", 'error');
+                    });
+                }
+
+            });
+
+
+            $(document).on("change", "#periodo", function () {
+                ocultarinfoporagregar();
+                if ($("#periodo").val() != '0'){
+                    showWaiting("Obteniendo información","espere unos segundos");
+                    $.post("/visitabiblioteca", {
+                        "action": "cargacarreras",
+                        "periodo": $(this).val(),
+                        "tipopersona": tipopersona
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            if (tipopersona == TIPO_ESTUDIANTE){
+                                $("#divcarrera").removeClass('d-none');
+                                var opccarrera = '<option value="0">---------</option>';
+                                for(var i in data.carreras){
+                                    opccarrera += '<option value="'+data.carreras[i].id+'">'+data.carreras[i].nombre+'</option>';
+                                 }
+                                const cmbcarrera = document.getElementById("carrera");
+                                cmbcarrera.innerHTML = opccarrera;
+                            }
+                            if (tipopersona == TIPO_DOCENTE){
+                                $("#divcarrera").removeClass('d-none');
+                                var opccarrera = '<option value="0">---------</option>';
+                                for(var i in data.carreras){
+                                    opccarrera += '<option value="'+data.carreras[i].id+'">'+data.carreras[i].nombre+'</option>';
+                                }
+                                const cmbcarrera = document.getElementById("carrera");
+                                cmbcarrera.innerHTML = opccarrera;
+                            }
+                            hideWaiting();
+                        } else {
+                            hideWaiting();
+                            swal("Error", data.message, 'error');
+                        }
+                    }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                        hideWaiting();
+                        console.log(errorThrown);
+                        console.log('getJSON request failed! ' + textStatus+ ' eroro jqk'+jqXHR.responseText);
+                        swal("Error", "Error de conexión", 'error');
+                    });
+                } else {
+                    $("#divcarrera").addClass('d-none');
+                    $("#carrera").val('0');
+                }
+            });
+
+
+            function ocultarcamposextras() {
+                $("#divcarrera").addClass('d-none');
+                $("#divperiodo").addClass('d-none');
+                ocultarinfoporagregar();
+                /* campo de administrativo */
+                $("#fechainicioadmin").val('');
+                $("#fechainicioadmin").removeClass('form-control-danger');
+                $("#fechafinadmin").val('');
+                $("#fechafinadmin").removeClass('form-control-danger');
+                /* fin campo de administrativo */
+            }
+
+            function ocultarinfoporagregar() {
+                $("#divinfoalumnos").addClass('d-none');
+                $("#fechaperiodo").html('');
+                $("#totalalumnos").html('');
+
+                $("#divinfodocentes").addClass('d-none');
+                $("#fechaperiododoc").html('');
+                $("#totaldocente").html('');
+
+                $("#divinfoadministrativos").addClass('d-none');
+                $("#fechainicioadmin").html('');
+                $("#totaladministrativos").html('');
+
+                $("#divnumvisitas").addClass('d-none');
+
+                /* quita la cantidad del input parametro que se desea agregar visita */
+                const params = document.querySelectorAll('.parametro');
+                params.forEach(function (param) {
+                    param.value = 0;
+                });
+            }
+
+            $(document).on('input', '.parametro', function() {
+                var value = parseInt($(this).val());
+                var min = parseInt($(this).attr('min'));
+                var max = parseInt($(this).attr('max'));
+                if (isNaN(value)) {
+                    $(this).val('');
+                } else if (value < min) {
+                    $(this).val(min);
+                } else if (value > max) {
+                    $(this).val(max);
+                }
+            });
+
+            
+            function validaformulario() {
+                var valido = true;
+
+                if ($("#id_sede").val() != 0){
+                    $('#id_sede').next('.select2-container').find('.select2-selection--single').removeClass('form-control-danger');
+                } else {
+                    $('#id_sede').next('.select2-container').find('.select2-selection--single').addClass('form-control-danger');
+                    valido = false;
+                }
+
+                if ($("#id_tipovisitabiblioteca").val() == '0' || $("#id_tipovisitabiblioteca").val() == ''){
+                    $('#id_tipovisitabiblioteca').next('.select2-container').find('.select2-selection--single').addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_tipovisitabiblioteca").next('.select2-container').find('.select2-selection--single').removeClass('form-control-danger');
+                }
+
+                if ($("#id_tipoarticulo").val() == '0' || $("#id_tipoarticulo").val() == ''){
+                    $('#id_tipoarticulo').next('.select2-container').find('.select2-selection--multiple').addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_tipoarticulo").next('.select2-container').find('.select2-selection--multiple').removeClass('form-control-danger');
+                }
+
+                if ($("#id_tipopersona").val() == '0' || $("#id_tipopersona").val() == ''){
+                    $('#id_tipopersona').next('.select2-container').find('.select2-selection--single').addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_tipopersona").next('.select2-container').find('.select2-selection--single').removeClass('form-control-danger');
+                }
+
+                if ($("#numvisita").val() == 0){
+                    $("#numvisita").addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#numvisita").removeClass('form-control-danger');
+                }
+
+                if (tipopersona == 0){
+                    valido = false;
+                    swal("Alerta !", "Seleccione tipo de persona o recargue la página", "warning");
+                }
+
+                if (!$("#id_observacion").val()){
+                    $("#id_observacion").addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_observacion").removeClass('form-control-danger');
+                }
+
+                if (tipopersona == TIPO_ADMINISTRATIVO){
+                    if (!$("#fechainicioadmin").val()){
+                        $("#fechainicioadmin").addClass('form-control-danger');
+                        valido = false;
+                    } else {
+                        $("#fechainicioadmin").removeClass('form-control-danger');
+                    }
+                    if (!$("#fechafinadmin").val()){
+                        $("#fechafinadmin").addClass('form-control-danger');
+                        valido = false;
+                    } else {
+                        $("#fechafinadmin").removeClass('form-control-danger');
+                    }
+                }
+
+                return valido;
+            }
+            
+            $("#guardavisita").click(function () {
+                if (validaformulario() == true){
+                    if (tipopersona == TIPO_ADMINISTRATIVO){
+                        if (validarangofecha($("#fechainicioadmin").val(), $("#fechafinadmin").val()) == false){
+                            swal("Alerta", "La fecha inicio debe ser menor a la fecha fin", "warning");
+                            return
+                        }
+                    }
+                    $.ajaxSetup({async: true});
+                    swal({
+                        title: '¿Está seguro que desea registrar visitas aleatoriamente?',
+                        type: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Si, Cambiar!',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonClass: 'btn btn-success margin-5',
+                        cancelButtonClass: 'btn btn-danger margin-5',
+                        buttonsStyling: false,
+                        allowOutsideClick: false,
+                    }).then(function (isConfirm) {
+                        if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+                            showWaiting("Ingresando información","espere unos segundos");
+                            var formData = new FormData();
+                            formData.append('action','guardavisitagrupal');
+                            formData.append('idsede', $("#id_sede").val());
+                            formData.append('tipovisitabiblioteca', $("#id_tipovisitabiblioteca").val());  // tipo servicio
+                            formData.append('tipoarticuloid', $("#id_tipoarticulo").val());
+                            formData.append('tipopersona', $("#id_tipopersona").val());
+                            formData.append('observacion', $("#id_observacion").val().trim()); /* sugerencia */
+                            formData.append('numvisita', $("#numvisita").val());
+
+                            /* opciones depende el perfil */
+                            if (tipopersona == TIPO_ESTUDIANTE || tipopersona == TIPO_DOCENTE) {
+                                formData.append('periodo', $("#periodo").val());
+                                formData.append('carrera', $("#carrera").val());
+                            }
+                            if (tipopersona == TIPO_ADMINISTRATIVO){
+                                formData.append('fechainicio', $("#fechainicioadmin").val());
+                                formData.append('fechafin', $("#fechafinadmin").val());
+                            }
+                            /* fin opciones dependiendo el perfil */
+
+                            $.ajax({
+                                url:'/visitabiblioteca',
+                                type:"POST",
+                                contentType:false,
+                                data:formData,
+                                processData:false,
+                                cache:false,
+                                success: function(data){
+                                    if(data.result=="ok") {
+                                        hideWaiting();
+                                        var mensajenotifi = 'Visitas registradas correctamente ';
+                                        var nombres = '';
+                                        if (data.listapersonavisita){
+                                            for (var i in data.listapersonavisita){
+                                                nombres += data.listapersonavisita[i] + '. ';
+                                            }
+                                            mensajenotifi = mensajenotifi + nombres;
+                                        }
+                                        swal("Notificación !", mensajenotifi, "success").then(function () {
+                                            location.reload();
+                                        });
+                                    }else{
+                                        hideWaiting();
+                                        swal("Error", data.message, "error");
+                                    }
+                                },
+                                error: function (xhr, ajaxOptions, thrownError) {
+                                    hideWaiting();
+                                    swal("Error", "Error Conexion en el Servidor", "error");
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    swal("Alerta !", "Faltan llenar todos los campos", "warning");
+                }
+            });
+
+            
+            function validarangofecha(inicio, fin) {
+                var valida = true;
+                if (inicio > fin) {
+                    valida = false;
+                }
+                return valida;
+            }
+            
+        });
+
+    </script>
+
+    <style>
+        .div_label{
+            width: 40%;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .div_label label{
+            width: 150px; text-align: end;
+        }
+
+        .div_label_large{
+            width: 30%;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .div_label_large label{
+            width: 150px; text-align: end;
+        }
+
+    </style>
+{% endblock %}
+
+{% block canvas %}
+    <div class="mobile-menu-overlay"></div>
+    <div class="main-container">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-10 col-sm-12">
+                    <div class="title">
+                        <h4> Adicionar Nuevas Visitas</h4>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-2">
+                    <a href="/visitabiblioteca" class='btn btn-dark float-md-left float-lg-left'><i class="icon-copy ion-arrow-left-a"></i> Atrás</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-box mb-30">
+            <div class="pd-30">
+                <div class="row">
+                    <div class="col-lg-8 col-md-10">
+                        <div class="pd-20 card-box mb-30" style="margin-top: 10px; background-color: #eee">
+                            <div class="row">
+                                <div class="col-lg-12 col-md-12">
+                                    <h5 class="alert alert-success">REGISTRO EN GRUPO</h5>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-9 col-lg-6" style="display: flex;">
+                                    <div class="div_label">
+                                        <label for="id_sede">Sede: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <select id="id_sede" class="custom-select2 form-control" style="width: 90%">
+                                            <option value="0">---------</option>
+                                            {% for s in sedes %}
+                                                <option value="{{ s.id }}">{{ s.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top: 10px">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_tipovisitabiblioteca">Tipo de Servicio: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <select id="id_tipovisitabiblioteca" class="custom-select2 form-control " style="width: 90%">
+                                            <option value="0">---------</option>
+                                            {% for t in tiposervicio %}
+                                                <option value="{{ t.id }}">{{ t.descripcion }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <a href="#" data-toggle="modal" data-target="#modalvisita" style="font-size: 30px;color: blue" title="Adicionar Tipo de Servicio">+</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top: 10px">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_tipoarticulo">Tipo de Artículo: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <select id="id_tipoarticulo" class="custom-select2 form-control" style="width: 90%">
+                                            <option value="0">---------</option>
+                                        </select>
+                                        <a href="#" id="addarticulo" class="d-none" data-toggle="modal" data-target="#modalarticulo" style="font-size: 30px;color: blue" title="Adicionar Art&iacute;culo">+</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row" style="margin-top: 10px">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_tipopersona">Tipo de Persona: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <select id="id_tipopersona" class="custom-select2 form-control" style="width: 100%">
+                                            <option value="0">---------</option>
+                                            {% for t in tipoperfiles %}
+                                                <option value="{{ t.id }}">{{ t.descripcion }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <section>
+                                <div class="row d-none" id="divperiodo" style="margin-top: 10px;">
+                                    <div class="col-md-9 col-lg-8" style="display: flex">
+                                        <div class="div_label_large">
+                                            <label for="periodo">Periodo: </label>
+                                        </div>
+                                        <div style="width: 70%">
+                                            <select id="periodo" class="custom-select2 form-control" style="width: 100%">
+
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row d-none" id="divcarrera" style="margin-top: 10px;">
+                                    <div class="col-md-9 col-lg-8" style="display: flex">
+                                        <div class="div_label_large">
+                                            <label for="carrera">Carrera: </label>
+                                        </div>
+                                        <div style="width: 70%">
+                                            <select id="carrera" class="custom-select2 form-control" style="width: 100%">
+
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row d-none" id="divinfoalumnos" style="margin-top: 10px;">
+                                    <div class="col-md-10 col-lg-10" style="display: flex; justify-content: space-evenly; padding-bottom: 10px;">
+                                        <h5 id="fechaperiodo" class="alert alert-info"></h5>
+                                        <h5 id="totalalumnos" class="alert alert-info"></h5>
+                                    </div>
+                                </div>
+
+                                <div class="row d-none" id="divinfodocentes" style="margin-top: 10px;">
+                                    <div class="col-md-10 col-lg-10" style="display: flex; justify-content: space-evenly; padding-bottom: 10px;">
+                                        <h5 id="fechaperiododoc" class="alert alert-info"></h5>
+                                        <h5 id="totaldocente" class="alert alert-info"></h5>
+                                    </div>
+                                </div>
+
+                                <div class="row d-none" id="divinfoadministrativos" style="margin-top: 10px;">
+                                    <div class="col-md-10 col-lg-10" style="display: flex; justify-content: space-evenly; padding-bottom: 10px;">
+                                        <div style="width: 25%">
+                                            <label for="fechainicioadmin">Inicio: </label>
+                                            <input type="date" id="fechainicioadmin" class="form-control" style="width: 100%">
+                                            <label for="fechafinadmin">Fin: </label>
+                                            <input type="date" id="fechafinadmin" class="form-control" style="width: 100%">
+                                        </div>
+                                        <div style="display: flex; align-items: center;">
+                                            <h5 id="totaladministrativos" class="alert alert-info"></h5>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row d-none" id="divnumvisitas" style="margin-top: 10px;">
+                                    <div class="col-md-9 col-lg-8" style="display: flex">
+                                        <div class="div_label_large">
+                                            <label for="">Num. de persona para generar visita: </label>
+                                        </div>
+                                        <div style="width: 10%">
+                                            <input id="numvisita" type="number" class="form-control parametro" min="0" max="">
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <div class="row" style="margin-top: 10px;">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_observacion">Sugerencia: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <input id="id_observacion" type="text" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="row" style="margin-top: 20px">
+                                <div class="col-md-9 col-lg-6">
+                                    <a class="btn btn-success" id="guardavisita" href="#">Generar y Guardar Visitas</a>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+
+    <section>
+        <div class="modal fade static" id="modalvisita" role="dialog" aria-labelledby="myModalLabel33" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="width: 1000px;">
+                    <div class="modal-header">
+                         <h3 class="modal-title" style="color: #333333;">Adicionar Tipo de Servicio en Biblioteca </h3>
+                    </div>
+                    <div class="modal-body panelbody">
+                        <div id="formulario"> {#action="/solicitud_materiaonline" method="POST"#}
+                            <fieldset class="control-group">
+                            <input type='hidden' name='idvisita' id='idvisita'/>
+                                <div >
+                                    <label class="control-label" for="descripcion">Descripcion:</label>
+                                    <input type="text" name="descripcion" id="descripcion"  style="width: 100%" class="form-control">
+                                    <p class="help-text"> </p>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" id="btn-adddescuento" class="btn btn-addvisita btn-info">Guardar</a>
+                        <a href="#" id="btn-cerrardescuento" class="btn btn-cerrarvisita btn-danger">Cerrar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade static" id="modalarticulo" role="dialog" aria-labelledby="myModalLabel33" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="width: 1000px;">
+                    <div class="modal-header">
+                         <h3 class="modal-title" style="color: #333333;">Adicionar Tipo Articulo</h3>
+                    </div>
+                    <div class="modal-body panelbody">
+                        <div id="formulario">
+                            <h4>TIPO DE SERVICIO: <span id="titletiposervicio"></span></h4> <br>
+                            <fieldset class="control-group">
+                            <input type='hidden' name='idarticulo' id='idarticulo'/>
+                                <div >
+                                    <label class="control-label" for="txtdescripcionart">Descripcion:</label>
+                                    <input type="text" name="descripcionart" id="descripcionart"  style="width: 100%" class="form-control">
+                                    <p class="help-text"> </p>
+                                </div>
+                                <div class="form-group">
+                                     <div class="custom-control custom-checkbox mb-5">
+                                        <input type="checkbox" class="custom-control-input" id="chkestado">
+                                        <label class="custom-control-label" for="chkestado">Estado</label>
+                                     </div>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" id="btn-addarticulo" class="btn btn-addarticulo btn-info">Guardar</a>
+                        <a href="#" id="btn-cerrararticulo" class="btn btn-cerrararticulo btn-danger">Cerrar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+
+{% endblock %}

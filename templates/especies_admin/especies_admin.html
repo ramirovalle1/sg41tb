@@ -1,0 +1,325 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            var c = 0;
+            var tid = 0;
+            var especie = '';
+
+            $("#modalgrupo .btn-cerrar").click(function() {
+                $("#modalgrupo").modal('hide');
+                  $("#detalle_tipo").modal("show");
+            });
+
+            $(".cerrarbtn").click(function() {
+                $("#test").modal("hide");
+            });
+
+            $(".add").click(function() {
+                c = $(this).attr("cid");
+                var especie = $(this).attr("especie");
+                $("#modaltipo #paneltitle1").html("Agregar Grupo ("+especie+") "+'<br>');
+                $("#modaltipo").modal({width: '800px', backdrop: 'static'});
+                $("#modaltipo").modal("show");
+            });
+
+            $(".ver").click(function() {
+                tid = $(this).attr("teid");
+                 especie = $(this).attr("especie");
+                $.get("/especies_admin",{"action": "vergrupos","tid":tid},function(data) {
+                        $("#detalle_tipo .modal-body").html(data);
+                        $("#detalle_tipo #paneltitle1").html(especie + "<br> GRUPOS" );
+                        $("#detalle_tipo").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                        $("#detalle_tipo").modal("show");
+               }, "html");
+            });
+
+            $("#detalle_tipo #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_tipo").modal("hide");
+            });
+
+             $("#detalle_tipo #agregar").click(function() {
+                $("#detalle_tipo").modal("hide");
+                $("#modalgrupo").modal("show");
+            });
+
+            $("#modaltipo .btn-cerrar").click(function() {
+                $("#modaltipo").modal("hide");
+                return false;
+            });
+
+            $("#modalgrupo .btn-buscar").click(function() {
+                $("#modalgrupo").modal("hide");
+                var g= $("#modalgrupo #id_departamento").val();
+
+                $.post("/especies_admin",{"action": "addgrupo","tid":tid,"g":g},function(data) {
+                       if(data.result=='ok'){
+                           alert("Registro Correcto");
+                            $.get("/especies_admin",{"action": "vergrupos","tid":tid},function(data) {
+                                    $("#detalle_tipo .modal-body").html(data);
+                                    $("#detalle_tipo #paneltitle1").html(especie + "<br> GRUPOS" );
+                                    $("#detalle_tipo").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                                    $("#detalle_tipo").modal("show");
+                           }, "html");
+                       }else{
+                           alert(data.result);
+                       }
+                    },"json");
+                });
+
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/especies_admin?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+{#                    $("#search").trigger("click");#}
+                    $("#search").click();
+                }
+            });
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span9'>
+            <h3>Tipos de Tr&aacute;mites {% if sol  %} - Solicitudes{% endif %} {% if e  %} - Especies {% endif %}    </h3>
+
+        </div>
+        <div class='atright'>
+                <a href="/especies_admin?action=departamentos" class='btn btn-success'><i class="icon-table icon-white"></i> Grupos </a>
+                <a href="/especies_admin?e=especies" class='btn btn-warning'><i class="icon-table icon-white"></i> Especies </a>
+                <a href="/especies_admin?sol=solicitudes" class='btn btn-inverse'><i class="icon-table icon-white"></i> Solicitudes </a>
+                <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+
+
+        </div>
+    </div>
+    <div class="row-fluid">
+{#        {% if perms.sga.change_inscripcion %}#}
+            <div class='span2'>
+                {% if not persona.pertenece_soporte %}
+                    <a href="/especies_admin?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Tipo</a>
+                {% endif %}
+            </div>
+{#        {% endif %}#}
+
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/especies_admin" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+        <div class="span2">
+        </div>
+
+        <div class="span2">
+        </div>
+
+        <div class="span3" style="text-align: right">
+
+
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Precio</th>
+                <th style="text-align: center">Tiene Gesti&oacute;n</th>
+                <th style="text-align: center">Relaciona Docente</th>
+                <th style="text-align: center">Relaciona Asignatura</th>
+                <th style="text-align: center">Tiene Aprobaci&oacute;n Docente</th>
+                <th style="text-align: center">Gestiona Coordinador</th>
+                <th style="text-align: center">Informaci&oacute;n</th>
+                <th style="text-align: center">Estado</th>
+                <th style="width: 20px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for te in tipoespecie %}
+                    <tr>
+                        <td>
+                            {% if not persona.pertenece_soporte %}
+                                <a href='/especies_admin?action=edit&id={{ te.id }}'>{{ te.nombre }}</a>
+                            {% else %}
+                                {{ te.nombre }}
+                            {% endif %}
+                        </td>
+                        <td>{% if te.es_especie %}ESPECIE {% else %} SOLICITUD {% endif %}</td>
+                        <td>{% if te.precio %}{{ te.precio }}{% endif %}</td>
+                        <td style="text-align: center">
+
+                            {% if te.tienegestion %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center">
+                            {% if te.relaciodocente %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+
+                        </td>
+                        <td style="text-align: center">
+                            {% if te.relacionaasig %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+
+                        </td>
+                        <td style="text-align: center">
+                            {% if te.tieneaprobacion %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+
+                        </td>
+                        <td style="text-align: center">
+                            {% if te.coordinadores %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+
+                        </td>
+                        <td style="text-align: center">
+                            {% if te.informacion %}
+                                {{ te.informacion  }}
+                            {% endif %}
+
+                        </td>
+                        <td style="text-align: center">
+{#                            <a href="#" ins='{{ te.id }}' class="activares">#}
+                            {% if te.activa %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+                            </a>
+                        </td>
+
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    <li><a  class="ver" teid="{{ te.id }}" especie="{{ te }}" style="cursor: pointer">  <i class='icon-certificate'></i> Ver Grupos </a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+{#            {% if perms.sga.change_inscripcion %}#}
+            {% if not persona.pertenece_soporte %}
+                <a href="/especies_admin?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Tipo </a>
+            {% endif %}
+{#            {% endif %}#}
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/especies_admin?page=1">1</a></li>
+                            <li><a href="/especies_admin?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/especies_admin?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/especies_admin?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/especies_admin?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/especies_admin?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+<div class="modal fade static" id="modalgrupo"   >
+    <div class="modal-header">
+        <h4  id='paneltitle1'><i> </i></h4>
+    </div>
+    <div class="modal-body" style="text-align: left">
+        <form action="" method="POST">
+        {% for field in form %}
+            <fieldset class="control-group nomargins">
+            <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                <div class="controls" >
+                    {{ field }}
+                    <p class="help-text">{{ field.help_text }} </p>
+                </div>
+            </fieldset>
+        {% endfor %}
+        </form>
+
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+        <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+    </div>
+</div>
+
+
+
+<div class="modal fade static" id="detalle_tipo"   >
+    <div class="row-fluid modal-header">
+         <h4  id='paneltitle1'><i> </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div >
+            <a style="float: left" href="#" id="cerrar" class="btn btn-danger  btn-aceptar">  <i  class="icon-remove icon-white"></i> <b> SALIR</b></a>
+            {% if not persona.pertenece_soporte %}
+                <a style="float: left" href="#" id="agregar" class="btn btn-success  btn-agregar">  <i  class="icon-plus icon-white"></i> <b> AGREGAR GRUPO</b></a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

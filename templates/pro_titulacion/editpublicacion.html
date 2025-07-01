@@ -1,0 +1,353 @@
+{% extends "admin_vehiculos/formvehic.html" %}
+
+{% block javascript %}
+{#        <script src='/static/js/persona_publicacion.js'></script>#}
+{#    <script>#}
+{#    $(function() {#}
+        valores2 =[];
+        nombres =[];
+        covalores2 =[];
+        conombres =[];
+        $("label.control-label #id_codigo").html("Preueb");
+        $("#id_codigo,#id_num_paginas,#id_volumen,#id_num_capitulos,#id_titulo,#id_anno_publ,#id_pais").addClass("validate[required]");
+        $($("#id_autor_codigos").get(0).parentNode.parentNode).hide();
+        $($("#id_coautor_codigos").get(0).parentNode.parentNode).hide();
+        $("#id_autor").hide();
+        $("#id_codigo,#id_num_paginas,#id_volumen,#id_num_capitulos,#id_referencias_bib,#id_anno_publ,#id_frecuencia").addClass("input-small");
+        $("#id_coautor").hide();
+        $("#id_titulo,#id_proposito,#id_descripcion,#id_patrocinador,#id_imprenta,#id_bases_index").attr({rows:3 , style:'width:58%;font-size:12px'});
+        $("#id_autor").after("<a style='cursor:pointer'  id='addautor'>+ Adicionar Autor</a>");
+        $("#id_autor").after("<div href='#' id='divaut' style='border: 2px solid #bbb;'></div>");
+        $("#id_coautor").after("<a style='cursor:pointer'  id='addcoautor'>+ Adicionar CoAutor</a>");
+        $("#id_frecuencia").after(" Meses");
+        $("#id_coautor").after("<div href='#' id='divcoaut' style='border: 2px solid #bbb;'></div>");
+
+        var numerosdec="0123456789";
+        function solo_numeros(texto){
+        var num = 0;
+        for(i=0; i<texto.length; i++){
+          if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+              num = num +1;
+          }
+        }
+       return num;
+       }
+    $("#id_frecuencia,#id_num_capitulos,#id_volumen,#id_num_paginas,#id_referencias_bib,#id_anno_publ").blur(function(){
+        var num = $(this).val();
+        if (solo_numeros(num) != num.length){
+            $($(this).get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+            $(this).val("");
+            $(this).focus();
+        }
+        else{
+            $($(this).get(0).parentNode).find(".help-text").html("");
+        }
+    });
+        {% if error %}
+            smoke.alert("{{ error }}")
+        {% endif %}
+        ajustaFormulario= function(){
+            if ($("#id_indexado").is(':checked')) {
+                $($("#id_bases_index").get(0).parentNode.parentNode).show();
+            }else{
+                    $($("#id_bases_index").get(0).parentNode.parentNode).hide();
+            }
+          if ($("#id_es_revista").is(':checked')) {
+              $('label[for=id_codigo]').html("Codigo ISSN")
+              $($("#id_referencias_bib").get(0).parentNode.parentNode).hide();
+              $("#id_referencias_bib").val("");
+              $($("#id_imprenta").get(0).parentNode.parentNode).hide();
+              $("#id_imprenta").val("");
+              $($("#id_descripcion").get(0).parentNode.parentNode).hide();
+              $("#id_descripcion").val("");
+              $($("#id_impresa").get(0).parentNode.parentNode).show();
+              $($("#id_electronica").get(0).parentNode.parentNode).show();
+              $($("#id_frecuencia").get(0).parentNode.parentNode).show();
+              $($("#id_num_capitulos").get(0).parentNode.parentNode).hide();
+              $("#id_num_capitulos").val("");
+          }else{
+              $('label[for=id_codigo]').html("Codigo ISBN")
+              $($("#id_num_capitulos").get(0).parentNode.parentNode).show();
+              $($("#id_impresa").get(0).parentNode.parentNode).hide();
+              $($("#id_referencias_bib").get(0).parentNode.parentNode).show();
+              $($("#id_imprenta").get(0).parentNode.parentNode).show();
+              $($("#id_descripcion").get(0).parentNode.parentNode).show();
+              $($("#id_electronica").get(0).parentNode.parentNode).hide();
+              $($("#id_frecuencia").get(0).parentNode.parentNode).hide();
+          }
+        };
+        $("#id_indexado").change(function(){
+            if ($("#id_indexado").is(':checked')) {
+                $($("#id_bases_index").get(0).parentNode.parentNode).show();
+            }else{
+                    $($("#id_bases_index").get(0).parentNode.parentNode).hide();
+                    $("#id_bases_index").val("");
+            }
+
+        });
+        {%  if not publicacion.es_libro %}
+            $("#id_es_revista").attr('checked',true);
+            ajustaFormulario();
+        {% endif %}
+         $("#id_es_revista").change(ajustaFormulario);
+        ajustaFormulario();
+        $("#addautor").click(function(){
+            adicionarAutor(1)
+        });
+        $("#addcoautor").click(function(){
+            adicionarAutor(2)
+        });
+        $("#autorpanel input").addClass("input-block-level");
+        $("#id_autor-otro").attr("disabled", true);
+        $("#id_autor-persona").attr("disabled", false);
+        $("#id_autor-existe").attr('checked',false);
+        adicionarAutor= function(op) {
+            opcion = op;
+            $("#autorpanel").modal({backdrop: 'static'});
+            $($("#autorpanel #id_autor-persona_id").get(0).parentNode.parentNode).hide();
+            $("#autorpanel #id_autor-otro").val("");
+            $("#autorpanel #id_autor-persona").val("");
+
+            $("#autorpanel").modal("show");
+            return false;
+        };
+
+         eliminar = function(evar){
+              opc = parseInt($(evar).attr("opc"));
+             if (opc==1){
+                var indice = parseInt($(evar).attr("indice"));
+                delete nombres[indice];
+                delete valores2[indice];
+    {#            $(evar.parentNode.parentNode).remove();#}
+                nombres.splice(indice,1);
+                valores2.splice(indice,1);
+                 if (nombres.length==0) {
+                     $("#divaut").html("");
+                    }
+                html='';
+                for (var n in nombres){
+                    html = html +'<a  class="btn" style="color:#333;font-size:10px;border: 2px solid #bbb;padding: 1px 2px;line-height: 15px;" id=reg'+n+'>'+nombres[n].toUpperCase()+' <span style="cursor:pointer;font-size:11px;color:#9e9191 " onclick="eliminar(this)" indice='+n+'  opc=1> <b> X </b>  </span></a>&nbsp;';
+                    $("#divaut").html(html);
+                }
+             }
+             if (opc==2){
+                var coindice = parseInt($(evar).attr("coindice"));
+                delete conombres[coindice];
+                delete covalores2[coindice];
+    {#            $(evar.parentNode.parentNode).remove();#}
+                conombres.splice(coindice,1);
+                covalores2.splice(coindice,1);
+                 if (conombres.length==0) {
+                     $("#divcoaut").html("");
+                    }
+                htmlco='';
+                for (var n in conombres){
+                    htmlco = htmlco +'<a  class="btn" style="color:#333;font-size:10px;border: 2px solid #bbb;padding: 1px 2px;line-height: 15px;" id=coreg'+n+'>'+conombres[n].toUpperCase()   +' <span style="cursor:pointer;font-size:11px;color:#9e9191 " onclick="eliminar(this)" coindice='+n+' opc=2> <b> X </b>  </span></a>&nbsp;';
+                    $("#divcoaut").html(htmlco);
+                }
+            }
+             $("#id_coautor_codigos").val(covalores2);
+             $("#id_autor_codigos").val(valores2);
+        };
+        cerrarAutor = function() {
+            $("#autorpanel").modal("hide");
+             $("#id_autor-otro").val("");
+            $("#id_autor-persona").val("");
+            return false;
+        };
+
+        var html='';
+        var htmlco='';
+        var c = 0;
+        var co = 0;
+        PrecargarDatos = function() {
+            {% if autor_nombres %}
+            {% for per in autor_nombres %}
+                    nombres.push("{{ per }}");
+                    html = html +'<a  class="btn" style="color:#333;font-size:10px;border: 2px solid #bbb;padding: 1px 2px;line-height: 15px;" id=reg'+c+'>'+"{{ per }}"+' <span style="cursor:pointer;font-size:11px;color:#9e9191 " onclick="eliminar(this)" indice='+c+' opc=1> <b> X </b>  </span></a>&nbsp;';
+                    c=c+1;
+                    $("#divaut").html(html);
+                    $("#autorpanel #id_autor-otro").val("");
+                    $("#autorpanel #id_autor-persona").val("");
+{#                c=c+1;#}
+            {% endfor %}
+            {% for per in autor_codigos %}
+                    valores2.push("{{ per }}");
+            {% endfor %}
+            $("#id_autor_codigos").val(valores2);
+            {% endif %}
+        {% if coautor_nombres%}
+            {% for per in coautor_nombres %}
+                    conombres.push("{{ per }}");
+                    htmlco = htmlco +'<a  class="btn" style="color:#333;font-size:10px;border: 2px solid #bbb;padding: 1px 2px;line-height: 15px;" id=coreg'+co+'>'+"{{ per }}"+' <span style="cursor:pointer;font-size:11px;color:#9e9191 " onclick="eliminar(this)" coindice='+co+' opc=2> <b> X </b>  </span></a>&nbsp;';
+                    co=co+1;
+                    $("#divcoaut").html(htmlco);
+                    $("#autorpanel #id_autor-otro").val("");
+                    $("#autorpanel #id_autor-persona").val("");
+{#                c=c+1;#}
+            {% endfor %}
+            {% for per in coautor_codigos %}
+                    covalores2.push("{{ per }}");
+            {% endfor %}
+            $("#id_coautor_codigos").val(covalores2);
+
+        {% endif %}
+        };
+            adicionarPersona = function() {
+
+            if  ($("#id_autor-otro").val() != ""|| $("#id_autor-persona").val() !=  "" ){
+                $($("#id_autor-existe").get(0).parentNode).find(".help-text").html("" );
+                if ($("#id_autor-existe").is(':checked')) {
+    {#            valid= $("#id_autor-otro").val();#}
+                if (opcion == 1){
+                    nombres.push($("#id_autor-otro").val());
+                    valores2.push($("#id_autor-otro").val());
+                }
+                if (opcion == 2){
+                    conombres.push($("#id_autor-otro").val());
+                    covalores2.push($("#id_autor-otro").val());
+                }
+
+                persona = $("#id_autor-otro").val();
+            }else{
+                if (opcion == 1){
+                    nombres.push($("#id_autor-persona").val());
+                    valores2.push($("#id_autor-persona_id").val());
+                }
+                if (opcion == 2){
+                    conombres.push($("#id_autor-persona").val());
+                    covalores2.push($("#id_autor-persona_id").val())
+                }
+                persona = $("#id_autor-persona").val();
+            }
+            if (opcion == 1){
+                html = html +'<a  class="btn" style="color:#333;font-size:10px;border: 2px solid #bbb;padding: 1px 2px;line-height: 15px;" id=reg'+c+'>'+persona.toUpperCase()+' <span style="cursor:pointer;font-size:11px;color:#9e9191 " onclick="eliminar(this)" indice='+c+' opc=1> <b> X </b>  </span></a>&nbsp;';
+                    c=c+1;
+                    $("#divaut").html(html);
+                    $("#id_autor_codigos").val(valores2);
+                    $("#autorpanel #id_autor-otro").val("");
+                    $("#autorpanel #id_autor-persona").val("");
+            }
+            if (opcion == 2){
+                htmlco = htmlco +'<a  class="btn" style="color:#333;font-size:10px;border: 2px solid #bbb;padding: 1px 2px;line-height: 15px;" id=coreg'+co+'>'+persona.toUpperCase()+' <span style="cursor:pointer;font-size:11px;color:#9e9191 " onclick="eliminar(this)" coindice='+co+' opc=2> <b> X </b>  </span></a>&nbsp;';
+                    co=co+1;
+                    $("#divcoaut").html(htmlco);
+                    $("#id_coautor_codigos").val(covalores2);
+                    $("#autorpanel #id_autor-otro").val("");
+                    $("#autorpanel #id_autor-persona").val("");
+            }
+
+        }else{
+            $($("#id_autor-existe").get(0).parentNode).find(".help-text").html("Ingrese el Nombre del Autor" );
+        }
+
+
+        };
+
+
+
+        chequeaAutor = function() {
+            $("#id_autor-otro").val("");
+            $("#id_autor-persona").val("");
+            if ($("#id_autor-existe").is(':checked')) {
+                $("#id_autor-otro").attr("disabled", false);
+                $("#id_autor-persona").attr("disabled", true);
+
+            } else {
+                $("#id_autor-otro").attr("disabled", true);
+                $("#id_autor-persona").attr("disabled", false);
+
+            }
+            chequeaAutor();
+        };
+{#        chequeaAutor();#}
+        $("#id_autor-existe").change(chequeaAutor);
+        buscar_persona = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        if(data.results.length > 0)
+                        {
+                            $("#id_autor-persona").get(0).results = data.results;
+                            listing = [];
+                            for (var i in data.results) {
+                                var dato = data.results[i];
+                                listing.push(dato.name);
+                            }
+                            process(listing);
+                        }
+                        else{
+                            $("#id_autor-persona").attr("myval","");
+                            $("#id_autor-persona").val("");
+                            $("#id_autor-persona").attr("alias","");
+
+                        }
+
+                    }
+                }, 'json');
+            };
+            $('#id_autor-persona').typeahead({source: buscar_persona, updater: function(item) {
+                var results = $("#id_autor-persona").get(0).results;
+
+                for (var i in results) {
+                    var datos = results[i];
+
+                    if (item==datos.name) {
+                        $("#id_autor-persona").attr("myval",datos.id);
+                        d=datos.id;
+                        $("#id_autor-persona_id").val(d);
+                    }
+                }
+                return item;
+
+            }});
+            PrecargarDatos();
+            $("#autorpanel .boton2").click(cerrarAutor).show();
+            $("#autorpanel .boton1").click(adicionarPersona);
+
+
+{#    });#}
+
+{#    </script>#}
+{% endblock %}
+{% block titulo %}Editar Publicacion {% endblock %}
+{% block formaction %}/publicaciones{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='editpublicacion'/>
+    <input type='hidden' name='id' value='{{ publicacion.id }}'/>
+    <input type='hidden' name='persona' value='{{ persona }}'/>
+    <input type='hidden' name='op' value='{{ op }}'/>
+{#    {% include "pro_titulacion/adicionarautor.html" %}#}
+{% endblock %}
+{% block formback %}/publicaciones{% endblock %}
+{% block buttonname%}Guardar{% endblock %}
+
+{% block moreblock %}
+<div class="modal hide fade" id="autorpanel" style="display: none;">
+    <div class="modal-header">
+        <h3 class="paneltitle">
+            Adicionar Persona
+        </h3>
+    </div>
+    <div class="modal-body panelbody">
+        <form id="formularioentidad" class='form-horizontal' action="" method="POST">
+
+            {% for field in form_autor %}
+                <fieldset class="control-group nomargins">
+                    <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+        </form>
+
+    </div>
+    <div class="modal-footer">
+        <a style="cursor: pointer" class="btn boton1 btn-success"><i class="icon-check icon-white"></i> Adicionar</a>
+        <a style="cursor: pointer" class="btn boton2"><i class="icon-share-alt"></i> Cerrar</a>
+    </div>
+</div>
+{% endblock %}

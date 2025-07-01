@@ -1,0 +1,388 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+   <script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+
+$(function() {
+
+    $("#search").click(function() {
+        var term = $("#searchfield").val().toUpperCase();
+        location.href = "/notificaciones_mant?s="+term;
+    });
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+
+    {#----------------------------- AGREGAR NOTIFICACION----------------------------#}
+    $('.add_notificacion').click(function(){
+        $("#id_nombre").val('');
+        $("#id_funcion").val('');
+        $("#add_notificaciones #paneltitle2").html('Nueva notificaci&oacute;n');
+        $("#add_notificaciones").modal({"backdrop":"static","width":"40%"});
+        $("#add_notificaciones").modal("show");
+    });
+    {#------------------------- EDITAR NOTIFICACION------------------------------------#}
+    $('.edit').click(function(){
+        var nom = $(this).attr('nombre');
+        var descripcion = $(this).attr('descripcion');
+        var query = $(this).attr('query');
+        var fun = $(this).attr('funcion');
+        {#var estado=$(this).attr('estado');#}
+        if ($(this).attr('estado')){
+           $("#edit_notificaciones #id_estado").attr('checked',true);
+        }else{
+           $("#edit_notificaciones #id_estado").attr('checked',false);
+        }
+
+        $("#edit_notificaciones #paneltitle2").html('Cambiar nombre de Notificaci&oacute;n: '+($(this).attr('nombre')));
+        $("#edit_notificaciones").modal({"backdrop":"static","width":"40%"});
+        $("#edit_notificaciones #id_funcion").val(fun);
+        $("#edit_notificaciones #id_nombre").val(nom);
+        $("#edit_notificaciones #id_descripcion").val(descripcion);
+        $("#edit_notificaciones #id_query").val(query);
+        $("#edit_notificaciones #idnotificacion").val($(this).attr("nid"));
+        $("#edit_notificaciones").modal("show");
+    });
+
+    $("#edit_notificaciones .cerrar").click(function(){
+        $("#edit_notificaciones").modal("hide");
+        return false;
+    });
+    $("#add_notificaciones .btn-cerrar").click(function(){
+        $("#add_notificaciones").modal("hide");
+    });
+    {#---------------------------- ELIMINAR NOTFICACION----------------------#}
+    $(".eliminar").click(function(){
+        var id = $(this).attr("nid");
+        var nombre = $(this).attr("nombre");
+        smoke.confirm("Esta seguro de eliminar la notificacion "+nombre, function(e){
+        if (e){
+            $.post("/notificaciones_mant",{"action": "eliminar","idnotificacion":id},function(data) {
+                if(data.result=='ok'){
+                    smoke.alert("Registro Eliminado");
+               }else{
+                    smoke.alert(data.result);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+
+    {#---------------------------------------- ERROR ---------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+    {% endif %}
+
+
+    let notificacionId = null
+    verGrupos = function(id, nombre) {
+        notificacionId = id
+        cargarGrupos(id)
+        cargarComboGrupos(id)
+
+        document.querySelector('#tituloVerGruposModal').innerHTML = nombre
+        $("#verGruposModal").modal({"backdrop":"static","width":"500px"});
+        $("#verGruposModal").modal("show");
+    }
+
+    cargarGrupos = function(id) {
+        $.post("/notificaciones_mant",{"action": "cargar_grupos", "id":id},function(data) {
+            if(data.result=='ok'){
+                if (data.grupos.length > 0) {
+                    html = "<table class='table' style='margin-bottom:2em;'>" +
+                                "<tr>" +
+                                    "<th>Id</th>" +
+                                    "<th>Grupo</th>" +
+                                    "<th></th>" +
+                                "</tr>"
+                    data.grupos.forEach(function(grupo) {
+                        html += "<tr>" +
+                                    "<td>"+grupo.id+"</td>" +
+                                    "<td>"+grupo.name+"</td>" +
+                                    "<td style='text-align:center;'><a href='#' class='btn btn-danger' onclick='deleteGrupo(\""+grupo.id+"\", \""+id+"\")'><i class='icon-remove'></i></a></td>" +
+                                "</tr>"
+                    })
+                    html += "</table>"
+                    document.querySelector('.cargarGrupos').innerHTML = html
+                } else {
+                    document.querySelector('.cargarGrupos').innerHTML = ""
+                }
+            }else{
+
+            }
+        },"json");
+    }
+
+    cargarComboGrupos = function(id) {
+        $.post("/notificaciones_mant",{"action": "cargar_combo_grupos", "id":id},function(data) {
+            if(data.result=='ok'){
+                html = "<option value='0'>---</option>"
+                data.grupos.forEach(function(grupo) {
+                    html += "<option value='"+grupo.id+"'>"+grupo.name+"</option>"
+                })
+                document.querySelector('#slctGrupos').innerHTML = html
+            }else{
+                alert('error')
+            }
+        },"json");
+    }
+
+    addGrupo = function() {
+        $.post("/notificaciones_mant",{"action": "add_grupo", "id":notificacionId, 'grupo':document.querySelector('#slctGrupos').value},function(data) {
+            if(data.result=='ok'){
+                swal.fire("Grupo agregado", "", "info")
+            }else{
+                swal.fire("Error", "", "warning")
+            }
+        },"json");
+        cargarGrupos(notificacionId)
+        cargarComboGrupos(notificacionId)
+    }
+
+    deleteGrupo = function(grupoId, id) {
+        $.post("/notificaciones_mant",{"action": "delete_grupo", "id":id, 'grupo':grupoId},function(data) {
+            if(data.result=='ok'){
+                swal.fire("Grupo eliminado", "", "info")
+            }else{
+                swal.fire("Error", data.mensaje, "warning")
+            }
+        },"json");
+        cargarGrupos(id)
+        cargarComboGrupos(id)
+    }
+
+    cerrarModal = function(modal) {
+        $("#"+modal).modal('hide')
+    }
+
+    copyQuery = function(id) {
+        console.log('OKA')
+        console.log(id)
+        var text = document.getElementById("query-"+id).value;
+        navigator.clipboard.writeText(text).then(function() {
+            Swal.fire({
+                  position: "top-end",
+                  icon: "success",
+                  title: "Texto copiado al portapapeles.",
+                  showConfirmButton: false,
+                  timer: 1500
+            });
+        })
+    }
+
+});
+</script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span6">
+            <h3 >Listado de Notificaciones </h3></br>
+        </div>
+        <div class="span2"  style="text-align: right">
+            <a href="/mantenimiento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span4'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/notificaciones_mant" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class='span4' style="text-align: right">
+            <a href="#" class='btn btn-success add_notificacion'><i class="icon-plus icon-white"></i> Nueva Notificaci&oacute;n</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripcion</th>
+                        <th style="text-align: center; width: 15%">Grupos</th>
+                        <th>#Usuarios</th>
+                        <th style="text-align: center;">Funci&oacute;n</th>
+                        <th style="text-align: center;">Estado</th>
+                        <th style="text-align: center;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for n in notificaciones %}
+                        <tr>
+                            <td>
+                                {{ n.nombre }}
+                                {% if n.query %}
+                                    <br>
+                                    <span class="label label-inverse" title="Copiar Query" style="cursor:pointer" onclick="copyQuery('{{ n.id }}')">Query <i class="icon-copy"></i></span>
+                                {% endif %}
+                                <textarea style="display: none" id="query-{{ n.id }}" cols="30" rows="10">{{ n.query }}</textarea>
+                            </td>
+                            <td> {% if n.descripcion %}{{ n.descripcion }}{% endif %}</td>
+                            <td style="text-align: center">{% if n.obtener_grupos %}
+                                    {% for noti in n.obtener_grupos  %}
+                                        <span class="label" style="text-align: center;"> {{ noti.name }} </span><br>
+                                    {% endfor %}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">{{ n.numero_usuarios }}</td>
+                            <td> {{ n.funcion }}</td>
+                            <td style="text-align: center;">
+                                {% if n.estado %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <!-- Ver notificaciones -->
+                                        <li><a href="#" onclick="verGrupos('{{ n.id }}', '{{ n.nombre }}')"><i class="icon-list"></i> Grupos</a> </li>
+                                        <li><a href="/notificaciones_mant?action=ver_grupo&id={{ n.id }}"><i class="icon-eye-open"></i> Ver Personas</a> </li>
+                                        <li><a style="cursor: pointer" nombre="{{ n.nombre }}" descripcion='{{ n.descripcion }}' funcion="{{ n.funcion }}" nid="{{ n.id }}" estado="{{ n.estado }}" query="{{ n.query }}" class="edit"><i class="icon-edit"></i> Editar</a> </li>
+                                        <li><a style="cursor: pointer" nombre="{{ n.nombre }}" nid="{{ n.id }}" class="eliminar"><i class="icon-remove"></i> Eliminar </a> </li>
+                                    </ul>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not notificaciones %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTEN REGISTROS
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+    <div class="span2"></div>
+        <div class="span8">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/notificaciones_mant?page=1">1</a></li>
+                            <li><a href="/notificaciones_mant?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/notificaciones_mant?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/notificaciones_mant?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/notificaciones_mant?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/notificaciones_mant?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    {# MODAL PARA AGREGAR NOTIFICACIONES   #}
+    <div class="modal fade static" id="add_notificaciones">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/notificaciones_mant" method="POST">
+                <input type='hidden' name='idnotificacion' id='idnotificacion' />
+                <input type='hidden' name='action' value='add' />
+                {% for c in form_notificacion %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="notificaciones">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+     {# MODAL PARA EDITAR NOTIFICACIONES   #}
+    <div class="modal fade static" id="edit_notificaciones">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/notificaciones_mant" method="POST">
+                <input type='hidden' name='idnotificacion' id='idnotificacion' />
+                <input type='hidden' name='action' value='editar' />
+                {% for c in form_notificacion %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="editnotificacion">Guardar</button>
+                <a href="#" class="btn cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="verGruposModal" style="position: relative">
+        <a href="#" onclick="cerrarModal('verGruposModal')" style="position: absolute; top: 0; right: 0; padding: 1em"><span class="icon-remove"></span></a>
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4 id='tituloVerGruposModal'></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body">
+            <div class="cargarGrupos">
+
+            </div>
+            <div class="addGrupos" style="padding: 1em; background: rgb(0,255,0,0.3); border-radius: 10px">
+                <h4>Adicionar Grupo:</h4>
+                <select id="slctGrupos" style="width: 350px">
+
+                </select>
+                <a href="#" class="btn btn-primary" onclick="addGrupo()"><i class="icon-plus"></i> Add</a>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

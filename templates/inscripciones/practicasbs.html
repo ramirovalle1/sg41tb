@@ -1,0 +1,200 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            //ACTUALIZA LISTADO
+            $(".actualiza").click(function(){
+                idinscr= $(this).attr("iid");
+                nombre = $(this).attr("nombre_in");
+                $.get("/inscripciones",{"action": "practicas_act","id":idinscr},function(data) {
+                    $("#actualizar_practica .modal-body").html(data);
+                    $("#actualizar_practica #paneltitle1").html("Listado de Inscripciones: "+nombre );
+                    $("#actualizar_practica").modal({width: '800px', backdrop: 'static'});
+                    $("#actualizar_practica").modal("show");
+                    $("#inscrip_actual").val(idinscr);
+                    console.log(idinscr);
+                   }, "html");
+               return false;
+            });
+            $("#actualizar_practica .btn-cerrar").click(function() {
+              $("#actualizar_practica").modal("hide");
+             });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span9'>
+            <h3>Pr&aacute;cticas Preprofesionales realizadas por: {{ inscripcion.persona }}</h3>
+            <h4>Carrera: {{ inscripcion.carrera }}</h4>
+            <h3>Total Horas Pr&aacute;cticas Preprofesionales: {{ totalgen }}</h3>
+            <br>
+        </div>
+        <div class='span2' style="text-align: right">
+            <a href="/inscripciones?s={% if inscripcion.persona.cedula %}{{ inscripcion.persona.cedula }}{% else %}{{ inscripcion.persona.pasaporte }}{% endif %}" class='btn'><i class="icon-pencil"></i> Inscripci&oacute;n</a>
+        </div>
+        <div class="span1" style="text-align: right">
+            {% if p %}
+                <a href="/pagopracticas_docente?action=ver_practicas&id={{ p }}" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+            {% else %}
+                <a href="/inscripciones" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Lugar</th>
+                    <th>Horas</th>
+                    <th>Docente</th>
+                    <th>Fecha</th>
+                    <th>Nivel</th>
+                    <th>Equipos</th>
+                    <th>Archivos</th>
+                    <th>Observaciones</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for practica in practicas %}
+                    <tr>
+                        <td>{{ practica.lugar }}</td>
+                        <td>{{ practica.horas }}</td>
+                        <td>{{ practica.profesor }}</td>
+                        <td>{{ practica.inicio|date:'d-m-Y' }} <br/> {{ practica.fin|date:'d-m-Y' }}</td>
+                        {% if practica.nivelmalla %}
+                            <td>{{ practica.nivelmalla }}</td>
+                        {% else %}
+                            <td>------</td>
+                        {% endif %}
+                        <td>{{ practica.equipamiento }}</td>
+                        <td>
+                            {% if practica.archivo %}
+                                <a href='{{ practica.download_link }}' class='btn btn-success btn-mini'><i class="icon-download  icon-white"></i> Descargar</a>
+                            {% endif %}
+                        </td>
+                        <td>{{ practica.observaciones }}</td>
+                        <td nowrap>
+                            {% if perms.sga.change_inscripcionpracticas %}
+                                <a href='/inscripciones?action=editpracticas&id={{ practica.id }}' class="btn btn-info btn-mini"><i class="icon-edit icon-white"></i></a>
+                                <a href='/inscripciones?action=delpracticas&id={{ practica.id }}' class="btn btn-danger btn-mini"><i class="icon-remove icon-white"></i></a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not practicas %}
+                    <tr>
+                        <td colspan="8">
+                            NO HAY DATOS DE PRACTICAS PREPROFESIONALES DEL ESTUDIANTE
+                        </td>
+                    </tr>
+                {% endif %}
+                    <tr class="alert">
+                        <td>TOTAL DE HORAS DE PRACTICA</td>
+                        <td class="bigger"><b>{% if totalhoras %}{{ totalhoras }}{% else %}0{% endif %}</b></td>
+                        <td colspan="6"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if perms.sga.change_inscripcionpracticas %}
+                {% if not persona.pertenece_soporte %}
+                    {% if not practicas %}
+                        <a href="/inscripciones?action=addpracticas&id={{ inscripcion.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Adicionar Pr&aacute;ctica Preprofesional</a>
+                        <a href="/inscripciones?action=addpracticasdistribucion&id={{ inscripcion.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Adicionar Pr&aacute;ctica Preprofesional por Distribución</a>
+                    {% else %}
+                        {% if totalhoras < 240 %}
+                            <a href="/inscripciones?action=addpracticas&id={{ inscripcion.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Adicionar Pr&aacute;ctica Preprofesional</a>
+                            <a href="/inscripciones?action=addpracticasdistribucion&id={{ inscripcion.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Adicionar Pr&aacute;ctica Preprofesional por Distribución</a>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% if vinculacion %}
+        <br><br>
+    <div class='row-fluid'>
+        <div class='span10'>
+            <h3>Detalle de Actividades de Vinculaci&oacute;n </h3>
+            <br>
+        </div>
+        {% if perms.sga.change_estudiantevinculacion %}
+        <div class='span2'>
+            <a href="#" iid='{{ inscripcion.id }}' nombre_in='{{ inscripcion }}'  class='btn btn-success actualiza'><i class="icon-plus icon-white"></i> Cambiar Vinculaci&oacute;n</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Actividad</th>
+                    <th>Horas</th>
+                    <th>Nivel</th>
+                    <th>Desde - Hasta</th>
+                    <th>Descargar</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for v in vinculacion %}
+                    <tr>
+                        <td>{{ v.actividad }}</td>
+                        <td>{{ v.horas }}</td>
+                        {% if v.nivelmalla %}
+                            <td>{{ v.nivelmalla.nombre }}</td>
+                        {% else %}
+                            <td>------</td>
+                        {% endif %}
+                        <td>
+                            {{ v.actividad.inicio|date:'d-m-Y' }} - {{ v.actividad.fin|date:'d-m-Y' }}
+                        </td>
+                        <td>{% if v.actividad.archivo %}<a href="{{ v.actividad.archivo.url }}"> Descargar</a>{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                {% if aprobacion %}
+                    <tr>
+                        <td>VINCULACION APROBADA POR: {{ aprobacion.usuario.username }} EL DIA: {{ aprobacion.fecha|date:'d-m-Y' }}</td >
+                        <td colspan="6"></td>
+                    </tr>
+                {% endif %}
+                {% if not vinculacion %}
+                    <tr>
+                        <td colspan="8">
+                                NO HAY DATOS DE ACTIVIDADES DE VINCULACI&Oacute;N
+                        </td>
+                    </tr>
+                {% endif %}
+                <tr class="alert">
+                    <td>TOTAL DE HORAS DE VINCULACION</td>
+                    <td class="bigger"><b>{{ tohorasvin }}</b></td>
+                    <td colspan="6"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+    {% endif %}
+     <div class="modal fade static" id="actualizar_practica" >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Listado de Inscripcion</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+            <input id="inscrip_actual" type="hidden"/>
+        </div>
+
+    </div>
+{% endblock %}

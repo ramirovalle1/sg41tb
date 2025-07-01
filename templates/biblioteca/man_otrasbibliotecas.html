@@ -1,0 +1,250 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+
+    $(function() {
+        $("#id_prioridad").addClass("input-small");
+        $("#id_url,#id_descripcion, #id_nombre").addClass("input-xlarge");
+
+
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/man_referenciasweb?s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+        var numeros1="0123456789";
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros1.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+        $("#id_prioridad").change(function(){
+            let prioridad = $("#id_prioridad").val();
+            var p = solo_numeros(prioridad);
+            if (p != prioridad.length){
+                $($("#id_prioridad").get(0).parentNode).find(".help-text").html("<span style='color:red'>Ingrese solo numeros</span>");
+                $("#id_prioridad").val("");
+                $("#id_prioridad").focus();
+            }else{
+                 $($("#id_prioridad").get(0).parentNode).find(".help-text").html("");
+            }
+
+        });
+
+        {#---AGREGEA NUEVA BIBLIOTECA VIRTUAL ----#}
+        $('.add_biblioteca').click(function(){
+            $("#id_prioridad").val('');
+            $("#id_url").val('');
+            $("#id_nombre").val('');
+            $("#id_estado").attr('checked',false);
+            $("#id_descripcion").val('');
+            $("#panel_otrabiblioteca #paneltitle2").html('Nueva Biblioteca Virtual');
+            $("#panel_otrabiblioteca").modal({"backdrop":"static","width":"40%"});
+            $("#panel_otrabiblioteca").modal("show");
+        });
+
+        {#---EDITAR BIBLIOTECA VIRTUAL----#}
+        $('.edit_biblioteca').click(function(){
+            $("#id_prioridad").val($(this).attr('prioridad'));
+            $("#id_url").val($(this).attr('url'));
+            $("#id_nombre").val($(this).attr('nombre'));
+            if($(this).attr('estado')){
+                $("#id_estado").attr('checked',true);
+            }else{
+                $("#id_estado").attr('checked',false);
+            }
+            $("#id_descripcion").val($(this).attr('descripcion'));
+            $("#panel_otrabiblioteca #idotrabiblioteca").val($(this).attr('rid'));
+            $("#panel_otrabiblioteca #paneltitle2").html('Modificar Otra Biblioteca Virtual de "'+($(this).attr('nombre'))+'"');
+            $("#panel_otrabiblioteca").modal({"backdrop":"static","width":"50%"});
+            $("#panel_otrabiblioteca").modal("show");
+        });
+
+        $("#panel_otrabiblioteca .btn-cerrar").click(function(){
+            $(".formError").removeClass('aparece');
+            $(".formError").addClass('oculta');
+            $("#panel_otrabiblioteca").modal("hide");
+            return false;
+        });
+
+        $("#formbutton").click(function(){
+            $(".formError").removeClass('oculta');
+            $(".formError").addClass('aparece');
+        });
+
+        {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+        {% if error %}
+            smoke.alert('{{ error }}');
+            setInterval(function(){
+            }, 5000);
+        {% endif %}
+
+
+    });
+
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span7"  >
+            <h3 >Otras Bibliotecas Virtuales</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/mantenimiento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span4'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/man_otrasbibliotecas" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class='span2'>
+            <a href="#" class='btn btn-success add_biblioteca'><i class="icon-plus icon-white"></i> Nueva Otra Biblioteca Virtual</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="text-align: center; width:5%;">Prioridad</th>
+                        <th style="text-align: center; width:15%;">Nombre</th>
+                        <th style="text-align: center; width:15%; ">Logo</th>
+                        <th style="text-align: center; width:5%;">Url</th>
+                        <th style="text-align: center; width:50%;">Descripcion</th>
+                        <th style="text-align: center; width:5%;">Estado</th>
+                        <th style="width:5%;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for otra in otrabiblioteca %}
+                        <tr>
+                            <td style="text-align:center"> {% if otra.prioridad %} {{ otra.prioridad }} {% endif %}</td>
+                            <td>{{ otra.nombre }}</td>
+                            <td  style="text-align: center"> {% if otra.logo %}<img src="{{ otra.logo.url }}" alt='{{ otra }}'/>{% endif %}</td>
+                            <td style="width: 5%">{% if otra.url %}<a href="{{  otra.url }}" target="_blank">{{ otra.url }}</a>{% endif %}</td>
+                            <td> {% if otra.descripcion %}{{ otra.descripcion }}{% endif %}</td>
+                            <td style="text-align: center">
+                                <a href="/man_otrasbibliotecas?action=desactivar&id={{ otra.id }}">
+                                    {% if otra.estado %}
+                                        <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                                </a>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a style="cursor: pointer" rid="{{ otra.id }}" prioridad="{{ otra.prioridad }}" url="{{ otra.url }}" nombre="{{ otra.nombre }}" estado="{{ otra.estado }}" descripcion="{{ otra.descripcion }}" class="edit_biblioteca"><i class="icon-edit"></i> Editar</a></li>
+{#                                        <li><a style="cursor: pointer" rid="{{ ref.id }}" nombres="{{ c.nombres }}" class="elim_referenciaw"><i class="icon-remove"></i> Eliminar</a></li>#}
+                                    </ul>
+                                </div>
+                            </td>
+
+                    {% endfor %}
+                    {% if not otrabiblioteca %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTEN REGISTROS
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+    <div class="span2"></div>
+        <div class="span8">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/man_otrasbibliotecas?page=1">1</a></li>
+                            <li><a href="/man_otrasbibliotecas?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/man_otrasbibliotecas?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/man_otrasbibliotecas?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/man_otrasbibliotecas?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/man_otrasbibliotecas?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="panel_otrabiblioteca">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/man_otrasbibliotecas" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addotrabiblio' />
+                <input type='hidden' name='idotrabiblioteca' id='idotrabiblioteca' />
+                {% for ob in otrabibliotecas %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ ob.name }}">{{ ob.label }}</label>
+                        <div class="controls">
+                            {{ ob }}
+                            <p class="help-text">{{ ob.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

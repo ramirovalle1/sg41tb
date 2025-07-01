@@ -1,0 +1,567 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+{#    <script src="../../sgaonline/static/staticsga/js/smoke.min.js"></script>#}
+    <script type="text/javascript">
+        $(function() {
+            {% if error %}
+                smoke.alert('{{ error }}');
+            {% endif %}
+            {% if info %}
+                smoke.alert('{{ info }}');
+            {% endif %}
+         $("#tutorsel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/alum_tutorias?tid='+id
+                }else{
+                    location.href = '/alum_tutorias';
+                }
+            });
+         $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/alum_tutorias?s="+term;
+            });
+
+             $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+         var idins = 0;
+           $(".subirarchivo").click(function() {
+                idins = $(this).attr("idins");
+                var count =0;
+                $("#paneltitle1arch").html("Estudiante: "+$(this).attr("nombrestud"));
+                if(parseInt($(this).attr("tituarch"))==1){
+                    $("#divtitulo").hide();
+                    count=count + 1;
+                }
+                if(parseInt($(this).attr("archcedula"))==1){
+                    $("#divcedula").hide();
+                }else{
+                    $("#divcedula").show();
+                }
+                if(parseInt($(this).attr("archpasaport"))==1){
+                    $("#divpasaport").hide();
+                }else{
+                    $("#divpasaport").show();
+                }
+                if(parseInt($(this).attr("votacion"))==1){
+                    $("#divvotacion").hide();
+                }else{
+                    $("#divvotacion").show();
+                }
+                if(parseInt($(this).attr("foto"))==1){
+                    $("#divfoto").hide();
+                    count=count + 1;
+                }
+                if(parseInt($(this).attr("pasaport"))==1){
+                    $("#divcedula").hide();
+                    $("#divvotacion").hide();
+                    count=count + 1;
+                }else{
+                    $("#divpasaport").hide();
+                    count=count + 1;
+                }
+                var tamano = '60%';
+                if(count == 3)
+                    tamano = '30%';
+                $("#subirarchivos").modal({backdrop: 'static', keyboard: false, width: tamano });
+                $("#subirarchivos").modal("show");
+           });
+
+            $(".cerrarsubar").click(function(){
+                $("#subirarchivos").modal("hide");
+            });
+
+            $(".cancelarsubir").click(function(){
+                $("#subirarchivos").modal("hide");
+                $(".cerrarsubar").show();
+                $(".cancelarsubir").hide();
+                $("#verarchivos").modal("show");
+            });
+
+            $(".ingresardatoarcha").click(function (){
+                var validar = false;
+                var form = document.getElementById('file');
+                var file = form.files[0];
+                var formData = new FormData();
+                if (file) {
+                    formData.append('file', file);
+                    validar = true;
+                }
+
+                form = document.getElementById('fileced');
+                var fileced = form.files[0];
+                if (fileced){
+                    formData.append('fileced', fileced);
+                    validar = true;
+                }
+
+                form = document.getElementById('filevota');
+                var filevota = form.files[0];
+                if (filevota){
+                    formData.append('filevota', filevota);
+                    validar = true;
+                }
+
+                form = document.getElementById('filepasa');
+                var filepasa = form.files[0];
+                if (filepasa){
+                    formData.append('filepasa', filepasa);
+                    validar = true;
+                }
+
+                form = document.getElementById('filefot');
+                var filefot = form.files[0];
+                if (filefot){
+                    formData.append('filefot', filefot);
+                    validar = true;
+                }
+                formData.append('action', 'subirarchivo');
+                formData.append('id', idins);
+                if(validar) {
+                    showWaiting("Guardando Archivo","Espere por favor.....");
+                    $.ajax({
+                        url: '/alum_tutorias',
+                        type: "POST",
+                        contentType: false,
+                        data: formData,
+                        processData: false,
+                        cache: false,
+                        success: function (data) {
+                            if (data.result == "ok") {
+                                $("#subirarchivos").modal("hide");
+                                observararchiv(idins);
+                            } else {
+                                $("#subirarchivos").modal("hide");
+                                smoke.alert(data.result);
+                            }
+                            hideWaiting();
+                        },
+                        error: function (xhr, ajaxOptions, thrownError) {
+                            hideWaiting();
+                            smoke.alert("Error vuelva a intentarlo");
+                        }
+                    });
+                }
+           });
+
+
+            {#/////////////////////////////////////////VALIDA ARCHIVOS //////////////////////////#}
+            $("#file").change(function(){
+                $(".filetex").html('');
+                if($("#file").val().split('.')[$("#file").val().split('.').length-1].toLowerCase() != 'pdf'){
+                    $(".filetex").html('<a style="color:red">El formato del archivo debe ser PDf</a>');
+                    $("#file").val('');
+                }
+            });
+            $("#fileced").change(function(){
+                $(".filecedtext").html('');
+                if($("#fileced").val().split('.')[$("#fileced").val().split('.').length-1].toLowerCase() != 'pdf'){
+                    $(".filecedtext").html('<a style="color:red">El formato del archivo debe ser PDf</a>');
+                    $("#fileced").val('');
+                }
+
+            });
+            $("#filepasa").change(function(){
+                $(".filepasatext").html('');
+                if($("#filepasa").val().split('.')[$("#filepasa").val().split('.').length-1].toLowerCase() != 'pdf'){
+                    $(".filepasatext").html('<a style="color:red">El formato del archivo debe ser PDf</a>');
+                    $("#filepasa").val('');
+                }
+
+            });
+            $("#filevota").change(function(){
+                $(".filevotatext").html('');
+                if($("#filevota").val().split('.')[$("#filevota").val().split('.').length-1].toLowerCase() != 'pdf'){
+                    $(".filevotatext").html('<a style="color:red">El formato del archivo debe ser PDf</a>');
+                    $("#filevota").val('');
+                }
+            });
+            $("#filefot").change(function(){
+                $(".filefottext").html('');
+                if($("#filefot").val().split('.')[$("#filefot").val().split('.').length-1].toLowerCase() != 'png' &&  $("#filefot").val().split('.')[$("#filefot").val().split('.').length-1].toLowerCase() != 'jpg'){
+                    $(".filefottext").html('<a style="color:red">El formato del archivo debe ser PNG o JPG</a>');
+                    $("#filefot").val('');
+                }
+
+            });
+
+             $(".verarchivo").click(function(){
+                idins = $(this).attr('idins');
+                observararchiv(idins);
+            });
+
+            observararchiv = function(inscrid){
+                $.get("/alum_tutorias", {'action':'verarchivotutor', 'id': inscrid}, function(data) {
+                    $("#verarchivos .modal-body").html(data);
+                    $("#verarchivos").modal({"backdrop":"static","width":"50%"});
+                    $("#verarchivos").modal("show");
+                }, "html");
+            };
+
+            $(".cerrarverarch").click(function(){
+                location.reload();
+            });
+
+            $(".vercomprobantes").click(function(){
+                var idins = $(this).attr('idins');
+                $("#nomalumn").html("Comprobantes del alumno");
+                $.get("/alum_tutorias", {'action':'verarcomprobante', 'id': idins}, function(data) {
+                    $("#verarchivos .modal-body").html(data);
+                    $("#verarchivos").modal({"backdrop":"static","width":"50%"});
+                    $("#verarchivos").modal("show");
+                }, "html");
+            });
+
+            {#------------------------------------------------------ ACTUALIZAR ----------------------------------------------------------------#}
+            $(".btn_actualizar").click(function(){
+                smoke.confirm('Se actualizaran los estudiantes que aun no tienen asignado tutor dentro del nivel, desea continuar?', function(e){
+                if (e){
+                    showWaiting("Actualizando datos","Espere un momento... ");
+                    $.post("/alum_tutorias",{"action": "actualizar"},function(data) {
+                        if(data.result=='ok'){
+                            alert("Datos Actualizados");
+                       }else{
+                            alert(data.result);
+                       }
+                       location.reload()
+                    },"json");
+                }else{
+                }
+                }, {
+                ok: "Si",
+                cancel: "No",
+                classname: "custom-class",
+                reverseButtons: true
+                });
+            });
+
+        });
+
+    </script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>  Listado de Estudiantes        </h3>
+            {% if tutor %}
+                <h3> Tutor: {{ tutor.persona.nombre_completo }}        </h3>
+            {% endif %}
+                <h3>Total: {{ total}} </h3>
+            <br>
+        </div>
+        <div class='span1' style="text-align: right;">
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+
+        </div>
+    </div>
+    <div class="row-fluid" >
+        {#                          Boton para realizar la atencion al cliente                                       #}
+        <div class='span2' style="width: 400px">
+            <form class="form-search"> <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search or tutorid %}
+                <a href="/alum_tutorias" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        {%  if perms.sga.add_inscripcion %}
+            <div class="span2">
+                <a style="font-weight: bold;color: black;" >Tutores: </a>
+                <select id='tutorsel' class="input"/>
+                    <option value=''>-----</option>
+                    {% for t in tutores %}
+                        <option value="{{ t.id }}" {% if tutorid == t.id %}selected="selected"{% endif %}>{{ t.persona.nombre_completo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+        <div class='span4' style="text-align: right"></div>
+        <div class='span2' style="text-align: right">
+            <a href="#" class='btn btn-info btn_actualizar'><i class="icon-share icon-white"></i> Actualizar</a>
+        </div>
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Grupo - Nivel</th>
+                <th>Cedula/Pasap</th>
+                <th>Usuario</th>
+                <th>#Mat/Archivo</th>
+                <th>Tel&eacute;fonos</th>
+                <th>Emails</th>
+                <th>Fecha</th>
+                <th>Carrera</th>
+                {% if not asistente %}
+                    <th>Tutor</th>
+                {% endif %}
+                <th> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for m in matriculas %}
+                <tr>
+                    <td>
+                    {% if m.inscripcion.tienediscapacidad %}
+                        <img src='../../static/staticsga/images/discapacidad.png' alt="Discapacidad"/>
+                    {% endif %}
+                    {% if not m.inscripcion.persona.usuario.is_active  %}
+                        <img src='../../static/staticsga/images/16/false.png' width="14px" alt='' border="0"/>
+                    {% endif %}
+                      <a href='/alum_tutorias?action=datos&id={{ m.id }}'>{{ m.inscripcion.persona }}</a> </td >
+                    <td nowrap style="color:#002a80 ">
+                        {% with matriculado=m.inscripcion|args:periodo|call:"matriculado_periodo" %}
+                            {% if matriculado %}
+                            {% with matricula=m.inscripcion|args:periodo|call:"matricula_periodo" %}
+                                {{ matricula.nivel.paralelo }} - {{ matricula.nivel.nivelmalla }}<br>
+                                <span class="smaller"> ({{ matricula.nivel.inicio|date:'d-m-Y' }} - {{ matricula.nivel.fin|date:'d-m-Y' }})</span>
+                            {% endwith %}
+                            {% else %}
+                                {{ m.inscripcion.grupo.nombre }}
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+
+                    <td>{{ m.inscripcion.persona.cedula }} <br/>
+                    {% if m.inscripcion.persona.extranjero %}
+                        {% if m.inscripcion.persona.pasaporte %}{{ m.inscripcion.persona.pasaporte }}<br/><span class="label label-important">{{ 'Extranjero' }}</span> {% endif %}</td>
+                    {% endif %}
+
+                        <td>{{ m.inscripcion.persona.usuario }}</td>
+                        <td style="text-align: center">
+                            {% if m.inscripcion.numerom %}
+                                <span style="color: #002a80"> {{ m.inscripcion.numerom_string }}</span>
+                            {% endif %}
+                            {% if m.inscripcion.identificador %}
+                                <br/><span class="label label-info">{{ m.inscripcion.identificador }}</span>
+                            {% endif %}
+                        </td>
+
+                    <td>
+                        {% if m.inscripcion.persona.telefono %}{{ m.inscripcion.persona.telefono }}{% endif %}
+                        <br/>{% if m.inscripcion.persona.telefono_conv %}{{ m.inscripcion.persona.telefono_conv }}{% endif %}
+                    </td>
+                    <td>
+                    <h6><a href="mailto:{{ m.inscripcion.persona.emailinst }}" style="color: #003bb3">
+                                {{ m.inscripcion.persona.emailinst }}</a></h6>
+                       {% if m.inscripcion.persona.email %}
+                            <h6><a href="mailto:{{ m.inscripcion.persona.email }}" style="color: #003bb3">
+                                {{ m.inscripcion.persona.email }}</a></h6>
+                        {% else %}
+                            {% if m.inscripcion.persona.email1 %}
+                                <h6><a href="mailto:{{ m.inscripcion.persona.email1 }}" style="color: #003bb3">
+                                    {{ m.inscripcion.persona.email1 }}</a></h6>
+                            {% else %}
+                                {% if m.inscripcion.persona.email2 %}
+                                    <h6><a href="mailto:{{ m.inscripcion.persona.email2 }}" style="color: #003bb3">
+                                        {{ m.inscripcion.persona.email2 }}</a></h6>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+
+{#                            <br/>{{ inscripcion.persona.emails }}#}
+                    </td>
+                    <td style="font-size: 11px" nowrap>{{ m.inscripcion.fecha|date:"d-m-Y"  }} <br>
+
+                    {# OCastillo 28-03-2018 presenta el usuario que inscribio #}
+                        <span style="color: orangered"> {% if m.inscripcion.user %} {{ m.inscripcion.user }} {% endif %} </span>
+
+                    </td>
+                    <td nowrap>{{ m.inscripcion.carrera.alias }}</td>
+                    {% if not asistente %}
+                        <td>{{ m.tiene_tutor.niveltutor.tutor.persona.nombre_completo_inverso }}</td>
+                    {% endif %}
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+
+                                <!-- Ver el cumplimiento de la malla -->
+                                <li><a href="/alum_tutorias?action=alumalla&id={{ m.inscripcion.id }}"><i class="icon-share-alt"></i> Su Malla</a> </li>
+                                <li><a href="/alum_tutorias?action=verdatos&id={{ m.id }}"><i class="icon-share-alt"></i> Ver Datos</a> </li>
+                                <li><a href="/alum_tutorias?action=verseguimiento&id={{ m.id }}"><i class="icon-share-alt"></i> Seguimiento </a> </li>
+
+                                {% if m.inscripcion.tiene_horario %}
+                                    <li><a href="/alum_tutorias?action=horario&id={{ m.id }}"><i class="icon-share-alt"></i> Horario de Examen</a> </li>
+                                {% endif %}
+                                {% if not matricula.nivel.cerrado %}
+                                    <li><a href="/alum_tutorias?action=notas&id={{ m.id }}"><i class="icon-share-alt"></i> Materias </a> </li>
+                                 {% endif %}
+                                {% if not m.inscripcion.titulo or not m.inscripcion.archcedula and m.inscripcion.persona.cedula or not m.inscripcion.archpasaport and m.inscripcion.persona.pasaporte or not m.inscripcion.votacion  and m.inscripcion.persona.cedula or  not m.inscripcion.foto   %}
+                                    <li>
+                                        <a style="cursor:pointer;" ins='{{ m.inscripcion.id }}' class="subirarchivo"
+                                           nombrestud="{{ m.inscripcion.persona.nombre_completo }}"
+                                           pasaport="{% if m.inscripcion.persona.pasaporte %}1{% else %}0{% endif %}"
+                                           tituarch="{% if m.inscripcion.titulo %}1{% else %}0{% endif %}"
+                                           archcedula="{% if m.inscripcion.archcedula %}1{% else %}0{% endif %}"
+                                           archpasaport="{% if m.inscripcion.archpasaport %}1{% else %}0{% endif %}"
+                                           votacion="{% if m.inscripcion.votacion %}1{% else %}0{% endif %}"
+                                           foto="{% if m.inscripcion.foto %}1{% else %}0{% endif %}"
+                                           idins="{{ m.inscripcion.id }}"
+                                        >
+                                            <i class="icon-share-alt"></i>Subir Archivo
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if m.inscripcion.titulo or m.inscripcion.archcedula and m.inscripcion.persona.cedula or m.inscripcion.archpasaport and m.inscripcion.persona.pasaporte or m.inscripcion.votacion  and m.inscripcion.persona.cedula or  m.inscripcion.foto   %}
+                                    <li><a style="cursor:pointer;" idins='{{ m.inscripcion.id }}' class="verarchivo"><i class="icon-eye-open"></i>Ver Archivos</a></li>
+                                {% endif %}
+                               <!-- Activar o Desactivar Usuario -->
+
+{#                                            {% if not inscripcion.persona.usuario.is_active %}#}
+                                {% if m.inscripcion.tiene_inactivacion %}
+                                        <li><a href="#" ins='{{ m.inscripcion.id }}' class="motivodesactivacion">
+                                         <i class="icon-book"></i> Motivo de Activacion(Des)</a> </li>
+                                {% endif %}
+                                <li><a style="cursor:pointer;" href="/alum_tutorias?action=ingresacomprobante&idins={{ m.inscripcion.id }}"><i class="icon-download"></i> Subir Comprobante Pago</a></li>
+                                {% if m.inscripcion.solicitudsecre %}
+                                    <li><a style="cursor:pointer;" href="/alum_tutorias?action=vercomprobante&id={{ m.inscripcion.id }}" idins="{{ m.id }}" ><i class="icon-eye-open"></i> Ver Comprobantes Pago</a></li>
+                                {% endif %}
+                            </ul>
+                   </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/alum_tutorias?page=1">1</a></li>
+                            <li><a href="/alum_tutorias?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/alum_tutorias?page={{ pagenumber }}{% if tutorid %}&tid={{ tutorid }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/alum_tutorias?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/alum_tutorias?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/alum_tutorias?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if tutorid %}&tid={{ tutorid }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="subirarchivos" style="display: none;">
+        <div class="modal-header alert alert-info">
+            <h3 id="paneltitle1arch"> Subir Archivos</h3>
+        </div>
+        <div class="modal-body">
+            <div class="row">
+                <div class="span4" id="divcedula">
+                    <div class="form-group">
+                        <label for="fileced"><b>C&eacute;dula:</b></label>
+                            <input type="file" id="fileced" {% if prospecto.pasaporte %} disabled {% endif %}>
+                            <span class="file-custom filecedtext"></span>
+                            {% if prospecto.archcedula %}
+                                <br/><span><a href='{{ DIRECCION_STATIC }}{{  prospecto.archcedula  }}' title="Ver C&eacute;dula" target="_blank" > <b>Ver Archivo</b><img alt=""archivo de titulo src="../../static/staticsga/images/16/pdf16.png"/></a></span>
+                            {% endif %}<br/>
+                        <span> Tamaño Maximo Permitido 4Mb, en formato pdf</span>
+                        <br/><br/>
+                    </div>
+                </div>
+                <div class="span4"  id="divvotacion">
+                    <div class="form-group">
+
+                        <label for="filevota"><b>Papel de Votaci&oacute;n:</b></label>
+                            <input type="file" id="filevota" {% if prospecto.pasaporte %} disabled {% endif %}>
+                            <span class="file-custom filevotatext"></span>
+                            {% if prospecto.votacion %}
+                                <br/><span><a href='{{ DIRECCION_STATIC }}{{  prospecto.votacion  }}' title="Ver Papel Votaci&oacute;n" target="_blank" > <b>Ver Archivo</b><img alt=""archivo de titulo src="../../static/staticsga/16/pdf16.png"/></a></span>
+                            {% endif %}<br/>
+                        <span> Tamaño Maximo Permitido 4Mb, en formato pdf</span><br/><br/>
+                    </div>
+                </div>
+                <div class="span4" id="divpasaport">
+                    <div class="form-group" >
+
+                        <label for="filepasa"><b>Pasaporte:</b></label>
+                            <input type="file" id="filepasa" >
+                            <span class="file-custom filepasatext"></span>
+                            {% if prospecto.archpasaport %}
+                                <br/><span><a href='{{ DIRECCION_STATIC }}{{  prospecto.archpasaport  }}' title="Ver Papel Votaci&oacute;n" target="_blank" > <b>Ver Archivo</b><img alt=""archivo de titulo src="../../static/staticsga/16/pdf16.png"/></a></span>
+                            {% endif %}<br/>
+                        <span> Tamaño Maximo Permitido 4Mb, en formato pdf</span><br/><br/>
+                    </div>
+                </div>
+                <div class="span4" id="divtitulo">
+                    <div class="form-group">
+
+                        <label><b>Título:</b></label>
+                        <input type="file" id="file">
+                        <span class="file-custom filetex"></span>
+                        {% if prospecto.titulo %}
+                            <span><a href='{{ DIRECCION_STATIC }}{{  prospecto.titulo  }}' title="Ver titulo" target="_blank" > <b>Ver Archivo</b><img alt=""archivo de titulo src="../../static/staticsga/images/16/pdf16.png"/></a></span>
+                        {% endif %}
+                        <br/>
+                        <span> Tamaño Maximo Permitido 4Mb, en formato pdf</span>
+                        <br/><br/>
+                    </div>
+               </div>
+                <div class="span4"  id="divfoto">
+                    <div class="form-group">
+
+                        <label for="filefot"><b>Foto:</b></label>
+                            <input type="file" id="filefot">
+                            <span class="file-custom filefottext"></span>
+                            {% if prospecto.foto %}
+                                <br/><span><a href='{{ DIRECCION_STATIC }}{{  prospecto.foto  }}' title="Ver C&eacute;dula" target="_blank" > <b>Ver Archivo</b><img alt=""archivo de titulo src="../../static/staticsga/images/16/pdf16.png"/></a></span>
+                            {% endif %}<br/>
+                        <span> Tamaño Maximo Permitido 4Mb, en formato png, jpg</span><br/><br/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer" class="btn btn-danger btn-cerrar cerrarsubar">Cerrar</a>
+            <a style="cursor: pointer;display: none" class="btn btn-danger btn-cerrar cancelarsubir">Cancelar</a>
+            <a style="cursor: pointer" class="btn btn-success ingresardatoarcha"> Subir Archivos</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="verarchivos" style="display: none;">
+        <div class="row-fluid modal-header">
+            <h4 id="nomalumn"><i> Archivos del Alumno</i></h4>
+            <h5 class="hel-textverarch"></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a style="cursor: pointer" id="cerrar" class="btn btn-danger  btn-aceptar cerrarverarch">Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

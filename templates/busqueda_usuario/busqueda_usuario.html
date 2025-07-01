@@ -1,0 +1,375 @@
+{% extends "basebs.html" %}
+{% load humanize %}
+{% block heading %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/7.2.0/sweetalert2.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/7.2.0/sweetalert2.all.min.js"></script>
+
+    <script type="text/javascript">
+        $(function(){
+            /* no se está usando */
+            buscar_alumno = function (query, process) {
+                $.get("/busqueda", {'action': 'buscaxnombre', 'model': 'Inscripcion',
+                    'p': 1, 'q': query, 's': 10}, function (data) {
+                    if (data.results) {
+                        $("#searchinput").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#searchinput').typeahead({source: buscar_alumno, updater: function (item) {
+                var results = $("#searchinput").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item == datos.name) {
+                        // $("#searchinput").attr("myval",datos.id);
+                        // location.href = "/consultaalumno?id=" + datos.id;
+                    }
+                }
+
+                return item;
+            }});
+            /* fin no se está usando */
+
+
+            // --------------------- BUSQUEDA POR GRUPO ------------------------ //
+
+            buscar_grupo = function (query, process) {
+                $.get("/busqueda", {'action': 'buscaxgrupo', 'model': 'Grupo',
+                    'p': 1, 'q': query, 's': 10}, function (data) {
+                    if (data.results) {
+                        $("#searchgrupo").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#searchgrupo').typeahead({source: buscar_grupo, updater: function (item) {
+                var results = $("#searchgrupo").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item == datos.name) {
+                        // $("#searchinput").attr("myval",datos.id);
+                        $("#searchgrupo").attr("idgrupo", datos.id);
+                    }
+                }
+                return item;
+            }});
+
+            /* busqueda para llenar tabla con los estudiantes del grupo que no tengan correo valido en google */
+            var listausuariosincorreo = [];
+            $("#consultaxgrupo").click(function() {
+                listausuariosincorreo = [];
+                if (!$("#searchgrupo").val()) {
+                    $("#searchgrupo").attr("idgrupo", "");
+                    $("#divtabla").css('display', 'none');
+                    $("#divbtnaddcorreo").css('display', 'none');
+                    swal("Error", "Debe tener seleccionado un grupo", "error").then(function () {
+                        hideWaiting();
+                    });
+                } else {
+                    var idgrupo = $("#searchgrupo").attr('idgrupo');
+                    showWaiting("Ingresando información", "espere unos minutos");
+                    $.post("/busqueda", {"action": "consultaxgrupo", 'idgrupo': idgrupo},function (data) {
+                        if (data.result == 'ok') {
+                            hideWaiting();
+                            // llenar tabla con datos
+                            const tbdata = document.getElementById('tbdata');
+                            tbdata.innerHTML = '';
+                            var codhtml = '';
+                            $("#divtabla").css('display', 'flex');
+                            if (data.listfaltacorreo) {
+                                for (var i in data.listfaltacorreo) {
+                                    // muestra los alumnos que falta correo
+                                    tbdata.innerHTML += '<tr>' +
+                                                            '<td>'+data.listfaltacorreo[i].nombre+'</td>' +
+                                                            '<td>'+data.listfaltacorreo[i].usuario+'</td>' +
+                                                            '<td>'+data.listfaltacorreo[i].correo+'</td>' +
+                                                        '</tr>';
+
+                                    listausuariosincorreo.push({'usuario': data.listfaltacorreo[i].usuario});
+                                }
+                                $("#divbtnaddcorreo").css('display', 'flex');
+                                // print('lista de usuarios sin correo', listausuariosincorreo);
+                            } else {
+                               // en el grupo todos tienen correo
+                                tbdata.innerHTML = '<tr>' +
+                                                        '<td colspan="8" style="text-align: center;">No hay registro</td>' +
+                                                    '</tr>';
+                                $("#divbtnaddcorreo").css('display', 'none');
+                            }
+                        } else {
+                            swal("Error", data.message, 'error').then(function () {
+                                hideWaiting();
+                            });
+                        }
+                    }, "json").fail(function (jqXHR, textStatus, errorThrown) {
+                        console.log(errorThrown);
+                        console.log('getJSON request failed! ' + textStatus + ' eroro jqk' + jqXHR.responseText);
+                        swal("Error", "Error de conexión", 'error').then(function () {
+                            hideWaiting();
+                        });
+                    });
+                }
+            });
+            /* fin busqueda estudiantes x por grupo */
+
+            $("#addcorreosgrupo").click(function(){
+                showWaiting("Ingresando información", "espere unos minutos");
+                if (listausuariosincorreo.length > 0){
+                    swal({
+                        title: 'Desea crear correo?',
+                        type: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Si!',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonClass: 'btn btn-success margin-5',
+                        cancelButtonClass: 'btn btn-danger margin-5',
+                        buttonsStyling: false,
+                        allowOutsideClick: false
+                    }).then(function (isConfirm) {
+                        if (isConfirm['dismiss'] != 'cancel') {
+                            var formData = new FormData();
+                            formData.append('action', 'crear_correo_x_grupo');
+                            formData.append('listausuariosincorreo', JSON.stringify(listausuariosincorreo));
+                            $.ajax({
+                                url: '/busqueda',
+                                type: "POST",
+                                contentType: false,
+                                data: formData,
+                                processData: false,
+                                cache: false,
+                                success: function (data) {
+                                    if (data.result == "ok") {
+                                        swal("!Notificación", "Correos creados correctamente", "success").then(function () {
+                                            location.reload();
+                                        });
+                                    } else {
+                                        swal("Error", data.message, "error").then(function () {
+                                            location.reload();
+                                        });
+                                    }
+                                },
+                                error: function (xhr, ajaxOptions, thrownError) {
+                                    swal("Error", "Error Conexion en el Servidor", "error").then(function () {
+                                        hideWaiting();
+                                    });
+                                },
+                                complete: function () {
+                                    hideWaiting();
+                                }
+                            });
+                        }
+                    })
+                } else {
+                    swal("Error", "No hay usuarios", "error").then(function(){
+                        hideWaiting();
+                    });
+                }
+            });
+
+            // ---------------------- BUSQUEDA POR USUARIO ------------------------- //
+
+            $('#txtusuario').keyup(function (e) {
+                if (e.keyCode == 13) {
+                    $("#buscausuario").click();
+                }
+            });
+
+            $("#buscausuario").click(function() {
+                if ($("#txtusuario").val()){
+                    var formadata = new FormData();
+                    formadata.append('action', 'verifica_correo');
+                    var usuario = $("#txtusuario").val();
+                    formadata.append('usuario', usuario);
+                    showWaiting("Busqueda", "Espere unos minutos por favor...");
+                    $.ajax({
+                        url: '/busqueda',
+                        data: formadata,
+                        type: 'POST',
+                        contentType: false,
+                        processData: false,
+                        cache: false,
+                        success: function (json) {
+                            if (json.result == 'ok') {
+                                swal("Notificación", "El correo "+json.correoexiste+" existe", "success").then(function () {
+                                    hideWaiting();
+                                });
+                            } else {
+                                if (json.nocorreo) {
+                                    // el usuario no tiene correo validado
+                                    console.log('no corrreo');
+                                    function avisomodal(){
+                                        swal("Error", json.message, "error").then(function () {
+                                            // hideWaiting();
+                                            swal({
+                                                title: 'Desea crear correo?',
+                                                type: 'warning',
+                                                showCancelButton: true,
+                                                confirmButtonText: 'Si!',
+                                                cancelButtonText: 'Cancelar',
+                                                confirmButtonClass: 'btn btn-success margin-5',
+                                                cancelButtonClass: 'btn btn-danger margin-5',
+                                                buttonsStyling: false,
+                                                allowOutsideClick: false
+                                            }).then(function (isConfirm) {
+                                                if (isConfirm['dismiss'] != 'cancel') {
+                                                    var formData = new FormData();
+                                                    formData.append('action', 'crear_correo');
+                                                    formData.append('usuario', usuario);
+                                                    showWaiting("Cargando", "Espere unos minutos por favor...");
+                                                    $.ajax({
+                                                        url: '/busqueda',
+                                                        type: "POST",
+                                                        contentType: false,
+                                                        data: formData,
+                                                        processData: false,
+                                                        cache: false,
+                                                        success: function (data) {
+                                                            if (data.result == "ok") {
+                                                                swal("!Notificación", "Correo creado correctamente", "success").then(function(){
+                                                                    location.reload();
+                                                                });
+                                                            } else {
+                                                                swal("Error", data.message, "error").then(function(){
+                                                                    location.reload();
+                                                                });
+                                                            }
+                                                        },
+                                                        error: function (xhr, ajaxOptions, thrownError) {
+                                                            swal("Error", "Error Conexion en el Servidor", "error").then(function(){
+                                                                hideWaiting();
+                                                            });
+                                                        },
+                                                        complete: function () {
+                                                            hideWaiting();
+                                                        }
+                                                    });
+                                                }
+                                            })
+                                        });
+                                    }
+
+                                    avisomodal();
+                                } else {
+                                    swal("Error", json.message, "error").then(function () {
+                                        hideWaiting();
+                                    });
+                                }
+                            }
+                        },
+                        error: function (xhr, status) {
+                            smoke.alert('Disculpe, existió un problema');
+                        },
+                        complete: function (xhr, status) {
+                            hideWaiting();
+
+                        }
+                    });
+                } else {
+                    swal("Error", "Debe ingresar un usuario", "error").then(function () {
+                        hideWaiting();
+                    });
+                }
+            });
+
+        });
+    </script>
+
+    <style type="text/css">
+        .margin-5 {
+            margin: 5px;
+        }
+    </style>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3> </h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+{#    <div class="row-fluid">#}
+{#        <div class="span4">#}
+{#        </div>#}
+{#        <div class="span4" style="text-align: center;">#}
+{#            <h3>Búsqueda de Estudiante</h3>#}
+{#        </div>#}
+{#    </div>#}
+{#    <div class="row-fluid">#}
+{#        <div class="span12 atright" style="text-align: center;">#}
+{#            <input type="text" id="searchinput" class="searchinput input-xxlarge search-query"#}
+{#                   data-provide="typeahead"/>#}
+{#        </div>#}
+{#    </div><br>#}
+{#    <br>#}
+
+    <div class="row-fluid">
+        <div class="span12" style="text-align: center;">
+            <h3>Búsqueda por usuario</h3>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span12 atright" style="text-align: center;">
+            <input type="text" id="txtusuario" class="input-xxlarge search-query"/>
+            <a href="#" id="buscausuario" class="btn btn-info"><i class="icon-search icon-white"></i> Buscar</a>
+        </div>
+    </div><br>
+
+    <br>
+
+    <br>
+    <div class="row-fluid">
+        <div class="span12" style="text-align: center;">
+            <h3>Búsqueda por grupo</h3>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span12 atright" style="text-align: center;">
+            <input type="text" id="searchgrupo" class="searchgrupo input-xxlarge search-query"
+                   data-provide="typeahead" idgrupo=""/>
+            <a href="#" id="consultaxgrupo" class="btn btn-info"><i class="icon-search icon-white"></i> Consultar</a>
+        </div>
+    </div><br>
+    <br>
+
+    <div class="row-fluid" style="display: none; justify-content: center;" id="divtabla">
+        <div class="span8">
+            <div class="row" id="divbtnaddcorreo" style="display: none; justify-content: flex-end;">
+                <div class="span3">
+                    <a href="#" id="addcorreosgrupo" class="btn btn-success"><i class="icon-plus icon-white"> </i>
+                        Crear correo a estudiantes</a>
+                </div>
+            </div>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <caption><h3>USUARIOS CON CORREOS QUE NO EXISTEN</h3></caption>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Usuario</th>
+                        <th>correo</th>
+                    </tr>
+                </thead>
+                <tbody id="tbdata">
+                    <tr>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

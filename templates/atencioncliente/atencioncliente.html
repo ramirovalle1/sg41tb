@@ -1,0 +1,234 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/atencionclientes?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".editar").click(function() {
+                 var urls = $(this).attr("adm");
+                 var tip= $(this).attr("tip");
+                 var mensj="Desea quitar el usuario de atencion al cliente?";
+                    if(tip=="no"){
+                        mensj="Desea que el usuario sea parte de atencion al cliente?";
+                    }
+                 smoke.confirm(mensj, function(e){
+                    if (e){
+                        location.href = urls;
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+           $('.estado').click(function(){
+                var tid= $(this).attr("id");
+                var tip= $(this).attr("usr");
+                var mensj='';
+                if($(this).attr("est")=='no'){
+                    mensj=". Desea Activar este Usuario?"
+                }else{
+                    mensj=". Desea Inactivar este Usuario?"
+                }
+                var mensj=tip+mensj;
+                smoke.confirm(mensj, function(e){
+                    if (e){
+                        $.post("/atencionclientes",{"action": "actu","id":tid},function(data) {
+                           if(data.result=='ok'){
+                           location.reload();}
+                           else{
+                               smoke.alert('No se puede activar el punto esta siendo utilizado')
+                           }
+                       },"json");
+                    }else{
+
+                    }
+                    }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                });
+            });
+
+           $("#punto").click(function(){
+               location.href = '/atencionclientes?action=punto';
+           });
+
+           $("#estad").click(function(){
+               location.href = '/atencionclientes?action=estadistica';
+           });
+
+           $("#video").click(function(){
+               location.href = '/atencionclientes?action=video';
+           });
+
+           $(".atencion").click(function(){
+                 var usr = $(this).attr("uid");
+                 var pit= $(this).attr("pid");
+                 mensj="Desea que el usuario sea parte de atencion al cliente?";
+                 smoke.confirm(mensj, function(e){
+                    if (e){
+                        $.post("/atencionclientes",{"action": "aad", "uid": usr,"pid": pit },function(data) {
+                           if(data.result=='ok'){
+                           location.reload();}
+                        },"json");
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+           });
+           $(".dell").click(function(){
+                 var usr = $(this).attr("id");
+                 mensj="Desea quitar el Punto de atencion?";
+                 smoke.confirm(mensj, function(e){
+                    if (e){
+                        $.post("/atencionclientes",{"action": "dell", "id": usr },function(data) {
+                           if(data.result=='ok'){
+                           location.reload();}
+                           else{
+                               smoke.alert("No puede eliminar turno desactivar")
+                           }
+                        },"json");
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+           });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                Listado del Personal Admisi&oacute;n
+            </h3>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span1"></div>
+        <div class='span2'>
+            <table class="table table-condensed table-bordered smaller2 tabla">
+               <thead>
+                <tr>
+                    <th title="Realiza mantenimiento de Punto de atencion" id="punto"> <a><i class="icon-user icon-white"></i> Puntos </a></th>
+                    <th title="Presenta Cuadros estadisticos de la atencion al cliente" id="estad"> <a><i class="icon-cloud icon-white"></i> Estadisticas </a></th>
+                    <th title="Inserta Videos en los isores de Turnos" id="video"> <a><i class="icon-facetime-video icon-white"></i> Videos </a></th>
+                </tr>
+               </thead>
+            </table>
+        </div>
+        <div class='span6'>
+            <form class="form-search">
+                <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/atencionclientes" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i>Todos</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1">
+        </div>
+        <div class='span9'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Usuario</th>
+                        <th>Atenci&oacute;n al Cliente.</th>
+                        <th>Punto de Atencion</th>
+                        <th>Agr. Punto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for administrativo in administrativos %}
+                    <tr>
+                        <td>
+                            {% if administrativo.datos_matriz.tienediscapacidad %}
+                                <img src='/static/images/discapacidad.png' alt="Discapacidad"/>
+                            {% endif %}
+                            <a href='#'>{{ administrativo }}</a>
+                        </td>
+                        <td>{{ administrativo.usuario }}</td>
+                        <td>
+                            {% if administrativo.atencion %}
+                                {% if administrativo.atencion.estado %}
+                                    <a href="#" class="estado" est="si" id="{{ administrativo.id }}" usr="{{ administrativo.usuario }}" >
+                                      <img src='/static/images/16/true.png' alt='' border="0"/>
+                                    </a>
+                                {% else %}
+                                    <a href="#" class="estado" est="no" id="{{ administrativo.id }}" usr="{{ administrativo.usuario }}" >
+                                      <img src='/static/images/16/false.png' alt='' border="0"/>
+                                    </a>
+                                {% endif %}
+                            {% else %}
+                                No se asignado Punto
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if administrativo.atencion.puntoatencion.punto %}
+                                <a style="float: left">{{ administrativo.atencion.puntoatencion.punto }}</a>
+                                <img class="dell" id="{{ administrativo.id }}" style="float: right;cursor: pointer" src='/static/images/16/cerrar.png' title="Eliminar" alt='' border="0"/>
+                            {% else %}
+                                Sin Asignar
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Punto
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    {% for punto in puntos %}
+                                        <li><a href="#" class="atencion" uid="{{ administrativo.id }}" pid="{{ punto.id }}" ><i class="icon-edit"></i>{{ punto.punto }} </a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span10">
+            <div class="pagination">
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/atencioncliente?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

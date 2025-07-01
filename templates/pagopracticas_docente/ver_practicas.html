@@ -1,0 +1,603 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/pagopracticas_docente?action=ver_practicas&id={{ pago.id }}&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $("#id_inicio").datepicker({format:"dd-mm-yyyy"});
+            $("#id_fin").datepicker({format:"dd-mm-yyyy"});
+
+            registro = {
+            {% for r in listnivel %}
+                "{{ r.id }}": {"regisid":"{{ r.id }}","nombre":"{{ r.nombre }}"}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+            };
+            listadicionalnivel= [];
+
+            if ($("#id_inscripcion_id").val()==''){
+                $($("#id_inscripcion_id").get(0).parentNode).find(".help-text").html("<span style='color: darkgreen'><i>INGRESE INSCRIPCION PARA CONTINUAR</i></span>");
+            }
+
+{#------------------------------------------------------------------BUSCAR INSCRIPCION---------------------------------------------------------#}
+            buscar_inscripcion = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Inscripcion','p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_inscripcion_id").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+            $($("#id_inscripcion").get(0).parentNode.parentNode).hide();
+            $('#id_inscripcion_id').typeahead({source: buscar_inscripcion, updater: function(item) {
+                var results = $("#id_inscripcion_id").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_inscripcion_id").attr("myval",datos.id);
+                        ins=datos.id;
+                        $("#id_inscripcion").val(ins);
+                    }
+                }
+                return item;
+            }});
+
+            deshabilitar();
+            $('#id_inscripcion_id').blur(function(){
+                    var pago = '{{ pago.id }}'
+                    var inscripcion = $("#id_inscripcion").val();
+                    $.post("/pagopracticas_docente",{"action": "comprobar_inscripcion","pago":pago, "inscripcion":inscripcion},function(data) {
+                        if(data.result=='ok'){
+                            habilitar();
+                            $($("#id_inscripcion_id").get(0).parentNode).find(".help-text").html("");
+                       }else{
+                            deshabilitar();
+                            $("#id_inscripcion_id").focus();
+                            $("#id_inscripcion_id").select();
+                            $($("#id_inscripcion_id").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>"+data.mensaje+"</i></span>");
+                       }
+                    },"json");
+                });
+
+                $('#id_horastotal').blur(function(){
+                    var inscripcion = $("#id_inscripcion").val();
+                    $.post("/pagopracticas_docente",{"action": "comprobar_horas", "inscripcion":inscripcion, "horas":$('#id_horastotal').val()},function(data) {
+                        if(data.result=='ok'){
+                            $($("#id_horastotal").get(0).parentNode).find(".help-text").html("<span style='color: darkgreen'><i>"+data.mensaje+"</i></span>"  );
+                        }else{
+                            $("#id_horastotal").focus();
+                            $("#id_horastotal").select();
+                            $($("#id_horastotal").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>"+data.mensaje+"</i></span>"  );
+                        }
+                    },"json");
+                });
+
+                $('#id_inicio').blur(function(){
+                    var inicio = convertirfecha($("#id_inicio").val())
+                    var fin = convertirfecha($("#id_fin").val())
+                    var pago_inicio = convertirfecha("{{ pago.inicio|date:"d-m-Y" }}");
+                    var pago_fin = convertirfecha("{{ pago.fin|date:"d-m-Y" }}");
+                    if((inicio<pago_inicio)||(inicio>pago_fin)){
+                        $($("#id_inicio").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>FECHA DE INCIO DEBE ESTAR DENTRO DEL RANGO PERMITIDO</i></span>");
+                        $("#id_inicio").focus();
+                        $("#id_inicio").select();
+                    }else{
+                        if(inicio>fin){
+                            $($("#id_inicio").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>FECHA DE INICIO NO DEBE SER MAYOR QUE LA FECHA FINAL</i></span>");
+                            $("#id_inicio").focus();
+                            $("#id_inicio").select();
+                        }else{
+                            $($("#id_inicio").get(0).parentNode).find(".help-text").html("");
+                        }
+                    }
+                });
+
+                $('#id_fin').blur(function(){
+                    var inicio = convertirfecha($("#id_inicio").val())
+                    var fin = convertirfecha($("#id_fin").val())
+                    var pago_inicio = convertirfecha("{{ pago.inicio|date:"d-m-Y" }}");
+                    var pago_fin = convertirfecha("{{ pago.fin|date:"d-m-Y" }}");
+                    if((fin<pago_inicio)||(fin>pago_fin)){
+                        $($("#id_fin").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>FECHA FINAL DEBE ESTAR DENTRO DEL RANGO PERMITIDO</i></span>");
+                        $("#id_fin").focus();
+                        $("#id_fin").select();
+                    }else{
+                        if(inicio>fin){
+                            $($("#id_fin").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>FECHA FINAL NO PUEDE SER MENOR QUE LA FECHA DE INICIO</i></span>");
+                            $("#id_fin").focus();
+                            $("#id_fin").select();
+                        }else{
+                            $($("#id_fin").get(0).parentNode).find(".help-text").html("");
+                        }
+                    }
+                });
+
+                function convertirfecha(fecha) {
+                    var f = fecha.split("-");
+                    return Date.parse(f[2]+'-'+f[1]+'-'+f[0]);
+                }
+
+                function habilitar() {
+                    $("#id_lugar").attr('disabled',false);
+                    $("#id_inicio").attr('disabled',false);
+                    $("#id_fin").attr('disabled',false);
+                    $("#id_equipamiento").attr('disabled',false);
+                    $("#id_archivo").attr('disabled',false);
+                    $("#id_observaciones").attr('disabled',false);
+                    $("#id_horastotal").attr('disabled',false);
+                    $("#adicionanivelhoras").show()
+                }
+
+                function deshabilitar() {
+                    $("#id_lugar").attr('disabled',true);
+                    $("#id_inicio").attr('disabled',true);
+                    $("#id_fin").attr('disabled',true);
+                    $("#id_equipamiento").attr('disabled',true);
+                    $("#id_archivo").attr('disabled',true);
+                    $("#id_observaciones").attr('disabled',true);
+                    $("#id_horastotal").attr('disabled',true);
+                    $("#adicionanivelhoras").hide()
+                }
+
+{#-------------------------------------------------------------------- ADD ----------------------------------------------------------------#}
+                $('.add_individual').click(function(){
+                    document.getElementById("formulario").reset();
+                    $("#idpago").val('{{ pago.id }}');
+                    var profe = '{{ pago.profesor }}'
+                    $("#add_individual #paneltitle2").html('Adicionar Practica al docente: '+profe);
+                    $("#add_individual").modal({"backdrop":"static","width":"50%"});
+                    $("#add_individual").modal("show");
+                });
+
+                $('#add_individual .btn-cerrar').click(function(){
+                    $("#add_individual").modal("hide");
+                });
+
+                $('.btn_guardar').click(function(){
+                    $("#add_individual").modal("hide");
+                    deshabilitar();
+                });
+
+
+{#------------------------------------------------------------ ELIMINAR REGISTRO----------------------------------------------------------------#}
+                $(".eliminar").click(function(){
+                    var id = $(this).attr("practicaid");
+                    var alumno = $(this).attr("alumno");
+                    var pago='{{ pago.id }}'
+                    smoke.confirm('Esta seguro(a) que desea eliminar la práctica preprofesional de: '+alumno, function(e){
+                    if (e){
+                        $.post("/pagopracticas_docente",{"action": "eliminar_practica","id":id, "p":pago},function(data) {
+                            if(data.result=='ok'){
+                                alert("Registro Eliminado");
+                           }else{
+                                alert(data.mensaje);
+                           }
+                           location.reload()
+                        },"json");
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                    });
+                });
+
+{#------------------------------------------------------------ MODAL NIVELMALLA----------------------------------------------------------------#}
+                $("#adicionanivelhoras").click(function() {
+                    $("#id_nivelmalla").val(0);
+                     $("#id_horas").val(0);
+                    $("#nivelpanel").modal({backdrop: 'static'});
+                    $("#nivelpanel").modal("show");
+                    return false;
+                });
+
+                $("#nivelpanel .btn-cerrar").click(function() {
+                    $("#nivelpanel").modal("hide");
+{#                    return false;#}
+                });
+
+                $("#nivelpanel .btn-adicionar").click(function() {
+                    limipiarhelp();
+                    var nivelmalla = $("#id_nivelmalla").val();
+                    var horas = $("#id_horas").val();
+                     if(nivelmalla>0) {
+                         if (horas > 0) {
+                             if (horas <= parseInt('{{horas_practicas}}')) {
+                                $.post("/inscripciones", {action: 'validahorasniveldistribucion', numerohoras: $("#id_horas").val(),idnivel:$("#id_nivelmalla").val(),inscriid:$("#id_inscripcion").val() }, function(data) {
+                                if (data.result=='bad') {
+                                   $($("#help_horas").get(0).parentNode).find(".help-text").html("<span style='color: red'><i>" +data.mensaje + "</i>" );
+                                    $("#help_horas").val("");
+                                }else{
+                                    adicionarNivel(false);
+                                }
+                                }, "json");
+                             }
+                             else {
+                                 $("#help_horas").html("<h6 class='alert alert-danger'>El total de horas es mayor a {{horas_practicas}}  </h6>");
+                             }
+                         } else {
+                             $("#help_horas").html("<h6 class='alert alert-danger'>La hora ingresada debe ser mayor a 0  </h6>");
+                         }
+                     }else{
+                         $("#help_nivelmalla").html("<h6 class='alert alert-danger'>Debe seleccionarl el nivel</h6>");
+                     }
+                    return false;
+                });
+
+                function limipiarhelp(){
+                      $("#help_horas").html("");
+                      $("#help_nivelmalla").html("");
+                }
+
+                adicionarNivel = function(cerrar) {
+                    var idnivel = $("#id_nivelmalla").val();
+                    var horas = $("#id_horas").val();
+                    var registrome = registro[idnivel];
+                    var regisid = registrome.regisid;
+                    var band = 0;
+                    if (listadicionalnivel.length==0) {
+                        $("#nivelbody").empty();
+                    }
+                    var i = listadicionalnivel.length;
+                    listadicionalnivel.push({"regist":idnivel,"hor":horas});
+                    $("#nivelbody").append("<tr><td style='text-align:center'>"+registrome.nombre+"</td><td style='text-align:center'>"+horas+"</td><td style='text-align:center'><a href='#' class='btn btn-mini btn-danger' id='retdelete"+i+"' indice='"+i+"'><i class='icon-remove icon-white'></i></a></td></tr>");
+                    $("#retdelete"+i).click(borrarnivel);
+                };
+
+                borrarnivel = function() {
+                    var indice = parseInt($(this).attr("indice"));
+                    var rubr =listadicionalnivel[indice]
+                    listadicionalnivel.splice(indice,1);
+                    $(this.parentNode.parentNode).remove();
+                    if (listadicionalnivel.length==0) {
+                        $("#nivelbody").html("<tr><td colspan='20'>NO HAY NIVEL</td></tr>");
+                    }
+                    return false;
+                };
+
+                 var validos = " abcdefghijklmnopqrstuvwxyz0123456789-_%,";
+                 function soloLetrasYNum(campo) {
+                       var letra;
+                       var bien = true;
+                       for (var i=0; i<campo.length; i++) {
+                        letra=campo.charAt(i).toLowerCase()
+                        if (validos.indexOf(letra) == -1){bien=false;};
+                       }
+                       if (!bien) {
+                        return 1;
+                       }else{
+                         return 0;
+                       }
+                 }
+
+{#------------------------------------------------------------ GUARDAR PRACTICA----------------------------------------------------------------#}
+                $("#ingresardatopractica").click(function() {
+                    ingreso = {};
+                    ingreso.detalle = [];
+                    totalhorasacum=0;
+                    var x = document.getElementById("id_archivo");
+                    var fileExt = x.value;
+                    var nombre="";
+                    if ($('#id_lugar').val().length<=2000){
+                       if ($('#id_observaciones').val().length<=2000){
+                            if ($('#id_horastotal').val()>0){
+                               if ($('#id_inscripcion').val()>0) {
+                                   if (fileExt != '') {
+                                       nombre = fileExt.substring(fileExt.indexOf(x.files[0].name), fileExt.lastIndexOf('.'));
+                                   }
+                                   if ($("#id_archivo").val() != "") {
+                                       if (parseInt(soloLetrasYNum(nombre)) == 0) {
+                                           for (var m in listadicionalnivel) {
+                                                var nivelhor = listadicionalnivel[m];
+                                                totalhorasacum=totalhorasacum+parseInt(nivelhor.hor);
+                                                ingreso.detalle.push({"nivel": nivelhor.regist,"hor":nivelhor.hor});
+                                            }
+                                            if (ingreso.detalle != ''){
+                                                  if(totalhorasacum==$('#id_horastotal').val()) {
+                                                      var file = $('#id_archivo').prop("files")[0];
+                                                      var formDataSubir = new FormData();
+                                                      if (fileExt != '') {
+                                                          formDataSubir.append('id_archivo', file);
+                                                      }
+                                                      formDataSubir.append('action', 'addpracticasdistribucion');
+                                                      formDataSubir.append('inscripcion', $('#id_inscripcion').val());;
+                                                      formDataSubir.append('id_horas', $('#id_horastotal').val());
+                                                      formDataSubir.append('id_profesor', '{{ pago.profesor.id }}');
+                                                      formDataSubir.append('id_lugar', $('#id_lugar').val());
+                                                      formDataSubir.append('datos', JSON.stringify(ingreso));
+                                                      formDataSubir.append('id_inicio', $('#id_inicio').val());
+                                                      formDataSubir.append('id_fin', $('#id_fin').val());
+                                                      formDataSubir.append('id_equipamiento', $('#id_equipamiento').val());
+                                                      formDataSubir.append('id_observaciones', $('#id_observaciones').val());
+
+                                                      showWaiting("Practicas", "Espere unos segundos por favor...");
+{##}
+                                                      $.ajax({
+                                                          url: '/inscripciones',
+                                                          type: "POST",
+                                                          contentType: false,
+                                                          data: formDataSubir,
+                                                          processData: false,
+                                                          cache: false,
+                                                          success: function (data) {
+                                                              if (data.result == "ok") {
+                                                                  location.href = "/pagopracticas_docente?action=ver_practicas&id={{ pago.id }}";
+                                                              } else {
+                                                                  smoke.alert(data.mensaje);
+                                                              }
+                                                              hideWaiting();
+                                                          },
+                                                          error: function (xhr, ajaxOptions, thrownError) {
+                                                              console.log(xhr);
+                                                              console.log(ajaxOptions);
+                                                              console.log(thrownError);
+                                                              hideWaiting();
+                                                              smoke.alert("Error Conexion en el Servidor");
+                                                          }
+                                                      });
+
+                                                  }else{
+                                                      smoke.alert('El total de horas distribuido por nivel no es igual al total de horas de las practias ');
+                                                  }
+                                            }else{
+                                                smoke.alert('No existe detalle de horas por nivel ');
+                                            }
+                                       } else {
+                                           smoke.alert('El Nombre del Archivo contiene Tilde, espacios en blanco o Caracteres Especialese');
+                                       }
+                                   }else{
+                                       smoke.alert('Debe seleccionar el archivo');
+                                   }
+                               }else{
+                                   smoke.alert('Debe seleccionar el docente supervisa');
+                               }
+                            }else{
+                                smoke.alert('Debe Ingresar el Total de Horas');
+                            }
+                       }else{
+                           smoke.alert('La cantidad de caracteres de observaciones ha superado lo permitido');
+                       }
+                    }else{
+                        smoke.alert('La cantidad de caracteres de lugar ha superado lo permitido');
+                    }
+                });
+
+                $("#add_individual .btn-cerrar").click(function() {
+                    $("#add_individual").modal("hide");
+                });
+
+            $("#id_desde, #id_hasta").addClass('input-small');
+            $(".id_desde").datepicker({format:"dd-mm-yyyy",language: "es"}).mask("99-99-9999");
+            $(".id_hasta").datepicker({format:"dd-mm-yyyy",language: "es"}).mask("99-99-9999");
+            $('.cambiar_fechas').click(function(){
+                $("#id_desde").val($(this).attr('desde'));
+                $("#id_hasta").val($(this).attr('hasta'));
+                $("#idpago").val($(this).attr("pagoid"));
+
+                $("#cambiarfechas #paneltitle2").html('Editar fechas');
+                $("#cambiarfechas").modal({"backdrop":"static","width":"20%"});
+                $("#cambiarfechas").modal("show");
+            });
+
+            $("#cambiarfechas .btn-cerrar").click(function(){
+                $("#cambiarfechas").modal("hide");
+            });
+
+        {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+        {% if error %}
+            smoke.alert('{{ error }}');
+
+        {% endif %}
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Listado de Pr&aacute;cticas Pre-Profesionales del docente: {{ pago.profesor }}</h3>
+            <h3>Desde: {{ pago.inicio|date:'d-m-Y' }} <a href="#" class='btn btn-mini cambiar_fechas' desde='{{ pago.inicio|date:'d-m-Y' }}' hasta='{{ pago.fin|date:'d-m-Y' }}' pagoid='{{ pago.id }}'><img src='/static/images/16/solicitud.png' alt='Si' border='0'/></a></h3>
+            <h3>Hasta: {{ pago.fin|date:'d-m-Y' }} </h3>
+            <h3># Practicas en rango de fechas: {{ pago.num_practicas }}</h3>
+            <h3># Alumnos en rango de fechas: {{ pago.num_inscripciones }}</h3>
+            <br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/pagopracticas_docente" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span10'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/pagopracticas_docente?action=ver_practicas&id={{ pago.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class="span2" style="text-align: right">
+            <a href="#" class='btn btn-success add_individual'><i class="icon-plus icon-white"></i> Adicionar Individual</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Alumno</th>
+                    <th>Lugar</th>
+                    <th>Horas</th>
+                    <th>Docente</th>
+                    <th>Fecha</th>
+                    <th>Nivel</th>
+                    <th>Equipos</th>
+                    <th>Archivos</th>
+                    <th>Observaciones</th>
+                    <th>Aprobado</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for practica in practicas %}
+                    <tr>
+                        <td>{{ practica.inscripcion }}</td>
+                        <td>{{ practica.lugar }}</td>
+                        <td>{{ practica.horas }}</td>
+                        <td>{{ practica.profesor }}</td>
+                        <td>{{ practica.inicio|date:'d-m-Y' }} <br/> {{ practica.fin|date:'d-m-Y' }}</td>
+                        {% if practica.nivelmalla %}
+                            <td>{{ practica.inscripcion.ultima_matricula_pararetiro.nivel.grupo.nombre }}<br><span style="color: graytext">{{ practica.nivelmalla }}</span></td>
+                        {% else %}
+                            <td>------</td>
+                        {% endif %}
+                        <td>{{ practica.equipamiento }}</td>
+                        <td>
+                            {% if practica.archivo %}
+                                <a href='{{ practica.download_link }}' class='btn btn-success btn-mini'><i class="icon-download  icon-white"></i> Descargar</a>
+                            {% endif %}
+                        </td>
+                        <td>{{ practica.observaciones }}</td>
+                        <td style="text-align: center">
+                            {% if practica.aprobado %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <a href='#' pagoid='{{ p.id }}' class='btn btn-mini aprobar_practica'><img src='/static/images/16/false.png' alt='No' border='0'/></a>
+                            {% endif %}<br>
+                        </td>
+                        <td nowrap>
+                            {% if perms.sga.change_inscripcionpracticas %}
+                                <a href='/inscripciones?action=editpracticas&id={{ practica.id }}&p={{ pago.id }}' class="btn btn-info btn-mini"><i class="icon-edit icon-white"></i></a>
+{#                                <a href='/inscripciones?action=delpracticas&id={{ practica.id }}&p={{ pago.id }}' class="btn btn-danger btn-mini"><i class="icon-remove icon-white"></i></a>#}
+                                <a href='#' class="btn btn-danger btn-mini eliminar" alumno='{{ practica.inscripcion }}' practicaid={{ practica.id }}><i class="icon-remove icon-white"></i></a>
+                                <a href='/inscripciones?action=practicas&id={{ practica.inscripcion.id }}&p={{ pago.id }}' class="btn btn-success btn-mini"><i class="icon-eye-open icon-white"></i></a>
+                            {% endif %}
+                        </td>
+
+                    </tr>
+                {% endfor %}
+                {% if not practicas %}
+                    <tr>
+                        <td colspan="8">
+                            NO HAY DATOS DE PRACTICAS PREPROFESIONALES DEL ESTUDIANTE
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+     <div class="modal fade static" id="add_individual">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <div class='row-fluid'>
+                <div class='row-fluid'>
+                    <div class='span12 '>
+                        <div id="panelrubro" >
+                        <form id="formulario" class='well form-horizontal' action="" method="POST" enctype="multipart/form-data">
+                            <a href="#" id="adicionanivelhoras" class="btn btn-info"><i class="icon-plus icon-white"></i> Adicionar Nivel</a>
+                                <table class="table table-bordered" style="margin-bottom: 0;margin-top: 5px">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: center;width:50%">         Nivel        </th>
+                                            <th style="text-align: center;width:20%">         Horas        </th>
+                                            <th style="text-align: center;width:10"></th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody id="nivelbody" class="datatable">
+                                        <tr>
+                                            <td colspan="4" style="text-align: center">
+                                                NO HAY NIVELES
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table> <br>
+                              {% for field in form %}
+                                <fieldset class="control-group nomargins">
+                                    <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                                    <div class="controls">
+                                        {{ field }}
+                                        <p class="help-text">{{ field.help_text }} </p>
+                                    </div>
+                                </fieldset>
+                              {% endfor %}
+                                <span class='help-text' id="tablehelptext"></span><br/>
+                                <a href="#" id="ingresardatopractica" class="btn btn-success"><i class=""></i> Guardar</a>
+                                <a href="#" class="btn btn-cerrar">Cerrar</a>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="nivelpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Ingresar Nivel Hora</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formu" class='form-horizontal' action="" method="POST" style="text-align:  left;">
+                {% for field in formhorasnivel %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p id="help_{{ field.name }}" class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Adicionar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="cambiarfechas">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/pagopracticas_docente" method="POST" enctype="multipart/form-data">
+                <input type='hidden' name='action' value='cambiar_fechas' />
+                <input type='hidden' id='idpago' name='idpago' />
+                {% for c in fechasform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

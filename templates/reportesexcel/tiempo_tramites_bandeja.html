@@ -1,0 +1,188 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+
+        indice = 0;
+        $("#id_inicio").attr({"autocomplete":"off"});
+        $("#id_fin").attr({"autocomplete":"off"});
+        $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"});
+
+        $('#id_inicio').val("{{ hoy|date:'d-m-Y' }}")
+        $('#id_fin').val("{{ hoy|date:'d-m-Y' }}")
+
+        $("#generar").modal({width: '500px', backdrop: 'static'});
+        $("#generar").modal("show");
+
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+            var inicio = $("#id_inicio").val();
+            var fin = $("#id_fin").val();
+
+
+            $.post("/tiempo_tramites_bandeja", {
+                "action":"generarexcel", 
+                "inicio":inicio, 
+                "fin":fin,
+                "departamento": $("#id_departamento").val()
+            }, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 2500);
+                    location.href=data.url;
+                }else{
+                    swal.fire("Error", data.mensaje, "warning").then(function(event) {
+                        location.reload()
+                    })
+                }
+            }, "json");
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+        });
+
+        $("#id_departamento").attr('disabled', true);
+        $("#id_check").click(function () {
+            $("#id_departamento").attr('disabled', true);
+            $("#id_departamento").val("0")
+            if ($("#id_check").is(':checked')){
+                $("#id_departamento").attr('disabled', false);
+            }
+        })
+    });
+
+    </script>
+
+    <style>
+        .container {
+          display: block;
+          position: relative;
+          padding-left: 35px;
+          margin-bottom: 12px;
+          cursor: pointer;
+          font-size: 1rem;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+
+        /* Hide the browser's default checkbox */
+        .container input {
+          position: absolute;
+          opacity: 0;
+          cursor: pointer;
+          height: 0;
+          width: 0;
+        }
+
+        /* Create a custom checkbox */
+        .checkmark {
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 25px;
+          width: 25px;
+          background-color: #eee;
+        }
+
+        /* On mouse-over, add a grey background color */
+        .container:hover input ~ .checkmark {
+          background-color: #ccc;
+        }
+
+        /* When the checkbox is checked, add a blue background */
+        .container input:checked ~ .checkmark {
+          background-color: #2196F3;
+        }
+
+        /* Create the checkmark/indicator (hidden when not checked) */
+        .checkmark:after {
+          content: "";
+          position: absolute;
+          display: none;
+        }
+
+        /* Show the checkmark when checked */
+        .container input:checked ~ .checkmark:after {
+          display: block;
+        }
+
+        /* Style the checkmark/indicator */
+        .container .checkmark:after {
+          left: 9px;
+          top: 5px;
+          width: 5px;
+          height: 10px;
+          border: solid white;
+          border-width: 0 3px 3px 0;
+          -webkit-transform: rotate(45deg);
+          -ms-transform: rotate(45deg);
+          transform: rotate(45deg);
+        }
+    </style>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+
+
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Tiempo respuesta Bandeja de Atención</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="form" class='form-horizontal' action="" method="POST">
+                <div class="row-fluid">
+                    <div class="span4">
+                        <label for="">Fecha Inicio: </label>
+                        <input type="text" id="id_inicio" value="{{ hoy|date:'d-m-Y' }}">
+                    </div>
+                    <div class="span4">
+                        <label for="">Fecha Fin: </label>
+                        <input type="text" id="id_fin" value="{{ hoy|date:'d-m-Y' }}">
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="span12">
+                        <label class="container">Filtrar por departamento
+                            <input type="checkbox" id="id_check">
+                            <span class="checkmark"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="span12" style="width: 100%">
+                        <select id="id_departamento" style="width: 93%">
+                            <option value="0">---</option>
+                            {% for departamento in departamentos %}
+                                <option value="{{ departamento.id }}">{{ departamento.descripcion }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}
+
+

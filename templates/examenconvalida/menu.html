@@ -1,0 +1,147 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+<script src="/static/js/notificacionpanel.js"></script>
+<link type="text/css" rel="stylesheet" href="/static/css/datepicker.css"/>
+<script type='text/javascript' src='/static/js/bootstrap-datepicker.js'></script>
+
+<script type="text/javascript">
+
+
+
+    $(function() {
+
+        var idtit = 0;
+        $(".examenejc").click(function(){
+            {% if inscripcion %}
+                idtit = $(this).attr("idtitu");
+                $("#examenmodal .observa").html($(this).attr('descripcion'));
+                $("#examenmodal").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#examenmodal").modal("show");
+            {% else %}
+                location.href = '/examen_convalida?action=examen&id='+$(this).attr("idtitu");
+            {% endif %}
+        });
+        $("#cerrar").click(function() {
+            idtit=0;
+            $("#examenmodal").modal("hide");
+        });
+        $("#continuar").click(function(){
+            window.open('/examen_convalida?action=examen&id='+idtit,"Examen", 'width='+(screen.availWidth)+',height ='+(screen.availHeight)+',fullscreen=yes,menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=no');
+            location.href = '/';
+        });
+        $(".finalizaexamenbtn").click(function(){
+            {% if not inscripcion %}
+                $("#finalizamodal").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#finalizamodal").modal("show");
+            {% endif %}
+        });
+        $("#cerrarmodal").click(function() {
+            $("#finalizamodal").modal("hide");
+        });
+        $("#continfinalizarbtn").click(function(){
+           location.href = '/examen_convalida?action=finalizadirec';
+        });
+        {% if info %}
+            smoke.alert('{{ info }}');
+        {% endif %}
+    });   {# Fin de Function#}
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class='span6'>
+            <h2 style="text-align: center">Lista de Exámenes {% if DEFAULT_PASSWORD == 'itb' %} Complexivos{% else %} de Convalidación{% endif %}</h2>
+            <hr/>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    {% if not inscripcion and finalizaautomaticamente%}
+        <div class='row-fluid'>
+            <div class="span3"></div>
+            <div class='span6'>
+                <button class="btn btn-danger finalizaexamenbtn" style="text-align: center">Finalizar Examenes</button>
+
+            </div>
+        </div>
+    {% endif %}
+    <br/>
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span6">
+            <table class="table table-condensed table-bordered">
+                <thead>
+                    <tr class="alert alert-info">
+                        <th colspan="{% if not inscripcion %} 4 {% else %} 3 {% endif %}" style="text-align: center; font-size: 17px;"><b>Lista</b></th>
+                    </tr>
+                    <tr class="alert alert-info">
+                        <th style="font-size: 16px;text-align: center">{% if inscripcion %}Comenzar{% else %}Ver{% endif %}</th>
+                        <th style="font-size: 16px;">Examen</th>
+                        <th style="font-size: 16px;">Descripci&oacute;n</th>
+                        {% if not inscripcion %}
+                            <th style="font-size: 16px;text-align: center">Activo</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in  tituloexamen %}
+                        <tr style="height: 50px;">
+                            <td style="text-align: center; vertical-align: middle;">
+                                <a style="cursor: pointer" idtitu="{{ t.id }}" descripcion="{{ t.descripcion }}" class="examenejc"><img src="/static/images/circle_arrow1.png" class="modimage"/></a>&nbsp;&nbsp;
+                            </td>
+                             <td class="bigger" style="vertical-align: middle;">
+                                <b> {{ t.tituloexamen }} </b>
+                            </td>
+                            <td style="vertical-align: middle;">
+                                <i>{{ t.subtituloexamen }}</i>
+                            </td>
+                            {% if not inscripcion %}
+                                <td style="text-align: center">
+                                    {% if t.activo %}
+                                        <a href="/examen_convalida?action=activa&id={{ t.id }}"><img src='/static/images/16/true.png' alt='' border="0"/></a>
+                                    {% else %}
+                                        <a href="/examen_convalida?action=activa&id={{ t.id }}"><img src='/static/images/16/false.png' alt='' border="0"/></a>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="examenmodal" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante</h3>
+        </div>
+        <div class="modal-body">
+            <p class="observa">  </b>
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer" id="continuar" class="btn btn-info"><i class=""></i> CONTINUAR</a>
+            <a style="cursor: pointer" id='cerrar' class="btn btn-success"><i class=""></i> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="finalizamodal" style="display: none;">
+        <div class="modal-body">
+            <p>Solo se finalizará los examenes pendientes que hayan excedido su tiempo. </p>
+            <p><b>Nota:</b> Al finalizar los examenes pendientes las notas se pasaran automáticamente al Histórico y Record Académico</p>
+            <b>Si está seguro de finalizar los examenes dar click en CONTINUAR. </b>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer" id="continfinalizarbtn" class="btn btn-info"><i class=""></i> Continuar</a>
+            <a style="cursor: pointer" id='cerrarmodal' class="btn btn-success"><i class=""></i> Cerrar</a>
+        </div>
+    </div>
+
+{% endblock %}
+
+

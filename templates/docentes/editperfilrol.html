@@ -1,0 +1,67 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+
+    $("#id_chlunes, #id_chmartes, #id_chmiercoles, #id_chjueves, #id_chviernes, #id_chsabado, #id_chdomingo").addClass("validate[required]");
+    $("#id_chlunes").focus();
+    $("#id_fechaafiliacion, #id_iniciocargo, #id_fincargo").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+    $("#id_descuentos").attr("disabled", true);
+    $("#id_salariopercibir").attr("disabled", true);
+
+    chequeaAdministrativo = function() {
+        if ($("#id_esadministrativo").is(':checked')) {
+            $("#id_iniciocargo").attr("disabled", false);
+            $("#id_fincargo").attr("disabled", false);
+            $("#id_cargo").attr("disabled", false);
+            $("#id_documentocargo").attr("disabled", false);
+        }
+        else {
+             $("#id_iniciocargo").attr("disabled", true);
+            $("#id_fincargo").attr("disabled", true);
+            $("#id_cargo").attr("disabled", true);
+            $("#id_documentocargo").attr("disabled", true);
+        }
+    }
+
+    chequeaFijo = function() {
+        if ($("#id_esfijo").is(':checked')) {
+            $("#id_horassalario").attr("disabled", false);
+            $("#id_salario").attr("disabled", false);
+        }
+        else {
+            $("#id_horassalario").attr("disabled", true);
+            $("#id_salario").attr("disabled", true);
+            $("#id_horassalario").val("");
+            $("#id_salario").val("");
+            $("#id_descuentos").val("");
+            $("#id_salariopercibir").val("");
+
+        }
+    }
+
+    calcula = function() {
+        var salario = parseFloat($("#id_salario").val());
+        var descuento = salario*{{ iess }};
+        var salariopercibir = salario - descuento;
+        $("#id_descuentos").val(descuento.toFixed(2));
+        $("#id_salariopercibir").val(salariopercibir.toFixed(2));
+    }
+
+    chequeaFijo();
+    chequeaAdministrativo();
+    $("#id_esfijo").click(chequeaFijo);
+    $("#id_esadministrativo").click(chequeaAdministrativo);
+
+{% endblock %}
+{% block titulo %}Editar Perfil - Rol de Pago a Docente: {{ rolperfilprofesor.profesor }}{% endblock %}
+{% block formaction %}/docentes{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='editrolpagoperfil'/>
+    <input type='hidden' name='id' value="{{ rolperfilprofesor.id }}"/>
+{% endblock %}
+{% block formback %}/docentes?action=rolpagoperfil&id={{ rolperfilprofesor.profesor.id  }}{% endblock %}
+{% block buttonname %}Guardar Cambios{% endblock %}

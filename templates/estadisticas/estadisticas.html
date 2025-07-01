@@ -1,0 +1,720 @@
+{% extends "basebs.html" %}
+
+{% block heading %}
+    <script src="/static/js/jquery.date_input.js" type='text/javascript'></script>
+    <script type='text/javascript' src='/static/js/jquery.flexbox.js'></script>
+    <script src="/static/js/jquery.date_input.js" type='text/javascript'></script>
+
+    <link type="text/css" rel="stylesheet" href="/static/css/jquery.flexbox.css"/>
+    <link type='text/css' rel='stylesheet' href="/static/css/date_input.css"/>
+
+    <script type="text/javascript">
+
+        $(function() {
+{#            $("#fecha_inicio").addClass("input-small");#}
+            $("#fecha_inicio").datepicker({format:"dd-mm-yyyy"});
+            $("#fecha_fin").datepicker({format:"dd-mm-yyyy"});
+            var opc='';
+            var mens='';
+            $("#tbl_dia").click(function() {
+                showWaiting("Generando Tablas","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablasegmentodia'}, function(data) {
+                    $("#area").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").hide();
+                $("#area3").hide();
+            });
+
+
+            $(".btn-consultar").click(function() {
+                var dato = $("#dato").val();
+                if (dato){
+                     $("#pregunta").modal("hide");
+                    if (accion==1){
+
+{#                    window.open('/cons_socioecon?action='+accion+'&anno='+dato);#}
+
+                    window.open('/reportes?action=run&direct=true&n=total_valores_anuales&rt=pdf&anio='+dato);
+
+                    }else{
+
+{#                    window.open('/cons_socioecon?action='+accion+'&anno='+dato);#}
+
+                    window.open('/reportes?action=run&direct=true&n=xcoordinaciones&rt=pdf&anio='+dato);
+                    }
+
+                }
+
+
+            });
+
+            $(".btn-cerrar").click(function() {
+                $("#pregunta").modal('hide');
+
+            });
+
+        var numeros1="0123456789";
+
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros1.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+
+        $("#dato").blur(function(){
+            var v = $("#dato").val();
+            var p = solo_numeros(v);
+            if (v.length == 4){
+
+
+                if (p != v.length)
+                {
+    {#              $("#dato").html("Ingresar solo Numeros");#}
+                  $($("#dato").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+                  $("#dato").val("");
+                  $("#dato").focus();
+                }
+                else{
+                    $($("#dato").get(0).parentNode).find(".help-text").html("");
+                }
+            }else{
+                $($("#dato").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese 4 Digitos</h6>");
+                  $("#dato").val("");
+                  $("#dato").focus();
+
+            }
+
+        });
+
+
+
+
+            $("#tablasfinancieras").click(function() {
+                var fecha = $("#fecha").val();
+                showWaiting("Generando Tablas Financieras segun fecha indicada","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablasegmentofecha', fecha:fecha}, function(data) {
+                    $("#area3").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#area3").show();
+                $("#tablasfinancieras").show();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+
+            });
+
+            $("#tablasinscripcion").click(function() {
+
+                var inicio = $("#fechainicio").val();
+                var fin = $("#fechafin").val();
+                showWaiting("Generando Tablas por Carreras","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'consultainscritos', inicio:inicio, fin:fin}, function(data) {
+                    $("#area2").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablasinscripcion").show();
+                $("#area2").show();
+
+            });
+
+            $("#tbl_fecha").click(function() {
+                $("#area").html("<div class='span6'><h4>Fecha: <br/><input type='text' id='fecha' value='{{ hoy|date:"d-m-Y" }}'/></h4></div>");
+                $("#fecha").datepicker({format:"dd-mm-yyyy"});
+                $("#tablasfinancieras").show();
+
+                $("#tablahistcoord").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").hide();
+                $("#area3").hide();
+
+            });
+
+            $("#tablahistcoord").click(function() {
+                var inicio = $("#fechainicio").val();
+                var fin = $("#fechafin").val();
+                showWaiting("Generando Tablas por Coordinaciones","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablasegmentocoord', inicio:inicio, fin:fin}, function(data) {
+                    $("#area2").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").show();
+                $("#tablahistcarrera").show();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").show();
+
+            });
+
+
+            $("#tablahistcarrera").click(function() {
+                var inicio = $("#fechainicio").val();
+                var fin = $("#fechafin").val();
+                showWaiting("Generando Tablas por Carreras","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablasegmentocarrera', inicio:inicio, fin:fin}, function(data) {
+                    $("#area2").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").show();
+                $("#tablahistcarrera").show();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").show();
+            });
+
+            
+            $("#tbl_hist").click(function() {
+                $("#area").html("<div class='row-fluid'><h4>Seleccione tipo de Tabla Hist&oacute;rica y rango de fechas</h4></div>" +
+                        "<div class='span1'><h4>Fecha Inicio: <input type='text' class='input-small' id='fechainicio' value='{{ iniciomes|date:"d-m-Y" }}'/></h4></div>" +
+                        "<div class='span1'><h4>Fecha Final: <input type='text' class='input-small' id='fechafin' value='{{ hoy|date:"d-m-Y" }}'/></h4></div>" +
+                        "</div>");
+                $("#fechainicio").datepicker({format:"dd-mm-yyyy"});
+                $("#fechafin").datepicker({format:"dd-mm-yyyy"});
+                $("#tablahistcoord").show();
+                $("#tablahistcarrera").show();
+                $("#area2").hide();
+                $("#area3").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+
+            });
+
+            $("#tbl_insc").click(function() {
+                $("#area").html("<div class='row-fluid'><h4>Seleccione Rango de Fecha - Consultar Alumnos Inscritos</h4></div>" +
+                        "<div class='span1'><h4>Fecha Inicio: <input type='text' class='input-small' id='fechainicio' value='{{ iniciomes|date:"d-m-Y" }}'/></h4></div>" +
+                        "<div class='span1'><h4>Fecha Final: <input type='text' class='input-small' id='fechafin' value='{{ hoy|date:"d-m-Y" }}'/></h4></div>" +
+                        "</div>");
+                $("#fechainicio").datepicker({format:"dd-mm-yyyy"});
+                $("#fechafin").datepicker({format:"dd-mm-yyyy"});
+                $("#tablasinscripcion").show();
+                $("#area2").hide();
+                $("#area3").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+
+            });
+
+
+            $("#fin_coord").click(function() {
+                showWaiting("Generando Datos Financieros x Coordinaciones","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablasegmentodeudacoord'}, function(data) {
+                    $("#area").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").hide();
+                $("#area3").hide();
+
+            });
+
+            $("#fin_coord_vencidos").click(function() {
+                showWaiting("Generando Tablas Valores Vencidos x Coordinaciones","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablasegmentodeudacoordvenc'}, function(data) {
+                    $("#area").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#tablasinscripcion").hide();
+                $("#area2").hide();
+                $("#area3").hide();
+
+            });
+
+            $("#fin_coord_creditos").click(function() {
+                showWaiting("Generando Tablas Valores por Pagar x Coordinaciones","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablasegmentodeudacoordcred'}, function(data) {
+                    $("#area").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").hide();
+                $("#area3").hide();
+
+            });
+
+            $("#fin_carr").click(function() {
+                showWaiting("Generando Datos Financieros x Carreras","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablasegmentodeudacarr'}, function(data) {
+                    $("#area").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").hide();
+                $("#area3").hide();
+
+            });
+
+            $("#fin_carr_vencidos").click(function() {
+                showWaiting("Generando Tablas Valores Vencidos x Carreras","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablasegmentodeudacarrvenc'}, function(data) {
+                    $("#area").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").hide();
+                $("#area3").hide();
+
+            });
+
+            $("#fin_carr_creditos").click(function() {
+                showWaiting("Generando Tablas Valores por Pagar x Carreras","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablasegmentodeudacarrcred'}, function(data) {
+                    $("#area").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").hide();
+                $("#area3").hide();
+
+            });
+
+            $("#tablapagostiposrubroscoord").click(function() {
+                var inicio = $("#fechainicio").val();
+                var fin = $("#fechafin").val();
+                showWaiting("Generando Tablas por Coordinaciones","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablapagostiposrubroscoord', inicio:inicio, fin:fin}, function(data) {
+                    $("#area2").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").show();
+                $("#tablapagostiposrubroscarrera").show();
+                $("#area2").show();
+
+            });
+
+            $("#tablapagostiposrubroscarrera").click(function() {
+                var inicio = $("#fechainicio").val();
+                var fin = $("#fechafin").val();
+                showWaiting("Generando Tablas por Carreras","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'tablapagostiposrubroscarr', inicio:inicio, fin:fin}, function(data) {
+                    $("#area2").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").show();
+                $("#tablapagostiposrubroscarrera").show();
+                $("#area2").show();
+
+            });
+
+            {#  Incluir Pagos realizados por tipos de Rubros  #}
+            $("#tbl_pagostiposrubros").click(function() {
+                $("#area").html("<div class='row-fluid'><h4>Seleccionar Rango de Fechas para la b&uacute;squeda</h4></div>" +
+                        "<div class='span12'><div class='span1'><h5>Inicio: <input type='text' class='input-small' id='fechainicio' value='{{ iniciomes|date:"d-m-Y" }}'/></h5></div>" +
+                        "<div class='span1'><h5>Final: <input type='text' class='input-small' id='fechafin' value='{{ hoy|date:"d-m-Y" }}'/></h5></div>" +
+                        "</div></div>");
+                $("#fechainicio").datepicker({format:"dd-mm-yyyy"});
+                $("#fechafin").datepicker({format:"dd-mm-yyyy"});
+                $("#tablapagostiposrubroscoord").show();
+                $("#tablapagostiposrubroscarrera").show();
+
+                $("#area2").hide();
+                $("#area3").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+
+            });
+
+            $("#acad_coord").click(function() {
+                showWaiting("Generando Datos Academicos por Coordinaciones","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'segmentoacademico'}, function(data) {
+                    $("#area").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").hide();
+
+            });
+
+            $(".anno").click(function() {
+                accion = $(this).attr("op");
+                $("#dato").val('');
+                $($("#dato").get(0).parentNode).find(".help-text").html("");
+                $("#pregunta").modal({backdrop: 'static', keyboard: false, width: "20%", height: "20%"});
+                $("#pregunta").modal("show");
+
+            });
+
+            $(".anno2").click(function() {
+                accion = $(this).attr("op");
+                $("#dato").val('');
+                $($("#dato").get(0).parentNode).find(".help-text").html("");
+                $("#pregunta").modal({backdrop: 'static', keyboard: false, width: "20%", height: "20%"});
+                $("#pregunta").modal("show");
+
+            });
+
+            $("#acad_carr").click(function() {
+                showWaiting("Generando Datos Academicos por Carreras","Espere unos segundos por favor...");
+                $.get("/estadisticas",{action:'segmentoacademicocarrera'}, function(data) {
+                    $("#area").html(data);
+                    hideWaiting();
+                }, 'html');
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").hide();
+
+            });
+
+            $("#todos").click(function() {
+                $('#mensaj').html('').removeClass("alert alert-danger");
+                if ($("#todos").is(':checked')) {
+                    $("#fecha_inicio").attr('disabled',true);
+                    $("#fecha_fin").attr('disabled',true);
+                    $("#fecha_inicio").val('');
+                    $("#fecha_fin").val('');
+                }
+                else{
+                    $("#fecha_inicio").attr('disabled',false);
+                    $("#fecha_fin").attr('disabled',false);
+
+                }
+
+            });
+            $("#prov_coord").click(function() {
+               $('#mensaj').html('').removeClass("alert alert-danger");
+                $("#fecha_inicio").attr('disabled',true);
+                $("#fecha_fin").attr('disabled',true);
+                $("#fecha_inicio").val('');
+                $("#fecha_fin").val('');
+
+                $("#todos").attr('checked',true);
+                $("#fechafiltropanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#fechafiltropanel").modal("show");
+                opc= 'provcantoncoord';
+                mens = 'Coordinaciones';
+
+            });
+
+            $("#prov_carr").click(function() {
+                $('#mensaj').html('').removeClass("alert alert-danger");
+                $("#fecha_inicio").attr('disabled',true);
+                $("#fecha_fin").attr('disabled',true);
+                $("#fecha_inicio").val('');
+                $("#fecha_fin").val('');
+                $("#todos").attr('checked',true);
+                $("#fechafiltropanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#fechafiltropanel").modal("show");
+                opc= 'provcantoncarr';
+                mens = 'Carreras'
+            });
+
+            $("#fechafiltropanel .btn-ejecutar").click(function(){
+
+
+                if ($("#todos").is(':checked')) {
+                    $("#fechafiltropanel").modal("hide");
+                    showWaiting("Generando Tablas de Provincias y Cantones por "+mens,"Espere unos segundos por favor...");
+                    $.get("/estadisticas",{action:opc}, function(data) {
+                        $("#area").html(data);
+                        hideWaiting();
+                    }, 'html');
+                    $("#tablahistcoord").hide();
+                    $("#tablahistcarrera").hide();
+                    $("#tablasfinancieras").hide();
+                    $("#tablasinscripcion").hide();
+                    $("#tablapagostiposrubroscoord").hide();
+                    $("#tablapagostiposrubroscarrera").hide();
+                    $("#area2").hide();
+                }
+                else
+                {
+
+                    if ($("#fecha_inicio").val() != '' && $("#fecha_fin").val() != '' ){
+                        $("#fechafiltropanel").modal("hide");
+                        showWaiting("Generando Tablas de Provincias y Cantones por "+mens,"Espere unos segundos por favor...");
+                        $.get("/estadisticas",{action:opc, fechainicio:$("#fecha_inicio").val(), fechafin:$("#fecha_fin").val()}, function(data) {
+                            $("#area").html(data);
+                            hideWaiting();
+                        }, 'html');
+                        $("#tablahistcoord").hide();
+                        $("#tablahistcarrera").hide();
+                        $("#tablasfinancieras").hide();
+                        $("#tablasinscripcion").hide();
+                        $("#tablapagostiposrubroscoord").hide();
+                        $("#tablapagostiposrubroscarrera").hide();
+                        $("#area2").hide();
+                    }
+                    else
+                    {
+                        $('#mensaj').html('INGRESAR FECHAS').addClass("alert alert-danger");
+                    }
+                }
+                return false;
+            });
+
+            $("#fechafiltropanel .btn-cerrar").click(function(){
+                $("#fechafiltropanel").modal("hide");
+                return false;
+            });
+
+            $("#adm").click(function() {
+                alert('Administrativo');
+                $("#area").html("Estamos en la categoria Administrativa");
+                $("#tablahistcoord").hide();
+                $("#tablahistcarrera").hide();
+                $("#tablasfinancieras").hide();
+                $("#tablasinscripcion").hide();
+                $("#tablapagostiposrubroscoord").hide();
+                $("#tablapagostiposrubroscarrera").hide();
+                $("#area2").hide();
+                $("#area3").hide();
+
+            });
+
+            $("#tablahistcoord").hide();
+            $("#tablahistcarrera").hide();
+            $("#tablasfinancieras").hide();
+            $("#tablasinscripcion").hide();
+            $("#tablapagostiposrubroscoord").hide();
+            $("#tablapagostiposrubroscarrera").hide();
+
+            $("#area2").hide();
+
+        });
+
+    </script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Estad&iacute;sticas y Gr&aacute;ficas</h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <br/>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <div class="tabbable">
+                <ul class="nav nav-pills">
+                    <!--<li class="active" id="adm"><a class="bigger" href="#" data-toggle="tab">Administrativos </a></li>-->
+                    {% if perms.auth.delete_group  %}
+                        <li class="dropdown active"><a class="dropdown-toggle bigger" data-toggle="dropdown" href="#">Cajas <b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                                <li id="tbl_dia"><a href="#" data-toggle="tab">Operaciones de Cajas del d&iacute;a</a></li>
+                                <li id="tbl_fecha"><a href="#" data-toggle="tab">Operaciones de Cajas por fecha</a></li>
+                                <li id="tbl_hist"><a href="#" data-toggle="tab">Ingresos en Caja por Rango de Fechas</a></li>
+                                <li id="tbl_pagostiposrubros"><a href="#" data-toggle="tab">Valores Cancelados por tipos de Rubros</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        {% if persona.pertenece_soporte %}
+                            <li class="dropdown active"><a class="dropdown-toggle bigger" data-toggle="dropdown" href="#">Cajas <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    <li id="tbl_dia"><a href="#" data-toggle="tab">Operaciones de Cajas del d&iacute;a</a></li>
+                                    <li id="tbl_fecha"><a href="#" data-toggle="tab">Operaciones de Cajas por fecha</a></li>
+                                    <li id="tbl_hist"><a href="#" data-toggle="tab">Ingresos en Caja por Rango de Fechas</a></li>
+                                    <li id="tbl_pagostiposrubros"><a href="#" data-toggle="tab">Valores Cancelados por tipos de Rubros</a></li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if perms.auth.change_group  %}
+                        <li class="dropdown"><a class="dropdown-toggle bigger" data-toggle="dropdown" href="#">Datos Financieros<b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                                {% if utiliza_coordinaciones %}
+                                    <li class="nav-header">DATOS POR COORDINACIONES</li>
+                                        <li id="fin_coord_vencidos"><a href="#" data-toggle="tab"> Tabla de Valores Vencidos </a></li>
+                                        <li id="fin_coord_creditos"><a href="#" data-toggle="tab"> Tabla de Valores por Pagar </a></li>
+                                        <li id="fin_coord"><a href="#" data-toggle="tab"> Tabla de Totales Valores Vencidos y por Pagar </a></li>
+
+                                {% endif %}
+                                    <li class="nav-header">DATOS POR CARRERAS</li>
+                                    <li id="fin_carr_vencidos"><a href="#" data-toggle="tab"> Tabla de Valores Vencidos </a></li>
+                                    <li id="fin_carr_creditos"><a href="#" data-toggle="tab"> Tabla de Valores por Pagar </a></li>
+                                    <li id="fin_carr"><a href="#" data-toggle="tab"> Tabla de Totales Valores Vencidos y por Pagar </a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        {% if persona.pertenece_soporte %}
+                            <li class="dropdown"><a class="dropdown-toggle bigger" data-toggle="dropdown" href="#">Datos Financieros<b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    {% if utiliza_coordinaciones %}
+                                        <li class="nav-header">DATOS POR COORDINACIONES</li>
+                                            <li id="fin_coord_vencidos"><a href="#" data-toggle="tab"> Tabla de Valores Vencidos </a></li>
+                                            <li id="fin_coord_creditos"><a href="#" data-toggle="tab"> Tabla de Valores por Pagar </a></li>
+                                            <li id="fin_coord"><a href="#" data-toggle="tab"> Tabla de Totales Valores Vencidos y por Pagar </a></li>
+
+                                    {% endif %}
+                                        <li class="nav-header">DATOS POR CARRERAS</li>
+                                        <li id="fin_carr_vencidos"><a href="#" data-toggle="tab"> Tabla de Valores Vencidos </a></li>
+                                        <li id="fin_carr_creditos"><a href="#" data-toggle="tab"> Tabla de Valores por Pagar </a></li>
+                                        <li id="fin_carr"><a href="#" data-toggle="tab"> Tabla de Totales Valores Vencidos y por Pagar </a></li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if perms.auth.add_group  %}
+                        <li class="dropdown"><a class="dropdown-toggle bigger" data-toggle="dropdown" href="#">Datos Acad&eacute;micos<b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                                {% if utiliza_coordinaciones %}
+                                        <li class="nav-header">DATOS POR COORDINACIONES</li>
+                                        <li id="acad_coord"><a href="#" data-toggle="tab">Tablas de Datos Estad&iacute;sticos </a></li>
+                                        <li id="prov_coord"><a href="#" data-toggle="tab">Tablas de Estudiantes por Provincias y Cantones </a></li>
+                                {% endif %}
+                                    <li class="nav-header">DATOS POR CARRERAS</li>
+                                    <li id="acad_carr"><a href="#" data-toggle="tab">Tablas de Datos Estad&iacute;sticos </a></li>
+                                    <li id="prov_carr"><a href="#" data-toggle="tab">Tablas de Estudiantes por Provincias y Cantones </a></li>
+                                    <li id="tbl_insc"><a href="#" data-toggle="tab">Tabla de Inscritos</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        {% if persona.pertenece_soporte %}
+                            <li class="dropdown"><a class="dropdown-toggle bigger" data-toggle="dropdown" href="#">Datos Acad&eacute;micos<b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    {% if utiliza_coordinaciones %}
+                                            <li class="nav-header">DATOS POR COORDINACIONES</li>
+                                            <li id="acad_coord"><a href="#" data-toggle="tab">Tablas de Datos Estad&iacute;sticos </a></li>
+                                            <li id="prov_coord"><a href="#" data-toggle="tab">Tablas de Estudiantes por Provincias y Cantones </a></li>
+                                    {% endif %}
+                                        <li class="nav-header">DATOS POR CARRERAS</li>
+                                        <li id="acad_carr"><a href="#" data-toggle="tab">Tablas de Datos Estad&iacute;sticos </a></li>
+                                        <li id="prov_carr"><a href="#" data-toggle="tab">Tablas de Estudiantes por Provincias y Cantones </a></li>
+                                        <li id="tbl_insc"><a href="#" data-toggle="tab">Tabla de Inscritos</a></li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                    {% if perms.auth.delete_group  %}
+                        <li class="dropdown"><a class="dropdown-toggle bigger" data-toggle="dropdown" href="#">Reporte<b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                                 <li class="anno" op=1><a href="#" data-toggle="tab">Rubros Totales Anuales </a></li>
+                                 <li class="anno2" op=2><a href="#" data-toggle="tab">Rubros Totales Anuales (Por Coordinaciones) </a></li>
+                                 <li  op=2><a href="/reportes?action=run&direct=true&n=estudiantes_valorescuotasxcarrera&rt=pdf"><i class="icon-print"></i> Cuotas por Carreras</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        {% if persona.pertenece_soporte %}
+                            <li class="dropdown"><a class="dropdown-toggle bigger" data-toggle="dropdown" href="#">Reporte<b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                     <li class="anno" op=1><a href="#" data-toggle="tab">Rubros Totales Anuales </a></li>
+                                     <li class="anno2" op=2><a href="#" data-toggle="tab">Rubros Totales Anuales (Por Coordinaciones) </a></li>
+                                     <li  op=2><a href="/reportes?action=run&direct=true&n=estudiantes_valorescuotasxcarrera&rt=pdf"><i class="icon-print"></i> Cuotas por Carreras</a></li>
+                                </ul>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+
+
+                </ul>
+            </div>
+            <div class="row-fluid">
+                <div class='row-fluid' id="area"></div>
+                    <div class="row-fluid">
+                        {% if utiliza_coordinaciones %}
+                            <a href='#' class='btn btn-info' id='tablahistcoord'> Tabla por Coordinacion</a>
+                            <a href='#' class='btn btn-info' id='tablapagostiposrubroscoord'> Tabla por Coordinacion</a>
+                        {% endif %}
+                        <a href='#' class='btn btn-info' id='tablahistcarrera'> Tabla por Carreras</a>
+                        <a href='#' class='btn btn-info' id='tablapagostiposrubroscarrera'> Tabla por Carreras</a>
+                        <a href='#' class='btn btn-info' id='tablasfinancieras'> Generar Tablas</a>
+                        <a href='#' class='btn btn-info' id='tablasinscripcion'> Generar Tabla</a>
+                    </div>
+                <div class='row-fluid' id="area2"></div>
+                <div class='row-fluid' id="area3">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="fechafiltropanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> Seleccione parametros de b&uacute;squeda </h3>
+        </div>
+        <div class="modal-body panelbody">
+{#            <form id="formcantcelulares" class='form-horizontal' action="" method="POST">#}
+
+               &nbsp;&nbsp;&nbsp;&nbsp;Sin Fecha <input type='checkbox' id='todos'  checked/> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Fecha Inicio: <input type='text' id='fecha_inicio' value="{{ fechahoy|date:'d-m-Y' }}" disabled/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Fecha Fin: <input type='text' id='fecha_fin' value="{{ fechahoy|date:'d-m-Y' }}" disabled/>
+               <p id='mensaj'></p>
+
+{#            </form>#}
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-info"> GENERAR</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+     <div class="modal fade static" id="pregunta" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese el A&ntilde;o a Consultar</h3>
+        </div>
+        <div class="modal-body " style="text-align: center">
+            <input id='dato' style="width: 40%;border-bottom: 3px;border-radius: 4px;text-align: center"> </input>
+            <p class="help-text"> </p>
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-consultar"> Consultar</a>
+        </div>
+    </div>
+{% endblock %}

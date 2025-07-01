@@ -1,0 +1,134 @@
+{% load sga_extras %}
+
+<link rel="stylesheet" type="text/css" href="../../static/vendors/sweetalert/sweetalert2.css">
+
+<!-- js -->
+<script src="../../static/vendors/sweetalert/sweetalert2.all.js"></script>
+<script src="../../static/vendors/sweetalert/sweet-alert.init.js"></script>
+
+<script type="text/javascript">
+
+    var idsoli=0;
+    var tipoarchivo=0;
+    var nombresstr="";
+
+    noaceptartipoarchivo = function(idsol,idtipoarchivo,nommbres) {
+        nombresstr=nommbres;
+        idsoli=idsol;
+        tipoarchivo=idtipoarchivo;
+        $("#rechazar").modal("hide");
+        smoke.prompt("Motivo de Rechazo", function(v) {
+            if (v) {
+                $.get("/admin_ayudafinanciera", {'action':'rechazararchivo', 'idpreregistro': idsoli,'idtipoarchivo':tipoarchivo,'comentario': v}, function(data) {
+{#                  $("#rechardocumento").modal("hide");#}
+                    detallerechazo(nommbres, idsol)
+                }, "html");
+            } else {
+              detallerechazo(nommbres, idsol)
+          }        });
+        return false;
+    };
+
+      $("#rechardocumento .btn-cerrar").click(function() {
+                $("#rechardocumento").modal("hide");
+                return false;
+      });
+
+    function detallerechazo (nombres, inssolic){
+        $.get("/admin_ayudafinanciera", {'action':'ver_verificacionarchivo', 'idpreregistro': inssolic}, function(data) {
+            $("#lblnombreestudiante").html(nombres);
+            $("#rechazar .modal-body").html(data);
+            $("#rechazar").modal({"backdrop":"static",keyboard: false,width:'40%'});
+            $("#rechazar").modal("show");
+            }, "html");
+            return false;
+      }
+    aceptartipoarchivo = function(idsol,idtipoarchivo,nombres) {
+        $.get("/admin_ayudafinanciera", {'action':'validararchivo', 'idpreregistro': idsol,'idtipoarchivo':idtipoarchivo}, function(data) {
+            $("#lblnombreestudiante").html(nombres);
+            detallerechazo(nombres, idsol)
+            }, "html");
+            return false;
+    }
+
+    $("#ventanarechazra").click(function() {
+            $.post("admin_ayudafinanciera",{action: 'tienearchivo', 'id': '{{ becaverificacion.id }}'}, function(data) {
+                    if (data.result=='ok') {
+                         $("#rechazar").modal("hide");
+                            $.get("/admin_ayudafinanciera", {'action':'aceptarsolibeca', 'id': '{{ becaverificacion.id }}'}, function(data) {
+                                swal("Ayuda Financiera", "Se aprobó los archivos subidos", "success").then(function(){
+                                    location.href = "/admin_ayudafinanciera?action=aceptarsolibeca&id="+{{ becaverificacion.id }};
+                                });
+                            }, "html");
+
+                    }
+                    else{
+                          $($("#ayudaverica").get(0).parentNode).find(".help-text").html("<h4 class='alert alert-danger'>No puede aprobar porque el estudiante no ha adjuntado archivos.</h4>");
+                    }
+
+                }, "json");
+
+            });
+
+</script>
+
+
+<div class="row-fluid">
+    <div class="span12">
+
+        <div class="row">
+
+            <div class="span1">
+            </div>
+            <div class="span11">
+               <h4> {{ infosolicitud.inscripcion.persona.nombre_completo }} </h4>
+            </div>
+
+        </div>
+
+
+
+    </div>
+
+<div class="span12">
+    <table class="table table-condensed table-stripped">
+        <thead>
+        <tr>
+            <th style="text-align: center;width:15% ">Archivo</th>
+            <th style="text-align: center;width:20%">Estado</th>
+            <th style="text-align: center;width:15%">.....</th>
+
+        </tr>
+        </thead>
+    <tbody>
+            {% for tipoarchivosolicitudbeca in tipoarchivosolicitud %}
+                <tr>
+                    <td style="text-align: center">{{ tipoarchivosolicitudbeca.nombre }} </td>
+                    {% with verficarexiste=tipoarchivosolicitudbeca|args:becaverificacion.id|call:"verficarexiste"  %}
+                        {% if verficarexiste %}
+                            {% if verficarexiste.estado %}
+                                <td style="text-align: center"> VERIFICADO </td>
+                                <td> <a class="btn btn-danger" href="#" id="1" onclick="noaceptartipoarchivo('{{becaverificacion.id }}','{{ tipoarchivosolicitudbeca.id }}','{{ becaverificacion.inscripcion.persona.nombre_completo }}')" title="Rechazar el Documento" style="color:rgb(255, 255, 255);">RECHAZAR </a></td>
+                            {% else %}
+                                <td style="text-align: center"> NO VERIFICADO</td>
+                                <td>
+                                <a class="btn btn-success" href="#" id="2" onclick="aceptartipoarchivo('{{becaverificacion.id }}','{{ tipoarchivosolicitudbeca.id }}','{{ becaverificacion.inscripcion.persona.nombre_completo }}')" title="Aceptar Documento"  style="color:rgb(255, 255, 255);">ACEPTAR </a>
+                                <a class="btn btn-danger" href="#" id="3" onclick="noaceptartipoarchivo('{{becaverificacion.id }}','{{ tipoarchivosolicitudbeca.id }}','{{ becaverificacion.inscripcion.persona.nombre_completo }}')" title="Rechazar el Documento" style="color:rgb(255, 255, 255);">RECHAZAR </a>
+                                </td>
+                            {% endif %}
+                        {% else %}
+                            <td style="text-align: center"> NO VERIFICADO</td>
+                            <td>
+                            <a class="btn btn-success" href="#" id="2" onclick="aceptartipoarchivo('{{becaverificacion.id }}','{{ tipoarchivosolicitudbeca.id }}','{{ becaverificacion.inscripcion.persona.nombre_completo }}')" title="Aceptar Documento"  style="color:rgb(255, 255, 255);">ACEPTAR </a>
+                            <a class="btn btn-danger" href="#" id="3" onclick="noaceptartipoarchivo('{{becaverificacion.id }}','{{ tipoarchivosolicitudbeca.id }}','{{ becaverificacion.inscripcion.persona.nombre_completo }}')" title="Rechazar el Documento" style="color:rgb(255, 255, 255);">RECHAZAR </a>
+                            </td>
+                        {% endif %}
+                    {% endwith %}
+                </tr>
+             {% endfor %}
+             <p id="ayudaverica"class="help-text"> </p>
+    </tbody>
+</table>
+
+</div>
+</div>

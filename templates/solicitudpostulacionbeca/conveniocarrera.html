@@ -1,0 +1,401 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <style>
+
+        body {
+            background-color: #eee
+
+        }
+
+        .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+          color: #fff;
+          background-color:  #184679; }
+
+        .btn-primary {
+          color: #fff;
+          background-color: #184679;
+          border-color: #184679;
+        }
+
+        .custom-control-input:checked ~ .custom-control-label::before {
+          color: #fff;
+          border-color:#184679;
+          background-color: #184679; }
+
+
+        .div.dataTables_wrapper div.dataTables_filter, div.dataTables_wrapper div.dataTables_info, div.dataTables_wrapper div.dataTables_paginate,div.dataTables_wrapper div.dataTables_filter label,div.dataTables_wrapper div.dataTables_length label {
+            padding-left: 15px;
+            padding-right: 15px;
+            visibility: hidden;
+        }
+
+        .modal-body-descragar-postulante  {
+          position: relative;
+          -ms-flex: 1 1 auto;
+          -webkit-box-flex: 1;
+          flex: 1 1 auto;
+          padding: 1rem;
+        }
+
+
+        .badge-declaracionjuramentada {
+            color: #fff;
+            background-color: #D35400;
+            font-size: 11px;
+        }
+
+        .badge-jornada {
+            color: #fff;
+            background-color: #D36D00;
+            font-size: 12px;
+        }
+
+
+
+    </style>
+
+    <script type="text/javascript">
+        $(function() {
+            
+            
+            $("#btnbuscar").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/conveniocarrera?s="+term;
+            });
+            
+            $("#btnagregarcarreraconvenio").click(function() {
+                 
+                 $("#vetnagregarcarreraconven").modal({backdrop: 'static', keyboard: false});
+            });
+            
+            $("#btnsalirconvecarrera").click(function() {
+                 
+                 $("#cmbconvenioempresa").val(0);
+                 $('#cmbconvenioempresa').trigger('change.select2');
+                 $("#cmbmodalidad").val(0);
+                 $('#cmbmodalidad').trigger('change.select2');                 
+                 $("#cmbcarrera").empty();
+                
+            });
+            
+            function helpvalidaIngreso(){
+                $("#helpcmbconvenioempresa").html("");
+                $("#helpcmbmodalidad").html("");
+                $("#helpcmbcarrera").html("");
+            }
+            
+            function validarIngreso(){
+                
+                  if ($("#cmbconvenioempresa").val()==0){
+                      $("#helpcmbconvenioempresa").html("Debe seleccionar el convenio");
+                        return 1;
+                  }
+                  if ($("#cmbmodalidad").val()==0){
+                      $("#helpcmbmodalidad").html("Debe seleccionar la modalidad");
+                        return 1;
+                  }
+                  if ($("#cmbcarrera").val()==0){
+                      $("#helpcmbcarrera").html("Debe seleccionar al menos una carrera");
+                        return 1;
+                  }
+                  
+                  return 0;
+            }
+            
+            $("#btnguardarconvecarrera").click(function() {
+                 
+                helpvalidaIngreso();
+                
+                if (validarIngreso()==0){
+                    
+                     Loader.open();
+                     var formData = new FormData();
+                     formData.append('action', 'guardarconveniocarrera');
+                     formData.append('idconv', $("#cmbconvenioempresa").val());
+                     formData.append('idmodalidad', $("#cmbmodalidad").val());
+                     formData.append('idcarrera', $("#cmbcarrera").val());
+
+                     $.ajax({
+                             url: '/conveniocarrera',
+                             type: "POST",
+                             contentType: false,
+                             data: formData,
+                             processData: false,
+                             cache: false,
+                             success: function (data) {
+                                 if (data.result == "ok") {
+                                    swal("! Convenio Carrera", "Se agrego correctamente la(s) carrera(s) al convenio", "success");
+                                   location.href = "/conveniocarrera";
+
+                                 } else {
+                                     swal("Error", data.message, "error");
+                                    
+                                 }
+                             },
+                             error: function (xhr, ajaxOptions, thrownError) {
+                                 swal("Error", "Error Conexion en el Servidor", "error");
+                                
+                             },
+                             complete: function () {
+                                 Loader.close();
+                             }
+                     });
+                    
+                }
+                 
+             })
+            
+            eliminarcarreraconve=function (idconvecarrera,nombre) {
+                    swal({
+                        title: 'Está seguro que desea eliminar la carrea del convenio?',
+                        text: "Nombre: "+nombre,
+                        type: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Si,Eliminar!',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonClass: 'btn btn-success margin-5',
+                        cancelButtonClass: 'btn btn-danger margin-5',
+                        buttonsStyling: false,
+                        allowOutsideClick: false,
+                    }).then(function (isConfirm) {
+
+                        if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss'] != 'esc') {                             
+                             Loader.open();
+                             var formData = new FormData();
+                             formData.append('action', 'eliminar');
+                             formData.append('idconv', idconvecarrera);
+
+                             $.ajax({
+                                     url: '/conveniocarrera',
+                                     type: "POST",
+                                     contentType: false,
+                                     data: formData,
+                                     processData: false,
+                                     cache: false,
+                                     success: function (data) {
+                                         if (data.result == "ok") {
+                                            swal("! Convenio Carrera", "Se elimino correctamente la carrera del convenio", "success");
+                                           location.href = "/conveniocarrera";
+
+                                         } else {
+                                             swal("Error", data.message, "error");
+                                            
+                                         }
+                                     },
+                                     error: function (xhr, ajaxOptions, thrownError) {
+                                         swal("Error", "Error Conexion en el Servidor", "error");
+                                        
+                                     },
+                                     complete: function () {
+                                         Loader.close();
+                                     }
+                             });
+                        }
+                    })
+          }
+          
+            
+
+
+        });  
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+    <div class="mobile-menu-overlay"></div>
+
+        <div class="main-container">
+             <div class="page-header">
+                <div class="row">
+                    <div class="col-md-10 col-sm-10">
+                        <div class="title">
+                            <h4>Listado de Convenio Carrera </h4>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-2">
+                         <a href="/" style="float: right;color: white;background: #0b132b" class="btn btn-black"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+
+                </div>
+            </div>
+            <div class="card-box mb-30">
+                    <div class="pd-20">
+
+                        <div class="row">
+                             <div class="col-md-3" style="margin-top: 5px">
+                                <div class="form-group" >
+                                    <label > <a style="color: #d92550"></a></label>
+                                    <input id="searchfield" type="text" class="form-control" value='{{ search }}' >
+                                </div>
+                             </div>
+                             
+                            <div class="col-md-3" style="margin-top: 5px">
+                                <label > <a style="color: #d92550"></a></label>
+                                <div class="form-group">
+                                    <button type="button" id="btnagregarcarreraconvenio" style="margin-left: 5px" title="Agregar Carrera al Convenio"  class="btn" data-bgcolor="#184679" data-color="#ffffff" ><i class="icon-copy ion-plus"></i></button>
+                                    <button type="button" id="btnbuscar" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+					<div class="pd-20">
+                        <table class="data-table table stripe hover nowra">
+							<thead>
+								<tr>
+									
+                                    <th>Empresa Convenio</th>
+                                    <th>Carrera</th>
+                                    <th>Modalidad</th>
+                                    <th>Activo</th>
+                                    <th>Acción</th>
+								</tr>
+							</thead>
+							<tbody>
+                                {% for xempresaconvenios in empresaconvenios %}
+
+                                    <tr>                                                                          
+                                        <td>{{ xempresaconvenios.empresaconvenio.nombre }}</td>
+                                        <td>{{ xempresaconvenios.carrera.nombre }}</td>
+                                        <td>{{ xempresaconvenios.modalidad.nombre }}</td>                                     
+                                        <td>{% if xempresaconvenios.activo %} <span class="badge badge-success">SI</span> {% else %} <span class="badge badge-danger" style="margin-top: 10px">NO</span> {% endif %}</td>
+                                        <td>
+                                               <div class="dropdown">
+                                                    <a class="btn btn-link font-24 p-0 line-height-1 no-arrow dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                                                        <i class="dw dw-more"></i>
+                                                    </a>
+                                                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-icon-list">
+                                                            <a class="dropdown-item" style="cursor:pointer" onclick="eliminarcarreraconve('{{ xempresaconvenios.id }}','{{ xempresaconvenios.carrera.nombre }}')" ><i class="dw dw-delete-3"></i> Eliminar</a>                                                     
+                                                        
+                                                    </div>
+                                               </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                {% if not empresaconvenios %}
+                                    <tr>
+                                        <td colspan="5">
+                                            NO HAY REGISTRO
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                        <div >
+                            <div class="text-right" style="margin-left: 10px">
+
+                              {% if paging.num_pages > 20 %}
+                                    <nav aria-label="Page navigation example">
+                                        <ul class="pagination" >
+
+                                            {% if paging.primera_pagina %}
+                                                <li class="page-item"><a class="page-link" href="/conveniocarrera?page=1">1</a></li>
+                                                <li class="page-item"><a class="page-link" href="/conveniocarrera?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                                            {% endif %}
+                                            {% for pagenumber in paging.paginas %}
+                                                <li {% if pagenumber == page.number %}class='page-item active'{% else %}class="page-item"{% endif %}><a class="page-link" href="/conveniocarrera?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                                            {% endfor %}
+                                            {% if paging.ultima_pagina %}
+                                                <li class="page-item"><a class="page-link" href="/conveniocarrera?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                                                <li class="page-item"><a class="page-link" href="/conveniocarrera?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                                            {% endif %}                                         
+                                        </ul>
+                                    </nav>
+                              {% else %}
+                                    <nav aria-label="Page navigation example">
+                                        <ul class="pagination" >
+                                            {% for pagenumber in paging.page_range %}
+                                                <li {% if pagenumber == page.number %}class='page-item active'{% else %}class="page-item"{% endif %}><a class="page-link" href="/conveniocarrera?{% if posiblins %}&posiblins={{ posiblins }}{% endif %}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                                            {% endfor %}
+                                             
+                                        </ul>
+
+                                    </nav>
+                              {% endif %}
+
+
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+    
+    <div  class="modal fade " id="vetnagregarcarreraconven"  role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Agregar Carrera al Convenio</h4>
+
+                </div>
+
+                <div class="modal-body" >
+                
+                    <div class="row">
+                        <div class="col-md-6">
+                             <div class="form-group">
+                                 <label >Convenio <a style="color: #d92550"></a>: </label>
+                                 <select id="cmbconvenioempresa" class="custom-select2 form-control" style="width: 100%">
+                                    <option value="0"> Seleccionar el Convenio</option>
+                                     {% for xlistconvenio in listconvenio %}
+                                            <option value='{{ xlistconvenio.id }}'>{{ xlistconvenio.nombre }}</option>
+                                     {% endfor %}
+                                </select>
+                                <p id="helpcmbconvenioempresa"  style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>                         
+                        </div>   
+                    
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                 <label >Modalidad <a style="color: #d92550"></a>: </label>
+                                 <select id="cmbmodalidad" class="custom-select2 form-control" style="width: 100%">
+                                    <option value="0"> Seleccionar la Modalidad</option>
+                                     {% for xlistamodalidad in listamodalidad %}
+                                            <option value='{{ xlistamodalidad.id }}'>{{ xlistamodalidad.nombre }}</option>
+                                     {% endfor %}
+
+                                </select>
+                                <p id="helpcmbmodalidad"  style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        
+
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                 <label >Carrera <a style="color: #d92550"></a>: </label>
+                                 <select id="cmbcarrera" class="custom-select2 form-control" multiple="multiple" style="width: 100%">
+                                   <option value="0"> Seleccionar la carrera</option>
+                                     {% for xlistcarrera in listcarrera %}
+                                            <option value='{{ xlistcarrera.id }}'>{{ xlistcarrera.nombre }}</option>
+                                     {% endfor %}
+
+                                </select>
+                                <p id="helpcmbcarrera"  style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>
+                        </div>
+                    </div>
+                   <div class="modal-footer">
+                        <button type="button" class="btn" id="btnsalirconvecarrera" data-bgcolor="#FA1D06" style="background: #FF0000;color: white" data-dismiss="modal" data-color="#ffffff">Salir</button>
+                        <button type="button" id="btnguardarconvecarrera" class="btn" style="background: #63A836;color: white" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+ </div> 
+    
+  
+    
+   
+
+
+
+
+
+
+
+{% endblock %}

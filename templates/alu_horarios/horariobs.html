@@ -1,0 +1,90 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            clases = [{% for clase in clases %}
+                {"id":"{{ clase.0.id }}", "realprofesor":{% if clase.1.profesor_aux %} "{{  clase.1.profesor_auxiliar }}"  {% else %} "{{ clase.1.profesor.persona.nombre_completo }} " {% endif %}, "realdesde": "{{ clase.1.desde|date:'d-m-Y' }}", realhasta:"{{ clase.1.hasta|date:'d-m-Y' }}", "segmento": "{{ clase.1.segmento }}", "sede":"{{ clase.0.materia.nivel.sede }}", "paralelo":"{{ clase.0.materia.nivel.paralelo }} ", "carrera":"{{ clase.0.materia.nivel.carrera }}", "nivelmalla":"{{ clase.0.materia.nivel.nivelmalla }}", "asignatura": "{{ clase.0.materia.nombre_completo }}","materiainicio": "{{ clase.0.materia.inicio|date:'d-m-Y'}}", "materiafin": "{{ clase.0.materia.fin|date:'d-m-Y' }}", "profesor": "{{ clase.0.profesor }}", "turno": "{{ clase.0.turno.id }}","dia":"{{ clase.0.dia }}", "aula": "{{ clase.0.aula }}", "virtual": "{{ clase.0.virtual }}"}{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            findClases = function(d, t) {
+                var l = [];
+                for (i in clases) {
+                    var am = clases[i];
+                    if (am.dia==d && am.turno==t) {
+                        l.push(am);
+                    }
+                }
+                return l;
+            }
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var dia = $this.attr('dia');
+                var turno = $this.attr('turno');
+                var clase = findClases(dia, turno);
+                for (i in clase) {
+                    var c = clase[i];
+                    if (c.virtual =='True'){
+                         vir = " <br/><b style='color: red'>(CLASE VIRTUAL) </b>";
+                    }else{
+                         vir ="<br/>Aula: "+c.aula+"<br/></span>";
+                    }
+                    $(this).append("<span class='label label-important'>"+c.segmento+"</span> <strong> "+c.asignatura+"</strong><br/>"+
+                            "<span class='larger label label-info'>" + c.realdesde +" al "+ c.realhasta +"</span><br>"+
+                            c.realprofesor+"<br/>"+c.carrera+"<br/>"+
+                            c.nivelmalla+" - "+c.paralelo+" en "+c.sede+ vir+
+                            "</div>");
+                }
+
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Horario del alumno: {{ inscripcion }}</h3>
+            <h4>Periodo: {{ periodo }}</h4>
+            <h5>Paralelo: {{ matricula.0.nivel }}</h5>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Menu</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            {%  for sesion in sesiones %}
+                <table class='table table-bordered' cellpadding="0" cellspacing="0">
+                    <tbody>
+                    <thead>
+                    <tr>
+                        <th colspan="{{ sesion.cantidad_dias_plus_1 }}">{{ sesion }}</th>
+                    </tr>
+                    <tr>
+                        <th width='10%'> </th>
+                        {% for dia in sesion.semana %}
+                            <th style="text-transform: uppercase;">{{ dia.0 }}</th>
+                        {% endfor %}
+                    </tr>
+                    </thead>
+                    {% for turno in sesion.turnos %}
+                        <tr>
+                            <td>
+                                Turno {{ turno.turno }}<br/>
+                                {{ turno.comienza }} a {{ turno.termina }}
+                            </td>
+                            {% for dia in sesion.semana %}
+                                <td>
+                                    <div class='cell' dia='{{ dia.1 }}' turno='{{ turno.id }}'>
+
+                                    </div>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                    <tr></tr>
+                    </tbody>
+                </table>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

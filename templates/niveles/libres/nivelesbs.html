@@ -1,0 +1,78 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            niveles = [{% for nivel in niveles %}
+                {"id":"{{ nivel.id }}","cerrado": {% if nivel.cerrado %}true{% else %}false{% endif %}, "fechacierre": "{{ nivel.fechacierre|date:'d-m-Y' }}", "modalidad": "{{ nivel.grupo.modalidad.nombre }}", "carrera": "{{ nivel.carrera_id }}", "sede": "{{ nivel.sede.id }}","sesion": "{{ nivel.sesion }}", "coordinacion": "{{ nivel.coordinacion.id }}", "nivelmalla":"{{ nivel.nivelmalla }}","mat_nivel": "{{ nivel.mat_nivel }}","annomalla": "{{ nivel.malla.inicio_anno }}","paralelo": "{{ nivel.paralelo }}","inicio":"{{ nivel.inicio_repr }}","fin":"{{ nivel.fin_repr }}","grupo":"{{ nivel.grupo }}"}{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            findNiveles = function(c) {
+                var l = [];
+                for (i in niveles) {
+                    var am = niveles[i];
+                    if (am.coordinacion==c) {
+                        l.push(am);
+                    }
+                }
+                return l;
+            };
+
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var coordinacion = $this.attr('coordinacion');
+
+                var niveles = findNiveles(coordinacion);
+                for (i in niveles) {
+                    var nivel = niveles[i];
+                    $(this).append("<tr><td>" +
+                            "<b>"+((nivel.cerrado)?"<span class='label label-important'>CERRADO</span> ":"")+nivel.paralelo+" (Del " + nivel.inicio +" al "+ nivel.fin + ") - "+nivel.modalidad+" "+nivel.sesion+ "</b></td><td>"+
+                            ((!nivel.cerrado)?"<a href='/niveles?action=editlibre&id="+nivel.id+"' class='btn btn-mini btn-info'><i class='icon-edit icon-white'></i></a>":"") +
+                            ((nivel.mat_nivel==0)?" <a href='/niveles?action=del&id="+nivel.id+"' class='btn btn-mini btn-danger'><i class='icon-remove icon-white'></i></a>":"") +
+                            " <a href='/niveles?action=materias&id="+nivel.id+"' class='btn btn-mini btn-success'><i class='icon-list icon-white'></i> Materias</a>" +
+                            "</td></tr>");
+
+                }
+
+            });
+
+
+
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Niveles Acad&eacute;micos</h3>
+            <h4>Per&iacute;odo: <b>{{ periodo.nombre }}</b>, Desde: <b>{{ periodo.inicio|date:'d-m-Y' }}</b> Hasta: <b>{{ periodo.fin|date:'d-m-Y' }}</b></h4>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <!-- COORDINACIONES -->
+    <div class='row-fluid'>
+        <div class="span12">
+            <table class="table table-bordered table-striped">
+                <tbody>
+                    {% for coordinacion in coordinaciones %}
+                    <tr class="info">
+                        <td>
+                            {{ coordinacion.nombre }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class='table table-bordered cell' coordinacion='{{ coordinacion.id }}'>
+
+                            </table>
+
+                            <a href="/niveles?action=addlibre&periodo={{ periodo.id }}&coordinacion={{ coordinacion.id }}" class="btn btn-success btn-mini"><i class="icon-plus"></i> Adicionar Bimestre</a>
+                        </td>
+                    </tr>
+                </tbody>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+{% endblock %}

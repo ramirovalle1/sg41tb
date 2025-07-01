@@ -1,0 +1,72 @@
+<script type="text/javascript">
+    $(function(){
+
+{#------------------------------------------------------ ELIMINAR DOCENTE----------------------------------------------------------------#}
+        $(".eliminar").click(function(){
+            $("#ver_niveles").modal("hide");
+            var niveldepagoid = $(this).attr("pagoid");
+            var pagoid = '{{pago.id}}';
+            smoke.confirm("Esta seguro de eliminar nivel del pago seleccionado", function(e){
+            if (e){
+                $.post("/pagopracticas_docente",{"action": "eliminar_niveldepago","id":niveldepagoid},function(data) {
+                    if(data.result=='ok'){
+                        alert("Registro Eliminado");
+                   }else{
+                        alert(data.result);
+                   }
+                },"json");
+            }else{
+
+            }
+            $.get("/pagopracticas_docente",{"action": "ver_nivelesdepago","id":pagoid},function(data) {
+                $("#ver_niveles .modal-body").html(data);
+                $("#ver_niveles #paneltitle1").html(descripcion.toUpperCase()+" (PAGO A: "+profesor+")");
+                $("#ver_niveles").modal({"backdrop":"static","width":"50%"});
+                $("#ver_niveles").modal("show");
+            }, "html");
+            }, {
+            ok: "Si",
+            cancel: "No",
+            classname: "custom-class",
+            reverseButtons: true
+            });
+
+        });
+
+
+    });
+</script>
+
+<div class="row-fluid">
+    <div class="span12 ">
+        <table class="table table-condensed">
+            <thead>
+                <tr>
+                    <th style="text-align: center">Paralelo</th>
+                    <th style="text-align: center">Nivel</th>
+                    <th style="text-align: center">Eliminar</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for np in nivelpagos %}
+                    <tr>
+                        <td style="text-align: center"> {{ np.nivel.paralelo }} </td>
+                        <td style="text-align: center"> {{ np.nivel.nivelmalla.nombre }} </td>
+                        <td style="text-align: center">
+                            <a href='#' pagoid='{{ np.id }}' class='btn eliminar'><img src='/static/images/16/ausent.png' alt='' border='0'/></a>
+                        </td>
+                    </tr>
+                {% endfor %}
+
+                {% if not nivelpagos %}
+                    <tr>
+                        <td colspan="10">NO EXISTE REGISTRO</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+

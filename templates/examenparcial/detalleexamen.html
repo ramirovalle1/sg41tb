@@ -1,0 +1,155 @@
+{% load sga_extras %}
+<script type="text/javascript">
+    $(function(){
+        $('.validar').click(function(){
+            $("#observalidadesac").val('');
+            var idexam = $(this).attr('idexam');
+            var activ = $(this).attr("activ");
+            $('#verexamenmod').modal('hide');
+            smoke.prompt("Ingrese Observacion", function(v) {
+                if (v) {
+                    showWaiting("Guardando datos","Espere unos segundos por favor...");
+                    $.post("/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}",{action:'guardvalida', activ: activ, idexam: idexam, obs: v}, function(data) {
+                        if (data.result == 'ok') {
+                            location.href = "/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=verinscr&id={{ tituloexamenparcial.id }}&idexa="+idexam;
+                        }else{
+                            $.get("/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}", {'action':'verexam', 'idexa': idexam}, function(data) {
+                                $("#verexamenmod .modal-body").html(data);
+                                $("#verexamenmod").modal({"backdrop":"static","width":'70%'});
+                                $('#verexamenmod').show();
+                            }, "html")
+                            $("#paneltitle2").html('<a style="colore:red"> ERROR VUELVA A INTENTARLO</a>')
+                        }
+
+                    }, "json").fail(function() {
+                                        hideWaiting();
+                                        smoke.alert('Error de conexi&oacute;n vuelva a intentarlo');
+                          });
+                } else {
+                    $.get("/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}", {'action':'verexam', 'idexa': idexam}, function(data) {
+                        $("#verexamenmod .modal-body").html(data);
+                        $("#verexamenmod").modal({"backdrop":"static","width":'70%'});
+                        $('#verexamenmod').show();
+                    }, "html")
+                }
+            });
+            return false;
+        });
+
+
+        $(".verexamen").click(function(){
+            window.open('/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=examen&id='+$(this).attr('idexa'),"Examen", 'width='+(screen.availWidth)+',height ='+(screen.availHeight)+',fullscreen=yes,menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=no');
+        });
+        $(".verdetalle").click(function(){
+
+            if($("#det"+$(this).attr('idexamepar')).html()=='Detalle') {
+                $(".verdetalle").html("Detalle").removeClass('btn-danger').addClass('btn-info');
+                $(".detalleexam").hide();
+                $("#detalle"+$(this).attr('idexamepar')).show();
+                $("#det"+$(this).attr('idexamepar')).html("Ocultar").removeClass('btn-info').addClass('btn-danger');
+            }else{
+                $("#detalle"+$(this).attr('idexamepar')).hide();
+                $("#det"+$(this).attr('idexamepar')).html("Detalle").removeClass('btn-danger').addClass('btn-info');
+            }
+        });
+
+    });
+</script>
+
+<div class="row-fluid">
+<div class="span12 ">
+    <table class="table table-condensed ">
+        <thead>
+            <tr>
+                <th>Estudiante</th>
+                <th>Puntaje</th>
+                <th>Valido</th>
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+    <tbody>
+        {% for e in examenparcial %}
+            <tr>
+                <td > {{ e.matricula.inscripcion.persona.nombre_completo }}
+                    {% if e.finalizado %}
+                         <span class="label label-info">Finalizado</span>
+                    {% else %}
+                        <span class="label label-warning">Realizando</span>
+                    {% endif %}
+                </td>
+                <td > {{ e.puntaje }}</td>
+                <td id="valida{{ e.id }}">
+
+                    {% if e.valida %}
+                        <a idexam="{{ e.id }}"  activ="{{ e.valida }}"
+                           {% if not e.matricula|args:e.tituloexamenparcial.id|call:"examensupletact" or e.tituloexamenparcial.supletorio %}
+                           style="cursor: pointer" class="validar" {% endif %}> <img src='/static/images/16/true.png' alt='' border="0"/> </a>
+                    {% else %}
+                        <a idexam="{{ e.id }}"  activ="{{ e.valida }}"
+                           {% if not e.matricula|args:e.tituloexamenparcial.id|call:"examensupletact" or e.tituloexamenparcial.supletorio %}
+                           style="cursor: pointer" class="validar" {% endif %}  ><img src='/static/images/16/false.png' alt='' border="0"/> </a>
+                    {% endif %}
+
+                </td>
+                <td>{% if e.detactexaexist %}<a style="cursor: pointer" idexamepar="{{ e.id }}" id='det{{ e.id }}'  class="btn btn-info verdetalle">Detalle</a>{% endif %}</td>
+                <td>{% if e.finalizado %}<a class="btn btn-success verexamen" idexa="{{ e.id }}" style="float: right">Ver examen</a>{% endif %}</td>
+            </tr>
+            {% if e.detactexaexist  %}
+                <tr id="detalle{{ e.id }}" class="detalleexam" style="display: none">
+                    <td colspan="2"></td>
+                    <td colspan="4">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th colspan="4" style="text-align: center"> DETALLE </th>
+                                </tr>
+                                <tr>
+                                    <th style="text-align: center"> Observaci&oacute;n </th>
+                                    <th style="text-align: center"> Fecha </th>
+                                    <th style="text-align: center"> Activo </th>
+                                    <th style="text-align: center"> Usuario </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for d in e.detactexaexist  %}
+
+                                    <tr>
+                                        <td>
+                                            {{ d.observacion }}
+                                        </td>
+                                        <td>
+                                            {{ d.fecha|date:'Y-m-d' }}
+                                        </td>
+                                        <td>
+                                            {% if d.activo %}
+                                                <a > <img src='/static/images/16/true.png' alt='' border="0"/> </a>
+                                            {% else %}
+                                                <a ><img src='/static/images/16/false.png' alt='' border="0"/> </a>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {{ d.usuario }}
+                                        </td>
+                                    </tr>
+
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                    </td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+        {% if not examenparcial %}
+            <tr>
+                <td > NO EXISTEN REGISTROS
+
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>
+</div>
+

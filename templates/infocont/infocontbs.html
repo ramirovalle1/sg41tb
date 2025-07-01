@@ -1,0 +1,95 @@
+{% extends "basebs.html" %}
+{% load humanize %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            var tipo = ''
+
+            function clearNavs() {
+                $("#carreras").removeClass('active');
+                $("#formasPago").removeClass('active');
+                $("#tiposRubro").removeClass('active');
+                $("#cajas").removeClass('active');
+                $("#txtSearch").val('')
+            }
+
+            loadPage = function(action){
+                clearNavs();
+                $("#"+action).addClass('active');
+                valor = $("#txtSearch").show()
+                tipo = action;
+                $.get("/infocont", {'action':action}, function(data) {
+                    $("#tblContent").html(data)
+                }, 'html');
+            }
+
+            $("#txtSearch").hide()
+
+            txtSearch = function() {
+                valor = $("#txtSearch").val()
+                $.post("/infocont", {'action':'loadSearch', 'value':valor, 'type':tipo}, function(data) {
+                    var table = "<table class='table table-bordered table-striped' cellpadding='0' cellspacing='0'>" +
+                                "<tr>" +
+                                "<th style='text-align:center; width: 50px'>Id</th>" +
+                                "<th>Nombre</th>" +
+                                "</tr>"
+
+                    for(var t in data.registros){
+                        table += "<tr>" +
+                                "<td style='text-align:center'>"+ data.registros[t].id+"</td>" +
+                                "<td>"+data.registros[t].nombre+"</td>" +
+                                "</tr>"
+
+                    }
+                    table += "</table>"
+                    $("#tblContent").html(table)
+                }, 'json');
+            }
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span2'></div>
+        <div class='span7'>
+            <h3> Informaci&oacute;n para uso en Contable</h3>
+        </div>
+        <div class='span1' style="text-align: right">
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span2"></div>
+        <div class="span8">
+            <ul class="nav nav-tabs nav-justified">
+                <li class="nav-link" id="carreras"><a href="#" onclick="loadPage('carreras')">Carreras</a></li>
+                <li class="nav-link" id="formasPago"><a href="#" onclick="loadPage('formasPago')">Formas de Pago</a></li>
+                <li class="nav-link" id="tiposRubro"><a href="#" onclick="loadPage('tiposRubro')">Tipos de Rubro</a></li>
+                <li class="nav-link" id="cajas"><a href="#" onclick="loadPage('cajas')">Cajas</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span2'></div>
+        <div class='span8'>
+            <input class='input-large search-query' onkeyup="txtSearch()" type='text' id='txtSearch' placeholder="Filtrar por Nombre"/>
+        </div>
+    </div><br>
+
+    <div class='row-fluid'>
+        <div class='span2'></div>
+        <div class='span8' id="tblContent">
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block moreblock %}
+
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+            $("#docentessel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/cons_documentos?p='+id;
+                }else{
+                    location.href = '/cons_documentos';
+                }
+
+            });
+
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid margeninferior'>
+        <div class='span11'>
+            <h3>Lista de Docentes y sus Syllabus por Materia y Paralelos</h3>
+{#            <h4>Periodo: {{ periodo }}</h4>#}
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span7">
+            <h4>Periodo: {{ periodo }}</h4>
+        </div>
+        <div class='span5 atright'>
+            <b>Filtro por Docente: </b>
+            <select id='docentessel' class="input-xxlarge"/>
+                <option value=''>-----</option>
+                {% for p in todosprofesores %}
+                    <option value="{{ p.id }}" {% if profid == p.id %}selected="selected"{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Profesor - Materias</th>
+                    <th>Paralelo</th>
+                    <th>Nivel</th>
+                    <th>Carrera/Sede/Sesion</th>
+                    <th>Syllabus</th>
+                    <th>Fecha</th>
+                </tr>
+                </thead>
+                {% if profid %}
+
+                    <thead>
+                            <tr>
+                                <th style="font-size: 17px" colspan="6">{{ prof }}</th>
+                            </tr>
+                    </thead>
+                    {% with materias=prof|args:periodo|call:"materias_imparte_periodo" %}
+                        {% if materias %}
+                            {% for materia in materias %}
+                                <tr>
+                                  <td>{{ materia.nombre_completo }}</td>
+                                  <td><span class="label label-info"> {{ materia.nivel.grupo.nombre }}</span> </td>
+                                  <td>{{ materia.nivel.nivelmalla }}</td>
+                                  <td> {{ materia.nivel.carrera }} - {{ materia.nivel.sede }} - {{ materia.nivel.sesion.nombre }} </td>
+                                  <td>
+                                  {% if materia.syllabus %}
+                                      <a href='{{ materia.syllabus.download_link }}' class='btn btn-success'><i class="icon-download  icon-white"></i> Descargar</a>
+                                  {% else %}
+                                      <span class="label label-important">NO HAY SYLLABUS</span>
+                                  {% endif %}
+                                  </td>
+                                  <td>{{ materia.syllabus.fecha|date:"d-m-Y" }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                {% else %}
+
+                    {% for profesor in profesores %}
+                        <thead>
+                            <tr>
+                                <th style="font-size: 17px" colspan="6">{{ profesor }}</th>
+                            </tr>
+                        </thead>
+                        {% with materias=profesor|args:periodo|call:"materias_imparte_periodo" %}
+                            {% if materias %}
+                                {% for materia in materias %}
+                                    <tr>
+                                      <td>{{ materia.nombre_completo }}</td>
+                                      <td><span class="label label-info"> {{ materia.nivel.grupo.nombre }}</span> </td>
+                                      <td>{{ materia.nivel.nivelmalla }}</td>
+                                      <td> {{ materia.nivel.carrera }} - {{ materia.nivel.sede }} - {{ materia.nivel.sesion.nombre }} </td>
+                                      <td>
+                                      {% if materia.syllabus %}
+                                          <a href='{{ materia.syllabus.download_link }}' class='btn btn-success'><i class="icon-download  icon-white"></i> Descargar</a>
+                                      {% else %}
+                                          <span class="label label-important">NO HAY SYLLABUS</span>
+                                      {% endif %}
+                                      </td>
+                                      <td>{{ materia.syllabus.fecha|date:"d-m-Y" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                {% endfor %}
+
+                {% endif %}
+
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/cons_documentos?page={{ pagenumber }}{% if profid %}&p={{ profid }}{% endif %}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

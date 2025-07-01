@@ -1,0 +1,170 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script>
+        $(function() {
+           //$("#desde, #hasta").datepicker({format:"dd-mm-yyyy"});
+
+           $("#guardar_fecha").click(function() {
+               showWaiting("Guardando configuraci&oacute;n", "espere unos minutos por favor...");
+               var activado = $("#activado").is(":checked");
+               var rangoactivacion = $("#rangoactivacion").is(":checked");
+               var diasactivacion = $("#diasactivacion").val();
+
+               $.get("/adm_evaluaciondocentes", {action: 'setup', 'activado': ((activado)?"1":"0"), 'rangoactivacion': ((rangoactivacion)?"1":"0"), 'diasactivacion': diasactivacion }, function(data) {
+                   hideWaiting();
+                   location.href='/adm_evaluaciondocentes';
+               }, "json");
+
+           });
+
+           $("#activado").click(function() {
+                var a = $(this).is(":checked");
+                if (a) {
+                    $("#rangoactivacion").removeAttr("disabled");
+                    if ($("#rangoactivacion").is(":checked")) {
+                        $("#diasactivacion").removeAttr("disabled");
+                    } else {
+                        $("#diasactivacion").attr("disabled","disabled");
+                    }
+
+                } else {
+                    $("#rangoactivacion").attr("disabled","disabled");
+                    $("#diasactivacion").attr("disabled","disabled");
+                }
+           });
+           $("#rangoactivacion").click(function() {
+                if ($(this).is(":checked")) {
+                    $("#diasactivacion").removeAttr("disabled");
+                } else {
+                    $("#diasactivacion").attr("disabled","disabled");
+                }
+           });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Proceso de Evaluaci&oacute;n de Docentes</h3>
+            <h5>Per&iacute;odo: <b>{{ periodo.nombre }}</b>, Desde: <b>{{ periodo.inicio }}</b> Hasta: <b>{{ periodo.fin }}</b></h5>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span6'>
+            <div class='well'>
+
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Instrumentos de Evaluaci&oacute;n</th>
+                            <th>Ambitos</th>
+                            <th>Indicadores</th>
+                            <th> </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Evaluaci&oacute;n por Alumnos</td>
+                            <td>{{ proceso.instrumento_alumno.ambitoinstrumentoevaluacion_set.count }}</td>
+                            <td>{{ proceso.instrumento_alumno.cantidad_indicadores }}</td>
+                            <td>
+                                {% if proceso.activado %}
+                                    <a href="/adm_evaluaciondocentes?action=ver1" class="btn btn-mini btn-info"><i class="icon-edit icon-white"></i> Ver Instrumento</a>
+                                {% else %}
+                                    {% if not persona.pertenece_soporte %}
+                                        <a href="/adm_evaluaciondocentes?action=1" class="btn btn-mini btn-primary"><i class="icon-edit icon-white"></i> Editar Instrumento</a>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Autoevaluaci&oacute;n Profesores</td>
+                            <td>{{ proceso.instrumento_profesor.ambitoinstrumentoevaluacion_set.count }}</td>
+                            <td>{{ proceso.instrumento_profesor.cantidad_indicadores }}</td>
+                            <td>
+                                {% if proceso.activado %}
+                                    <a href="/adm_evaluaciondocentes?action=ver2" class="btn btn-mini btn-info"><i class="icon-edit icon-white"></i> Ver Instrumento</a>
+                                {% else %}
+                                    {% if not persona.pertenece_soporte %}
+                                        <a href="/adm_evaluaciondocentes?action=2" class="btn btn-mini btn-primary"><i class="icon-edit icon-white"></i> Editar Instrumento</a>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Evaluaci&oacute;n por Coordinadores</td>
+                            <td>{{ proceso.instrumento_coordinador.ambitoinstrumentoevaluacion_set.count }}</td>
+                            <td>{{ proceso.instrumento_coordinador.cantidad_indicadores }}</td>
+                            <td>
+                                {% if proceso.activado %}
+                                <a href="/adm_evaluaciondocentes?action=ver3" class="btn btn-mini btn-info"><i class="icon-edit icon-white"></i> Ver Instrumento</a>
+                                {% else %}
+                                    {% if not persona.pertenece_soporte %}
+                                        <a href="/adm_evaluaciondocentes?action=3" class="btn btn-mini btn-primary"><i class="icon-edit icon-white"></i> Editar Instrumento</a>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class='span6'>
+            <div class="well">
+                <h4>Activaci&oacute;n del Proceso</h4>
+                <table class="table table-bordered table-striped">
+                    <tbody>
+                        <tr>
+                            <td>Activo</td>
+                            <td><input type="checkbox" name="activado" id="activado" {% if proceso.activado %}checked="checked"{% endif %}/> </td>
+                        </tr>
+                        <tr>
+                            <td>Activaci&oacute;n por D&iacute;as</td>
+                            <td><input type="checkbox" name="rangoactivacion" id="rangoactivacion" {% if proceso.rangoactivacion %}checked="checked"{% endif %} {% if not proceso.activado %}disabled="disabled"{% endif %}/></td>
+                        </tr>
+                        <tr>
+                            <td>D&iacute;as antes de Fin de Materia</td>
+                            <td><select name="diasactivacion" id="diasactivacion" {% if not proceso.rangoactivacion or not proceso.activado  %}disabled="disabled"{% endif %}>
+                                {% for d in rangosdiasevaluacion %}
+                                    <option value="{{ d.0 }}" {% if d.0 == proceso.diasactivacion %}selected="selected"{% endif %}>{{ d.1 }}</option>
+                                {% endfor %}
+                            </select></td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% if not persona.pertenece_soporte %}
+                    <a href="#" id="guardar_fecha" class="btn btn-success">Guardar</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class='span12'>
+            <div >
+                <h3>Porcientos de cumplimientos en el Proceso de Evaluacion a Docentes</h3>
+                <table class="table table-bordered table-striped">
+                    <thead>
+                    <tr>
+                        <th>Cumplimiento de Evaluaci&oacute;n por Alumnos</th>
+                        <th>Cumplimiento de AutoEvaluaci&oacute;n</th>
+                        <th>Cumplimiento de Evaluaci&oacute;n por Coordinadores</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>{{ evaluadosporalumnos }} de aprox. {{ totalprofesoresporalumnos }} evaluaciones</td>
+                        <td>{{ autoevaluados }} de {{ totalprofesores|floatformat:"0" }} evaluaciones - ({{ porcientoautoevaluados|floatformat:"2" }}%)</td>
+                        <td>{{ evaluadosporcoordinadores }} de {{ totalprofesoresporcoordinadores|floatformat:"0" }} evaluaciones - ({{ porcientoevaluadosporcoordinadores|floatformat:"2" }}%)</td>
+                    </tr>
+
+                    </tbody>
+
+                </table>
+                <!-- <a href="/adm_evaluaciondocentes?action=resumen" class="btn btn-success">Resumen de Evaluaciones de Docentes</a> -->
+            </div>
+        </div>
+    </div>
+{% endblock %}

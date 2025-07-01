@@ -1,0 +1,62 @@
+{% extends "practicasadmin/formvehic.html" %}
+{% block extraheading %}
+{% endblock %}
+{% block javascript %}
+    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>
+{#    <script src='/static/js/adicionarproveedor.js'></script>#}
+
+    <script>
+    $(function() {
+        {% if cu %}
+            $("#id_usuario").val('{{ cu.usuario.username }}');
+            $("#id_usuario_id").val('{{ cu.usuario.id }}');
+        {% endif %}
+        $($("#id_usuario_id").get(0).parentNode.parentNode).hide();
+        buscar_usuario = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'User',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_usuario").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+    $('#id_usuario').typeahead({source: buscar_usuario, updater: function(item) {
+        var results = $("#id_usuario").get(0).results;
+        for (var i in results) {
+            var datos = results[i];
+            if (item==datos.name) {
+                $("#id_usuario").attr("myval",datos.id);
+                d=datos.id;
+                $("#id_usuario_id").val(d);
+            }
+        }
+        return item;
+
+    }});
+
+    });
+    </script>
+{% endblock %}
+{% block titulo %}
+Usuario Convenio
+{% endblock %}
+
+{% block formaction %}/convenio_academico{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+{#    <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">Guardar Inscripci&oacute;n</button>#}
+    <input type='hidden' name='action' value='addcu'/>
+    {% if cu %}
+        <input type='hidden' name='cu' value='{{ cu.id }}'/>
+    {% endif %}
+{% endblock %}
+
+{% block formback %}/convenio_academico{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

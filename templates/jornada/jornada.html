@@ -1,0 +1,254 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/jornada?s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+    {#------------------------------------------------------ ADD SESION----------------------------------------------------------------#}
+    $('.nueva_sesion').click(function(){
+        $("#agregar_sesion #idjornada").val($(this).attr('jid'));
+        $("#agregar_sesion #paneltitle2").html('Nueva sesion para la jornada '+($(this).attr('jor_nombre')));
+        $("#agregar_sesion").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_sesion").modal("show");
+    });
+
+    $("#agregar_sesion .btn-cerrar").click(function(){
+        $(".formError").removeClass('aparece');
+        $(".formError").addClass('oculta');
+        $("#agregar_sesion").modal("hide");
+        return false;
+    });
+
+    $("#formbutton").click(function(){
+        $(".formError").removeClass('oculta');
+        $(".formError").addClass('aparece');
+    });
+
+    {#------------------------------------------------------ ADD JORNADA----------------------------------------------------------------#}
+    $('.nueva_jornada').click(function(){
+        $("#id_nombre").val('');
+        $("#agregar_jornada #paneltitle2").html('Nueva jornada');
+        $("#agregar_jornada").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_jornada").modal("show");
+    });
+
+    {#------------------------------------------------------ MODIFICAR JORNADA----------------------------------------------------------------#}
+    $('.modificar_jornada').click(function(){
+        $("#id_nombre").val($(this).attr('jor_nombre'));
+        $("#agregar_jornada #idjornada").val($(this).attr('jid'));
+        $("#agregar_jornada #paneltitle2").html('Cambiar nombre de jornada '+($(this).attr('jor_nombre')));
+        $("#agregar_jornada").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_jornada").modal("show");
+    });
+
+    $("#agregar_jornada .btn-cerrar").click(function(){
+        $(".formError").removeClass('aparece');
+        $(".formError").addClass('oculta');
+        $("#agregar_jornada").modal("hide");
+        return false;
+    });
+
+    $("#formbutton_jornada").click(function(){
+        $(".formError").removeClass('oculta');
+        $(".formError").addClass('aparece');
+    });
+
+    {#------------------------------------------------------ ELIMINAR JORNADA----------------------------------------------------------------#}
+    $(".eliminar_jornada").click(function(){
+        var id = $(this).attr("jid");
+        var nombre = $(this).attr("jor_nombre");
+        smoke.confirm("Esta seguro de eliminar la jornada "+nombre, function(e){
+        if (e){
+            $.post("/jornada",{"action": "eliminar_jornada","id_jornada":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Registro Eliminado");
+               }else{
+                    alert(data.result);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+        setInterval(function(){
+        }, 5000);
+    {% endif %}
+
+
+    });
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span3"></div>
+        <div class="span5"  >
+            <h3 >Listado de jornadas académicas</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/mantenimiento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class='span2'>
+            <a href="#" class='btn btn-success nueva_jornada'><i class="icon-plus icon-white"></i> Nueva Jornada</a>
+        </div>
+        <div class='span4'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/jornada" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class='span6'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="text-align: center"> Jornada</th>
+                        <th style="text-align: center"># Sesiones</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for c in jornadas %}
+                        <tr>
+                            <td style="text-align: center"><a href="/jornada?action=ver_sesiones&id={{ c.id }}"> {{ c.nombre|upper }} </a></td>
+                            <td style="text-align: center"> {{ c.cantidad_sesiones }} </td>
+                            <td>
+                                    <div class="btn-group">
+                                        <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                            Acciones
+                                            <span class="caret"></span>
+                                        </a>
+                                        <ul class="dropdown-menu pull-right">
+                                            <li><a style="cursor: pointer" href="/jornada?action=ver_sesiones&id={{ c.id }}"><i class="icon-list"></i>  Ver sesiones</a></li>
+                                            <li><a style="cursor: pointer" jor_nombre="{{ c.nombre }}" jid="{{ c.id }}" class="nueva_sesion"><i class="icon-plus"></i>  Añadir sesion</a></li>
+                                            <li><a style="cursor: pointer" jor_nombre="{{ c.nombre }}" jid="{{ c.id }}" class="modificar_jornada"><i class="icon-edit"></i>  Editar nombre</a></li>
+                                            <li><a style="cursor: pointer" jor_nombre="{{ c.nombre }}" jid="{{ c.id }}" class="eliminar_jornada"><i class="icon-remove"></i>  Eliminar jornada</a></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not jornadas %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if not search %}
+                        <tr>
+                        {% if  not pendiente_count %}
+                            <td style="text-align: center" title="Lo ideal es no tener sesiones pendientes por agregar a alguna jornada">PENDIENTES</td>
+                            <td style="text-align: center">{{ pendiente_count }}</td>
+                        {% else %}
+                            <td style="text-align: center; color:red" title="Lo ideal es no tener sesiones pendientes por agregar a alguna jornada">PENDIENTES</td>
+                            <td style="text-align: center; color:red">{{ pendiente_count }}</td>
+                        {% endif %}
+                        <td style="text-align: center">
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    <li><a href="/jornada?action=ver_pendientes" style="cursor: pointer"><i class="icon-list"></i>Ver Pendientes</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+    <div class="modal fade static" id="agregar_sesion">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/jornada" method="POST"  >
+                <input type='hidden' name='action' value='add_sesionjornada' />
+                <input type='hidden' name='idjornada' id='idjornada' />
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_jornada">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/jornada" method="POST"  >
+                <input type='hidden' name='action' value='add_jornada' />
+                <input type='hidden' name='idjornada' id='idjornada' />
+                {% for c in form_jornada %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton_jornada">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

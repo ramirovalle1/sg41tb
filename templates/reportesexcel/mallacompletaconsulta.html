@@ -1,0 +1,62 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+
+        indice = 0;
+        datosOK=false;
+
+        $("#generar").modal({width: '500px', backdrop: 'static'});
+        $("#generar").modal("show");
+
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+
+            $.post("/mallacompletaconsulta", {"action":"generarexcel"}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 2500);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json");
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estudiantes Malla Completa - (No ha pasado el tiempo de su carrera) </h3>
+        </div>
+
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}
+
+

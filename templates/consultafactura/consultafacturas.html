@@ -1,0 +1,397 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/7.2.0/sweetalert2.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/7.2.0/sweetalert2.all.min.js"></script>
+    <script>
+        $(function() {
+           //$("#desde, #hasta").datepicker({format:"dd-mm-yyyy"});
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/facturacion_electronica?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+           $("#gruposel").change(function() {
+                var id = $(this).val();
+
+                if (id){
+                    location.href = 'facturacion_electronica?g='+id;
+                }else{
+                    location.href = '/facturacion_electronica';
+                }
+
+           });
+
+{#            $("#sesiones").change(function(){#}
+{#                var id = $(this).val();#}
+{#                location.href = '/facturacion_electronica?sesion='+id;#}
+{#            });#}
+
+            buscar_sesioncaja = function(query, process) {
+                $.get("/reportes", {'action':'databiblio', 'model': 'SesionCaja:fecha="'+$("#fecha").val()+'"',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#sesiones").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#sesiones").attr("myval","");
+                    }
+                }, 'json');
+            };
+
+            $('#sesiones').typeahead({source: buscar_sesioncaja, updater: function(item) {
+                var results = $("#sesiones").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+{#                        $("#sesiones").attr("myval",datos.id);#}
+                        location.href = '/facturacion_electronica?sesion='+datos.id;
+                    }
+                }
+                return item;
+            }});
+
+           $("#estadosel").change(function() {
+                var id = $(this).val();
+
+                if (id){
+                    location.href = 'facturacion_electronica?e='+id;
+                }else{
+                    location.href = '/facturacion_electronica';
+                }
+
+           });
+
+           $("#autorizar").click(function() {
+               var mensaje = "Se va a realizar el proceso de autorizacion en el SRI, ";
+               smoke.confirm(mensaje+" desea continuar?", function(e){
+               if (e){
+                       showWaiting("Actualizando sea Paciente " , "</div></div>" +
+                       "<div><img src='/static/images/loadingc.gif' class='alerta'></div><i>Espere...</i>");
+                       $.get("/facturacion_electronica", {action: 'autorizar'}, function(data) {
+                           if (data.result=='ok'){
+                               swal("Notificación !", "Proceso terminado", 'success').then(function () {
+                                    location.reload();
+                                });
+                           }else{
+                               swal("Notificación !", data.message, 'error').then(function () {
+                                    hideWaiting();
+                                });
+                           }
+                       },"json").fail(function (jqXHR, textStatus, errorThrown) {
+                            console.log(errorThrown);
+                            console.log('getJSON request failed! ' + textStatus + ' eroro jqk' + jqXHR.responseText);
+                            swal("Error", "Error de conexión", 'error').then(function () {
+                                hideWaiting();
+                            });
+                    });
+               }
+               else{
+                hideWaiting();
+                   }
+                    }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+               });
+           });
+
+           $("#realizatest").click(function() {
+                $("#test").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#test").modal("show");
+           });
+            $("#cerrar").click(function() {
+{#                $("#test").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });#}
+                $("#test").modal("hide");
+           });
+           $("#fecha").datepicker({format:"yyyy-mm-dd",language: "es"});
+           var fechanew = new Date({{ fechaactual.year }}, {{ fechaactual.month }}-1, {{ fechaactual.day }});
+           var dd = fechanew.getDate();
+           var mm = fechanew.getMonth()+1;
+           if((''+mm).length == 1) {
+                mm = ('0'+mm);
+           }
+            var yyyy = fechanew.getFullYear();
+            var today = yyyy + '-' + mm + '-' + dd;
+           $('#fecha').val(today).datepicker('update');
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' style="text-align: center">
+        <div class='span12' style="text-align: right">
+{#            {% if perms.auth.change_group  %}#}
+{#                <a href="/facturacion_electronica?action=autorizar" id='autorizar' class='btn btn-success'><i class="icon-refresh icon-white"></i> Enviar a Autorizar</a>#}
+{#            {% endif %}#}
+        </div>
+    </div>
+    <div class='row-fluid' style="text-align: center">
+        <div class='span12'>
+            <h3 >Documentos Autorizados por el SRI</h3></br>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span4" style="width: 400px;margin-left: 600px">
+            <form>
+
+                <b style="font-size: 18px">Fecha: </b><input type="text" class='input-small' id='fecha' autocomplete="off"/><br>
+                <b style="font-size: 18px">Sesion de Caja: </b><input type="text" class='input-xxlarge search-query' id='sesiones' autocomplete="off"/>
+{#                <select class='input-xxlarge' id='sesiones'>#}
+{#                    <option value="">-----</option>#}
+{#                    {% for s in sesionescaja %}#}
+{#                        <option value="{{ s.id }}" {% if sesionid == s.id %}selected="selected"{% endif %} >  {{ s }} </option>#}
+{#                    {% endfor %}#}
+{#                </select>#}
+            </form>
+            {% if sesionid %}
+                <table class="table table-condensed table-bordered">
+                    <thead>
+                        <tr>
+                            <th colspan="7" style="text-align: center">{{ sesion }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="text-align: center; font-weight: bold">Doc.  </td>
+                            <td style="text-align: center; font-weight: bold">Cant.  </td>
+                            <td style="text-align: center; font-weight: bold">Autorizadas </td>
+                            <td style="text-align: center; font-weight: bold">No Validadas </td>
+                            <td style="text-align: center; font-weight: bold">No Autorizadas </td>
+                            <td style="text-align: center; font-weight: bold">Devuelta </td>
+                            <td style="text-align: center; font-weight: bold">No Enviadas </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center">FACTURA</td>
+                            <td style="text-align: center">{{ tfacturas}}</td>
+                            <td style="text-align: center">{{ tfautorizada}}</td>
+                            <td style="text-align: center">{{ tfnovali }}</td>
+                            <td style="text-align: center">{{ tfnoaut }}</td>
+                            <td style="text-align: center">{{ tfdevuelta }}</td>
+                            <td style="text-align: center">{{ tfnoenv }}</td>
+                        </tr>
+                         <tr>
+                            <td style="text-align: center">N.CRED</td>
+                            <td style="text-align: center">{{ tncredito}}</td>
+                            <td style="text-align: center">{{ tnautorizada}}</td>
+                            <td style="text-align: center">{{ tnnovali }}</td>
+                            <td style="text-align: center">{{ tnnoaut }}</td>
+                            <td style="text-align: center">{{ tndevuelta }}</td>
+                            <td style="text-align: center">{{ tnnoenv }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <br/>
+            {% endif %}
+
+        </div>
+        <div class='span8'>
+
+        </div>
+    </div>
+
+    <div class="row-fluid" style="margin-left: 230px;width:1300px">
+
+        <div class='span6' style="width: 450px" >
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> No Documento</a>
+
+            {% if search %}
+                <a href="/facturacion_electronica" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+        <div class='span2' style="width: 250px" >
+            {% if perms.auth.change_group  %}
+                <a style="cursor: pointer" id='autorizar' class='btn btn-success'><i class="icon-refresh icon-white"></i> Enviar a Autorizar</a>
+            {% endif %}
+        </div>
+
+        <div class="span2" style="width: 250px" >
+            Documentos:
+            <select id='gruposel' class="input-medium bigger"/>
+
+                <option value=''>-----</option>
+                {% if factura %}
+                    <option value="fac" {% if grupo == 'fac' %}selected="selected"{% endif %}>Factura</option>
+                {% endif %}
+                {% if notacredi %}
+                    <option value="nota" {% if grupo == 'nota' %}selected="selected"{% endif %}>Notacredito</option>
+                {% endif %}
+
+
+
+            </select>
+        </div>
+
+        <div class="span2" style="width: 250px" >
+            Estado:
+            <select id='estadosel' class="input-medium bigger"/>
+
+                <option value=''>-----</option>
+                    <option value="aut" {% if estado == 'aut' %}selected="selected"{% endif %}>AUTORIZADO</option>
+                    <option value="noenv" {% if estado == 'noenv' %}selected="selected"{% endif %}>NO ENVIADOVALI</option>
+                    <option value="dev" {% if estado == 'dev' %}selected="selected"{% endif %}>DEVUELTA</option>
+                    <option value="noaut" {% if estado == 'noaut' %}selected="selected"{% endif %}>NO ENVIADOAUT</option>
+            </select>
+        </div>
+
+
+
+    </div>
+    <div class='row-fluid' style="margin-left: 230px;width: 1100px;text-align: center">
+
+            <div class='span12'>
+            <div class='well' style="text-align: center">
+{#                <a href='/test_propedeutico?action=addinstruccion&test={{ test.id }}' class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Ejemplo</a>#}
+                <table class="table table-bordered table-striped" style="margin-right: 360px">
+                    <thead >
+                        <th style="text-align: center;"> Nombre de Documento</th>
+                        <th style="text-align: center;"> Documento No</th>
+                        <th style="text-align: center;"> No Autorizacion</th>
+                        <th style="text-align: center;"> Estado</th>
+                        <th style="text-align: center;"> Fecha</th>
+                        <th style="text-align: center;"> Descargar PDF</th>
+                        {% if perms.auth.change_group  %}
+                            <th style="text-align: center;"> Descargar XML</th>
+                        {% endif %}
+
+
+                    </thead>
+                    <tbody>
+                        {% if documento %}
+                            {% for d in documento  %}
+                                 <tr>
+
+                                    {% if not d.notacredito %}
+                                        <td  style="text-align: center">
+                                              FACTURA
+                                        </td>
+                                    {% endif %}
+                                    {% if d.notacredito %}
+                                        <td  style="text-align: center">
+                                                NOTACREDITO
+                                        </td>
+                                    {% endif %}
+                                    <td style="text-align: center;">{{ d.numero }}</td>
+                                    <td style="text-align: center">{% if d.numautorizacion %}{{ d.numautorizacion }}{% else %}--{% endif %}</td>
+                                    <td style="text-align: center;">{{ d.estado }}</td>
+                                    <td style="text-align: center;">{{ d.fecha }}</td>
+                                    {% if not d.notacredito %}
+                                        <td style="text-align: center">
+                                        {%  if  d.numautorizacion  %}
+                                            <a href="/reportes?action=run&direct=true&n=factura_sri&rt=pdf&factura={{ d.facturaid }}" target="_blank" class='btn btn-info btn-mini'><i class='icon-download-alt icon-white'></i> Descarga</a>
+                                        {%  endif %}
+                                        </td>
+                                    {% endif %}
+                                    {% if d.notacredito %}
+                                        <td style="text-align: center">
+                                         {% if d.tipoid == 1 %}
+                                             <a href="/reportes?action=run&direct=true&n=notacredito_sri_nodet&rt=pdf&factura={{ d.facturaid }}" target="_blank" class='btn btn-info btn-mini'><i class='icon-download-alt icon-white'></i> Descarga</a>
+                                        {% else %}
+                                            <a href="/reportes?action=run&direct=true&n=notacredito_sri&rt=pdf&notacredito={{ d.id}}" target="_blank" class='btn btn-info btn-mini'><i class='icon-download-alt icon-white'></i> Descarga</a>
+                                        {% endif %}
+                                        </td>
+                                    {% endif %}
+                                    {% if perms.auth.change_group  %}
+                                        {% if not d.notacredito %}
+                                                <td style="text-align: center"><a href='{{  d.dirdocumento  }}' target="_blank" class='btn btn-info btn-mini'><i class='icon-download-alt icon-white'></i> Descarga</a></td>
+                                        {% endif %}
+                                        {% if d.notacredito %}
+                                            <td style="text-align: center"><a href='{{ d.dirdocumento }}' target="_blank" class='btn btn-info btn-mini'><i class='icon-download-alt icon-white'></i> Descarga</a></td>
+                                        {% endif %}
+                                    {% endif %}
+{#                                    {% if d.1 == 'NOTACREDITO' %}#}
+{#                                        <td style="text-align: center">#}
+{#                                            {%  if  d.0.numautorizacion  %}#}
+{#                                                <a href="/reportes?action=run&direct=true&n=notacredito_sri&rt=pdf&notacredito={{ d.0.id}}" target="_blank" class='btn btn-info btn-mini'><i class='icon-download-alt icon-white'></i> Descarga</a>#}
+{#                                            {%  endif %}#}
+{#                                        </td>#}
+{#                                    {% endif %}#}
+
+
+                                 </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+
+
+                </table>
+            </div>
+
+
+{#                <a href='/test_propedeutico?action=addinstruccion&test={{ test.id }}' class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Ejemplo</a>#}
+             {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/facturacion_electronica?page=1{% if grupo %}&g={{ grupo }}{% endif %}{% if sesionid %}&sesion={{ sesionid  }}{% endif %}">1</a></li>
+                            <li><a href="/facturacion_electronica?page={{ paging.ellipsis_izquierda }}{% if grupo %}&g={{ grupo }}{% endif %} {% if estado %}&e={{ estado }}{% endif %}{% if sesionid %}&sesion={{ sesionid  }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/facturacion_electronica?page={{ pagenumber }}{% if grupo %}&g={{ grupo }}{% endif %} {% if estado %}&e={{ estado }}{% endif %}{% if sesionid %}&sesion={{ sesionid  }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/facturacion_electronica?page={{ paging.ellipsis_derecha }}{% if grupo %}&g={{ grupo }}{% endif %} {% if estado %}&e={{ estado }}{% endif %}{% if sesionid %}&sesion={{ sesionid  }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/facturacion_electronica?page={{ paging.num_pages }}{% if grupo %}&g={{ grupo }}{% endif %} {% if estado %}&e={{ estado }}{% endif %}{% if sesionid %}&sesion={{ sesionid  }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/facturacion_electronica?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if grupo %}&g={{ grupo }}{% endif %} {% if estado %}&e={{ estado }}{% endif %}{% if sesionid %}&sesion={{ sesionid  }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+
+        </div>
+
+
+
+    </div>
+
+    <div class='row-fluid' >
+        <div class="span8">
+
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="test" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante</h3>
+        </div>
+        <div class="modal-body">
+            <p class="test"> {{ test.observacion }} </b>
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a href="/test_dobe?action=evaluartest&tes={{ test.id }}" class="btn btn-info"><i class=""></i> Ingresar al test</a>
+            <a href="#" id='cerrar' class="btn btn-success"><i class=""></i> Cerrar</a>
+        </div>
+    </div>
+
+{% endblock %}

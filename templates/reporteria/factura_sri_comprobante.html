@@ -1,0 +1,210 @@
+{% load sga_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Coprobante de Pago</title>
+{#    <link href="/static/css/reporteria/factura_sri_comnprobante.css" rel="stylesheet"/>#}
+    <script src="/static/js/jquery.min.js"></script>
+
+    <script>
+        $(function() {
+
+            function imprimir(){
+                var objeto = document.getElementById('cont_principal');
+                var ventana = window.open('','');
+{#                ventana.document.write('<link rel="stylesheet" href="/static/css/reporteria/factura_sri_comnprobante.css">')#}
+                ventana.document.write('<style>body{width: 290px;font-family: arial;font-size: 11px;text-transform: uppercase;}#cont_principal{width: 290px;padding: 0 10px 20px 10px;}p {line-height: 1.4em;}table{width: 100%;text-align: left;border-collapse: collapse;border-spacing:  5px 0px;font-size: 11px;}tr {border: 0;}.titulo {text-align: center;display: flex;justify-content: space-between;align-items: center;}.titulo .logo {width: 50px;}.titulo .logo img {width: 100%;}.titulo .nombreInstitucion {width: 232px;}.titulo .nombreInstitucion h4,h5 {margin: 0;font-size: 120%;}.valor {text-align: right;}.minuscula {text-transform: lowercase;}.center {text-align: center;}.borde_abajo {border-bottom: 1px solid #999;}</style>')
+                ventana.document.write(objeto.innerHTML);
+                ventana.document.close();
+                ventana.print();
+                ventana.close();
+                window.close();
+            }
+
+            imprimir();
+
+        });
+    </script>
+
+    <style type="text/css">
+        body {
+            width: 290px;
+            font-family: arial;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        #cont_principal{
+            width: 290px;
+            padding: 0 10px 20px 10px;
+        }
+
+        p {
+            line-height: 1.4em;
+        }
+
+        table{
+            width: 100%;
+            text-align: left;
+            border-collapse: collapse;
+            border-spacing:  5px 0px;
+            font-size: 11px;
+        }
+
+        tr {
+            border: 0;
+        }
+
+        .titulo {
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .titulo .logo {
+            width: 50px;
+        }
+
+        .titulo .logo img {
+            width: 100%;
+        }
+
+        .titulo .nombreInstitucion {
+            width: 232px;
+        }
+
+        .titulo .nombreInstitucion h4,h5 {
+            margin: 0;
+            font-size: 120%;
+        }
+
+        .valor {
+            text-align: right;
+        }
+
+        .minuscula {
+            text-transform: lowercase;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .borde_abajo {
+            border-bottom: 1px solid #999;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="cont_principal">
+        <div class="titulo">
+            <div class="logo">
+                <img src="/static/images/logoitbb.png">
+            </div>
+            <div class="nombreInstitucion">
+                <h5>Instituto Superior</h5>
+                <h4>Tecnológico Bolivariano</h4>
+                <h5>de Tecnología</h5>
+            </div>
+        </div>
+        <div class="cabecera">
+                <p><b>RUC: </b>{{ institucion.ruc }}</p>
+                <p><b>MATRIZ: </b>{{ institucion.direccion }}</p>
+                <p><b>SUCURSAL: </b>{{ factura.caja.direccion }}</p>
+                <p><b>SOCIEDADES Y ORGANIZACIONES NO GUBERNAMENTALES SIN FINES DE LUCRO.</b></p>
+                <p>-------------------------------------------------------------------------------</p>
+                <p><b>FACTURA #: </b>{{ factura.numero }}</p>
+                <p><b>RAZÓN SOCIAL: </b>{{ factura.cliente.nombre }}</p>
+                <p><b>CI/RUC: </b>{{ factura.cliente.ruc }}</p>
+                <p><b>FECHA EMISIÓN: </b>{{ factura.fecha|date:'d-m-Y' }}</p>
+                <p><b>FECHA IMPRESIÓN: </b>{{ hoy|date:'d-m-Y' }}</p>
+                <p>-------------------------------------------------------------------------------</p>
+                <p><b>CI/PASS ESTUDIANTE: </b>{% if inscripcion.persona.cedula %}{{ inscripcion.persona.cedula }}{% else %}{{ inscripcion.persona.cedula }}{% endif %}</p>
+                <p><b>NOMBRE: </b>{{ inscripcion.persona.nombre_completo_inverso }}</p>
+        </div>
+        <div class="cuerpo">
+            <table class="tabla">
+                <tr class="borde_abajo">
+                    <th>Cod.</th>
+                    <th class="center">Cant.</th>
+                    <th>Descripción</th>
+                    <th class="center">P.Unit.</th>
+                    <th class="center">Desc.</th>
+                    <th class="center">P.Tot.</th>
+                </tr>
+                {% for r in rubros %}
+                    <tr class="borde_abajo">
+                        <td>{{ r.id }}</td>
+                        <td  class="center">1</td>
+                        <td>{{ r.nombre_corto }}</td>
+                        <td class="valor">${{ r|args:factura.id|call:"suma_pagos"|floatformat:2 }}</td>
+{#                            <td class="valor">${{ r|args:factura.id|call:"suma_descuentos"|floatformat:2 }}</td>#}
+                        <td class="valor">$0.00</td>
+{#                            <td class="valor">${{ r|args:factura.id|call:"total_factura"|floatformat:2 }}</td>#}
+                        <td class="valor">${{ r|args:factura.id|call:"suma_pagos"|floatformat:2 }}</td>
+                    </tr>
+                {% endfor %}
+                    <tr>
+                        {% if factura.fecha > fechamarzo%}
+                            <th class="valor" colspan="5">Subtotal 15%</th>
+                            <th class="valor">$0.00</th>
+                        {% else %}
+                            <th class="valor" colspan="5">Subtotal 12%</th>
+                            <th class="valor">$0.00</th>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <th class="valor" colspan="5">Subtotal 0%</th>
+                        <th class="valor">${{ factura.subtotal|floatformat:2 }}</th>
+                    </tr>
+                    <tr>
+                        <th class="valor" colspan="5">Subtotal no sujeto de IVA</th>
+                        <th class="valor">$0.00</th>
+                    </tr>
+                    <tr>
+                        <th class="valor" colspan="5">Subtotal sin impuestos</th>
+                        <th class="valor">${{ factura.subtotal|floatformat:2 }}</th>
+                    </tr>
+                    <tr>
+                        <th class="valor" colspan="5">Descuento</th>
+                        <th class="valor">$0.00</th>
+                    </tr>
+                    <tr>
+                        {% if factura.fecha > fechamarzo%}
+                            <th class="valor" colspan="5">IVA 15%</th>
+                            <th class="valor">${{ factura.iva|floatformat:2 }}</th>
+                        {% else %}
+                            <th class="valor" colspan="5">IVA 12%</th>
+                            <th class="valor">${{ factura.iva|floatformat:2 }}</th>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <th class="valor" colspan="5">Valor Total</th>
+                        <th class="valor">${{ factura.total|floatformat:2 }}</th>
+                    </tr>
+            </table>
+        </div>
+
+        <div class="pie">
+            {% if factura.promo_gym %}
+                <p><b>POR SU PRONTO PAGO UD. HA SIDO FAVORECIDO/A</b></p>
+                <p>Presente este comprobante en Fitness ITB Center y podrá disfrutar de 3 días gratis de nuestras instalaciones.</p>
+            {% endif %}
+            <p><b>FORMA DE PAGO: </b>{{ pago.tipo }}</p>
+            <p><b>USUARIO: </b><span class="minuscula">{{ factura.caja.persona.usuario }}</span></p>
+            <p>-------------------------------------------------------------------------------</p>
+            <p><b>Para descargar la Factura Electrónica</b></p>
+            <ol>
+                <li><b>Estudiante: </b>Ingresar al SGA con tu usuario y clave.</li>
+                <li><b>Otros: </b>Ingresar a sga.itb.edu.ec opción descargar factura; su usuario y clave será su número de cédula o pasaporte.</li>
+            </ol>
+            <p>-------------------------------------------------------------------------------</p>
+            <p>Visite nuestra página web: <b class="minuscula">www.itb.edu.ec</b></p>
+        </div>
+    </div>
+</body>
+</html>

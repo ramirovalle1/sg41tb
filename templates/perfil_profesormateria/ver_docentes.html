@@ -1,0 +1,190 @@
+<script type="text/javascript">
+    $(function(){
+
+{#------------------------------------------------------ ELIMINAR DOCENTE----------------------------------------------------------------#}
+        $(".eliminar_profesor").click(function(){
+            $("#ver_docente").modal("hide");
+            var id = $(this).attr("id");
+            var id_mat = $(this).attr("mat_id");
+            var nom_mat = $(this).attr("mat_nombre");
+            smoke.confirm("Esta seguro de eliminar al docente de la materia "+nom_mat, function(e){
+            if (e){
+                $.post("/perfil_profesormateria",{"action": "eliminar","id":id},function(data) {
+                    if(data.result=='ok'){
+                        alert("Registro Eliminado");
+                        $.get("/perfil_profesormateria",{"action": "verdocentes","id":id_mat},function(data) {
+                            $("#ver_docente .modal-body").html(data);
+                            $("#ver_docente #paneltitle1").html("Docentes para la materia "+nom_mat);
+                            $("#ver_docente").modal({"backdrop":"static","width":"70%"});
+                            $("#ver_docente").modal("show");
+                        }, "html");
+                   }else{
+                        alert(data.result);
+                   }
+
+                },"json");
+
+            }else{
+                $.get("/perfil_profesormateria",{"action": "verdocentes","id":id_mat},function(data) {
+                    $("#ver_docente .modal-body").html(data);
+                    $("#ver_docente #paneltitle1").html("Docentes para la materia "+nom_mat);
+                    $("#ver_docente").modal({"backdrop":"static","width":"70%"});
+                    $("#ver_docente").modal("show");
+                }, "html");
+            }
+            }, {
+            ok: "Si",
+            cancel: "No",
+            classname: "custom-class",
+            reverseButtons: true
+            });
+
+        });
+
+
+{#------------------------------------------------------ ACTIVAR / DESACTIVAR DOCENTE----------------------------------------------------------------#}
+        $('.estado_profesor').click(function(){
+            $("#ver_docente").modal("hide");
+            var id = $(this).attr('id');
+            var id_mat = $(this).attr("mat_id");
+            var nom_mat = $(this).attr("mat_nombre");
+            var mensaje = '';
+            if($(this).attr('estad')){
+                mensaje = 'Esta seguro de desactivar el docente para esta materia'
+            }
+            else{
+                mensaje = 'Esta seguro de activar el asistente'
+            }
+            smoke.confirm(mensaje,function(e)
+                {
+                    if(e)
+                    {
+                        $.post("/perfil_profesormateria", {"action":'activar_estado', "id":id}, function(data) {
+                            if (data.result=='ok') {
+                                $.get("/perfil_profesormateria",{"action": "verdocentes","id":id_mat},function(data) {
+                                    $("#ver_docente .modal-body").html(data);
+                                    $("#ver_docente #paneltitle1").html("Docentes para la materia "+nom_mat);
+                                    $("#ver_docente").modal({"backdrop":"static","width":"70%"});
+                                    $("#ver_docente").modal("show");
+                                }, "html");
+                           }else{
+                               smoke.alert('Error. Intente de nuevo');
+                           }
+                        }, "json");
+                    }
+                    else
+                    {
+                    $.get("/perfil_profesormateria",{"action": "verdocentes","id":id_mat},function(data) {
+                        $("#ver_docente .modal-body").html(data);
+                        $("#ver_docente #paneltitle1").html("Docentes para la materia "+nom_mat);
+                        $("#ver_docente").modal({"backdrop":"static","width":"70%"});
+                        $("#ver_docente").modal("show");
+                    }, "html");
+                    }
+                },
+                {
+                   ok:"SI",
+                   cancel:"NO",
+                   classname: "custom-class",
+                   reverseButtons: true
+                }
+
+            );
+        });
+
+{#------------------------------------------------------ VER MATERIAS DE UN DOCENTE----------------------------------------------------------------#}
+        $(".ver_materias").click(function() {
+        id_prof = $(this).attr("prof_id");
+        nom_prof = $(this).attr("prof_nombre");
+        id_malla = $(this).attr("malla_id");
+
+        $("#idmateria").val($(this).attr('mat_id'));
+
+        $.get("/perfil_profesormateria",{"action": "ver_materias","id":id_prof,"malla":id_malla},function(data) {
+            $("#ver_materia .modal-body").html(data);
+            $("#ver_materia #paneltitle1").html(nom_prof);
+            $("#ver_materia").modal({"backdrop":"static","width":"30%"});
+            $("#ver_materia").modal("show");
+        }, "html");
+        });
+
+        $("#ver_materia .btn-cerrar").click(function(){
+            $("#ver_materia").modal("hide");
+        });
+
+
+
+    });
+
+
+
+
+
+</script>
+
+<div class="row-fluid">
+    <div class="span12 ">
+        <table class="table table-condensed">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th style="text-align: center">Cedula</th>
+                    <th style="text-align: center">Dedicacion</th>
+                    <th style="text-align: center">Categoria</th>
+                    <th style="text-align: center">Tiempo</th>
+                    <th style="text-align: center">Activo</th>
+                    <th style="width: 50px"></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for c in profesores %}
+                    <tr>
+{#                        <td><a href="/perfil_profesormateria?action=ver_materias&id={{ c.profesor.id }}" class="ver_materias" prof_id="{{ c.profesor.persona.nombre_completo_inverso }}" prof_nombre="{{ c.profesor.nombres }}"> {{ c.profesor.persona.nombre_completo_inverso }} </a></td>#}
+                        <td><a href="#" class="ver_materias" prof_id="{{ c.profesor.id }}" prof_nombre="{{ c.profesor.persona.nombre_completo_inverso }}" malla_id="{{ malla.id }}"> {{ c.profesor.persona.nombre_completo_inverso }} </a></td>
+                        <td style="text-align: center"> {{ c.profesor.persona.cedula }} </td>
+                        <td style="text-align: center"> {{ c.profesor.dedicacion.nombre }} </td>
+                        <td style="text-align: center"> {{ c.profesor.categoria.nombre }} </td>
+                        <td style="text-align: center"> {{ c.fecha|date:'d-m-Y' }} </td>
+                        <td style="text-align: center">
+                            {% if c.estado %}
+                                <a style="cursor: pointer" class="estado_profesor" mat_id="{{ c.asignatura.id }}" mat_nombre="{{ c.asignatura.nombre }}" id='{{ c.id }}' estad='true'><img src='/static/images/16/true.png' border='0'/></a>
+                            {% else %}
+                                <a style="cursor: pointer" class="estado_profesor" mat_id="{{ c.asignatura.id }}" mat_nombre="{{ c.asignatura.nombre }}" id='{{ c.id }}' ><img src='/static/images/16/false.png' border='0'/></a>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center">
+                            <a  style="float: right" href="#" class="btn  btn-mini btn-danger eliminar_profesor" id="{{ c.id }}" mat_id="{{ c.asignatura.id }}" mat_nombre="{{ c.asignatura.nombre }}"> <i  class="icon-remove icon-white"></i></a>
+                        </td>
+                    </tr>
+                {% endfor %}
+
+                {% if not profesores %}
+                    <tr>
+                        <td colspan="10">NO EXISTE REGISTRO</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+
+<div class="modal fade static" id="ver_materia"   >
+    <div class="row-fluid modal-header">
+         <h4 style="text-align: center" id='paneltitle1'><i> </i></h4>
+        <h5></h5>
+    </div>
+
+    <div class="modal-body" >
+{#        ver_docente.html#}
+    </div>
+
+    <div class="modal-footer">
+        <div >
+            <a style="float: left" href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+</div>

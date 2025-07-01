@@ -1,0 +1,382 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $("#id_fecha").datepicker({format:"yyyy-mm-dd",language: "es"});
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                {%  if  not estado%}
+                    location.href = "/ponencia?action=comisiones&s="+term;
+                {% else %}
+                    location.href = "/ponencia?action=comisiones&inactivos&s="+term;
+                {% endif %}
+
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+{#          -----------------------------------------------------DESACTIVAR TODAS LAS COMISIONES-----------------------------------------------------#}
+            $('.desactiva_todas').click(function(){
+                smoke.confirm('Esta seguro de desactivar todas las comisiones?',function(e){
+                    if(e){
+                        $.post("/ponencia", {"action":'desactivar_todas_comisiones'}, function(data) {
+                            if (data.result=='ok') {
+                                smoke.alert('Todas las comisiones existentes han sido inhabilitadas');
+                           }else if (data.result=='bad'){
+                               smoke.alert('Error, intente nuevamente');
+                           }else{
+                               smoke.alert(data.result);
+                           }
+                        }, "json");
+                    }
+                    else
+                    {
+
+                    }
+                },
+                {
+                   ok:"SI",
+                   cancel:"NO",
+                   classname: "custom-class",
+                   reverseButtons: true
+                });
+            });
+
+{#            -----------------------------------------------------EDITAR ESTADO-----------------------------------------------------#}
+            $('.estado_comision').click(function(){
+                var id = $(this).attr('id');
+                var mensaje = '';
+                if($(this).attr('estad')){
+                    mensaje = 'Esta seguro de desactivar esta comisión'
+                }
+                else{
+                    mensaje = 'Esta seguro de activar esta comisión'
+                }
+                smoke.confirm(mensaje,function(e){
+                    if(e){
+                        $.post("/ponencia", {"action":'activar_estado_comision', "id":id}, function(data) {
+                            if (data.result=='ok') {
+                                smoke.alert('Estado modificado');
+                           }else{
+                                smoke.alert('Error. Intente de nuevo');
+                           }
+                        }, "json");
+                    }
+                    else
+                    {
+                    }
+                },
+                {
+                   ok:"SI",
+                   cancel:"NO",
+                   classname: "custom-class",
+                   reverseButtons: true
+                });
+            });
+
+        {#------------------------------------------------------PANTALLA AGREGAR COMISION----------------------------------------------------------------#}
+        $('.add_comision').click(function(){
+            $("#id_nombre").val('');
+            $("#id_moderador").val('');
+            $("#id_lugar").val('');
+            $("#id_horainicio").val('');
+            $("#id_horafin").val('');
+            $("#id_ubicacion").val('');
+            $("#id_fecha").val('{{ fechaactual|date:'Y-m-d' }}');
+            $("#id_activo").attr('checked',true);
+            $("#agregar_comision #paneltitle2").html('Nueva comision');
+            $("#agregar_comision").modal({"backdrop":"static","width":"50%"});
+            $("#agregar_comision").modal("show");
+        });
+
+        {#------------------------------------------------------ MODIFICAR COMISION----------------------------------------------------------------#}
+        $('.modificar_comision').click(function(){
+            $("#id_nombre").val($(this).attr('nombre'));
+            $("#id_moderador").val($(this).attr('moderador'));
+            $("#id_lugar").val($(this).attr('lugar'));
+            $("#id_fecha").val($(this).attr('fecha'));
+            $("#id_horainicio").val($(this).attr('horainicio'));
+            $("#id_horafin").val($(this).attr('horafin'));
+            $("#id_ubicacion").val($(this).attr('ubicacion'));
+            if (($(this).attr('activo')) == "True"){
+                $("#id_activo").attr('checked',true);
+            }else{
+                $("#id_activo").attr('checked',false);
+            }
+
+            $("#idcomision").val($(this).attr('cid'));
+            $("#agregar_comision #paneltitle2").html('Modificar Comision');
+            $("#agregar_comision").modal({"backdrop":"static","width":"40%"});
+            $("#agregar_comision").modal("show");
+        });
+
+        $("#agregar_comision .btn-cerrar").click(function(){
+            $(".formError").removeClass('aparece');
+            $(".formError").addClass('oculta');
+            $("#agregar_comision").modal("hide");
+            return false;
+        });
+
+        $("#formbutton").click(function(){
+            $(".formError").removeClass('oculta');
+            $(".formError").addClass('aparece');
+        });
+
+        {#------------------------------------------------------ ELIMINAR COMISION----------------------------------------------------------------#}
+        $(".eliminar_comision").click(function(){
+            var id = $(this).attr("cid");
+            smoke.confirm('Esta seguro de eliminar esta comision?', function(e){
+            if (e){
+                $.post("/ponencia",{"action": "eliminar_comision","idcomision":id},function(data) {
+                    if(data.result=='ok'){
+                        alert("Registro Eliminado");
+                   }else{
+                        alert(data.result);
+                   }
+                   location.reload()
+                },"json");
+            }else{
+            }
+            }, {
+            ok: "Si",
+            cancel: "No",
+            classname: "custom-class",
+            reverseButtons: true
+            });
+        });
+
+        {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+        {% if error %}
+            smoke.alert('{{ error }}');
+        {% endif %}
+
+        });
+    </script>
+    <style>
+        .oculta{
+            display: none;
+        }
+        .aparece{
+            display: block;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+     <div class='row-fluid'>
+        <div class='span1'></div>
+        <div class='span9'>
+            <h3>Listado de Comisiones </h3>
+            {%  if  not estado %}
+                <h4 style='color: green'>ACTIVOS</h4>
+            {%  else %}
+                <h4 style='color: red'>INACTIVOS</h4>
+            {%  endif %}
+        </div>
+        <div class='span1'>
+            <a href="/ponencia" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+        <div class='span12'></div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span7'></div>
+        <div class="btn-group btn-group-justified">
+            {% if perms.sga.add_comisioncongreso %}
+                <div class="btn-group">
+                    <a class='btn btn-success add_comision'><i class="icon-plus"></i> Adicionar Comision</a>
+                </div>
+            {% endif %}
+            {%  if  not estado%}
+                <div class="btn-group">
+                    <a href="/ponencia?action=comisiones&inactivos " class='btn btn-info'><i class="icon-list"></i> Ver Inactivos</a>
+                </div>
+                    {%  if comisiones and perms.sga.add_comisioncongreso%}
+                        <div class="btn-group">
+                            <a class='btn btn-warning desactiva_todas'><i class="icon-share-alt"></i> Desactivar Comisiones</a>
+                        </div>
+                    {% endif %}
+            {% else %}
+                <div class="btn-group">
+                    <a href="/ponencia?action=comisiones " class='btn btn-success'><i class="icon-list"></i> Ver Activos</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span1'></div>
+        <div class='span10'>
+            <form class="form-search">
+                <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    {%  if  not estado%}
+                        <a href="/ponencia?action=comisiones" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+                    {% else %}
+                        <a href="/ponencia?action=comisiones&inactivos" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+                    {% endif %}
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span1'></div>
+        <div class='span10'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th style="text-align: center">Nombre</th>
+                <th style="text-align: center">Moderador</th>
+                <th style="text-align: center">Lugar</th>
+                <th style="text-align: center">Fecha</th>
+                <th style="text-align: center">Hora</th>
+                <th style="text-align: center">Estado</th>
+                <th style="text-align: center">Ubicaci&oacute;n</th>
+                <th style="width: 50px"></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for p in comisiones %}
+                <tr>
+                    <td style="text-align: left">{{ p.nombre|upper }}</td>
+                    <td style="text-align: center">{{ p.moderador|upper }}</td>
+                    <td style="text-align: center">{{ p.lugar|upper }}</td>
+                    <td style="text-align: center">{{ p.fecha|date:"d-m-Y" }}</td>
+                    <td style="text-align: center">{{ p.horainicio|time:"H:i" }}-{{ p.horafin|time:"H:i"}}</td>
+                    <td style="text-align: center">
+                        {%  if p.activo %}
+                            <a style="cursor: pointer" class="estado_comision"  id='{{ p.id }}' estad='true' title="Desactivar estado"><img src='/static/images/16/true.png' border='0'/></a>
+                        {% else %}
+                            <a style="cursor: pointer" class="estado_comision"  id='{{ p.id }}' title="Activar estado"><img src='/static/images/16/false.png' border='0'/></a>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center">{% if p.ubicacion %}{{ p.ubicacion|upper }}<a href="{{ p.imgubicacion }}" rel="shadowbox, width=700;height=400;float=left" title="{{ p.ubicacion }}"><br><i class="icon-map-marker"></i> Ver Ubicacion</a>{% endif %}</td>
+                    <td style="width: 50px">
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+{#                                    {% if  p.puede_eliminarse and perms.sga.add_noticia %}#}
+                                       {% if not persona.pertenece_soporte %}
+                                            <li><a href="#" class=eliminar_comision cid='{{ p.id }}'><i class="icon-remove"></i>  Eliminar</a></li>
+                                            <li><a style="cursor: pointer"  cid="{{ p.id }}" nombre='{{ p.nombre }}' moderador='{{ p.moderador }}' lugar='{{ p.lugar }}' fecha='{{ p.fecha|date:"Y-m-d" }}' horainicio='{{ p.horainicio|time:'H:i:s' }}' horafin='{{ p.horafin|time:'H:i:s' }}' activo='{{ p.activo }}' ubicacion='{{ p.ubicacion }}' imgubicacion='{{ p.imgubicacion }}' class="modificar_comision"><i class="icon-edit"></i>  Modificar</a></li>
+                                        {% endif %}
+{#                                    {% endif %}#}
+                                    {% if perms.sga.add_noticia %}
+                                        <li><a  href="/ponencia?action=editar&id={{ p.id }} "> <i class='icon-edit'></i> Editar </a></li>
+                                        {% if not p.puede_eliminarse %}
+                                            <li><a href="/ponencia?action=ver&id={{ p.id }}"> <i class='icon-edit'></i> Ver Integrantes </a></li>
+                                        {% endif %}
+                                        <li><a href="#" class=agregari pid={{ p.id }}><i class="icon-share-alt"></i> Agregar Autor y Coautores</a></li>
+                                    {% endif %}
+
+                                </ul>
+                            </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not comisiones %}
+                <tr>
+                    <td colspan="11">
+                        NO HAY REGISTROS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% if paging.num_pages > 20 %}
+                    <div class='pagination'>
+                        <ul>
+                            {% if paging.primera_pagina %}
+                                <li><a href="/ponencia?page=1">1</a></li>
+                                <li><a href="/ponencia?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                            {% endif %}
+                            {% for pagenumber in paging.paginas %}
+                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/ponencia?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                            {% endfor %}
+                            {% if paging.ultima_pagina %}
+                                <li><a href="/ponencia?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                                <li><a href="/ponencia?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% else %}
+
+                    <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/ponencia?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock  %}
+{% block moreblock %}
+
+    <div class="modal fade static" id="integrantepanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Adicionar Integrantes</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario" class='form-horizontal' action="" method="POST" style="text-align:  left;">
+
+                {% for field in docuform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Adicionar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="agregar_comision">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/ponencia?action=comisiones" method="POST"  >
+                <input type='hidden' name='action' value='add_comision' />
+                <input type='hidden' name='idcomision' id='idcomision' />
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

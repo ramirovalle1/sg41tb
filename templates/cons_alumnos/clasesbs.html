@@ -1,0 +1,112 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Listado de Clases Impartidas del Prof.: {{ profesor }}</h3>
+            <h4>Asistencia y Evaluaci&oacute;n en Clases del estudiante: {{ matricula.inscripcion.persona }}</h4>
+        </div>
+        <div class='span1'>
+            <a href="#" class='btn linkback'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Clase</th>
+                <th>Grupo</th>
+                <th>Fecha/Hora</th>
+                <th>Asistencia</th>
+                <th>Abierta</th>
+                <th>Asisti&oacute; / Nota</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for lecciongrupo in leccionesgrupo %}
+                <tr>
+                    <td>
+                        {%  if perms.sga.delete_asistencialeccion %}
+                            <a href='/adm_docentes?action=editclase&id={{ lecciongrupo.id }}&pm={{ lecciongrupo.pm }}&justifica=1'>
+                        {% else %}
+                            <a href='/adm_docentes?action=editclase&id={{ lecciongrupo.id }}&pm={{ lecciongrupo.pm }}'>
+                        {% endif %}
+                            <b>{{ lecciongrupo.materia.nombre_completo }}</b><br/>
+                            {{ lecciongrupo.turno }}<br/>
+                            Aula: {{ lecciongrupo.aula }}<br/>
+                        </a>
+                    </td>
+                    <td>
+                        {% for leccion in lecciongrupo.lecciones.all %}
+                            - {{ leccion.clase.materia.nivel }}<br/>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {{ lecciongrupo.fecha|date:"d-m-Y" }}<br/>
+                        {{ lecciongrupo.horaentrada }}
+                        {% if not lecciongrupo.abierta %}
+                            - {{ lecciongrupo.horasalida }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ lecciongrupo.asistencia_real }}/{{ lecciongrupo.asistencia_plan }} ({{ lecciongrupo.porciento_asistencia }}%)
+                    </td>
+
+                    <td>
+                        {% if lecciongrupo.abierta %}
+                            <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                        {% else %}
+                            <img src='/static/images/16/false.png' alt='No' border='0'/>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% for leccion in lecciongrupo.lecciones.all %}
+                            {% for asistencia in leccion.asistencia_de_leccion %}
+                                {% if asistencia.matricula.id == matricula.id %}
+                                    {% if asistencia.asistio %}
+                                        <img src='/static/images/16/true.png' alt='' border="0"/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='' border="0"/>
+                                    {% endif %}
+
+                                        <b><span id='prom{{ asistencia.id }}'>{{ asistencia.promedio_evaluacion|floatformat }}</span></b>
+
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+            {% if not leccionesgrupo %}
+                <tr>
+                    <td colspan="9">
+                        NO EXISTEN CLASES IMPARTIDAS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/cons_alumnos?action=clases&id={{ materia.id }}&pm={{ lecciongrupo.pm }}&p={{ profesor.id }}&m={{ matricula.id }}&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

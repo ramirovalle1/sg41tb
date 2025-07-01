@@ -1,0 +1,114 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_anterior,#id_nueva").addClass("validate[required]");
+    $("#id_repetir").addClass("validate[required,equals[id_nueva]]");
+    $("#id_anterior").blur(function(){
+        valida = true;
+        $($("#id_anterior").get(0).parentNode).find(".help-text").html("");
+    });
+
+    $("#id_nueva").blur(function(){
+        $($("#id_nueva").get(0).parentNode).find(".help-text").html("");
+        if($.trim($("#id_nueva").val()) != ''){
+            if(validarclave(this)){
+                if($.trim($("#id_repetir").val()) != ''){
+                    if($.trim($("#id_nueva").val()) != $.trim($("#id_repetir").val())){
+                        $($("#id_nueva").get(0).parentNode).find(".help-text").html("<a style='color:red'>Las contraseñas no son iguales</a>");
+                    }
+                }
+            }
+        }
+    });
+    var numeros = '1234567890'
+    var mayuscula = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'
+    var minuscula = 'abcdefghijklmnñopqrstuvwxyz'
+    var valida = true;
+    function validarclave(objec){
+        if($(objec).val().length >=8){
+            var num = 0;
+            var mayus = false;
+            var minus = false;
+            var numer = false;
+            for(i=0; i<$(objec).val().length; i++){
+                if (numeros.indexOf($(objec).val().charAt(i),0)!=-1){
+                    numer = true;
+                    num = num +1;
+                }
+            }
+            for(i=0; i<$(objec).val().length; i++){
+                if (mayuscula.indexOf($(objec).val().charAt(i),0)!=-1){
+                    mayus = true;
+                    num = num +1;
+                }
+            }
+            for(i=0; i<$(objec).val().length; i++){
+                if (minuscula.indexOf($(objec).val().charAt(i),0)!=-1){
+                    minus = true;
+                    num = num +1;
+                }
+            }
+            if(mayus && numer && minus){
+                if($(objec).val().length != num){
+                    $("#id_nueva").focus();
+                    $($("#id_nueva").get(0).parentNode).find(".help-text").html("<a style='color:red'>La contraseña no de contener caracteres especiales o espacio</a>");
+                    valida = false;
+                    return false;
+                }
+                else{
+                    valida = true;
+                    return true;
+                }
+            }else{
+                $("#id_nueva").focus();
+                $($("#id_nueva").get(0).parentNode).find(".help-text").html("<a style='color:red'>La contraseña debe contener números, letras mayusculas y minusculas</a>");
+                valida = false;
+                return false;
+            }
+        }else{
+            $("#id_nueva").focus();
+            $($("#id_nueva").get(0).parentNode).find(".help-text").html("<a style='color:red'>No cumple con la longitud minima de 8 caracteres</a>");
+            valida = false;
+            return false;
+        }
+    }
+
+    $("#id_repetir").focus(function(){
+        if($.trim($("#id_nueva").val()) == ''){
+            $("#id_nueva").focus();
+            $($("#id_nueva").get(0).parentNode).find(".help-text").html("<a style='color:red'>Ingrese contraseña nueva</a>");
+        }
+    });
+
+    $("#id_repetir").blur(function(){
+        valida = true;
+        $($("#id_repetir").get(0).parentNode).find(".help-text").html("");
+        if($.trim($("#id_nueva").val()) != '' && $.trim($("#id_repetir").val()) != ''){
+            if($.trim($("#id_nueva").val()) != $.trim($("#id_repetir").val())){
+                valida = false;
+                $("#id_repetir").focus();
+                $($("#id_repetir").get(0).parentNode).find(".help-text").html("<a style='color:red'>Las contraseñas no son iguales</a>");
+            }
+        }
+    });
+    {% if not persona.cambioclavad and ACTIVA_ADD_EDIT_AD  %}
+        $($("#id_nueva").get(0).parentNode.parentNode).prepend('<h5 style="background-color: transparent;color: #7d7474">La contraseña debe contener números, letras mayusculas y minusculas, su longitud minima es de 8 caracteres</h5><br/>');
+    {% endif %}
+{% endblock %}
+{% block titulo %}
+    {% if not persona.cambioclavad and ACTIVA_ADD_EDIT_AD  %}
+        Cambiar su clave para poder iniciar session
+    {% else %}
+        Cambio de clave de usuario
+    {% endif %}
+
+{% endblock %}
+{% block formaction %}/pass{% endblock %}
+{% block formextra %}
+{% endblock %}
+{% block formback %}/{% endblock %}
+{% block buttonname %}Cambiar Clave{% endblock %}

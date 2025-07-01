@@ -1,0 +1,2706 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+        {#OCastillo 04-07-2023 proteccion de datos #}
+        {% if  protecciondatos  %}
+            $("#informacionpanel").modal("hide");
+            $("#deudapanel").modal("hide");
+            $("#bookpanelprotecciondatos").modal({backdrop: 'static', keyboard: false, width: "617px", maxHeight: ($(window).height()*3)/4 });
+            $("#bookpanelprotecciondatos").modal("show");
+        {% endif %}        
+
+	$(".btn-cerrarevaldir").click(function() {
+                $("#modaldirectivoeva").modal("hide");
+            });
+
+
+     {% if  tienetestingreso  %}
+
+             $("#infoevaluciontestingreso").modal({backdrop: 'static', keyboard: false, width: "617px", maxHeight: ($(window).height()*3)/4 });
+             $("#infoevaluciontestingreso").modal("show");
+        {% endif %}
+
+	{% if encuestavacuna %}
+            $("#encuestavacunas").modal("show");
+            $("#deudapanel").modal("hide");
+        {% endif %}
+
+        {#OCastillo 09-02-2023 entrevista profesionalizacion #}
+        {% if not  entrevista %}
+            $("#profesionalizacion").modal({backdrop: 'static', keyboard: 'false', width: "50%", maxHeight: ($(window).height()*3)/4 });
+            comentario=$("#id_comentario").val('');
+            enlace=$("#id_link_video").val('');
+            $("#profesionalizacion").modal("show");
+        {% endif %}
+
+        $("#profesionalizacion .btn-actualizar").click(function(){
+            var comentario='';
+            var enlace='';
+            var infovalida=false;
+            comentario=$("#id_comentario").val();
+            enlace=$("#id_link_video").val();
+      
+            if($("#id_comentario").val() != ""){
+                infovalida=true;
+                $("#profesionalizacion .btn-actualizar").show();
+            }
+            else{
+                infovalida=false;
+                $($("#id_comentario").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Debe ingresar un breve comentario. </i></span>");
+                $("#profesionalizacion .btn-actualizar").hide();
+            }
+            
+            if($("#id_link_video").val() != ""){
+                infovalida=true;
+                $("#profesionalizacion .btn-actualizar").show();
+            }
+            else{
+                infovalida=false;
+                $($("#id_link_video").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Debe ingresar enlace a video. </i></span>");
+                $("#profesionalizacion .btn-actualizar").hide();
+                location.reload();
+            }
+	
+	    if (infovalida ==true){		
+            	showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                $.post("/account", {"action":'profesionalizacion',"comentario":comentario,"enlace":enlace}, function(data) {
+               	if (data.result=='ok') {
+                    $("#profesionalizacion").modal("hide");
+                    hideWaiting();
+{#                    smoke.alert("Registro Guardado");#}
+                    swal.fire('Registro Guardado', '', 'info')
+                    location.reload();
+                }else{
+                    hideWaiting();
+                    $("#mensaje").html("Error Vuelva a Intentarlo");
+               }
+               }, "json");
+	       }
+            else{
+                hideWaiting();
+                $("#mensaje").html("Error Vuelva a Intentarlo");
+                }    
+    	});
+	
+	    {#OCastillo 26-01-2022 encuesta de vacunas #}
+        {# desde aqui  #}
+        {% if encuestavacuna %}            
+                var valida = false;
+                $("#id_tipovacuna").val('');
+		$("#id_tipovacunaterceradosis").val('');
+                $("#encuestavacunas").modal({backdrop: 'static', keyboard: false,width: "25%"});
+                $("#encuestavacunas").modal("show");
+                $("#id_estavacunado").attr("checked",false);
+                $("#id_primeradosis").attr("checked",false);
+                $("#id_segundadosis").attr("checked",false);
+                $("#id_terceradosis").attr("checked",false);
+                $("#id_hatenidocovid").attr("checked",false);
+                $($("#id_tipovacuna").get(0).parentNode.parentNode).hide();
+                $($("#id_primeradosis").get(0).parentNode.parentNode).hide();
+                $($("#id_segundadosis").get(0).parentNode.parentNode).hide();
+                $($("#id_terceradosis").get(0).parentNode.parentNode).hide();
+                $($("#id_tipovacunaterceradosis").get(0).parentNode.parentNode).hide();
+
+                $("#id_estavacunado").change(function(){
+                    if ($("#id_estavacunado").is(':checked')){
+                      {#  $($("#id_estavacunado").get(0).parentNode).find(".help-text").html("<span style='color: red'><i>Indique el tipo de vacuna y marque dosis recibida </i></span> "); #}
+                        $($("#id_tipovacuna").get(0).parentNode.parentNode).show();
+                        $("#id_tipovacuna").addClass("validate[required]");
+                        $($("#id_primeradosis").get(0).parentNode.parentNode).show();
+                        $($("#id_segundadosis").get(0).parentNode.parentNode).show();
+                        $($("#id_terceradosis").get(0).parentNode.parentNode).show();
+                        $($("#id_hatenidocovid").get(0).parentNode.parentNode).show();
+                    }
+                    else{
+                        $($("#id_estavacunado").get(0).parentNode).find(".help-text").html("");
+                        $("#id_tipovacuna").removeClass("validate[required]");
+                        $("#id_tipovacuna").val('');
+                        $("#id_tipovacunaterceradosis").val('');
+                        $("#id_estavacunado").attr("checked",false);
+                        $("#id_primeradosis").attr("checked",false);
+                        $("#id_segundadosis").attr("checked",false);
+                        $("#id_terceradosis").attr("checked",false);
+                        $("#id_hatenidocovid").attr("checked",false);
+                        $($("#id_tipovacuna").get(0).parentNode.parentNode).hide();
+                        $($("#id_primeradosis").get(0).parentNode.parentNode).hide();
+                        $($("#id_segundadosis").get(0).parentNode.parentNode).hide();
+                        $($("#id_terceradosis").get(0).parentNode.parentNode).hide();
+                        $($("#id_tipovacunaterceradosis").get(0).parentNode.parentNode).hide();
+
+                    }
+                });
+
+                $("#id_primeradosis").change(function(){
+                    if ($("#id_primeradosis").is(':checked')){
+                        $($("#id_estavacunado").get(0).parentNode).find(".help-text").html("");
+                    }
+                });
+
+		$("#id_terceradosis").change(function(){
+                    if ($("#id_terceradosis").is(':checked')){
+                        $($("#id_tipovacunaterceradosis").get(0).parentNode.parentNode).show();
+                        $($("#id_hatenidocovid").get(0).parentNode.parentNode).show();
+                        $($("#id_estavacunado").get(0).parentNode).find(".help-text").html("");
+                    }
+                    else{
+                        $($("#id_tipovacunaterceradosis").get(0).parentNode.parentNode).hide();
+                    }
+                });
+
+		$("#id_tipovacunaterceradosis").change(function(){
+                    if ($("#id_terceradosis").is(':checked')){
+                        valida= true;
+                    }
+                    else{
+                        valida= false;
+
+                    }
+                });
+
+                $("#id_tipovacuna").change(function(){
+                    if ($("#id_primeradosis").is(':checked')){
+                        valida= true;
+                    }
+                    else{
+                        valida= false;
+                    
+                    }
+                });
+
+                $("#id_tipovacuna").blur(function(){
+                    if ($("#id_primeradosis").is(':checked')){
+                        valida= true;
+                    }
+                });
+
+                $("#encuestavacunas .btn-actualizar").click(function(){
+                    var vacunado = false;
+                    var tipovacuna = '';
+                    var tipovacunaterceradosis = '';
+                    var primeradosis = false;
+                    var segundadosis = false;
+                    var terceradosis = false;
+                    var covidpositivo = false;
+
+                    if (!$("#id_estavacunado").is(':checked')) {
+                        vacunado = false;
+                        valida = true;
+                        $("#id_tipovacuna").val('');
+                    }
+                    else{
+                        vacunado = true;
+                        if ($("#id_tipovacuna").val() == "") {
+                            valida = false
+                        }
+                        else{
+                            tipovacuna=$("#id_tipovacuna").val();
+                        }
+                    }
+                    if (!$("#id_primeradosis").is(':checked')) {
+                        primeradosis = false;
+                    }
+                    else{
+                        $($("#id_estavacunado").get(0).parentNode).find(".help-text").html("");
+                        primeradosis = true;
+                        if ($("#id_tipovacuna").val() == "") {
+                            valida = false
+                        }
+                        else{
+                            tipovacuna=$("#id_tipovacuna").val();
+                            valida = true;
+                        }
+                    }
+                    if (!$("#id_segundadosis").is(':checked')) {
+                        segundadosis = false;
+                    }
+                    else{
+                        segundadosis = true;
+                    }
+                    if (!$("#id_terceradosis").is(':checked')) {
+                        terceradosis = false;
+                    }
+                    else{
+                        terceradosis = true;
+			if ($("#id_tipovacunaterceradosis").val() == "") {
+                            valida = false
+                        }
+                        else{
+                            tipovacunaterceradosis=$("#id_tipovacunaterceradosis").val();
+                        }
+                    }
+                    if (!$("#id_hatenidocovid").is(':checked')) {
+                        covidpositivo = false;
+                    }
+                    else{
+                        covidpositivo = true;
+                    }
+
+                    if (valida ==true){
+                        showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                        $.post("/account", {"action":'encuestavacuna', "tipovacuna":tipovacuna,"vacunado":vacunado, "primeradosis":primeradosis, "segundadosis":segundadosis,"terceradosis":terceradosis,"tuvocovid":covidpositivo, "tipovacunaterceradosis":tipovacunaterceradosis }, function(data) {
+                           if (data.result=='ok') {
+                                $("#encuestavacunas").modal("hide");
+                                hideWaiting();
+{#                                smoke.alert("Registro Guardado");#}
+                                swal.fire('Registro Guardado', '', 'info')
+                                location.reload();
+                           }else{
+                                hideWaiting();
+                                $("#mensaje").html("Error Vuelva a Intentarlo");
+                           }
+                        }, "json");
+                    }
+                    else{
+                        if (tipovacuna!=0 && primeradosis==false){
+{#                            alert('Debe indicar dosis recibida');#}
+                            swal.fire("Debe indicar dosis recibida", "", "warning")
+                        }
+                    }
+                });
+        {% endif %}
+        {# hasta aqui  #}
+
+            	    
+	
+	    {% if actassinentregar %}
+		
+            		$("#actas_sinentregar").modal({backdrop: 'static', keyboard: 'false', width: "50%", maxHeight: ($(window).height()*3)/4 });
+            		$("#actas_sinentregar").modal("show");
+		
+            {% endif %}		
+
+	    $("#actas_sinentregar .btn-large").click(function(){
+           	 $("#actas_sinentregar").modal("hide");
+            });
+
+	    {% if nueva_informacion %}
+                $("#informacionpanel").modal({backdrop: 'static', keyboard: false, width: "500px", maxHeight: ($(window).height()*3)/4 });
+                $("#informacionpanel").modal("show");
+
+                $("#informacionpanel .btn-cerrar").click(function() {
+                    $("#informacionpanel").modal("hide");
+                });
+            {% endif %}
+
+
+
+	
+
+            {% if datos_socioeconomicos_incompletos %}
+                $("#informativopanel").modal({backdrop: 'static', keyboard: 'false', width: "717px", height: "77px" });
+               $("#informativopanel").modal("show");
+
+                $("#informativopanel .btn-aceptar").click(function(){
+                    $("#informativopanel").modal("hide");
+                    location.href = '/alu_socioecon';
+                    return false;
+                });
+            {% endif %}
+
+	 {% if respuestasolucleido %}
+            	$("#panelrequerimiento").modal({backdrop: 'static'});
+            	$("#panelrequerimiento").modal("show");
+	{% endif %}
+	
+	$(".verrespuesta").click(function(){
+		 location.href='/requersoporte';
+
+	            }); 	
+
+	$("#panelrequerimiento .btn-cerrarq").click(function() {
+                $("#panelrequerimiento").modal("hide");
+            });
+
+	    $(".ahora").click(function(){
+            	$("#testpanelreferidos").modal("hide");
+            	$("#informacionpanel").modal("hide");
+            	$("#evalpanel").modal("hide");
+            	$("#deudapanel").modal("hide");
+                smoke.confirm("Se aplicara el descuento a las cuotas pendientes", function(e){
+                if (e){
+                    $("#espera").modal({ backdrop: 'static'});
+                    $("#espera").modal("show");
+
+                    $.post("/alu_referidos", {action: 'aplicar' }, function(data) {
+
+                        if (data.result=='ok') {
+                            $("#espera").modal("hide");
+{#                            smoke.alert('se ha aplicado la comision')#}
+                            swal.fire("Info", "se ha aplicado la comision", "info")
+                        }else{
+                            $("#espera").modal("hide");
+{#                            smoke.alert('OCURRIO UN ERROR')#}
+                            swal.fire("OCURRIO UN ERROR", "", "warning")
+
+                        }
+
+                },'json');
+
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });	    
+	    $(".pagos").click(function(){
+            	$("#deudapanel").modal("hide");
+		$("#informacionpanel").modal("hide");
+                $("#descuento").modal("hide");
+                $("#cantonprovincresid").modal("hide");
+                $("#informativopanel").modal("hide");
+                $("#testpanel").modal("hide");
+                $("#actualizapanel").modal("hide");
+                $("#evalficha").modal("hide");
+                $("#evalpanel").modal("hide");
+                $("#encuestapanel").modal("hide");
+            	smoke.confirm("Pago por Medio de:", function(e){
+            	if (e){
+                	location.href = '/pagowester';
+                }else{
+                	location.href = '/alu_solicitudes';
+                }
+                }, {
+                ok: "Western",
+                cancel: "Transferencias o Depositos",
+                classname: "custom-class",
+                reverseButtons: true
+           	 });
+       	    });
+
+            $(".posponer").click(function(){
+	        $("#descuento").modal("hide");
+                smoke.confirm("Posponer Descuento", function(e){
+                if (e){
+                    aplicadescuento(true)
+
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+        {% if suspension %}
+                $("#suspensionpanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#suspensionpanel").modal("show");
+
+        {% endif %}
+
+	{% if encuestaturor %}
+                $("#encuestatutorpanel").modal({backdrop: 'static', keyboard: false, width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#encuestatutorpanel").modal("show");
+        {% endif %}
+        {% if utiliza_biblioteca %}
+                $("#bookpanel .btn-cerrar").click(function() {
+                    $("#bookpanel").modal("hide");
+                });
+            {% endif %}
+	Evaluar = function(id){
+		$("#aluevaluaciondocente").modal("hide");
+                   
+ 		id=id;
+             swal.fire({
+                        title: 'Esta seguro de evaluar al docente?',
+                    {#text: "# Número: "+idpersonadobe,#}
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33'
+                    }).then(function (isConfirm) {
+                        if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+
+                            location.href="/alu_evaluaciondocente?action=evaluar&id="+id;
+
+                        }else{
+				$("#aluevaluaciondocente").modal("show");
+			}
+
+                     });
+
+
+                }
+
+            $(".icon").hover(function() {
+                $(this).addClass("hovered");
+            }, function() {
+                $(this).removeClass("hovered");
+            }).click(function() {
+                var url = $(this).attr('url');
+                if (url[0]=='/') {
+                    location.href = url;
+                } else {
+                    location.href = "/" + url;
+                }
+            });
+
+            setTimeout(function() {
+                $("#contenidocentral .alert").fadeOut("slow");
+            }, 17000);
+
+	   {% if clasesabiertas %}
+	        $("#clasessincerrar").modal({backdrop: 'static', keyboard: 'false', width: "50%", maxHeight: ($(window).height()*3)/4 });
+                $("#clasessincerrar").modal("show");
+           {% endif %}
+
+	   $("#clasessincerrar .btn-large").click(function(){
+          	 location.href = '/pro_clases';
+	         $("#clasessincerrar").modal("hide");
+           });
+
+	   {% if mpendiente %}
+                $("#materiasincerrar").modal({backdrop: 'static', keyboard: 'false', width: "50%", maxHeight: ($(window).height()*3)/4 });
+                $("#materiasincerrar").modal("show");
+            {% endif %}
+
+            $("#materiasincerrar .btn-large").click(function(){
+               $("#materiasincerrar").modal("hide");
+
+
+            });
+		
+            {% if info %}
+		{% if band == '1' %}
+                    var audio = document.createElement("audio");
+                    if (audio != null && audio.canPlayType && audio.canPlayType("audio/mpeg"))
+                    {
+                        audio.src = "http://pedagogia.edu.ec/publico/81ccda67d4d8f2ada41ad96ae9cf0840.mp3";
+                        audio.play();
+                    }
+                {% endif %} 
+{#                smoke.alert("{{ info }}");#}
+                swal.fire("Alerta", "{{ info }}", "info")
+            {% endif %}
+
+
+
+            {% if ingresar_test %}
+                $("#testpanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#testpanel").modal("show");
+            {% endif %}
+            {% if datosmedicosincompletos and usafichamedica and valida_ficha_medica%}
+                $("#evalficha").modal({backdrop: 'static', keyboard: false,width: "500px", maxHeight: ($(window).height()*3)/4 });
+                $("#evalficha").modal("show");
+            {% endif %}		
+        
+            $("#cerrar").click(function(){
+                $("#obsvtestpanel").modal("hide");
+            });
+            {% if observa_test %}
+                $("#obsvtestpanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#obsvtestpanel").modal("show");
+            {% endif %}
+            
+            $("#cerrarrepor").click(function() {
+                    $("#alertaerror").modal('hide');
+            });
+            {% if reporte_noexiste %}
+                $("#alertaerror").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#alertaerror").modal("show");
+            {% endif %}
+
+
+
+            {% if encuestaobligatoria and utiliza_encuestas %}
+                $.get("/encuestas", {action: 'responder', id: '{{ encuestaobligatoria.id }}'}, function(data) {
+                    $("#encuestapanel").html(data);
+                    $("#encuestapanel .selector").addClass("input-large");
+                    $("#encuestapanel .observaciones").addClass("input-block-level");
+                    $("#encuestapanel").modal({backdrop: 'static', keyboard: false, width: "800px", maxHeight: ($(window).height()*5)/7 });
+                    $("#encuestapanel").modal("show");
+
+                    $("#encuestapanel button").click(function() {
+                        encuestaok = true;
+                        $(".selector").each(function(k,v) { encuestaok = encuestaok && ($(v).val())?true:false; });
+                        if (encuestaok) {
+                            $("#encuestapanel form").get(0).submit();
+                        } else {
+                            $("#encuestapanel .encuestaincompleta").show();
+                        }
+                    });
+                }, "html");
+            {% endif %}
+
+            {% if utiliza_biblioteca %}
+                abrirBookInfo = function() {
+                    var did = $(this).attr("did");
+                    $.get("/book/"+did, {}, function(data) {
+                        $("#bookpanel .paneltitle").html(data.nombre);
+                        $("#bookpanel .panelbody").html(((data.portada)?"<img src='"+data.portada+"' alt='' style='float: right;' width='100px'/>":"")+
+                                                        "Codigo: <b>"+data.codigo+"</b><br/>" +
+                                                        "Autor: <b>"+data.autor+"</b><br/>" +
+							"Tutor:<b>"+data.tutor+"</b><br/>"+
+                                                        "Tipo: <b>"+data.tipo+"</b><br/>" +
+                                                        "Emision: <b>"+data.emision+"</b><br/>" +
+                                                        "A&ntilde;o: <b>"+data.anno+"</b><br/>" +
+                                                        "Paginas: <b>"+data.paginas+"</b><br/>" +
+                                                        "Sede: <b>"+data.sede+"</b><br/>" +
+                                ((data.fisico)?"Copias Fisicas: <b>"+data.copias+"</b>, disponibles: <b>"+data.disponibles+"</b><br/>":"")+
+                        "Palabras Claves: <b>"+data.palabrasclaves+"</b>" +
+                                ((data.digital)?"<a href='"+data.digital+"'><i class='icon-download'></i> Descargar</a>":"")+
+                                "");
+                        $('#bookpanel').modal("show");
+                    }, "json");
+
+                };
+
+
+                $("#bibliosearch").click(function() {
+                    var busqueda = $("#biblioinput").val();
+                    if (busqueda) {
+                        $.blockUI({message: null});
+                        $.post('/bibliosearch', {'search': busqueda}, function(data) {
+                            $.unblockUI();
+                            $("#contenidocentral").empty().html(data).find(".bookinfo").click(abrirBookInfo);
+                        }, "html");
+                    }
+                });
+
+                $("#biblioinput").keypress(function(e) {
+                    if(e.which == 13) {
+                        $("#bibliosearch").trigger("click");
+                    }
+
+                });
+
+                chequeaBiblioInput = function () {
+                    if ($.trim($("#biblioinput").val())=='') {
+                        $("#bibliosearch").attr("disabled", true);
+                    }  else{
+                        $("#bibliosearch").attr("disabled", false);
+                    }
+
+                };
+
+                $("#biblioinput").keyup(chequeaBiblioInput);
+                chequeaBiblioInput();
+
+                $("#otrasbibliotecas").click(function() {
+                    $.blockUI({message: null});
+                    $.post('/otrasbiblio', {}, function(data) {
+                        $.unblockUI();
+                        $("#contenidocentral").empty().html(data);
+
+                    }, "html");
+                });
+            {% endif %}
+
+	   {# Modal de Biblioteca Virtual inicio #}
+            {% if bibliotecavirtu %}
+                $("#busquedabiblio").click(function() {
+                    var busqueda = $("#inputbiblio").val();
+                    if (busqueda) {
+                        $.blockUI({message: null});
+                        $.post('/bibliosearch', {'search': busqueda}, function(data) {
+                            $.unblockUI();
+                            $("#contenidocentral").empty().html(data).find(".bookinfo").click(abrirBookInfo);
+                            $("#panelbibliotecavirtual").modal("hide");
+                            $("#informacionpanel").modal("hide");
+                            $("#informativopanel").modal("hide");
+                            $("#actas_sinentregar").modal("hide");
+                        }, "html");
+                    }
+                });
+                $("#inputbiblio").keypress(function(e) {
+                    if(e.which == 13) {
+                        $("#busquedabiblio").trigger("click");
+                    }
+                });
+                habilitabusqueda = function () {
+                    if ($.trim($("#inputbiblio").val())=='') {
+                        $("#busquedabiblio").attr("disabled", true);
+                    }  else{
+                        $("#busquedabiblio").attr("disabled", false);
+                    }
+                };
+                $("#inputbiblio").keyup(habilitabusqueda);
+                habilitabusqueda();
+                $("#otrasbibli").click(function() {
+                    $.blockUI({message: null});
+                    $.post('/otrasbiblio', {}, function(data) {
+                        $.unblockUI();
+                        $("#contenidocentral").empty().html(data);
+                        $("#panelbibliotecavirtual").modal("hide");
+                        $("#informacionpanel").modal("hide");
+                        $("#informativopanel").modal("hide");
+                        $("#actas_sinentregar").modal("hide");
+                    }, "html");
+                });
+                {#  BUSQUEDA PARA EL PANEL DE BIBLIOTECA VIRTUAL#}
+                {#abrirModalBiblioteca = function(){#}
+                {#    $("#panelbibliotecavirtual").modal({backdrop: 'static', keyboard: false, width: "500px", maxHeight: ($(window).height()*3)/4 });#}
+                {#    $("#panelbibliotecavirtual").modal("show");#}
+                {# }#}
+                {# INFORMACION DE BIBLIOTECA VIRTUAL#}
+                {% if not pers_administrativo %}
+                    $("#panelbibliotecavirtual").modal({backdrop: 'static', keyboard: false, width: "500px", maxHeight:($(window).height()*3)/4 });
+                    $("#panelbibliotecavirtual").modal("show");
+                    $("#panelbibliotecavirtual .btn-cerrar").click(function() {
+                        $("#panelbibliotecavirtual").modal("hide");
+                    });
+                 {% endif %}
+                 {% if pers_administrativo %}
+                    $("#panelbibliotecavirtual .btn-cerrar").click(function() {
+                        $("#panelbibliotecavirtual").modal("hide");
+                        var hoy = new Date().toISOString().slice(0, 10);
+                        localStorage.setItem('fechamodal', hoy);
+                    });
+                    var hoy = new Date().toISOString().slice(0, 10);
+                    var ultimaFechaModal = localStorage.getItem('fechamodal');
+                    {#if (ultimaFechaModal !== hoy) {#}
+                    {#    $("#panelbibliotecavirtual").modal({backdrop: 'static', keyboard: false, width: "500px", maxHeight:($(window).height()*3)/4 });#}
+                    {#    $("#panelbibliotecavirtual").modal("show");#}
+                    {#}#}
+                 {% endif %}
+		 consultaEbook= function(refid) {
+                    $.post("/", {"action":'consultaebook', "referencia":refid}, function(data) {
+                        if(data.result=='ok'){
+                             window.open(data.url,'_blank');
+			     location.reload();		
+                        }else{
+{#                            smoke.alert("Error");#}
+                            swal.fire("Error","", "warning")
+                        }
+                    }, "json");
+                }
+
+            {% endif  %}
+            {# Modal de Biblioteca Virtual fin #}
+
+	   {#    {% if faltaporevaluar %}#}
+           {#        $("#evalpanel").modal({backdrop: 'static', keyboard: false, width: "500px", maxHeight: ($(window).height()*3)/4 });#}
+           {#        $("#evalpanel").modal("show");#}
+           {#    {% endif %}#}
+
+            {% if tieneevaluaciondirec %}
+                $("#modaldirectivoeva").modal({backdrop: 'static', keyboard: false  });
+                $("#modaldirectivoeva").modal("show");
+            {% endif %}
+
+	    {% if profesores %}
+                $("#aluevaluaciondocente").modal({backdrop: 'static', keyboard: false  });
+                $("#aluevaluaciondocente").modal("show");
+            {% endif %}
+            EvaluarPeriodo = function(id){
+		$("#docevaluaciondocente").modal("hide");
+                id=id;
+                swal.fire({
+                    title: 'Esta seguro de realizar la evaluacion',
+                    {#text: "# Número: "+idpersonadobe,#}
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33'
+                    }).then(function (isConfirm) {
+                        if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+
+                            location.href="/doc_evaluaciondocente?action=evaluar&acc2=1&id="+id;
+
+                        }
+
+                     });
+
+
+                }
+            {% if periodosevaluacion %}
+                $("#docevaluaciondocente").modal({backdrop: 'static', keyboard: false  });
+                $("#docevaluaciondocente").modal("show");
+            {% endif %}
+
+        $("#panelgestionrubro .btn-danger").click(function(){
+       		$("#panelgestionrubro").modal("hide");
+         });
+
+
+	{% if not puede_entrar_al_sistema %}                          
+                 {% if not aceptatermino or not aceptaconstancia %}                                                           
+                    $("#bookpanelacepta").modal({backdrop: 'static', keyboard: false, width: "617px", maxHeight: ($(window).height()*3)/4 });
+                    $("#bookpanelacepta").modal("show");
+		    $("#informativopanel").modal("hide");
+                    $("#deudapanel").modal("hide");
+                 {% else %}
+                     {% if gestor_cobros %}
+                	$("#deudapanel").modal("hide");
+                	$("#panelgestionrubro").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                	$("#panelgestionrubro").modal("show");
+                    {% else %}
+                        $("#deudapanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                        $("#deudapanel").modal("show");
+                        $("#bookpanelacepta").modal("hide");
+			$("#informativopanel").modal("hide");                  
+               	    {% endif %}
+		 {% endif %}
+           {% else %}
+              {% if faltaporevaluar %}
+                 $("#evalpanel").modal({backdrop: 'static', keyboard: false, width: "500px", maxHeight: ($(window).height()*3)/4 });
+                  $("#evalpanel").modal("show");
+              {% endif %}
+
+            {% endif %}
+
+			
+                
+	    
+            {% if not aceptatermino or not aceptaconstancia  %}
+                    $("#bookpanelacepta").modal({backdrop: 'static', keyboard: false, width: "617px", maxHeight: ($(window).height()*3)/4 });
+                    $("#bookpanelacepta").modal("show");
+             {% endif %}	
+
+         {% if actualiza_datos %}
+	  	$("#actualizapanel #id_telefono").addClass("input-xlarge");
+        	$("#actualizapanel #id_telefono_conv").addClass("input-xlarge");
+	        $("#actualizapanel #id_email").addClass("input-xlarge");
+	        $("#actualizapanel").modal({backdrop: 'static', keyboard: false, width: "617px", maxHeight: ($(window).height()*3)/4 });
+		$("#actualizapanel").modal("show");
+		$("#id_telefono").val('');
+                $("#id_telefono_conv").val('');
+                $("#id_email").val('');
+
+	 {% endif %}
+
+        $("#actualizapanel .btn-actualizar").click(function(){
+            var telefono = $.trim($("#id_telefono").val());
+            var telefono_conv = $.trim($("#id_telefono_conv").val());
+            var email = $.trim($("#id_email").val());
+            var datoOk = true;
+            var codigo = ''
+            {% if ENVIAR_CODIGO_CEL %}
+                codigo = $.trim($("#id_codigoact").val());
+                if (codigo == ''){
+                    datoOk=false;
+                }
+            {% endif %}
+            if (telefono != '' && telefono_conv != '' && email != ''&& datoOk){
+                $.post("/account", {action: 'actualizar', 'telefono': telefono,'telefono_conv':telefono_conv,'email':email,'codigo':codigo}, function(data) {
+                        if (data.result=='bad') {
+                            $("#mensaje").html("<a class='alert alert-danger'>"+ data.error +"</a>");
+                        }else{
+                            if (data.result=='clave') {
+                                $("#mensaje").html("<a class='alert alert-danger'>"+ data.error +"</a>");
+                            }else{
+                                $("#actualizapanel").modal('hide');
+{#                                smoke.alert('sus datos se han actualizado correctamente, gracias.')#}
+                                swal.fire("Info", 'sus datos se han actualizado correctamente, gracias.', 'info')
+                            }
+                        }
+
+                },'json');
+            }else{
+                if(codigo == '' && telefono != '' && telefono_conv != '' &&  email != '')
+                    $("#mensaje").html("INGRESAR CODIGO ENVIADO AL CELULAR");
+                else
+                    $("#mensaje").html("TODOS LOS CAMPOS DEBEN SER INGRESADOS");
+            }
+
+        });
+
+        $(".btn-enviar").click(function(){
+            $("#mensaje").html("");
+            var telefono = $.trim($("#id_telefono").val());
+            var telefono_conv = $.trim($("#id_telefono_conv").val());
+            var email = $.trim($("#id_email").val());
+            var codigo = $.trim($("#id_codigoact").val());
+            if (telefono != '' && telefono_conv != '' && email != ''){
+                $.post("/account", {action: 'enviarclave', 'telefono': telefono,'telefono_conv':telefono_conv,'email':email,'codigo':codigo}, function(data) {
+                    if (data.result=='ok') {
+
+                        $($("#id_codigoact").get(0).parentNode).find(".help-text").html("<a style='font-size: 14px;float: left;color: red'>Ingresar el codigo enviado al celular</a>");
+                        $(".codigo").show();
+
+                    }else{
+                        $("#mensaje").html("<a class='alert alert-danger'>"+ data.result +"</a>");
+                    }
+
+                },'json');
+            }else{
+                $("#mensaje").html("TODOS LOS CAMPOS DEBEN SER INGRESADOS");
+            }
+        });
+
+        var numeros="0123456789.";
+
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+
+        $("#id_telefono").blur(function(){
+            $($("#id_telefono").get(0).parentNode).find(".help-text").html("");
+            var num = $("#id_telefono").val();
+            if(num){
+                if (solo_numeros(num) != num.length){
+                    $($("#id_telefono").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+                    $("#id_telefono").val('');
+                    $("#id_telefono").focus();
+                }
+            }
+
+        });
+
+        $("#id_email").blur(function(){
+            $($("#id_email").get(0).parentNode).find(".help-text").html("");
+            var num = $("#id_email").val();
+            var emailRegex = /^[-\w.%+]{1,64}@(?:[A-Z0-9-]{1,63}\.){1,125}[A-Z]{2,63}$/i;
+            //Se muestra un texto a modo de ejemplo, luego va a ser un icono
+            if(num){
+                if (!emailRegex.test(num)){
+                    $($("#id_email").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Correo Invalido</h6>");
+                    $("#id_email").val('');
+                    $("#id_email").focus();
+                }
+            }
+
+        });
+	    {% if cantonprovin_existe %}
+                $("#cantonprovincresid").modal({backdrop: 'static', keyboard: false,width: "500px", maxHeight: ($(window).height()*3)/4 });
+                $("#cantonprovincresid").modal("show");
+            {% endif %}
+
+	    var id ='';
+            var anio ='';
+            var accion ='';
+            var hoy ='';
+
+            $('[data-toggle="popover"]').popover();
+            function body(){
+                $.post("/accioncalendar",{"accion": accion, "mes":id ,"anio":anio },function(data) {
+                    if(data.result=='ok')
+                    {
+                        var fila='';
+                        var body='';
+                        for (var i in data.box) {
+                            var dato = data.box[i];
+                            var color = ""+dato.infobox;
+                            if ( dato.diase == '1' && fila != ''){
+                                body= body +" <tr>	" + fila+ " </tr> " ;
+                                fila='';
+                            }
+                            if ('{{ mesact }}' == data.s_mes && '{{ anioact }}' == data.s_anio && dato.boxdia == '{{ day }}'&& dato.mesanterior == 'no' )
+                            {
+                                hoy = 1;
+                            }
+                            else
+                            {
+                                hoy = '';
+                            }
+                            fila=fila + " <td "+ ((hoy == '')?"style='padding: 0; height: 30px;font-size: 10px;text-align: center'":"style='padding: 0; height: 30px;font-size: 10px;background-color:rgba(165, 166, 166, 0.75);text-align: center'")+"> " +
+                            "<div "+ ((dato.mesanterior == 'si')? "style='width: 100%;height: 20px;opacity:.4;'":"style='width: 100%;height: 20px;'")+">"+dato.boxdia +" </div> <div style='padding-top: 5px;'>"
+                            if (dato.infobox){
+                                var divcolor = '';
+                                for (var d in dato.infobox) {
+                                    var info = dato.infobox[d];
+                                    divcolor= divcolor +"<div class='over' tabindex='0' data-trigger='focus' data-html='true' data-toggle='popover' data-placement='left' data-content='"+ dato.acti[d].split('_')[0] +"<hr>"+dato.acti[d].split('_')[1]+"<br>"+dato.acti[d].split('_')[2]+
+						((dato.acti[d].split('_')[3].split(': ')[1] != 'None')?"<br>"+dato.acti[d].split('_')[3]+"<br>"+dato.acti[d].split('_')[4]:"")+
+                                            	((dato.acti[d].split('_')[6].split(': ')[1] != 'None')?"<hr>"+dato.acti[d].split('_')[6]:"")+
+						((dato.acti[d].split('_')[7].split(': ')[1] != 'None')?"<hr>"+dato.acti[d].split('_')[7]:"")+"'" +
+                                            "title='Actividad' "+ ((dato.mesanterior == 'si')? "style='width: 100%;font-size: 7px;background-color:#"+ dato.infobox[d] +";opacity:.4;cursor:pointer'":"style='width: 100%;font-size: 7px;background-color:#"+ dato.infobox[d] +";cursor:pointer'")+"></div>"
+                                }
+                                fila=fila + divcolor +"</div></td>";
+                            }
+                            else{
+                                fila= fila +"</div></td>"
+                            }
+                        }
+                        body= body +" <tr>	" + fila+ " </tr> " ;
+                        anio= data.s_anio;
+                        id =data.s_mes;
+                        $("#meses").html( data.mes +"-"+ data.s_anio);
+                        $("#calendario").html(body);
+
+                    }
+                },"json");
+
+
+
+            }
+
+            function vercalendario(){
+                $("#retro").html("<a style='cursor:pointer' class='antes' accion='anterior' id='{{ mesact }}' anio='{{ anioact }}' > << </a>");
+                $("#siguient").html("<a style='cursor:pointer' class='antes' accion='proximo' id='{{ mesact }}' anio='{{ anioact }}' > >> </a>");
+                $("#meses").html("{{ mes }}-{{ anioact }}");
+
+                accion = '';
+                id = '{{ mesact }}';
+                anio = '{{ anioact }}';
+                body();
+            }
+            vercalendario();
+
+            $(".antes").click(function(){
+
+                if (id == '' && anio == '' )
+                {
+                    id = $(this).attr('id');
+                    anio = $(this).attr('anio');
+                }
+                accion = $(this).attr('accion');
+                body();
+            });
+
+	    {% if estudiante %}
+              {% if tienepagoreferido %}
+                 $("#testpanelreferidos").modal({backdrop: 'static'});
+                 $("#testpanelreferidos").modal("show");
+              {% endif %}
+            {% endif %}
+
+
+              $("#testpanelreferidos .btn-cerrar").click(function(){
+                    $("#testpanelreferidos").modal("hide");
+
+              });
+
+	     ///////////////////////////HORARIO ASISTENTE DE SOLICITUDES //////////////////////////////
+        {% if horarioasistensoli %}
+                $("#iniciosol").blur(function(){
+
+                    var v = $("#iniciosol").val();
+                    var p = tiene_numeros(v);
+                    if(v!=''){
+                        if (v.split(':').length == 2 ){
+                            if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                            {
+                              $("#piniciosol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#iniciosol").focus();
+                            }
+                            else{
+                                $("#piniciosol").html("");
+
+                            }
+                        }
+                        else{
+                              $("#piniciosol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#iniciosol").focus();
+                            }
+                    }
+                    else{
+                        $("#piniciosol").html("");
+                    }
+                });
+
+                $("#finsol").blur(function(){
+
+                    var v = $("#finsol").val();
+                    var p = tiene_numeros(v);
+                    if(v!=''){
+                        if (v.split(':').length == 2 ){
+                            if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                            {
+                              $("#pfinsol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#finsol").focus();
+                            }
+                            else{
+                                $("#pfinsol").html("");
+
+                            }
+                        }
+                        else{
+                              $("#pfinsol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#finsol").focus();
+                            }
+                    }
+                    else{
+                        $("#pfinsol").html("");
+                    }
+                });
+
+                var numeroshor="0123456789:";
+
+                function tiene_numeros(texto){
+                   var num = 0;
+                   for(i=0; i<texto.length; i++){
+                      if (numeroshor.indexOf(texto.charAt(i),0)!=-1){
+                          num = num +1;
+                      }
+                   }
+                   return num;
+                }
+
+                {#$("#horaasistentesol").modal({backdrop: 'static', keyboard: false,width: "25%"});#}
+                {#$("#horaasistentesol").modal("show");#}
+                {#$("#iniciosol").val('');#}
+                {#$("#iniciosol").attr('readonly',false);#}
+                {#$("#finsol").val('');#}
+                {#$("#finsol").attr('readonly',false);#}
+                {#$("#piniciosol").html('');#}
+                {#$("#pfinsol").html('');#}
+                {#$("#psedesol").html('');#}
+                {#$("#pnolaborasol").html("");#}
+                {#$("#nolaborasol").attr("checked",false);#}
+
+                $("#nolaborasol").click(function(){
+                    $("#piniciosol").html('');
+                    $("#pfinsol").html('');
+                    $("#psedesol").html('');
+                    $("#pnolaborasol").html("");
+
+                    if ($("#nolaborasol").is(':checked')) {
+                        $("#iniciosol").val('');
+                        $("#sedesol").val(-1);
+                        $("#iniciosol").attr('readonly',true);
+                        $("#finsol").val('');
+                        $("#finsol").attr('readonly',true);
+                    }else{
+                        $("#sedesol").attr('disabled',false);
+                        $("#iniciosol").attr('readonly',false);
+                        $("#finsol").attr('readonly',false);
+                    }
+
+                });
+                 $("#nolaborasol").click(function(){
+                    $("#piniciosol").html('');
+                    $("#pfinsol").html('');
+                    $("#pnolaborasol").html("");
+
+                    if ($("#nolaborasol").is(':checked')) {
+                        $("#iniciosol").val('');
+                        $("#iniciosol").attr('readonly',true);
+                        $("#finsol").val('');
+                        $("#finsol").attr('readonly',true);
+                    }else{
+                        $("#iniciosol").attr('readonly',false);
+                        $("#finsol").attr('readonly',false);
+                    }
+
+                });
+                $("#ingresarhorariosol").click(function(){
+                    $("#piniciosol").html("");
+                    $("#pfinsol").html("");
+                    $("#pnolabora").html("");
+                    var valida = true;
+                    var nolabora = true;
+                    if (!$("#nolaborasol").is(':checked')) {
+                        nolabora = false;
+                        if($("#iniciosol").val()==''){
+                            $("#piniciosol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                            valida = false
+                        }
+                        if($("#finsol").val()==''){
+                            $("#pfinsol").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                            valida = false
+                        }
+
+                    }
+
+		if(valida){
+                        showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                        $.post("/controlespecies", {"action":'ingresahorario', "hinicio":$("#iniciosol").val(), "hfin":$("#finsol").val(), "nolabora":nolabora}, function(data) {
+                           if (data.result=='ok') {
+				            hideWaiting();
+{#                                location.href= '/?info=Registro ingresado'#}
+                               swal.fire("Registro ingresado", "", "info").then(function(){
+                                   location.reload()
+                               })
+                           }else{
+                               if (data.result == 'badhora'){
+                                    hideWaiting();
+
+                                   $("#piniciosol").html("La hora de entrada debe ser menor a la hora de salida. Debe ingresar el horario en formato 24 horas");
+                               }else{
+                                    hideWaiting();
+                                   $("#pmensja").html("Error Vuelva a Intentarlo");
+                               }
+
+
+                           }
+                        }, "json");
+
+                    }	
+                });
+            {% endif %}
+            		
+
+	    {% if horarioasisten %}
+
+                $("#inicio").blur(function(){
+
+                    var v = $("#inicio").val();
+                    var p = tiene_numeros(v);
+                    if(v!=''){
+                        if (v.split(':').length == 2 ){
+                            if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                            {
+                              $("#pinicio").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#inicio").focus();
+                            }
+                            else{
+                                $("#pinicio").html("");
+
+                            }
+                        }
+                        else{
+                              $("#pinicio").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#inicio").focus();
+                            }
+                    }
+                    else{
+                        $("#pinicio").html("");
+                    }
+                });
+
+                $("#fin").blur(function(){
+
+                    var v = $("#fin").val();
+                    var p = tiene_numeros(v);
+                    if(v!=''){
+                        if (v.split(':').length == 2 ){
+                            if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                            {
+                              $("#pfin").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#fin").focus();
+                            }
+                            else{
+                                $("#pfin").html("");
+
+                            }
+                        }
+                        else{
+                              $("#pfin").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                              $("#fin").focus();
+                            }
+                    }
+                    else{
+                        $("#pfin").html("");
+                    }
+                });
+
+                var numeroshor="0123456789:";
+
+                function tiene_numeros(texto){
+                   var num = 0;
+                   for(i=0; i<texto.length; i++){
+                      if (numeroshor.indexOf(texto.charAt(i),0)!=-1){
+                          num = num +1;
+                      }
+                   }
+                   return num;
+                }
+
+                {#$("#horaasistente").modal({backdrop: 'static', keyboard: false,width: "25%"});#}
+                {#$("#horaasistente").modal("show");#}
+                {#$("#inicio").val('');#}
+                {#$("#sede").val(-1);#}
+                {#$("#sede").attr('disabled',false);#}
+                {#$("#inicio").attr('readonly',false);#}
+                {#$("#fin").val('');#}
+                {#$("#fin").attr('readonly',false);#}
+                {#$("#pinicio").html('');#}
+                {#$("#pfin").html('');#}
+                {#$("#psede").html('');#}
+                {#$("#pnolabora").html("");#}
+                {#$("#nolabora").attr("checked",false);#}
+
+                $("#nolabora").click(function(){
+                    $("#pinicio").html('');
+                    $("#pfin").html('');
+                    $("#psede").html('');
+                    $("#pnolabora").html("");
+
+                    if ($("#nolabora").is(':checked')) {
+                        $("#inicio").val('');
+                        $("#sede").val(-1);
+                        $("#sede").attr('disabled',true);
+                        $("#inicio").attr('readonly',false);
+                        $("#fin").val('');
+                        $("#fin").attr('readonly',false);
+                    }else{
+                        $("#sede").attr('disabled',false);
+                        $("#inicio").attr('readonly',false);
+                        $("#fin").attr('readonly',false);
+                    }
+
+                });
+                $("#ingresarhorsop").click(function(){
+                    $("#pinicio").html("");
+                    $("#pfin").html("");
+                    $("#psede").html("");
+                    $("#pnolabora").html("");
+                    var valida = true;
+                    var nolabora = true;
+                    if (!$("#nolabora").is(':checked')) {
+                        nolabora = false;
+                        if($("#inicio").val()==''){
+                            $("#pinicio").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                            valida = false
+                        }
+                        if($("#fin").val()==''){
+                            $("#pfin").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                            valida = false
+                        }
+                        if($("#sede").val()== -1 ){
+                            $("#psede").html("Escoga una opcion");
+                            valida = false
+                        }
+                    }
+		    else{
+                        if($("#inicio").val()==''){
+                            $("#pinicio").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                            valida = false
+                        }
+                        if($("#fin").val()==''){
+                            $("#pfin").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                            valida = false
+                        }
+                    }
+                    if(valida){
+                        showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                        $.post("/soportetics", {"action":'iniciolab', "sede":$("#sede").val(), "hinicio":$("#inicio").val(), "hfin":$("#fin").val(), "nolabora":nolabora}, function(data) {
+                           if (data.result=='ok') {
+				hideWaiting();
+{#                                location.href= '/?info=Registro ingresado'#}
+                               swal.fire("Registro ingresado", "", "info").then(function(){
+                                   location.reload()
+                               })
+                           }else{
+			       hideWaiting();
+                               $("#pmensja").html("Error Vuelva a Intentarlo");
+                           }
+                        }, "json");
+                       
+                    }
+                });
+            {% endif %}
+		
+            
+	        {% if llenarcampos %}
+                 $("#llenarcampo").modal({backdrop: 'static'});
+                 $("#llenarcampo").modal("show");
+            {% endif %}
+            
+            {% if validaescenariopractica %}
+                 $("#escenariomodal").modal({backdrop: 'static'});
+                 $("#escenariomodal").modal("show");
+            {% endif %}
+
+            $('#searchModulo').on('input', function () {
+            console.log('oka')
+                var textoIngresado = $(this).val();
+                 $.post("/", {"action" : 'sitemapjson', "s": textoIngresado }, function (data) {
+                     if (data.result == 'ok') {
+                         var html = ""
+                         for(var g in data.datos) {
+                             grupo = data.datos[g]
+                             console.log(grupo)
+                             html += "<div class='row-fluid'><div class='span12'>"
+                             html += "<h3>"+grupo.grupo+"</h3>"
+                             html += "</div></div>"
+                             html += "<div class='row-fluid'><div class='span12'>"
+                             for(var m in grupo.modulos){
+                                 var modulo = grupo.modulos[m]
+                                 html += "<div class='icon icon_search' url='+modulo.url+'>" +
+                                             "<a href='"+modulo.url+"' style='color:#333;' class='search_link'>" +
+                                                 "<div class='iconimage'>" +
+                                                    "<div class='pd'>" +
+                                                        "<img src='"+modulo.icono+"' alt='' border='0'/>" +
+                                                    "</div>" +
+                                                 "</div>" +
+                                                 "<div class='iconname'>" +
+                                                    "<div class='pd'>" +
+                                                        "<h4>"+modulo.nombre+"</h4>" +
+                                                        "<span class='icondesc'>"+modulo.descripcion+"</span>" +
+                                                    "</div>" +
+                                                "</div>" +
+                                             "</a>" +
+                                         "</div>"
+                             }
+                             html += "</div></div>"
+                         }
+                         $('#sitemap').html(html)
+                    } else {
+                         swal.fire(data.message, "", "warning")
+{#                         smoke.alert(data.message);#}
+                    }
+                 }, 'json')
+            });
+
+            $('#collapsecumples').on('shown.bs.collapse', function () {
+                {#$.ajaxSetup({async: false});#}
+                $('#loading').show();
+                $.post("/", {"action" : 'cumpleanos' }, function (data) {
+                    if(data.result=='ok') {
+                        let table = '';
+                        if (data.ins_cumple.length > 1) {
+
+                            table += '<table class="table table-bordered table-condensed table-striped"><thead><tr>';
+
+                            table += '<th>Estudiante</th></tr></thead><tbody>';
+                            // Construcción de las filas de la tabla
+                            for (let row in data.ins_cumple) {
+                                var dato = data.ins_cumple[row]
+                                var nomgrupo = ''
+                                if (dato.grupo != '') {
+                                    nomgrupo = ' - ' + dato.grupo
+                                }
+                                table += '<tr>';
+                                table += `<tr><td>${dato.inscripcion}${nomgrupo}</td></tr>`;
+                                table += '';
+                            }
+                            table += '</tbody></table>';
+                        }
+                        if (data.prof_cumple.length > 1) {
+                            console.log(data.prof_cumple)
+                            table += '<table class="table table-bordered table-condensed table-striped"><thead><tr>';
+
+                            table += '<th>Profesor</th></tr></thead><tbody>';
+                            // Construcción de las filas de la tabla
+                            for (let row in data.prof_cumple) {
+                                var dato = data.prof_cumple[row]
+
+                                table += '<tr>';
+                                table += `<tr><td>${dato.nomprofe}</td></tr>`;
+                                table += '';
+                            }
+                            table += '</tbody></table>';
+                        }
+
+                        $('#collapsecumples .accordion-inner').html(table);
+                        $('#loading').hide();
+                    }else{
+                        $('#loading').hide();
+                        $('#collapsecumples .accordion-inner').html('<p>Error al cargar la tabla.</p>');
+                    }
+                }, 'json').fail(function() {
+                    $('#loading').hide();
+                    $('#collapsecumples .accordion-inner').html('<p>Error al cargar la tabla, fallo de conexion</p>');
+                });
+            });
+
+            {% if sslcertific %}
+                swal.fire('Notificación!','{{ sslcertific }}','warning');
+            {% endif %}
+        });
+
+    </script>
+
+    <style>
+
+        #dias{
+            text-align: center;
+            vertical-align: middle;
+            font-size: 10px
+        }
+        .alerta{
+            text-align: center;
+            background: red;
+            font-size: 10px
+        }
+        .popover {
+          position: absolute;
+          top: 0;
+          left: 0;
+          z-index: 1010;
+          display: none;
+          width: 150px;
+          text-align: center;
+          opacity: 0.15;
+          background-color: rgba(245, 245, 245, 0.5);
+          border-radius: 8px;
+
+        }
+        .popover-inner{
+             color:#ffffff;
+             background:rgba(39, 94, 139, 1);
+             border-radius: 8px;
+
+         }
+        .popover-title{
+            background:rgba(226, 108, 10, 1);
+            border-radius: 8px;
+        }
+
+        .popover.bottom .arrow:after {
+          border-bottom-color:rgba(39, 94, 139, 1);
+        }
+        .popover.left .arrow:after {
+          border-left-color:rgba(39, 94, 139, 1);
+        }
+
+        .over{
+            height: 6px;
+        }
+        .over:hover{
+            height: 8px;
+            opacity: 0.4;
+        }
+        .icon_search:hover { background: #999; }
+
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+        }
+    </style>
+{% endblock %}
+{% block containertype %}{% endblock %}
+{% block canvas %}
+
+    <div class='row'>
+        <div class="span3 hidden-tablet hidden-phone visible-desktop">
+            <ul class="thumbnails">
+                <li class="span3">
+                    <div class="thumbnail">
+                        {% if persona.foto %}
+                            <img src="{{ persona.foto.foto.url }}" alt="">
+                        {% else %}
+                            {% if persona.sexo_id == 1 %}
+                                <img src="/static/images/nofotofem.jpg" alt="">
+                            {% else %}
+                                <img src="/static/images/nofotomas.jpg" alt="">
+                            {% endif %}
+                        {% endif %}
+                        <h5 style="text-align: center;">{{ persona }}</h5>
+                        <h5 style="text-align: center; color: #003bb3">{% if persona.emailinst %}({{ persona.emailinst }}){% endif %}</h5>
+			{% if inscripcion.tutor %}<h6 style="text-align: center; color: darkred">TUTOR: </h6><h6 style="text-align:center; color:darkslategray">{{inscripcion.tutor.tutor.persona.nombre_completo_inverso }} - {{ inscripcion.tutor.tutor.persona.emailinst }} - {{ inscripcion.tutor.tutor.persona.telefono }}</h6> {% endif %}
+                    </div>
+                </li>
+
+            </ul>
+            <hr/>
+        <div class="accordion" id="accordion2">
+            {% if incidencias %}
+                <div class="accordion-group">
+                    <div class="accordion-heading">
+                        <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion3" href="#collapseincidencias">
+                            INCIDENCIAS
+                        </a>
+                    </div>
+                    <div id="collapseincidencias" class="accordion-body collapse in">
+                        <div class="accordion-inner">
+                            <table class="table table-bordered table-condensed table-striped">
+                                <tbody>
+                                <tr>
+                                    <td class="smaller">
+                                        <a href="/incidencias">TODAS</a>
+                                    </td>
+                                </tr>
+                                {% for i in incidencias %}
+                                    <tr>
+                                        <td class="smaller">
+                                            <a href="/incidencias?i={{ i.id }}">{{ i.contenido }}</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#collapseperiodo">
+                    PERIODO
+                </a>
+            </div>
+            <div id="collapseperiodo" class="accordion-body collapse in">
+                <div class="accordion-inner">
+                    {{ periodo }}
+                </div>
+            </div>
+
+        </div>
+
+
+        {% if prof_cumple or ins_cumple%}
+            <div class="accordion-group">
+
+                <div class="accordion-heading">
+                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#collapsecumples">
+                        CUMPLEA&Ntilde;OS
+                    </a>
+                </div>
+
+                <div id="collapsecumples" class="accordion-body collapse in">
+                    <div class="accordion-inner">
+
+                    </div>
+                </div>
+
+            </div>
+            <div id="loading">
+                <img src="../static/images/busy1.gif" alt="Cargando..."> <!-- Puedes usar cualquier imagen de carga -->
+                <p>Cargando...</p>
+            </div>
+        {% endif %}
+
+       {# {% if utiliza_biblioteca %} #}
+           {# <div class="accordion-group"> #}
+           {#     <div class="accordion-heading"> #}
+           {#         <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#collapsebiblio"> #}
+           {#             BIBLIOTECA VIRTUAL #}
+           {#         </a> #}
+           {#     </div> #}
+           {#     <div id="collapsebiblio" class="accordion-body collapse in"> #}
+           {#         <div class="accordion-inner"> #}
+           {#             <p>Buscar en: <b>{{ biblioteca.0 }}</b> libros f&iacute;sicos, <b>{{ biblioteca.1 }}</b> digitales, <b>{{ biblioteca.2 }}</b> sitios web.</p> #}
+           {#             <div class="input-append"> #}
+           {#                 <input class="span2" id="biblioinput" type="text"> #}
+           {#                 <button class="btn" id="bibliosearch" type="button">Buscar</button> #}
+           {#             </div>      #}             
+
+           {#             <div id="referenciasweb"> #}
+           {#                 <br/> #}
+           {#                 <h5>Referencias Web</h5> #}
+           {#                 {% for ref in referenciasweb %} #}
+           {#                     {% if not forloop.first %}<hr style="margin: 7px 0;"/>{% endif %} #}
+           {#                     <a href="/gourl?action=ref&id={{ ref.id }}" target="_blank"><img src="{{ ref.logo.url }}" alt='{{ ref }}'/></a><br/> #}
+
+           {#                 {% endfor %} #}
+
+           {#             </div> #}
+
+           {#             <div id="otraslibs"> #}
+           {#                 <br/> #}
+           {#                 <a href="#" id="otrasbibliotecas"><i class="icon-globe"></i> Otras Bibliotecas Virtuales</a> #}
+
+           {#             </div> #}
+
+           {#         </div> #}
+           {#     </div> #}
+
+           {# </div> #}
+      {#  {% endif %} #}
+	
+	{% if bibliotecavirtu %}
+            <div class="accordion-group">
+                <div class="accordion-heading">
+                    <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#"  onclick="abrirModalBiblioteca()"> BIBLIOTECA VIRTUAL</a>
+                </div>
+            </div>
+        {% endif %}
+        
+        </div>
+
+    {% if proceso.activado and not prof_autoevaluado and es_profesor %}
+        <div class="alert alert-danger">
+            <a class="close" data-dismiss="alert">×</a>
+            <h4>AVISO IMPORTANTE</h4>
+            Ud. aun no ha realizado su Autoevaluaci&oacute;n en este per&iacute;odo,
+            por favor proceda a autoevaluarse lo antes posible, Gracias
+        </div>
+    {% endif %}
+
+    {% if documentossinentregar %}
+        <div class="alert alert-danger">
+            <h4>AVISO IMPORTANTE</h4>
+            UD DEBE ENTREGAR {{ documentossinentregar }} documento{% if documentossinentregar > 1 %}s{% endif %} a la Biblioteca
+        </div>
+    {% endif %}
+
+    {% if encuestas %}
+        <div class="alert alert-warning">
+            <h4>Tienes {{ encuestas.count }} encuesta(s) por realizar</h4>
+            <ul>
+                {% for e in encuestas %}
+                <li><a href='/encuestas?action=responder&id={{ e.id }}'>{{ e.nombre }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    <div class='accordion-heading'  style="overflow-x: auto">
+                  <table class="table table-bordered" style="background-color: #ffffff;" >
+                        <thead>
+                            <tr>
+                                <th style="height: 20px; text-align: center;vertical-align: middle;" id="retro"></th>
+                                <th colspan="5" style="height: 20px; text-align: center;vertical-align: middle;font-size: 10px" id="meses"></th>
+                                <th style="height: 20px; text-align: center;vertical-align: middle;" id="siguient"></th>
+                            </tr>
+                            <tr>
+                                <th class="celdacalendarioheader" id='dias'>Lun</th>
+                                <th class="celdacalendarioheader" id='dias'>Mar</th>
+                                <th class="celdacalendarioheader" id='dias'>Mie</th>
+                                <th class="celdacalendarioheader" id='dias'>Jue</th>
+                                <th class="celdacalendarioheader" id='dias'>Vie</th>
+                                <th class="celdacalendarioheader" id='dias'>Sab</th>
+                                <th class="celdacalendarioheader" id='dias'>Dom</th>
+                            </tr>
+                        </thead>
+                        <script>
+                            function alerta(){
+                                $('[data-toggle="popover"]').popover();
+                            }
+
+                        </script>
+                        <tbody id="calendario" class="cualquier" onmousemove='javascript:alerta();'>
+                        </tbody>
+                    </table>
+            </div>
+
+        </div>
+
+    <div class="span9" id="contenidocentral">
+
+    {% if sinvinculacion %}
+        <div class="alert-success">
+            <h4 class="alert-heading" style="color:green">Nota de Vinculaci&oacute;n</h4>
+            <span style="color:green; font-size:18px"> Estimado/a estudiante: no tienes registrada la nota de VINCULACI&Oacute;N A LA COMUNIDAD, te solicitamos te acerques a tu coordinaci&oacute;n</span>
+        </div>
+        </br>
+    {% endif %}    
+
+    {% if datosincompletos %}
+        <div class="alert alert-danger">
+            <a class="close" data-dismiss="alert">×</a>
+            <h4 class="alert-heading">Alerta</h4>
+            Aun le quedan DATOS PERSONALES por llenar en su Cuenta,
+            por favor ingreselos lo m&aacute;s pronto posible
+        </div>
+    {% endif %}
+     {% if notienearchivo %}
+        <div class="alert alert-danger">
+            <a class="close" data-dismiss="alert">×</a>
+            <h4 class="alert-heading">Alerta</h4>
+            Usted tiene una solicitud de beca sin archivos adjuntos. si no adjunta dichos documentos el proceso va a tardar más tiempo.
+            Los archivos que deben ir adjunto en la solicitud los encuenta en el módulo de solicitud de beca en la opcion llamada <b>Requisitos para Beca</b>
+        </div>
+    {% endif %}
+
+
+    {% if datosmedicosincompletos and usafichamedica %}
+        <div class="alert alert-danger">
+            <a class="close" data-dismiss="alert">×</a>
+            <h4 class="alert-heading">Alerta</h4>
+            Aun le quedan DATOS MEDICOS por llenar en su Ficha M&eacute;dica,
+            por favor ingreselos lo m&aacute;s pronto posible
+        </div>
+    {% endif %}
+
+    {% if proceso.activado and not prof_autoevaluado and es_profesor %}
+        <div class="alert alert-info">
+            <a class="close" data-dismiss="alert">×</a>
+            <h3 class="alert-heading">AVISO IMPORTANTE</h3>
+            Aun no ha realizado su Autoevaluaci&oacute;n en este per&iacute;odo,
+            por favor proceda a autoevaluarse lo antes posible, Gracias
+        </div>
+    {% endif %}
+
+
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            {% for noticia in noticias %}
+                <div class="alert {% if noticia.tipo == 2  %}alert-danger{% else %}alert-info{% endif %}">
+                    <a class="close" data-dismiss="alert">×</a>
+                    <h4 class="alert-heading">{{ noticia.titular }}</h4>
+                    {{ noticia.cuerpo|safe }}
+		    {% if noticia.archivo %}
+                    	<img alt="" src="{{ noticia.archivo.url }}" style="height:100px; width:90px">
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+ 
+{% if asistente %}
+        {% if  asistente.cantidad  %}<h3 style="color: red">  Tiene tr&aacute;mites pendientes por atender  ({{ asistente.cantidad  }}) </h3> {% endif %}
+        {% if  asistente.cantidadsol  %}<h3 style="color: red"> Tiene solicitudes pendientes por atender ({{ asistente.cantidadsol   }})</h3> {% endif %}
+    {% endif %}
+ {% if presencial %}
+    <h3 style="color: green">  Hay tr&aacute;mites o solicitudes. Estudiantes est&aacute;n esperando respuesta </h3>
+ {% endif %}
+ {% if gestiones %}
+        <h3 style="color: red">  Tiene tr&aacute;mites pendientes por atender  ({{ gestiones  }}) </h3>
+    {% endif %}
+    {% if requerimientosoporte %}
+
+        <h3 style="color: red">  Tiene ({{ requerimientosoporte }}) requerimientos por atender  </h3>
+    {% endif %}
+
+     {% if cantidadbecaaplicar %}
+           {% if  cantidadbecaaplicar  %} <a href="/account?action=versolicitudesbecasecretaria" class="active"><h3 style="color: red">  Tiene pendientes ({{ cantidadbecaaplicar  }}) becas por aplicar   </h3> ...</a>{% endif %}
+    {% endif %}
+
+     {% if tienecoutavencida %}
+        <h3 style="color: red"> Tiene una de solicitud de beca por Aceptar Tèrminos y Condiciones, en sus finanzas tiene una couta ya venciada con  ({{ diascuota   }}) días </h3>
+    {% endif %}
+
+    {% if tienecoutaporvencer %}
+        <h3 style="color: red"> Tiene una de solicitud de beca por Aceptar Tèrminos y Condiciones, en sus finanzas tiene una couta con  ({{ diascuota   }}) días por vencer </h3>
+    {% endif %}
+
+    {% if respuestareqsolucion %}
+        <h3 style="color: red"> El soporte asignado esta esperando su respuesta en mesa de ayuda </h3>
+    {% endif %}
+    
+    <div class="row-fluid">
+        <div class="span12">
+            <input class='form-control search-query' type='text' id='searchModulo' placeholder="Buscar Módulo"/>
+        </div>
+    </div><br>
+
+    <div id="sitemap">
+        {% for grupo in grupos %}
+            <div class='row-fluid'>
+                <div class='span12'>
+                    <h3>{{ grupo.nombre }}</h3>
+                </div>
+            </div>
+            <div class='row-fluid'>
+                <div class='span12'>
+                    {% for modulo in grupo.modulos_activos %}
+                        {% if atiende and modulo.id == mod %}
+                            <div class='icon' url='{{ modulo.url }}{% if action %}{{ action }}{% endif %}'>
+                                <div class='iconimage'>
+                                    <div class='pd'>
+                                        <img src='{{ modulo.icono }}' alt='' border="0"/>
+                                    </div>
+                                </div>
+                                <div class='iconname'>
+                                    <div class='pd'>
+                                    <h4>{{ modulo.nombre }}</h4>
+                                    <span class='icondesc'>{{ modulo.descripcion }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            {% if modulo.id != 98 %}
+                                <div class='icon' url='{{ modulo.url }}'>
+                                    <div class='iconimage'>
+                                        <div class='pd'>
+                                            <img src='{{ modulo.icono }}' alt='' border="0"/>
+                                        </div>
+                                    </div>
+                                    <div class='iconname'>
+                                        <div class='pd'>
+                                        <h4>{{ modulo.nombre }}</h4>
+                                        <span class='icondesc'>{{ modulo.descripcion }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <!-- Archivos Generales -->
+    <hr>
+    {% if archivos %}
+        <div class='row-fluid'>
+            <div class='span12'>
+                <h3>Archivos Generales</h3>
+            </div>
+        </div>
+        <div class='row-fluid'>
+            <div class='span12'>
+                {% for archivo in archivos %}
+                    <div class='icon' url='{{ archivo.archivo.url }}'>
+                        <div class='iconimage'>
+                            <div class='pd'>
+                                {% if archivo.tipo_archivo == "pdf" %}
+                                    <img src='/static/images/iconos/pdf.png' alt='' border="0"/>
+                                {% endif %}
+                                {% if archivo.tipo_archivo == "doc" or archivo.tipo_archivo == 'docx' %}
+                                    <img src='/static/images/iconos/word.png' alt='' border="0"/>
+                                {% endif %}
+                                {% if archivo.tipo_archivo == 'other' %}
+                                    <img src='/static/images/iconos/other.png' alt='' border="0"/>
+                                {% endif %}
+                        </div>
+                        </div>
+                        <div class='iconname'>
+                            <div class='pd'>
+                                <h6 style="line-height: 16px">{{ archivo.nombre }}</h6>
+                                <span class='icondesc'></span>
+                            </div>
+                        </div>
+
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block moreblock %}
+    {% if utiliza_biblioteca %}
+        <div class="modal fade static" id="bookpanel" style="display: none;">
+            <div class="modal-header">
+                <h3 class="paneltitle">Titulo</h3>
+            </div>
+            <div class="modal-body">
+                <p class="panelbody">One fine body…</p>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-cerrar">Cerrar</a>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if utiliza_encuestas %}
+        <div class="modal fade static" id="encuestapanel" style="display: none;">
+
+        </div>
+    {% endif %}
+
+
+    <div class="modal fade static" id="evalpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle"><img src="/static/images/warning.png"> Faltan Evaluaciones a Docentes</h3>
+        </div>
+        <div class="modal-body">
+            <p class="evalbody">Estimado Estudiante:
+                                Aun le quedan por evaluar a <b>{{ cuantosfaltan }}</b> docentes,
+                                proceda a culminar con las evaluaciones de sus profesores
+                                para poder entrar a las demas funciones del sistema.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a href="/pro_aluevaluacion" class="btn btn-success"><i class="icon-share-alt"></i> Ir a Evaluaciones</a>
+        </div>
+    </div>
+
+   <div class="modal fade static" id="evalficha" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle"><img src="/static/images/warning.png"> ALERTA </h3>
+        </div>
+        <div class="modal-body">
+            <p class="evalbody">Estimado Estudiante:
+                                Aun le quedan <b>DATOS M&Eacute;DICOS </b>por llenar en su Ficha M&eacute;dica.
+				<b>Datos por completar: {{datosmedicosincompletos}}</b>
+
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a href="/alu_medical" class="btn btn-success"><i class="icon-share-alt"></i> Ir a Ficha Medica</a>
+        </div>
+    </div>
+
+
+    
+	<div class="modal fade static" id="actualizapanel" style="display: none;">
+        <div class="modal-header alert-success">
+            <h3 class="paneltitle"><img src="/static/images/16/edit2.png"><marquee direction='right' width='90%' scrollAmount='10' behavior="alternate"> ACTUALIZAR INFORMACI&Oacute;N </marquee><img src="/static/images/16/edit2.png"></h3>
+        </div>
+        <div class="modal-body">
+            <div class="row-fluid">
+            </div>
+            <form id="formulario5" class='form-horizontal' action="" method="POST">
+                {% for field in frmactualiza_datos %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <p id=mensaje style="color: red;font-size: 14px"></p>
+		{% if ENVIAR_CODIGO_CEL %}
+                    <p><b style="font-size: 14px;float: left;color: rgba(22,104,255,0.93)">Enviar codigo de verificacion al celular, para actualizar registro</b><a class="btn btn-enviar   btn-success" style="">Enviar</a></p>
+                    <fieldset class="control-group nomargins codigo" style="top: 5%;display: none">
+                            <label class="control-label" for="id_codigoact">Codigo</label>
+                            <div class="controls">
+                                <input type="text" name="codigoact" id="id_codigoact" autocomplete="off" class="input-small">
+                                <p class="help-text"></p>
+                            </div>
+                    </fieldset>
+                {% endif %}
+            </form>
+            <br/><br/>
+	
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-actualizar btn-warning">Actualizar</a>
+            <a href="/logout" class="btn btn-danger"><i class="icon-remove"></i> Cerrar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="aluevaluaciondocente" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle"><img src="/static/images/warning.png"> Faltan Evaluaciones a Docentes</h3>
+        </div>
+        <div class="modal-body">
+            Estimado estudiante, ud. tiene encuestas de docentes pendientes por realizar. solicitamos su gentil ayuda para realizarla.
+            <br>
+            <div class="row-fluid">
+                <table class="table table-condensed table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Materia</th>
+                            <th>Profesor</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in profesores %}
+                        <tr>
+                            <td >{{ p.materia }}</td>
+                            <td >{{ p.profesor}}</td>
+                            <td ><a class="btn btn-success" onclick="Evaluar('{{ p.id }}')">Evaluar </a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div><br>
+             <a href="/logout" class="btn btn-danger btn-cerrar">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="docevaluaciondocente" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle"><img src="/static/images/warning.png"> Autoevaluaciones Docentes Pendientes</h3>
+        </div>
+        <div class="modal-body">
+             Estimado docente, ud. tiene autoevaluación docentes pendientes por realizar. solicitamos su gentil ayuda para realizarla.
+            <br>
+            <div class="row-fluid">
+                <table class="table table-condensed table-bordered">
+                    <thead>
+                        <tr>
+                             <th>Periodo</th>
+                             <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in periodosevaluacion %}
+                        <tr>
+                           <td >{{ p.periodo }}</td>
+                           <td ><a class="btn btn-success" onclick="EvaluarPeriodo('{{ p.id }}')">Evaluar </a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div><br>
+             <a href="/logout" class="btn btn-danger btn-cerrar">Cerrar Sesión</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="modaldirectivoeva" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle"><img src="/static/images/warning.png"> Evaluaciones Pendientes</h3>
+        </div>
+        <div class="modal-body">
+        <br>
+            Estimado Directivo, ud. tiene evaluaciones  pendientes por realizar de sus docentes. solicitamos su gentil ayuda para realizarla.
+            <a href="/dire_evaluaciondocente?action=evaluacioncoordinador"><b style="color: red">Click para ir a la evaluacion </b></a>
+            <br>
+            <div class="row-fluid">
+
+            </div><br>
+             <a style="cursor: pointer" class="btn btn-danger btn-cerrarevaldir">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="deudapanel" style="display: none;">
+        <div class="modal-header alert-danger">
+            <h3 class="paneltitle"><img src="/static/images/warning.png"><marquee direction='right' width='90%' scrollAmount='10' behavior="alternate"> ACCESO DENEGADO </marquee><img src="/static/images/warning.png"></h3>
+        </div>
+        <div class="modal-body">
+            <div class="row-fluid">
+                <div class="span12">
+                    <h4 class="bigger">Estimado Estudiante:</h4>
+                </div>
+            </div>
+            <div class="row-fluid">
+                <div class="span12">
+                    <span style="text-align: justify;" class="bigger">
+                        <i style="text-align: justify">
+                            Usted presenta <b style="color: red">DEUDA</b> con la Instituci&oacute;n,
+                            proceda a cancelar los rubros vencidos en caja
+                            para que pueda ingresar nuevamente al sistema y consultar sus datos acad&eacute;micos y financieros.
+                        </i>
+                    </span>
+                </div>
+            </div><br>
+            {% if HABILITA_APLICA_DESCUE %}
+                {% if inscripcion.cancelcuotaactual %}<br>
+                    <span style="text-align: justify;" class="bigger">
+                        <i style="text-align: justify">
+                            Difiere tus pagos atrasados  <b style="color: green">desde {{ fechainicio|date:'d-m-Y' }}</b> <b style="color: green"> hasta {{ fechahasta|date:'d-m-Y' }}</b> dando clik en el siguiente bot&oacute;n
+                            <a href="/diferircuota" class="btn btn-info"> Diferir Cuotas <span class="icon-circle-arrow-right"></span></a><br>
+                        </i>
+                    </span><br>
+                {% endif %}
+            {% endif %}
+            <div class="row-fluid">
+                <div class="span12">
+                    <span style="text-align: justify;" class="bigger">
+                        <i style="text-align: justify">
+                            Si desea realizar <b style="color: red">PAGOS CON TARJETA</b> dar clik en el bot&oacute;n <b style="color: red"> PAGAR EN L&Iacute;NEA </b><br>
+                            Descarga el instructivo <a href="/media/documentos/2019/05/28/INSTRUCTIVO_PAGO_EN_LINEA1.pdf"><b style="color: red">aqu&iacute;</b></a>
+                        </i>
+                    </span>
+                </div>
+            </div>
+            <br/><br/>
+            <div class="row-fluid">
+                <div class="span12">
+                    <span style="text-align: justify;" class="bigger">
+                        <i style="text-align: justify">
+                            Si Necesita soporte del departamento de Tics dar clik en el siguiente bot&oacute;n <a href="/requersoporte" class="btn btn-info">Mesa de ayuda</a>
+                        </i>
+                    </span>
+                </div>
+            </div>
+            <br/><br/>
+            <div class="row-fluid">
+                <table class="table table-condensed table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Rubros Vencidos</th>
+                            <th>Vencimiento</th>
+                            <th>Valor Deuda</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in inscripcion.rubros_vencidos %}
+                        <tr>
+                            <td class="bigger">{{ r.nombre }}</td>
+                            <td class="bigger">{{ r.fechavence|date:'d-m-Y' }}</td>
+                            <td class="bigger alert-danger" style="text-align: right">${{ r.adeudado|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+		<a href="/pagowester" class="btn btn-success"><i class="icon-money"></i> Registrar Pagos Wester</a>
+		<a href="/alu_medical" class="btn" style="background:deeppink;color:white;"><i class="icon-eye-open"></i> Ficha M&eacute;dica</a></br>
+
+		<a href="/solicitudonline" class="btn btn-primary"><i class="icon-file"></i> Bandeja de Atenci&oacute;n  </a>
+            <a href="/alu_referidos" class="btn btn-info"><i class="icon-eye-open"></i> Ingresar Referido</a>
+            <a href="/online" class="btn" style="background:orangered; color:white;"><i class="icon-money"></i> Pagar en L&iacute;nea</a>
+	               
+	</div>
+        <div class="modal-footer">
+            <a href="/alu_finanzas" class="btn" style="background:purple; color:white;"><i class="icon-eye-open"></i> Ver Finanzas</a>
+            <a href="/alu_cronograma" class="btn btn-warning"><i class="icon-eye-open"></i> Ver Cronograma</a>	    	
+            <a href="/logout" class="btn btn-danger"><i class="icon-remove"></i> Cerrar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="materiasincerrar" style="display: none;" >
+        <div class="modal-body">
+            <div class="row-fluid">
+                <div class="span12">
+                    <h4 class="bigger">Estimado Docente:</h4>
+                </div>
+            </div>
+            <div class="row-fluid">
+                <div class="span12">
+                    <span style="text-align: justify;" class="bigger">
+                        <i style="text-align: justify">
+                           <b style="color: red"> Usted Tiene  Materias Pendientes de Cerrar  </b> </br>
+                        </i>
+                    </span>
+                </div>
+            </div>
+            {% if mpendiente %}
+
+                <div class="row-fluid">
+                    <table class="table table-condensed table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Materia</th>
+                                <th>Grupo</th>
+                                <th style="text-align: center">Inicio</th>
+                                <th style="text-align: center">Fin</th>
+                                <th>Periodo</th>
+
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mp in mpendiente %}
+                                 
+                            <tr>
+                                <td class="bigger">{{ mp.0 }}</td>
+                                <td class="bigger">{{ mp.1}} </td>
+                                <td class="bigger">{{ mp.2|date:'d-m-Y' }}</td>
+                                <td class="bigger">{{ mp.3|date:'d-m-Y' }}</td>
+                                <td class="bigger">{{ mp.4 }}</td>
+                                
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+        <div class="modal-footer">
+            <a  href="#" class="btn btn-large"><i class="icon-remove"></i> Cerrar</a>
+        </div>
+    </div>
+	
+
+    <div class="modal fade static" id="testpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado/a Estudiante</h3>
+        </div>
+        <div class="modal-body">
+            <p class="testbody">Para ingresar al sistema deber&aacute; realizar el <b style="color: red">TEST</b>.
+                El tiempo de duraci&oacute;n para realizar el test es de 00:10(diez minutos) <br>
+                Lea cuidadosamente las instrucciones y proceda a realizarlo.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a href="/test_dobe" class="btn btn-success"><i class="icon-share-alt"></i> Realizar test</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="obsvtestpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante</h3>
+        </div>
+        <div class="modal-body">
+            <p class="obsvtestbody">Revise su correo institucional, para ver los resultados del diagnostico de los test realizados.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a href="" id="cerrar" class="btn btn-danger"><i class="icon-share-alt"></i> cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="cantonprovincresid" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle"><img src="/static/images/warning.png"> ALERTA </h3>
+        </div>
+        <div class="modal-body">
+            <p class="evalbody">Estimado Estudiante:
+                                A&uacute;n le quedan <b>DATOS PERSONALES </b> por llenar.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a href="/account" class="btn btn-success"><i class="icon-share-alt"></i> Ir a mi Cuenta</a>
+        </div>
+    </div>
+    {#  PANEL INFORMATIVO A ESTUDIANTES  #}
+    <div class="modal fade static" id="informativopanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle alert alert-info" style="text-align: center"> ESTRATIFICACI&Oacute;N SOCIOECON&Oacute;MICA</h3>
+            <span class="label label-important" style="text-align: center"> ENCUESTA INCOMPLETA </span>
+            <br/><br/>
+            <h5 style="text-align: justify">
+                Esta Encuesta tiene como objetivo principal conocer la realidad del estudiantado del {{ nombre_institucion }}.
+                Para ello estimado estudiante, por favor ingrese al m&oacute;dulo de <span style="color: red">FICHA SOCIOECONOMICA</span> y proceda a llenar todas las casillas de la encuesta.
+            </h5>
+        </div>
+        <div class="modal-body">
+            <div class="row-fluid">
+                <br/>
+                <span style="text-align: justify;" class="bigger">
+                    El estudiante, bajo su responsabilidad, declarar&aacute; que la informaci&oacute;n a proporcionar al {{ nombre_institucion }} se corresponde
+                    absolutamente con la realidad.
+                </span>
+
+            </div>
+        </div>
+        <div class="modal-footer">
+            <div class="row-fluid">
+                <div class="span10" style="text-align: left">
+                    <i>El {{ nombre_institucion }} declara que la informaci&oacute;n introducida por el estudiante es estrictamente confidencial.</i>
+                </div>
+                <div class="span2">
+                    <a href="#" class="btn btn-aceptar btn-success"><i class="icon-arrow-up"></i> Ir a Ficha</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="modal fade static" id="alertaerror" style="display: none;">
+        <div class="modal-header" style="background:steelblue">
+            <h3 id="paneltitle" > <b style="color: #ffffff">Informacion del Reporte </b></h3>
+        </div>
+        <div class="modal-body">
+{#            <p id="panelbody">One fine body…</p>#}
+            <p>No se encuentra el reporte solicitado consulte con su Administrador...</p>
+        </div>
+        <div class="modal-footer">
+            <a href="/" id="cerrarrepor" class="btn btn-pass" style="background:steelblue;color: #ffffff">Cerrar</a>
+        </div>
+    </div>
+	
+    {% if suspension %}
+        <div class="modal fade static" id="suspensionpanel" style="display: none;">
+            <div class="modal-header alert-danger" style="text-align: center;">
+                <h3 class="paneltitle">ALUMNO SUSPENDIDO</h3>
+            </div>
+            <div class="modal-body">
+                <p class="panelbody">NO PUEDE INGRESAR AL SISTEMA</p>
+            </div>
+            <div class="modal-footer">
+                <a href="/logout" class="btn btn-cerrar">Cerrar</a>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="modal fade static" id="clasessincerrar" style="display: none;" >
+        <div class="modal-body">
+            <div class="row-fluid">
+                <div class="span12">
+                    <h4 class="bigger">Estimado Docente:</h4>
+                </div>
+            </div>
+            <div class="row-fluid">
+                <div class="span12">
+                    <span style="text-align: justify;" class="bigger">
+                        <i style="text-align: justify">
+                           <b style="color: darkblue"> Usted Tiene  Clases sin Cerrar  </b> </br>
+                        </i>
+                    </span>
+                </div>
+            </div>
+            {% if clasesabiertas %}
+
+                <div class="row-fluid">
+                    <table class="table table-condensed table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Materia</th>
+                                <th>Grupo</th>
+                                <th style="text-align: center">Dia</th>
+                                <th>Periodo</th>
+                                <th style="text-align: center">Entrada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ca in clasesabiertas %}
+                                <tr>
+                                    <td class="bigger">{{ ca.materia.asignatura.nombre }}</td>
+                                    <td class="bigger">{{ ca.materia.nivel.paralelo}} </td>
+                                    <td class="bigger">{{ ca.fecha|date:'d-m-y' }}</td>
+                                    <td class="bigger">{{ ca.materia.nivel.periodo.nombre }}</td>
+                                    <td>
+                                        {% if ca.abierta %}
+                                            {{ ca.horaentrada }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+        <div class="modal-footer">
+            <a  href="#" class="btn btn-large"><i class="icon-remove"></i> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="informacionpanel" style="display: none;">
+        <div class="modal-header alert">
+            <h3 class="paneltitle"><img src="/static/images/itb/logobolivariano.png"> TRANSFERENCIAS Y DEPOSITOS </h3>
+        </div>
+        <div class="modal-body">
+            <div class="row-fluid">
+                <div class="span12">
+                     <h5 style="text-align: justify">
+                        <b style="color: orange">Estimado Estudiante:</b></br>
+                        Ahora puede enviar el soporte de su pago realizado mediante transferencias bancarias o dep&oacute;sitos; por el M&oacute;dulo Solicitudes de Estudiantes. Opci&oacute;n: Pago de Rubros.
+                    </h5>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="/solicitudonline" class="btn btn-success"><i class="icon-share-alt"></i> Ir a Bandeja de Atenci&oacute;n</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="actas_sinentregar" style="display: none;" >
+        <div class="modal-body">
+            <div class="row-fluid">
+                <div class="span12">
+                    <h4 class="bigger">Estimado Docente:</h4>
+                </div>
+            </div>
+            <div class="row-fluid">
+                <div class="span12">
+                    <span style="text-align: justify;" class="bigger">
+                        <i style="text-align: justify">
+                           <b style="color: red"> Usted Tiene Actas Sin Entregar </b> </br>
+                        </i>
+                    </span>
+                </div>
+            </div>
+            {% if actassinentregar %}
+                <div class="row-fluid">
+                    <table class="table table-condensed table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Materia</th>
+                                <th>Nivel</th>
+                                <th>Grupo</th>
+                                <th style="text-align: center">F. Cierre</th>
+                                <th style="text-align: center">Carrera</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ac in actassinentregar %}
+                                <tr>
+                                    <td class="bigger">{{ ac.0 }}</td>
+                                    <td class="bigger">{{ ac.1}} </td>
+                                    <td class="bigger">{{ ac.2 }}</td>
+                                    <td class="bigger">{{ ac.3|date:'d-m-Y' }}</td>
+                                    <td class="bigger">{{ ac.4 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+        <div class="modal-footer">
+            <a  href="#" class="btn btn-large"><i class="icon-remove"></i> Cerrar</a>
+        </div>
+    </div>
+
+     <div class="modal fade static" id="testpanelreferidos" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante </h3>
+        </div>
+	<div class="modal-body">
+             <p class="testbody">Tiene una comisión {% if valorreferido %} de ${{ valorreferido }} {% endif %} por cobrar por su <b style="color: red">REFERIDOS</b>.
+                 <br>Si desea acreditarlo a una de sus cuotas de clic en <b style="color: green"> Aplicar</b>
+            </p>
+        </div>
+	<div class="modal-footer">
+                <a href="#" class="btn btn-success ahora"> Aplicar</a>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+         </div>
+    </div>	
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+
+    <div class="modal fade show" id="bookpanelacepta" tabindex="-1" role="dialog" aria-labelledby="myModalLabel33" aria-hidden="true" >
+        <div class="modal-header">
+            <h3 class="paneltitle">Terminos y Condiciones</h3>
+        </div>
+        <div class="modal-body">
+          <div class="row-fluid">
+               {% if not aceptatermino %}
+          	    <div style="font-size: 15px" align="justify">
+            	        En calidad de estudiante del <strong>ITB</strong> declaro que conozco y acepto lo establecido en el <strong> REGLAMENTO DE MATRÍCULAS, ARANCELES Y ARANCELES DIFERENCIADOS PARA LOS ESTUDIANTES DEL INSTITUTO SUPERIOR TECNOLÓGICO BOLIVARIANO DE TECNOLOGÍA </strong> así como los demás instrumentos legales del <strong> ITB </strong>
+           	    </div>
+           	    <div style="font-size: 15px">
+             		constan en <a href="https://www.itb.edu.ec/public/docs/reglamento_interno_de_aranceles_ITB_0803.pdf" target="_blank">https://www.itb.edu.ec/public/docs/reglamento_interno_de_aranceles_ITB_0803.pdf </a></br></br>
+           	    </div>
+		{% endif %}
+          </div>
+	  <div class="row-fluid">
+		{% if not aceptaconstancia %}
+               		<div style="font-size: 15px" align="justify">
+                 		En calidad de estudiante del <strong>ITB</strong> <strong>declaro que he leido y acepto las disposiciones generales indicadas en el siguiente link  </strong>
+               		</div>
+               		<div style="font-size: 15px">
+                		<a href="https://www.itb.edu.ec/public/docs/constancia_presencial.pdf" target="_blank">https://www.itb.edu.ec/public/docs/constancia_presencial.pdf </a>
+               		</div>
+		{% endif %}
+           </div>
+	</div>
+        <div class="modal-footer">
+	   {% if not aceptatermino %}
+             <a href="/account?action=termino&id={{ inscripcion.id }}" style="cursor: pointer" class="btn btn-success terminocondiciones"><i class="icon-money"></i> Aceptar Terminos</a>
+             <a href="/logout" class="btn btn-danger"><i class="icon-remove"></i> Cerrar</a>
+	   {% endif %}
+        </div>
+        <div class="modal-footer">
+            {% if not aceptaconstancia %}
+                <a href="/account?action=constancia&id={{ inscripcion.id }}" style="cursor: pointer" class="btn btn-success constancia"><i class="icon-money"></i> Aceptar Constancia</a>
+                <a href="/logout" class="btn btn-danger"><i class="icon-remove"></i> Cerrar</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {# modal proteccion datos inicio   #}
+    <div class="modal fade show" id="bookpanelprotecciondatos" tabindex="-1" role="dialog" aria-labelledby="myModalLabel33" aria-hidden="true" >
+        <div class="modal-header">
+            <h3 class="paneltitle"><img src="/static/images/itb_logo.png">Protecci&oacute;n de Datos</h3>
+        </div>
+        <div class="modal-body">
+            <div class="row-fluid">
+               {% if  protecciondatos %}
+                    <div style="font-size: 15px" align="justify">
+                            En cumplimiento con <strong>La Ley Org&aacute;nica de Protecci&oacute;n de Datos Personales del Ecuador, </strong>se le informa que los datos personales
+                            proporcionados a trav&eacute;s de este sitio web ser&aacute;n tratados de forma confidencial y pasar&aacute;n a formar parte de un
+                            registro de datos de  <strong>ITB</strong>
+                            La finalidad del tratamiento de los datos es la gesti&oacute;n y env&iacute;o de informaci&oacute;n sobre los programas acad&eacute;micos
+                            que ofrece el <strong>ITB</strong>, as&iacute; como el env&iacute;o de informaci&oacute;n sobre eventos, actividades y noticias relacionadas
+                            con el <strong>ITB</strong>, siempre y cuando nos haya autorizado expresamente para ello.
+                            La informaci&oacute;n que proporcione ser&aacute; utilizada &uacute;nicamente para los fines mencionados anteriormente
+                            y no ser&aacute; cedida a terceros sin su consentimiento previo y expreso, salvo obligaci&oacute;n legal.
+                            Al proporcionarnos sus datos, usted declara que ha le&iacute;do y comprendido la presente cl&aacute;usula y acepta expresamente el tratamiento
+                            de sus datos personales en los t&eacute;rminos descritos.
+                            <strong> Para conocer m&aacute;s sobre las pol&iacute;ticas de privacidad y la forma de como ejercer sus derechos, haga click en el siguiente enlace:</strong>
+                    </div>
+                    <div style="font-size: 15px">
+                        <a href="https://www.itb.edu.ec/Politicas" target="_blank">https://www.itb.edu.ec/Politicas </a></br></br>
+                    </div>
+		       {% endif %}
+            </div>
+    	</div>
+        <div class="modal-footer">
+           {% if protecciondatos %}
+                 <a href="/account?action=proteccion&id={{ inscripcion.id }}" style="cursor: pointer" class="btn btn-success protecciondatos"><i class="icon-check"></i> Aceptar Uso de Datos</a>
+                 <a href="/logout" class="btn btn-danger"><i class="icon-remove"></i> Cerrar</a>
+           {% endif %}
+        </div>
+    </div>
+{# proteccion datos fin  #}
+
+
+    <div class="modal fade static" id="horaasistente" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle1"> Ingresar Horario Laboral</h3>
+        </div>
+        <div class="modal-body" style="margin: 20px">
+            <b>Campus: </b>
+            <select id='sede' class="input-xlarge bigger"/>
+                <option value='-1'>-----</option>
+                <option value='0'> FUERA DE CAMPUS </option>
+                {% for s in sedes %}
+                    <option value="{{ s.id }}" >{{ s.nombre }}</option>
+                {% endfor %}
+            </select><br>
+            <p id="psede" style="color: red"></p>
+            <b>H. Inicio: </b><input type="text" name="inicio" id="inicio" class="input input-small" ><br>
+            <p id="pinicio" style="color: red"></p>
+            <b>H. Fin:&nbsp;&nbsp;&nbsp;&nbsp; </b><input type="text" name="fin" id="fin" class="input input-small"><br>
+            <p id="pfin" style="color: red"></p>
+            <b>No labora: </b><input type="checkbox" name="nolabora" id="nolabora" style="width: 10%;height: 5em;">
+            <p id="pmensja" style="color: red"></p>
+        </div>
+        <div class="modal-footer">
+            <a  href="/logout" class="btn btn-cerrar">Cerrar</a>
+            <a style="cursor: pointer;" id="ingresarhorsop" class="btn btn-primary btn-resetear"> Ingresar</a>
+        </div>
+    </div>
+{#     <div class="modal fade static" id="horaasistentesol" style="display: none;">#}
+{#        <div class="modal-header alert-info" style="text-align: center">#}
+{#            <h3 id="paneltitle1"> Ingresar Horario Laboral</h3>#}
+{#        </div>#}
+{#        <div class="modal-body" style="margin: 20px">#}
+{#            <b>H. Inicio: </b><input type="text" name="iniciosol" id="iniciosol" class="input input-small" ><br>#}
+{#            <p id="piniciosol" style="color: red"></p>#}
+{#            <b>H. Fin:&nbsp;&nbsp;&nbsp;&nbsp; </b><input type="text" name="finsol" id="finsol" class="input input-small"><br>#}
+{#            <p id="pfinsol" style="color: red"></p>#}
+{#	    <b>No labora: </b><input type="checkbox" name="nolaborasol" id="nolaborasol" style="width: 10%;height: 5em;">#}
+{#            <p id="pmensjasol" style="color: red"></p>#}
+{#        </div>#}
+{#        <div class="modal-footer">#}
+{#            <a  href="/logout" class="btn btn-cerrar">Cerrar</a>#}
+{#            <a style="cursor: pointer;" id="ingresarhorariosol" class="btn btn-primary btn-resetear"> Ingresar</a>#}
+{#        </div>#}
+{#    </div>#}
+     <div class="modal fade static" id="llenarcampo" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante </h3>
+        </div>
+	    <div class="modal-body">
+             <p class="testbody">
+                 Debe completar los siguientes  datos de inscripcion obligatoriamente, <b>teléfonos, correo, provincia que reside, cantón que reside, parroquia que reside, sector que reside, por que medio se enteró del itb</b>
+            </p>
+        </div>
+	    <div class="modal-footer">
+                <a href="/account" class="btn btn-success"> Completar Informacion</a>
+                <a href="/logout" class="btn btn-cerrar"> Cerrar</a>
+         </div>
+    </div>
+    <div class="modal fade static" id="encuestatutorpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante </h3>
+        </div>
+        <div class="modal-body">
+            <p class="testbody">Para ingresar al sistema debera realizar la encuesta a tu tutor.
+
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a href="/encuestainscripcion"  class="btn btn-success"><i class="icon-share-alt"></i> Realizar Encuesta</a>
+        </div>
+    </div>
+     <div class="modal fade static" id="escenariomodal" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante </h3>
+        </div>
+	    <div class="modal-body">
+             <p class="testbody">
+                 Usted se encuentra en el nivel necesario para escoger el escenario de práctica,<a href="/escenariopractica" class="label label-success"> dar click aquí </a>  para seleccionar su escenario.</br></br>
+{#                 En el caso de no seleccionar el escenario debe solicitar una <b>solicitud aplazamiento de práctica</b>, <a href="/solicitudonline?generar&id={{ ID_SOLIC__ONLINE }}&idtipo={{ SOLICITUD_APLAZAMIEN_PRACT_ID }}" class="label label-info"> dar click aquí </a>.#}
+            </p>
+        </div>
+	    <div class="modal-footer">
+                <a href="/logout" class="btn btn-cerrar"> Cerrar</a>
+         </div>
+    </div>
+	
+	<div class="modal fade static" id="panelrequerimiento" style="display: none;">
+        <div class="modal-header alert-info">
+            <h3 class="paneltitle">Notificaci&oacute;n </h3>
+        </div>
+        <div class="modal-body">
+            {% if respuestasolucleido %}
+            <p > {{ respuestasolucleido }} de sus requerimientos han sido consultados
+
+            </p>
+            {% endif %}
+          {#  {% if respuestaleido %} #}
+          {#  <p > {{ respuestaleido }} de sus requerimientos han sido finalizados #}
+
+          {#  </p> #}
+          {#  {% endif %} #}
+        </div>
+        <div class="modal-footer">
+                <a href="#" class="btn btn-success verrespuesta"> Ver</a>
+                <a href="#" class="btn btn-cerrarq"> Cerrar</a>
+         </div>
+    </div>
+
+    <div class="modal fade static" id="encuestavacunas" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle1"> Estimado(a) buenos d&iacute;as. Solicitamos ingresar la siguiente informaci&oacute;n: </h3>
+        </div>
+        <div class="modal-body" style="margin: 20px">
+            <form id="formulario5" class='form-horizontal' action="" method="POST">
+                {% for field in frmencuestavacuna %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <p id=mensaje style="color: red;font-size: 14px"></p>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a  href="/logout" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-actualizar btn-warning">Grabar</a>
+        </div>
+    </div>
+
+{# OCastillo 09-02-2023 entrevista profesionalizacion   #}
+    <div class="modal fade static" id="profesionalizacion" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle1"> Estimado(a) aspirante, solicitamos ingresar lo siguiente: un breve comentario y el enlace de un corto video indicando su deseo de ingresar a nuestra instituci&oacute;n: </h3>
+        </div>
+        <div class="modal-body" style="margin: 20px">
+            <form id="formulario5" class='form-horizontal' action="" method="POST">
+                {% for field in frmentrevista %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <p id=mensaje style="color: red;font-size: 14px"></p>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a  href="/logout" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-actualizar btn-warning">Guardar</a>
+        </div>
+    </div>
+   
+   {# informacion gestor cobranza inicio  #}
+    <div class="modal fade static" id="panelgestionrubro" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante </h3>
+        </div>
+        <div class="modal-body">
+             <p class="testbody"><b style="color: red">Tiene un rubro con compromiso de pago que vence hoy </b><br><br>
+                 Puede contactar al gestor(a): <b>{{ gestor_cobros.asistente.nombre_completo_inverso }}</b><br>
+                 Tel&eacute;fono: <b>{{ gestor_cobros.telefono }}</b> Email: <b>{{ gestor_cobros.asistente.emailinst }}</b>
+            </p>
+        </div>
+        <div class="modal-footer">
+{#            <a href="#" class="btn btn-cerrar"> Cerrar</a>#}
+            <a href="#" class="btn btn-danger"><i class="icon-remove"></i> Cerrar</a>
+        </div>
+    </div>
+{# informacion gestor cobranza fin  #}
+
+{#  modal biblioteca virtual#}
+   <div class="modal fade static" id="panelbibliotecavirtual" style="display: none;">
+        <div class="modal-header alert-info">
+            <h3 class="paneltitle"><img src="/static/images/itb/logobolivariano.png"> VISITE LA BIBLIOTECA VIRTUAL</h3>
+        </div>
+        <div class="modal-body">
+            <div class="row-fluid">
+                <div class="span12">
+                    <p><b style="color: #0000ff">Estimado/a {{ persona.nombre_completo_inverso }}:</b></p>
+                    <p>Accede a: <b>{{ biblioteca.0 }}</b> libros f&iacute;sicos, <b>{{ biblioteca.1 }}</b> digitales, <b>{{ biblioteca.2 }}</b> sitios web.</p>
+                    <div class="input-append">
+                        <input class="span7" id="inputbiblio" type="text">
+                        <button class="btn" id="busquedabiblio" type="button">Buscar</button>
+                    </div>
+                    <div id="referenciasweb">
+                        <br/>
+                        <h5>Referencias Web</h5>
+                        {% for ref in referenciasweb %}
+                           {% if ref.id != biblio_parametrizada %}
+                               {% if not forloop.first %}<hr style="margin: 7px 0;"/>{% endif %}
+                               <a href="/gourl?action=ref&id={{ ref.id }}" target="_blank"><img src="{{ ref.logo.url }}" alt='{{ ref }}'/></a><br/>
+                           {% else %}
+                               <a href="#" onclick="consultaEbook('{{ ref.id }}')" ><img src="{{ ref.logo.url }}" alt='{{ ref }}'/></a><br/>
+                           {% endif %}                            
+                        {% endfor %}
+                    </div>
+                    <div id="otraslibs">
+                        <br/>
+                        <a href="#" id="otrasbibli"><i class="icon-globe"></i> Otras Bibliotecas Virtuales</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+   </div>
+{#  modal biblioteca virtual fin#}
+
+{#    TOAST NOTIFICACIONES#}
+    {% if notificaciones %}
+        {% include "notificaciones/notificaciones_panel.html" %}
+    {% endif %}
+
+
+     <div class="modal fade static" id="infoevaluciontestingreso" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle alert alert-info" style="text-align: center"> TIENE EVALUCIONES POR REALIZAR</h3>
+            <br/><br/>
+            <h5 style="text-align: justify">
+                Estos Test tienen como objetivo medir el grado de nociones, conceptos y conocimientos adquiridos por los concursantes y evaluar las siguientes acciones: 1. Reconocimiento y uso de información específica en cada uno de los componentes evaluados en las diferentes pruebas.
+            </h5>
+        </div>
+        <div class="modal-footer">
+            <div class="row-fluid">
+                <div class="span10" style="text-align: left">
+                    <i>El {{ nombre_institucion }} declara que la informaci&oacute;n introducida por el estudiante es estrictamente confidencial.</i>
+                </div>
+                <div class="span2">
+                    <a href="/inscripciontest" class="btn btn-aceptar btn-success"><i class="icon-arrow-up"></i> Ir al Test Ingreso</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

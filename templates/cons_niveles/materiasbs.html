@@ -1,0 +1,226 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+            $(".generarexcel").click(function(){
+                 var matid=$(this).attr("matid");
+                 $.post("/cons_niveles", {"action":"generarexcel","matid":matid}, function(data) {
+                    if (data.result=='ok'){
+                        $("#espera").modal("hide");
+                        var ventana= window.open();
+                        ventana.location.href=data.url;
+                    }else{
+                        showWaiting("Error","Intente Nuevamente",true);
+                    }
+                 }, "json");
+            });
+
+            $(".generarexcel2").click(function(){
+                 var matid=$(this).attr("matid");
+                 $.post("/cons_niveles", {"action":"generarexcel2","matid":matid}, function(data) {
+                    if (data.result=='ok'){
+                        $("#espera").modal("hide");
+                        var ventana= window.open();
+                        ventana.location.href=data.url;
+                    }else{
+                        showWaiting("Error","Intente Nuevamente",true);
+                    }
+                 }, "json");
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>{% if nivel.cerrado %}<span class='label label-important'>CERRADO</span>{% endif %} {% if nivel.nivelmalla %}{{ nivel.nivelmalla }} - {% endif %}{{ nivel.paralelo }} - {{ nivel.sesion }}, {% if nivel.carrera %}{{ nivel.carrera }}{% else %}{{ nivel.coordinacion }}{% endif %}[{{ nivel.inicio|date:"d-m-Y" }} - {{ nivel.fin|date:"d-m-Y" }}]</h3>
+            <h4>Per&iacute;odo: {{ periodo }}</h4><br/>
+            {% if not centroexterno %}
+                <h4>Fecha Tope de  Matricula Ordinaria:  hasta {{ nivel.fechatopematricula|date:"d-m-Y" }} {% if nivel.matricula_cerrada %}<span class="label label-important"> CERRADA</span>{% endif %}</h4>
+                {% if not materialibre %}
+                    <h4>{% if nivel.fechatopematriculaex %} Fecha Tope Matricula Extraordinaria: hasta {{ nivel.fechatopematriculaex|date:"d-m-Y" }} {% if not nivel.matriculaextraordinaria_abierta %} <span class="label label-important"> CERRADA</span>{% endif %}{% endif %} </h4>
+                    <h4>Capacidad del nivel para Matriculas: <span class="badge badge-info"> {{ nivel.capacidadmatricula }}</span> (Matriculados: {{ nivel.mat_nivel }}) {% if nivel.mat_nivel >= nivel.capacidadmatricula %}<span class="label label-important"> SE HA COMPLETADO LA CAPACIDAD TOTAL DE MATRICULADOS DEL NIVEL</span>{% endif %}</h4>
+                {% endif %}
+            {% endif %}
+            <br/>
+        </div>
+        <div class='span1'>
+            <a href="/cons_niveles" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid margeninferior'>
+
+            <div class='span12'>
+                <a href="/reportes?action=run&direct=true&n=mate_cronogramaperiodo&nivel={{ nivel.id }}&rt=pdf" class='btn btn-warning'><i class="icon-print"></i> Imprimir</a>
+                <a href="/horarios?action=horario&id={{ nivel.id }}&ret=1" class='btn'><i class="icon-time"></i> Horario</a>
+                <a href="/cons_matriculas?action=matricula&id={{ nivel.id }}&ret=1" class="btn"><i class="icon-group"></i> Matr&iacute;cula - {{ nivel.mat_nivel }}</a>
+                {% if cronogramapagos %}
+                    <a href="/cons_niveles?action=pagos&id={{ nivel.id }}" class="btn"><i class="icon-money"></i> Pagos</a>
+                {% endif %}
+            </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Asignatura</th>
+                {% if UTILIZA_ASIGNATURA_RECTORA %}
+                    <th>Rectora</th>
+                {% endif %}
+                <th>{% if not centroexterno %}Horas{% else %}Centro{% endif %}</th>
+                <th>{% if not centroexterno %}Cr&eacute;ditos{% else %}Paralelo{% endif %}</th>
+                <th>Fecha Inicial</th>
+                <th>Fecha Final</th>
+                <th>Profesor(es)</th>
+                {% if centroexterno %}
+                    <th>Exportada</th>
+                {% endif %}
+                <th> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for materia in materias %}
+                <tr>
+                    <td>
+                        {% if not nivel.cerrado and not centroexterno %}
+                            <a>{% if materia.identificacion %}{{ materia.identificacion }}{% else %}###{% endif %}-{{ materia.asignatura }}</a>
+                        {% else %}
+                            {% if materia.identificacion %}{{ materia.identificacion }}-{% else %}{% endif %}{{ materia.asignatura }}
+                        {% endif %}
+                        <br/>
+                        {% if materia.cerrado %}
+                            <span class="label label-important">CERRADA el {{ materia.fechacierre|date:"d-m-Y" }}</span>
+                        {% endif %}
+                        {% if materialibre and materia.rectora %}
+                            <span class="label label-info">MATERIA GENERAL</span>
+                        {% endif %}
+                        {% if centroexterno and not materia.paralelo%}
+                            <span class="label label-info">MATERIA INTERNA</span>
+                        {% endif %}
+                    </td>
+                    {% if UTILIZA_ASIGNATURA_RECTORA %}
+                        <td>
+                            {% if materia.rectora %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    <td>
+                        {% if not centroexterno %}
+                            {{ materia.horas }} Horas
+                        {% else %}
+                            {{ materia.entidad }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not centroexterno %}
+                            {{ materia.creditos }} Cr&eacute;ditos
+                        {% else %}
+                            {{ materia.paralelo }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ materia.inicio|date:'d-m-Y' }}
+                    </td>
+                    <td>
+                        {{ materia.fin|date:'d-m-Y' }}
+
+                    </td>
+                    <td>
+                        <table class="table table-bordered table-condensed">
+                        {% if materia.profesormateria_set.count %}
+                            {% for profesormateria in materia.profesores_materia %}
+                                <tr>
+                                    <td>
+
+                                        {{ profesormateria.segmento }} - <b>{{ profesormateria.profesor.persona.nombre_completo }} {%  if profesormateria.profesor_aux %} <span class="label label-info">Aux. </span>  {{ profesormateria.profesor_auxiliar.persona.nombre_completo }} {% endif %}</b> <span class="fechas{{ materia.id }}">[{{ profesormateria.desde|date:'d-m-Y' }} al {{ profesormateria.hasta|date:'d-m-Y' }}]</span> {% if forloop.first and materia.profesores_materia.count > 1 %}<span class="label label-info">PRINCIPAL</span>{% endif %}
+                                        {% if profesormateria.idzoom %}<br> <span class="label label-warning" > Zoom ID: {{ profesormateria.idzoom }}</span>{% endif %} <br>
+                                        {% if persona.pertenece_talento %}
+                                            {% if profesormateria.valorporhora %}
+                                                <span class="label label-important" > Valor por Hora: ${{ profesormateria.valor }}</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+
+                        {% endif %}
+                        </table>
+                    </td>
+                    {% if centroexterno %}
+                        <td style="text-align: center">
+                            {% if materia.exportada or materia.cantexp > 0 or materia.cantexport > 0 %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+                            {% if not materia.cerrado %}
+                                <li><a href="/reportes?action=run&direct=true&n=lista_alumnos_matriculados_materia&materia={{ materia.id }}&rt=pdf"><i class="icon-print icon-white"></i> Tomando esta materia</a></li>
+                                <li> <a href="#"  class="generarexcel2" matid='{{ materia.id }}'><i class="icon-list"></i> Matriculados</a></li>
+                            {% endif %}
+                            {% if perms.sga.add_reporteexcel %}
+                                <li> <a href="#"  class="generarexcel" matid='{{ materia.id }}'><i class="icon-list"></i> Reporte Asistencia</a></li>
+                            {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% for mnivel in materianivel %}
+                 <tr>
+                    <td  style="font-weight: bold;">{{ mnivel.materia.asignatura }}
+                    {% if mnivel.materia.cerrado %}<br>
+                            <span class="label label-important">CERRADA el {{ mnivel.materia.fechacierre|date:"d-m-Y" }}</span>
+                        {% endif %}
+                     </td>
+                    <td>{{ mnivel.materia.horas }}</td>
+                    <td>{{ mnivel.materia.creditos }}</td>
+                    <td>{{ mnivel.materia.inicio|date:'d-m-Y' }} </td>
+                    <td>{{ mnivel.materia.fin|date:'d-m-Y' }} </td>
+                    <td>
+                            <table class="table table-bordered table-condensed">
+                            {% if mnivel.materia.profesormateria_set.count %}
+                                {% for profesormateria in mnivel.materia.profesores_materia %}
+                                    <tr>
+                                        <td>
+                                            {{ profesormateria.segmento }} - <b>{{ profesormateria.profesor.persona.nombre_completo }} {%  if profesormateria.profesor_aux %} <span class="label label-info">Aux. </span>  {{ profesormateria.profesor_auxiliar.persona.nombre_completo }} {% endif %}</b> <span class="fechas{{ materia.id }}">[{{ profesormateria.desde|date:'d-m-Y' }} al {{ profesormateria.hasta|date:'d-m-Y' }}]</span> {% if forloop.first and materia.profesores_materia.count > 1 %}<span class="label label-info">PRINCIPAL</span>{% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% endif %}
+                            </table>
+                    </td>
+                 <td style="font-weight: bold;text-align: center">
+                     VIENDO CON  {{ mnivel.materia.nivel.paralelo }} - {{ mnivel.materia.nivel.nivelmalla }}
+                 </td>
+                 </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <a href="/reportes?action=run&direct=true&n=mate_cronogramaperiodo&nivel={{ nivel.id }}&rt=pdf" class='btn btn-warning'><i class="icon-print"></i> Imprimir</a>
+            <a href="/horarios?action=horario&id={{ nivel.id }}" class='btn'><i class="icon-time"></i> Horario</a>
+            <a href="/cons_matriculas?action=matricula&id={{ nivel.id }}" class="btn"><i class="icon-group"></i> Matr&iacute;cula - {{ nivel.matricula_set.count }}  </a>
+            {% if cronogramapagos %}
+                <a href="/cons_niveles?action=pagos&id={{ nivel.id }}" class="btn"><i class="icon-money"></i> Pagos</a>
+            {% endif %}
+            </div>
+    </div>
+{% endblock %}
+

@@ -1,0 +1,329 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        var id = 0
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/admin_tutoria?s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+        $("#nuevo").click(function() {
+
+            location.href = "/admin_tutoria?action=add";
+        });
+
+        $(".activar").click(function() {
+            id = $(this).attr("id")
+            $.post("/admin_tutoria",{"action": "activacion", "id": id },function(data) {
+                    if(data.result=='ok'){
+                    location.reload();}
+
+            },"json");
+        });
+        $(".adicionarpago").click(function() {
+            $("#id_rol").addClass("input-xlarge");
+            $("#id_contarol").addClass("input-small");
+            $("#id_contarol").val("");
+            $("#id_rol").val("");
+            $("#id_valor").addClass("input-small");
+            $("#id_valor").val($(this).attr("pid"));
+            $("#pagopanel").modal({backdrop: 'static'});
+            $("#pagopanel .paneltitle").html($(this).attr("pnom"));
+            $("#pagopanel").modal("show");
+            $($("#id_valor").get(0).parentNode).find(".help-text").html("");
+            id =  $(this).attr("id");
+
+            return false;
+        });
+
+        $("#pagopanel .btn-cerrar").click(function() {
+            $("#pagopanel").modal("hide");
+            return false;
+        });
+        $("#pagopanel .btn-adicionar").click(function() {
+            adicionarpagos(false);
+            return false;
+        });
+        $("#notificacionpanels .btn").click(function() {
+{#            alert(5);#}
+            location.href='/admin_detalle_tutoria?id='+id
+        });
+        adicionarpagos = function(cerrar) {
+            var rol = $("#id_rol").val();
+            var valor =  $("#id_valor").val();
+            var contarol =  $("#id_contarol").val();
+            var band = 0;
+
+            if (rol != '' && valor != 0.00 && contarol != '' ){
+
+                if(id != 0){
+
+                    $.post("/admin_tutoria", {"action":'pagar', "rol":rol,"valor":valor,"id": id,"contarol":contarol}, function(data) {
+                                if (data.result=='ok') {
+                                    $("#pagopanel").modal("hide");
+                                    $("#notificacionpanels .paneltitle").html('Pago Generado con exito');
+                                    $("#notificacionpanels .panelbody").html("<table><tr><td width='60px'>"+"<img src='/static/images/dinfo.png' alt='INFO' width='50px'/>"+"</td><td valign='top'>"+'Si desea consultar el registro Ingresado dar click en Ver Registro caso contrario en Continuar'+"</td></tr></table>");
+
+{#                                    $("#notificacionpanels .boton2").unbind("click").click('').show();#}
+{#                                    $("#notificacionpanels .boton1").unbind("click").click('/tutoria').show();#}
+                                    $("#notificacionpanels .boton1").html('Continuar');
+                                    $("#notificacionpanels .boton2").html('Ver Registro');
+
+                                    $("#notificacionpanels").modal({backdrop: 'static', keyboard: false});
+
+                                    $("#notificacionpanels").modal("show");
+                                                           }
+                                else{
+
+                                    if (data.result=='badmayor') {
+                                    $($("#id_contarol").get(0).parentNode).find(".help-text").html("<h4 class='alert alert-danger'>El valor Excede el Pago Total</h4>");}
+                                    else{
+                                           if (data.result=='badrol') {
+                                               $($("#id_contarol").get(0).parentNode).find(".help-text").html("<h4 class='alert alert-danger'>El Profesor no se encuentra en el Rol</h4>");}
+                                           else{
+                                               $("#pagopanel").modal("hide");
+                                                smoke.alert('Error al ingresar el pago Intentelo nuevamente')}
+                                    }
+                                }
+
+                    }, "json");
+
+                    if (cerrar) {
+                        $("#pagopanel").modal("hide");
+                    }
+                }
+                else{
+                        $("#pagopanel").modal("hide");
+                        smoke.alert('Error al ingresar el pago Intentelo nuevamente')
+                    }
+            }
+            else {
+                if (valor == 0.00){
+                    $($("#id_contarol").get(0).parentNode).find(".help-text").html("<h4 class='alert alert-danger'>El valor debe ser mayor a cero</h4>");}
+                else{
+                    $($("#id_contarol").get(0).parentNode).find(".help-text").html("<h4 class='alert alert-danger'>Faltan datos por Ingresar</h4>");
+                }
+            }
+
+        };
+        {% if not pagotutoria %}
+            smoke.alert('No existe Informacion');
+        {% endif %}
+        var numeros="0123456789.";
+
+        function tiene_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+
+        var numeros1="0123456789";
+
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros1.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+
+        $("#id_valor").blur(function(){
+            var v = $("#id_valor").val();
+            var p = tiene_numeros(v);
+            if (p != v.length)
+            {
+              $($("#id_valor").get(0).parentNode).find(".help-text").html("Ingresar solo Numeros");
+              $("#id_valor").val("");
+              $("#id_valor").focus();
+            }
+            else{
+                $($("#id_valor").get(0).parentNode).find(".help-text").html("");
+            }
+
+        });
+
+        $("#id_contarol").blur(function(){
+            var v = $("#id_contarol").val();
+            var p = solo_numeros(v);
+            if (p != v.length)
+            {
+              $($("#id_contarol").get(0).parentNode).find(".help-text").html("Ingresar solo Numeros");
+              $("#id_contarol").val("");
+              $("#id_contarol").focus();
+            }
+            else{
+                $($("#id_contarol").get(0).parentNode).find(".help-text").html("");
+            }
+
+        });
+
+
+    });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span5">
+            <h3>Tutorias a Cancelar</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/admin_tutoria" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span6'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+
+                <thead>
+                    <tr>
+                        <th style="text-align: center;width: 40%">Profesor</th>
+                        <th style="text-align: center;width: 8%;">Tutorias</th>
+                        <th style="text-align: center;width: 18%;">Total a Pagar x Tutorias</th>
+                        <th style="text-align: center;width: 15%">Saldo Anterior</th>
+                        <th style="text-align: center;width: 15%">Fecha Tutorias</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for p in pagotutoria %}
+                        <tr>
+                            <td style="text-align: center;"><a href="#">{{ p.profesor }}</a></td>
+                            <td style="text-align: center;">{{ p.totaltutoria }}</td>
+                            <td style="text-align: center;">{{ p.pagototal }} </td>
+                            <td style="text-align: center;">{{ p.saldo }}</td>
+                            <td style="text-align: center;">{{ p.fecha }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if not persona.pertenece_soporte %}
+                                            {% if p.pagototal != 0.00 or p.saldo != 0.00 %}
+                                                <li><a  href='#' id='{{ p.id }}' pid='{{ p.total_saldo }}' pnom='{{ p.profesor }}' class="adicionarpago"> <i class='icon-edit'></i> Pagar </a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if p.detalle_exist %}
+                                            <li><a  href='/admin_detalle_tutoria?id={{ p.id }}'> <i class='icon-edit'></i> Detalle de Pagos </a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class="span6">
+
+            {% if perms.med.change_personafichamedica %}
+{#            <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>#}
+            {% endif %}
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/admin_tutoria?page=1">1</a></li>
+                            <li><a href="/admin_tutoria?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_tutoria?page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/admin_tutoria?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/admin_tutoria?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_tutoria?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="modal fade static" id="pagopanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle"></h3>
+            <h3>Adicionar Pago</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario3" class='form-horizontal' action="" method="POST">
+
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+{#            <a href="#" class="btn btn-adicionarycerrar btn-warning">Adicionar y Cerrar</a>#}
+            <a href="#" class="btn btn-adicionar btn-success">Pagar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal hide fade" id="notificacionpanels" style="display: none;">
+    <div class="modal-header">
+        <h3 class="paneltitle">
+            Notificaci&oacute;n
+        </h3>
+    </div>
+    <div class="modal-body panelbody"></div>
+    <div class="modal-footer">
+        <a href="/admin_tutoria" class="btn boton1 btn-success"><i class="icon-refresh icon-white"></i> </a>
+        <a href="#" class="btn boton2"><i class="icon-share-alt icon-white"></i></a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $(".profesormateria").click(function() {
+                $.blockUI({message: null});
+                var pmid = $(this).attr("pmid");
+                var self = this;
+                $.post("/niveles", {'action': 'delprofesor', 'pmid': pmid}, function(data) {
+                    $.unblockUI();
+                    $(self.parentNode.parentNode).remove();
+                }, "json");
+            })
+
+
+            $(".selectorfecha").datepicker({format:"dd-mm-yyyy"});
+            $(".selectorfecha").blur(function() {
+                var mid = $(this).attr("mid");
+                var horas = $("#horas"+mid).val();
+                var fecha = $(this).val();
+                var inicio = $(this).hasClass("fechainicio");
+                $.blockUI({message: null});
+                $.post("/niveles", {'action': 'updatefecha', 'horas': horas, 'mid': mid, 'fecha': fecha, 'inicio': inicio}, function(data) {
+                    $.unblockUI();
+                    if (data.result=='ok') {
+                        if (inicio) {
+                            $("#selectorfechafin"+mid).val(data.fin);
+                        }
+                    } else {
+                        if (!inicio) {
+                            $("#selectorfechafin"+mid).val(data.fin);
+                        }
+                    }
+                    $(".fechas"+mid).html("["+data.inicio+" al "+data.fin+"]");
+                });
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Cronograma de Materias del Profesor : {{ profesor }} </h3>
+            <h5>Per&iacute;odo: {{ periodo }} </h5><br>
+        </div>
+        <div class='span1'>
+            <a href="/adm_docentes" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Asignatura</th>
+                    {% if UTILIZA_ASIGNATURA_RECTORA %}
+                        <th>Rectora</th>
+                    {% endif %}
+                    {% if not centroexterno %}
+                        <th>Nivel  {% if not materia.nivel.carrera %}/ Coordinacion{% endif %}</th>
+                        {% if materia.nivel.grupo %} <th>Paralelo</th> {% endif %}
+                        {% if materia.nivel.carrera %} <th>Carrera</th> {% endif %}
+                    {% endif %}
+                    <th>Grupo</th>
+                    <th>Carrera</th>
+                    <th>Fecha Inicial</th>
+                    <th>Fecha Final</th>
+                    <th>Horas</th>
+                    <th>Turno</th>
+                    <th>Cr&eacute;ditos</th>
+                    <th>Profesor(es)</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for materia in materias %}
+                    <tr>
+                        <td>{% if materia.identificacion %}{{ materia.identificacion }}{% else %}###{% endif %}-{{ materia.asignatura }}</td>
+                        {% if UTILIZA_ASIGNATURA_RECTORA %}
+                            <td>{% if materia.rectora %}<img src='/static/images/16/true.png' alt=''/>{% else %}-{% endif %}</td>
+                        {% endif %}
+                        {% if not centroexterno %}
+                            <td> {% if materia.nivel.nivelmalla %}{{ materia.nivel.nivelmalla }}{% else %}{{ materia.nivel }} <br/>{{ materia.nivel.coordinacion.nombre }} {% endif %}</td>
+                            {% if materia.nivel.grupo %} <td> {{ materia.nivel.grupo.nombre }} </td> {% endif %}
+                            {% if materia.nivel.carrera %} <td> {{ materia.nivel.carrera }} </td> {% endif %}
+                        {% endif %}
+                        <td><span class="label"> {{ materia.inicio|date:'d-m-Y' }} </span></td>
+                        <td><span class="label"> {{ materia.fin|date:'d-m-Y' }} </span></td>
+                        <td>{{ materia.horas }} Horas</td>
+                        <td>Turno: {{ materia.verturno.turno.turno }} <br/>
+                        De: {{ materia.verturno.turno.comienza }} a: {{ materia.verturno.turno.termina }} </td>
+                        <td>{{ materia.creditos }} Cr&eacute;ditos</td>
+                        <td>
+                            <table class="table table-bordered table-condensed">
+                                {% if materia.profesormateria_set.count %}
+                                    {% for profesormateria in materia.profesores_materia %}
+                                        <tr>
+                                            <td>  {{ profesormateria.segmento }} - <b> {{ profesormateria.profesor.persona.nombre_completo }}</b> <br/>[{{ profesormateria.desde|date:'d-m-Y' }} al {{ profesormateria.hasta|date:'d-m-Y' }}] {% if forloop.first and materia.profesores_materia.count > 1 %}<span class="label label-success">PRINCIPAL</span>{% endif %} </td>
+                                        </tr>
+                                    {% endfor %}
+
+                                {% endif %}
+
+                            </table>
+
+                        </td>
+
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            {% if not centroexterno %}
+                <a href="/reportes?action=run&direct=true&n=mate_cronogramaprofesor&profesor={{ profesor.id }}&periodo={{ periodo.id }}&rt=pdf" class='btn'><i class="icon-print"></i> Imprimir</a>
+                <a href="/adm_docentes?action=horario&id={{ profesor.id }}" class='btn'><i class="icon-time"></i> Ir al Horario</a>
+            {% endif %}
+        </div>
+    </div>
+
+{% endblock %}

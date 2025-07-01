@@ -1,0 +1,542 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $("#fecha_inicio").datepicker({format:"dd-mm-yyyy"});
+            $("#fecha_fin").datepicker({format:"dd-mm-yyyy"});
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val();
+                location.href = "/docentes?s="+term;
+            });
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+                $("#eliminar").modal('hide');
+
+            });
+
+            $(".resetearusuario").click(function() {
+                var pro = $(this).attr("pro");
+                $(".btn-resetear").attr("pro",pro);
+                $("#resetear").modal("show");
+            });
+
+            $(".btn-resetear").click(function() {
+                var pro = $(this).attr("pro");
+                $("#resetear").modal("hide");
+                location.href = '/docentes?action=resetear&id='+pro;
+            });
+
+            $(".eliminar").click(function() {
+                var pro = $(this).attr("pro");
+                $(".btn-eliminar").attr("pro",pro);
+                $("#eliminar").modal("show");
+            });
+
+            $(".btn-eliminar").click(function() {
+                var id = $(this).attr("pro");
+                $("#resetear").modal("hide");
+                location.href = '/docentes?action=eliminar&id='+id;
+            });
+
+            $("#param_reporte").click(function() {
+                $('#mensaj').html('').removeClass("alert alert-danger");
+                $("#fecha_inicio").attr('disabled',false);
+                $("#fecha_fin").attr('disabled',false);
+                $("#fecha_inicio").val('');
+                $("#fecha_fin").val('');
+                $("#fechafiltropanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#fechafiltropanel").modal("show");
+            });
+
+            $("#fechafiltropanel .btn-ejecutar").click(function(){
+                var f_inicio = $("#fecha_inicio").val();
+                var f_fin = $("#fecha_fin").val();
+                if ($("#fecha_inicio").val() != '' && $("#fecha_fin").val() != '' ){
+                    $("#fechafiltropanel").modal("hide");
+                    window.open('/reportes?action=run&direct=true&n=listado_materias_cerradas_sinactanotas&rt=pdf&fecha_inicio='+f_inicio+"&fecha_fin="+f_fin);
+                }
+                else
+                {
+                    $('#mensaj').html('INGRESAR FECHAS').addClass("alert alert-danger");
+                }
+
+            });
+
+            $("#fechafiltropanel .btn-cerrar").click(function(){
+                $("#fechafiltropanel").modal("hide");
+                return false;
+            });
+
+            {% if error %}
+                smoke.alert("{{ error }}");
+            {% endif %}
+
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                {% if not activos and not inactivos and not todos and not docentes and not instructores %}  Listado de Docentes Activos{% endif %}
+                {% if activos %}Listado de Docentes Activos{% endif %}
+                {% if inactivos %}Listado de Docentes Inactivos{% endif %}
+                {% if docentes %}Listado de Docentes {% endif %}
+                {% if conduccion %}
+                    {% if instructores %}Listado de Instructores {% endif %}
+                {% endif %}
+                {% if todos %}Listado de Docentes e Instructores {% endif %}
+            </h3>
+
+{#            {% if cantidadcarreras > 0 %}#}
+{#                <h4>Carreras que no tienen definido coordinador para este periodo</h4>#}
+{#                {% for carrera in carreras %}#}
+{#                    <span class="label label-info">{{ carrera }}</span>#}
+{#                {% endfor %}#}
+{#            {% endif %}#}
+{#            <br>#}
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><span class="icon-arrow-left" style="font-style: italic;"></span> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        {% if perms.sga.change_profesor  or perms.auth.add_permission %}
+            <div class='span3'>
+                <a href="/docentes?action=add" class='btn btn-success'><span class="icon-plus icon-white" style="font-style: italic;"></span> Adicionar Profesor</a>
+                {#OCU 23-08-2017 presentar reporte materias sin acta de notas  #}
+                {% if perms.auth.change_message or perms.auth.add_permission %}
+                    <a href="#" id="param_reporte" class="btn btn-info"><i class="icon-print"></i> Materias sin Acta Notas </a>
+                    {#OCU 24-08-2017 presentar docentes con clases abiertas  #}
+{#                    <a href="/docentes?action=clase_nocerrada" class='btn btn-success'> Clases Abiertas</a>#}
+                {% endif %}
+            </div>
+        {% endif %}
+        <div class='span5'>
+            <form class="form-search" action="/docentes" method="get" name="busqueda">
+                <input class='searchinput input-medium search-query' type='text' name="s" id="searchfield" value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><span class="icon-search icon-white" style="font-style: italic;"></span> Buscar</a>
+                {#OCU 24-08-2017 presentar docentes con clases abiertas  #}
+                <a href="/docentes?action=clase_nocerrada" class='btn btn-success'> Clases Abiertas</a>
+                {% if perms.auth.change_message or perms.auth.add_permission %}
+                    <a href="/docentes?action=mat_nocerrada" class='btn btn-info'> Materias Sin Cerrar</a>
+                {% endif %}
+            </form>
+        </div>
+        <div class="span4" style="text-align: right">
+            {% if activos %}
+                <a href="/docentes?i=1" class='btn btn-danger'> Inactivos</a>
+                {% if conduccion %}
+                     <a href="/docentes?it=1" class='btn btn-info'> Instructores </a>
+                     <a href="/docentes?d=1" class='btn btn-success'> Docentes </a>
+                {% endif %}
+                <a href="/docentes?t=1" class='btn'> Todos</a>
+            {% endif %}
+            {% if docentes %}
+                {% if conduccion %}
+                     <a href="/docentes?it=1" class='btn btn-info'> Instructores </a>
+                {% endif %}
+                <a href="/docentes?i=1" class='btn btn-danger'> Inactivos</a>
+                <a href="/docentes?a=1" class='btn btn-success'> Activos</a>
+                <a href="/docentes?t=1" class='btn'> Todos</a>
+            {% endif %}
+            {% if inactivos %}
+                {% if conduccion %}
+                     <a href="/docentes?it=1" class='btn btn-info'> Instructores </a>
+                     <a href="/docentes?d=1" class='btn btn-info'> Docentes </a>
+                {% endif %}
+                <a href="/docentes?a=1" class='btn btn-success'> Activos</a>
+                <a href="/docentes?t=1" class='btn btn-info'> Todos</a>
+            {% endif %}
+            {% if todos %}
+                {% if conduccion %}
+                     <a href="/docentes?it=1" class='btn btn-info'> Instructores </a>
+                     <a href="/docentes?d=1" class='btn btn-info'> Docentes </a>
+                {% endif %}
+                <a href="/docentes?a=1" class='btn btn-success'> Activos</a>
+                <a href="/docentes?i=1" class='btn btn-warning'> Inactivos</a>
+            {% endif %}
+            {% if conduccion %}
+                {% if instructores %}
+                    <a href="/docentes?a=1" class='btn btn-success'> Activos</a>
+                    <a href="/docentes?i=1" class='btn btn-warning'> Inactivos</a>
+                    <a href="/docentes?d=1" class='btn btn'> Docentes </a>
+                    <a href="/docentes?t=1" class='btn btn-info'> Todos </a>
+                {% endif %}
+            {% endif %}
+
+
+            {% if not todos and not inactivos and not docentes and not docentes and not instructores and not activos %}
+                {% if conduccion %}
+                    <a href="/docentes?it=1" class='btn btn-info'> Instructores </a>
+                    <a href="/docentes?d=1" class='btn btn-info'> Docentes </a>
+                {% endif %}
+                <a href="/docentes?a=1" class='btn btn-success'> Activos</a>
+                <a href="/docentes?i=1" class='btn btn-warning'> Inactivos</a>
+            {% endif %}
+                {% if not persona.pertenece_soporte %}
+                    <a href="/publicaciones?op=A" class='btn btn-info'> Publicaciones </a>
+                {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped'>
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Usuario</th>
+                <th>Cedula/Pasap</th>
+                <th>Email/Telef</th>
+                {% if conduccion %}
+                    <th>Archivo</th>
+                {% endif %}
+                <th>Categoria</th>
+                <th>Dedicacion</th>
+                <th>Fecha Ingreso</th>
+                <th style="text-align: center">Tiene Horario</th>
+                <th>Activo</th>
+                <th> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for profesor in profesores %}
+                <tr>
+                    <td style="width: 25%">
+                        {% if profesor.tienediscapacidad %}
+                            <img src='/static/images/discapacidad.png' alt="Discapacidad"/>
+                        {% endif %}
+                        {% if perms.sga.change_profesor %}
+                            <a href='/docentes?action=edit&id={{ profesor.id }}'>{{ profesor }}</a>
+                        {% else %}
+                            {{ profesor }}
+                        {% endif %}
+                        {% if profesor.cantidad_materiascabierta > 0 %}
+                                <span class="label label-important tl" title="Cantidad de Materias">materias {{ profesor.cantidad_materiascabierta }}</span>
+                        {% endif %}
+                        <br>
+                        {% if profesor|args:periodo|call:"cantidad_materias" == 0 %}
+                            <span class="label label-info tl" title="No necesita evaluarse">Sin materias</span>
+                        {% else  %}
+                            {% if periodo.proceso_evaluativo.proceso_activo %}
+                                {% with porciento=profesor|args:periodo|call:"porciento_evaluacion_alumnos" %}
+                                    {% if porciento < 50 %}
+                                        <span class="label label-important tl" title="% de Evaluacion de los Alumnos">{{ porciento|floatformat:1 }}% - Alum.</span>
+                                    {% else %}
+                                        <span class="label label-success tl" title="% de Evaluacion de los Alumnos">{{ porciento|floatformat:1 }}% - Alum.</span>
+                                    {% endif %}
+                                {% endwith %}
+                                {% if profesor|args:periodo|call:"cantidad_coordinadores" > 0 %}
+                                    {% with porciento=profesor|args:periodo|call:"porciento_evaluacion_coordinador" %}
+                                        {% if porciento < 50 %}
+                                            <span class="label label-important tl" title="% de Evaluacion de coordinadores">{{ porciento|floatformat:1 }}% - Coord.</span>
+                                        {% else %}
+                                            <span class="label label-success tl" title="% de Evaluacion de coordinadores">{{ porciento|floatformat:1 }}% - Coord.</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% else %}
+                                    <span class="label label-important tl" title="Falta definir coordinadores">Def. Coord.</span>
+                                {% endif %}
+                                {% if  profesor|args:periodo|call:"mi_autoevaluacion"  %}
+                                    <span class="label label-success tl" title="Auto Evaluado">Auto.</span>
+                                {% endif %}
+                            {% endif %}
+                            <br>
+                        {% endif %}
+
+                        {% if profesor.persona.datos_medicos_incompletos and usafichamedica %}
+                            <span class="label tl" title="Datos Medicos Incompletos">DMI</span>
+                        {% endif %}
+                        {% if profesor.persona.valoracion_medica_incompleta and usafichamedica %}
+                            <span class="label label-warning tl" title="Valoración Medica Incompleta">VMI</span>
+                        {% endif %}
+                        {% if profesor.tutor %}
+                            <span class="label label-success tl" title="Tutor Personal"> Tutor </span>
+                        {% endif %}
+                        {% if profesor.practicahospital %}
+                            <span class="label label-important tl" title="Practica Hospital"> Prac.Hospital </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ profesor.persona.usuario }}</td>
+                    <td>{{ profesor.persona.cedula }} <br/> {{ profesor.persona.pasaporte }}</td>
+                    <td>
+                        {% for email in profesor.persona.emails %}
+                            <a href="mailto:{{ email }}">{{ email }}</a>{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                        <br/>
+                        {% if profesor.persona.emailinst %}<a href="mailto:{{ profesor.persona.emailinst }}" style="color: #003bb3">{{ profesor.persona.emailinst }}</a><br/>{% endif %}
+                        {{ profesor.persona.telefono }} <br> {{ profesor.persona.telefono_conv }}</td>
+                    {% if conduccion %}
+                        <td style="text-align: center">
+                             {% if profesor.identificador %}
+                                   <br/>{{ profesor.identificador }}
+                             {% endif %}
+                        </td>
+                    {% endif %}
+                    <td>{{ profesor.categoria.nombre }}</td>
+                    <td>{{ profesor.dedicacion.nombre }}</td>
+                    <td>{{ profesor.fechaingreso|date:"d-m-Y" }}</td>
+                    <td style="text-align: center">
+                        {% if profesor.conhorario %}
+                            <img src='/static/images/16/true.png' alt='Si' border='0'/><br>
+                            <span class="label label-success tl" title="Tiene Horario">{{ profesor.horainicio|time:"H\hi" }} a {{ profesor.horafin|time:"H\hi" }}</span>
+                        {% else %}
+                            <img src='/static/images/16/false.png' alt='No' border='0'/>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% if perms.sga.change_profesor %}/docentes?action=activation&id={{ profesor.id }}{% else %}#{% endif %}">
+                            {% if profesor.activo %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+                        </a>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+
+                            {% if perms.sga.change_profesor %}
+                                <ul class="dropdown-menu pull-right">
+                                    <li><a href="/box_medical?action=valoracionpersona&id={{ profesor.persona.id }}"><i class="icon-eye-open"></i> Valoraci&oacute;n M&eacute;dica</a></li>
+                                    <li><a href="/per_medical?action=verficha&id={{ profesor.persona.id  }}&ban=1"><i class="icon-eye-open"></i> Ficha M&eacute;dica</a></li>
+                                    {% if perms.sga.change_librorevista %}
+                                        <li><a href="/publicaciones?&persona={{ profesor.persona.id }}&op=V"><i class="icon-eye-open"></i> Publicaciones</a></li>
+                                    {% endif %}
+                                    {% if profesor.persona.cv %}
+                                        <li><a href='{{ profesor.persona.cv.download_cv }}'><span class="icon-download" style="font-style: italic;"></span> Bajar CV</a></li>
+                                        <li><a href="/docentes?action=borrarcv&id={{ profesor.id }}"><span class="icon-remove" style="font-style: italic;"></span> Borrar CV</a></li>
+                                    {% else %}
+                                         <li><a href="/docentes?action=cargarcv&id={{ profesor.id }}"><span class="icon-plus" style="font-style: italic;"></span> Cargar CV</a></li>
+                                    {% endif %}
+                                    {% if conduccion %}
+                                        {% if profesor.persona.foto %}
+                                            <li><a href="/docentes?action=cargarfoto&id={{ profesor.id }}"><i class="icon-camera"></i> Cambiar Foto</a></li>
+                                            <li><a href="/docentes?action=verfoto&id={{ profesor.id }}"><i class="icon-camera"></i> Ver Foto</a></li>
+                                        {% else %}
+                                            <li><a href="/docentes?action=cargarfoto&id={{ profesor.id }}"><i class="icon-camera"></i> Subir Foto</a></li>
+                                        {% endif %}
+                                        {% if profesor.persona.fotoprof %}
+                                            <li><a href="/docentes?action=cargarfotoprof&id={{ profesor.id }}"><i class="icon-camera"></i> Cambiar Foto Profesional</a></li>
+                                            <li><a href="/docentes?action=verfotoprof&id={{ profesor.id }}"><i class="icon-camera"></i> Ver Foto Profesional</a></li>
+                                        {% else %}
+                                            <li><a href="/docentes?action=cargarfotoprof&id={{ profesor.id }}"><i class="icon-camera"></i> Subir Foto Profesional</a></li>
+                                        {% endif %}
+                                    {% endif %}
+                                    <li>
+                                        <a href="/docentes?action=titulacion&id={{ profesor.id }}"><span class="icon-flag" style="font-style: italic;"></span>
+                                            {% if profesor.titulacionprofesor_set.all %}
+                                                {{ profesor.titulacionprofesor_set.count }} T&iacute;tulo{% if profesor.titulacionprofesor_set.count > 1 %}s{% endif %}
+                                            {% else %}
+                                                Sin T&iacute;tulos
+                                            {% endif %}
+                                        </a>
+                                    </li>
+                                    {% if perms.sga.change_profesorhorasactividades %}
+                                        <li><a href="/docentes?action=horasprof&id={{ profesor.id }}"><i class="icon-time"></i> Horas Actividades {% if profesor.cantidad_horas_actividades %}({{ profesor.cantidad_horas_actividades }}h){% endif %}</a></li>
+                                    {% endif %}
+                                    <li><a href="/docentes?action=estudioscursa&id={{ profesor.id }}"><i class="icon-pencil"></i> Estudios que cursa</a></li>
+
+
+
+                                    <!-- Adicionar Perfil de Rol de Pago del Profesor -->
+                                    {% if perms.sga.delete_rolperfilprofesor %}
+                                        <li><a href="/docentes?action=rolpagoperfil&id={{ profesor.id }}"><span class="icon-money" style="font-style: italic;"></span> Perfil Rol de Pago</a> </li>
+                                        <li><a href="/docentes?action=gastospersonales&id={{ profesor.id }}"><span class="icon-shopping-cart" style="font-style: italic;"></span> Gastos Personales (${{ profesor.gastos_personales_sri.total|floatformat:2 }})</a></li>
+                                        <li><a href="/docentes?action=documentos&id={{ profesor.id }}"><i class="icon-book"></i> Documentos Personal ({{ profesor.cantidad_documentos }})</a></li>
+                                        <li><a href="/docentes?action=liquidacion&id={{ profesor.id }}"><i class="icon-remove"></i> Liquidaci&oacute;n</a></li>
+                                    {% endif %}
+                                    <!-- Imprime autoevaluacion del Profesor -->
+{#                                    {% if periodo.proceso_evaluativo.proceso_activo and profesor|args:periodo|call:"mi_autoevaluacion"%}#}
+{#                                        <li><a href="/reportes?action=run&direct=true&n=autoevaluaciondocentes&proceso={{ periodo.proceso_evaluativo.id }}&profesor={{ profesor.id }}&instrumento={{ periodo.proceso_evaluativo.instrumentoprofesor.id }}&rt=pdf"><span class="icon-print"></span> Imprimir Auto Evaluacion</a> </li>#}
+{#                                    {% endif %}#}
+                                    {% if periodo.proceso_evaluativo.proceso_activo %}
+{#                                        <li><a href="/reportes?action=run&direct=true&n=evaluaciondocentes_alumnos&proceso={{ periodo.proceso_evaluativo.id }}&profesor={{ profesor.id }}&instrumento={{ periodo.proceso_evaluativo.instrumentoalumno.id }}&rt=pdf"><span class="icon-print"></span> Imprimir Evaluacion Estudiantes</a> </li>#}
+                                        {# OCastillo 19-jul-2016 #}
+                                        <li><a href="/reportes?action=run&direct=true&n=evaluacion_docentes_general&periodo={{ periodo.id }}&profesor={{ profesor.id }}&rt=pdf"><span class="icon-print"></span> Imprimir Evaluacion Consolidada</a> </li>
+                                    {% endif %}
+                                    {% with materias=profesor|args:periodo|call:"cantidad_materias" %}
+                                        {% if materias %}
+                                            <li><a href="/reportes?action=run&direct=true&n=lista_clases_impartidas_xdocente&docente={{ profesor.id }}&rt=pdf"><span class="icon-print"></span> Imprimir Listado Clases Impartidas</a> </li>
+                                            <!-- Materias del Profesor -->
+                                            <li><a href='/docentes?action=materias&id={{ profesor.id }}'><span class='icon-book' style="font-style: italic;"></span> Materias - {{ profesor|args:periodo|call:"cantidad_materias" }}</a></li>
+                                            <!-- Accede al horario y Cronograma del Profesor -->
+                                            <li><a href="/docentes?action=horario&id={{ profesor.id }}"><span class="icon-calendar" style="font-style: italic;"></span> Horario</a> </li>
+                                            <li><a href='/pro_cronograma?id={{ profesor.id }}'><span class='icon-share-alt' style="font-style: italic;"></span> Ir al Cronograma </a></li>
+                                        {% endif %}
+                                    {% endwith %}
+                                    {% if persona.usuario.is_superuser or perms.sga.change_profesormateria %}
+                                        <li><a href='/cu?id={{ profesor.persona.usuario.id }}'><span class='icon-user' style="font-style: italic;"></span> Entrar como este usuario </a></li>
+                                    {% endif %}
+
+                                    <li><a href="#" pro='{{ profesor.id }}' class="resetearusuario"><i class="icon-user"></i> Resetear Clave Usuario</a> </li>
+                                    {% if not profesor.profesormateriaexis %}
+                                        <li><a href="#" pro='{{ profesor.id }}' class="eliminar"><i class="icon-user"></i> Eliminar</a> </li>
+                                    {% endif %}
+                                    <li><a href="/reportes?action=run&direct=true&n=med_fichapersonaldocente&rt=pdf&profesor={{ profesor.id }}"><i class="icon-print"></i> Imprimir Ficha M&eacute;dica</a> </li>
+                                    {% if perms.sga.delete_profesor %}
+                                        <li><a href="/tutoria?id={{ profesor.id }}"><i class="icon-file"></i> Tutorias</a> </li>
+                                        <li><a href="/practicaclase?id={{ profesor.id }}"><i class="icon-eye-open"></i>Practicas </a> </li>
+                                    {% endif %}
+                                    {% if perms.sga.add_profesor %}
+                                        {% if   profesor|args:periodo|call:"porciento_evaluacion_coordinador" > 0  %}
+                                            {% if not profesor|args:periodo|call:"tiene_analisis" %}
+    {#                                            {% if // %}#}
+                                                    <li><a href="/docentes?action=analisis&id={{ profesor.id }}"><i class="icon-file"></i> Analisis Evaluacion</a> </li>
+                                                {% else %}
+                                                    <li><a href="/docentes?action=veranalisis&id={{ profesor.id }}"><i class="icon-file"></i> Ver Analisis Evaluacion</a> </li>
+                                                {% endif %}
+
+                                        {% endif %}
+                                    {% endif %}
+
+                                </ul>
+                            {% else %}
+                                {# OCU 16-06-2021 opciones para soporte #}
+                                {% if persona.pertenece_soporte %}
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a href="/publicaciones?&persona={{ profesor.persona.id }}&op=V"><i class="icon-eye-open"></i> Publicaciones</a></li>
+                                        <li>
+                                            <a href="/docentes?action=titulacion&id={{ profesor.id }}"><span class="icon-flag" style="font-style: italic;"></span>
+                                                {% if profesor.titulacionprofesor_set.all %}
+                                                    {{ profesor.titulacionprofesor_set.count }} T&iacute;tulo{% if profesor.titulacionprofesor_set.count > 1 %}s{% endif %}
+                                                {% else %}
+                                                    Sin T&iacute;tulos
+                                                {% endif %}
+                                            </a>
+                                        </li>
+                                        <li><a href="/docentes?action=horasprof&id={{ profesor.id }}"><i class="icon-time"></i> Horas Actividades {% if profesor.cantidad_horas_actividades %}({{ profesor.cantidad_horas_actividades }}h){% endif %}</a></li>
+                                        <li><a href="/docentes?action=estudioscursa&id={{ profesor.id }}"><i class="icon-pencil"></i> Estudios que cursa</a></li>
+                                        <li><a href="/docentes?action=rolpagoperfil&id={{ profesor.id }}"><span class="icon-money" style="font-style: italic;"></span> Perfil Rol de Pago</a> </li>
+                                        <li><a href="/docentes?action=documentos&id={{ profesor.id }}"><i class="icon-book"></i> Documentos Personal ({{ profesor.cantidad_documentos }})</a></li>
+                                        <li><a href="/reportes?action=run&direct=true&n=evaluacion_docentes_general&periodo={{ periodo.id }}&profesor={{ profesor.id }}&rt=pdf"><span class="icon-print"></span> Imprimir Evaluacion Consolidada</a> </li>
+                                        <li><a href="/reportes?action=run&direct=true&n=lista_clases_impartidas_xdocente&docente={{ profesor.id }}&rt=pdf"><span class="icon-print"></span> Imprimir Listado Clases Impartidas</a> </li>
+                                        <li><a href='/docentes?action=materias&id={{ profesor.id }}'><span class='icon-book' style="font-style: italic;"></span> Materias - {{ profesor|args:periodo|call:"cantidad_materias" }}</a></li>
+                                        <li><a href="/docentes?action=horario&id={{ profesor.id }}"><span class="icon-calendar" style="font-style: italic;"></span> Horario</a> </li>
+                                        <li><a href='/pro_cronograma?id={{ profesor.id }}'><span class='icon-share-alt' style="font-style: italic;"></span> Ir al Cronograma </a></li>
+                                        <li><a href="#" pro='{{ profesor.id }}' class="resetearusuario"><i class="icon-user"></i> Resetear Clave Usuario</a> </li>
+                                        <li><a href="/reportes?action=run&direct=true&n=med_fichapersonaldocente&rt=pdf&profesor={{ profesor.id }}"><i class="icon-print"></i> Imprimir Ficha M&eacute;dica</a> </li>
+                                        <li><a href="/tutoria?id={{ profesor.id }}"><i class="icon-file"></i> Tutorias</a> </li>
+                                        <li><a href="/practicaclase?id={{ profesor.id }}"><i class="icon-eye-open"></i>Practicas </a> </li>
+{#                                        {% if persona.pertenece_soporte %}#}
+{#                                            <li><a href='/cu?id={{ profesor.persona.usuario.id }}'><span class='icon-user' style="font-style: italic;"></span> Entrar como este usuario </a></li>#}
+{#                                        {% endif %}#}
+                                    </ul>
+                                {% endif %}
+                                {% if perms.med.change_personafichamedica %}
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a href="/box_medical?action=valoracionpersona&id={{ profesor.persona.id }}"><i class="icon-eye-open"></i> Valoraci&oacute;n M&eacute;dica</a></li>
+                                        <li><a href="/per_medical?action=verficha&id={{ profesor.persona.id  }}&ban=1"><i class="icon-eye-open"></i> Ficha M&eacute;dica</a></li>
+                                    </ul>
+                                {% endif %}
+                                {% if perms.sga.change_librorevista %}
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a href="/publicaciones?&id={{ profesor.persona.id }}"><i class="icon-eye-open"></i>Publicaciones</a></li>
+                                    </ul>
+                                {% endif %}
+                                {% if perms.sga.delete_profesor or perms.sga.add_profesor  or perms.sga.change_inscripcionflags   %}
+                                    <ul class="dropdown-menu pull-right">
+                                         {% if profesor|args:periodo|call:"porciento_evaluacion_coordinador" > 0  %}
+                                             {% if not profesor|args:periodo|call:"tiene_analisis" %}
+                                                {%  if not perms.sga.add_docentevinculacion %}
+                                                    <li><a href="/docentes?action=analisis&id={{ profesor.id }}"><i class="icon-file"></i> Analisis Evaluacion</a> </li>
+                                                {% endif %}
+                                             {% else %}
+                                                <li><a href="/docentes?action=veranalisis&id={{ profesor.id }}"><i class="icon-file"></i> Ver Analisis Evaluacion</a> </li>
+                                                <li><a href="/reportes?action=run&direct=true&n=evaluacion_docentes_general&periodo={{ periodo.id }}&profesor={{ profesor.id }}&rt=pdf"><span class="icon-print"></span> Imprimir Evaluacion Consolidada</a> </li>
+                                            {% endif %}
+                                        {% endif %}
+                                        {#OCastillo 03-06-2019 permiso para MT y su equipo segun correo #}
+                                        {% if perms.sga.change_pais %}
+                                            <li><a href="#" pro='{{ profesor.id }}' class="resetearusuario"><i class="icon-user"></i> Resetear Clave Usuario</a> </li>
+                                        {% endif %}
+                                        {% if perms.sga.change_inscripcionflags and not perms.sga.add_docentevinculacion %}
+                                            <li><a href="/tutoria?id={{ profesor.id }}"><i class="icon-file"></i> Tutorias</a> </li>
+                                        {% else %}
+                                            {% if perms.sga.delete_profesor %}
+                                                <li><a href="/tutoria?id={{ profesor.id }}"><i class="icon-file"></i> Tutorias</a> </li>
+                                                <li><a href="/practicaclase?id={{ profesor.id }}"><i class="icon-eye-open"></i>Practicas </a> </li>
+                                            {% else %}
+                                                {% if perms.sga.add_profesor %}
+                                                    {% if   profesor|args:periodo|call:"porciento_evaluacion_coordinador" > 0  %}
+                                                        {% if not profesor|args:periodo|call:"tiene_analisis" %}
+            {#                                            {% if // %}#}
+                                                            <li><a href="/docentes?action=analisis&id={{ profesor.id }}"><i class="icon-file"></i> Analisis Evaluacion</a> </li>
+                                                        {% else %}
+                                                            <li><a href="/docentes?action=veranalisis&id={{ profesor.id }}"><i class="icon-file"></i> Ver Analisis Evaluacion</a> </li>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                 {% endif %}
+                                             {% endif %}
+                                        {% endif %}
+                                    </ul>
+                                {% endif %}
+                                {% if perms.sga.add_vendedor %}
+                                    {% with materias=profesor|args:periodo|call:"cantidad_materias" %}
+                                        {% if materias %}
+                                            <ul class="dropdown-menu pull-right">
+                                                <li><a href='/pro_cronograma?id={{ profesor.id }}'><span class='icon-share-alt' style="font-style: italic;"></span> Ir al Cronograma </a></li>
+                                            </ul>
+                                           {% endif %}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if perms.sga.change_profesor %}
+                <a href="/docentes?action=add" class='btn btn-success'><span class="icon-plus icon-white" style="font-style: italic;"></span> Adicionar Profesor</a>
+            {% endif %}
+            <div class="pagination">
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/docentes?page={{ pagenumber }}{% if activos %}&a=1{% endif %}{% if inactivos %}&i=1{% endif %}{% if todos %}&t=1{% endif %}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade static" id="resetear" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle1"> ¿Desea Resetear la Clave al Usuario del Profesor?</h3>
+        </div>
+        <div class="modal-body">
+            <p> El usuario ingresar&aacute; nuevamente al sistema con la clave por defecto {% if clave %}<strong>{{ clave }}</strong>{% endif %}</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-resetear"> Resetear</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="fechafiltropanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> Seleccione rango de fechas </h3>
+        </div>
+        <div class="modal-body panelbody">
+               &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Fecha Inicio: <input type='text' id='fecha_inicio' value="{{ fechahoy|date:'d-m-Y' }}" disabled/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Fecha Fin: <input type='text' id='fecha_fin' value="{{ fechahoy|date:'d-m-Y' }}" disabled/>
+               <p id='mensaj'></p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-info"> GENERAR</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+{% endblock %}

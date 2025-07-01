@@ -1,0 +1,86 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+        $(function() {
+            indice = 0;
+            datosOK=false;
+
+            $("#generar").modal({width: '500px', backdrop: 'static'});
+            $("#generar").modal("show");
+            $("#id_coordinacion").val('');
+            $("#id_resumido").attr('checked',false);
+            $("#id_fin").attr({"autocomplete":"off"});
+            var resumido = '';
+            $("#id_resumido").click(function(){
+            if ($("#id_resumido").is(':checked')){
+                $("#id_resumido").attr('checked',true);
+                resumido = '1';
+            }else{
+                $("#id_resumido").attr('checked',false);
+                resumido = '';
+            }
+        });
+            $("#generar_reporte").click(function() {
+                $("#generar").modal("hide");
+                $("#espera").modal({ backdrop: 'static'});
+                $("#espera").modal("show");
+                var coordinacion = $("#id_coordinacion").val();
+
+                $.post("/xls_vacunasxfacultades", {"action":"generarexcel","coordinacion":coordinacion, "resumido":resumido}, function(data) {
+                    if (data.result=='ok'){
+                        $("#espera").modal("hide");
+                        setInterval(function(){
+                            location.href = '/reporteexcel';
+                        }, 2500);
+                        location.href=data.url;
+                    }else{
+                        smoke.alert("Error:" + data.result);
+                    }
+                }, "json");
+            });
+
+            $("#generar .btn-cerrar").click(function() {
+                $("#generar").modal("hide");
+                location.href='/reporteexcel';
+                return false;
+            });
+        });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Registro de Vacunados</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="form" class='form-horizontal' action="" method="POST">
+
+                {% for field in generarform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-success" id="generar_reporte">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+        <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+
+{% endblock %}

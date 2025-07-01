@@ -1,0 +1,214 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/documentos?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+            $("#searchfield").focus();
+            $("#tiposel").change(function() {
+                var tipo = $(this).val();
+                if (tipo=='0') {
+                    location.href = "/documentos";
+                } else {
+                    location.href = "/documentos?t="+tipo;
+                }
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span10'>
+            <h3>Gesti&oacute;n de la Biblioteca </h3>
+            <h4>Responsable: {{ persona }}</h4>
+            <br>
+        </div>
+        <div class='span2'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            <a href="/prestamos" class='btn'><i class="icon-share-alt"></i> Pr&eacute;stamos</a>
+        </div>
+    </div>
+
+    <div class="row-fluid margeninferior">
+        <div class='span6'>
+            <form class="form-search">
+                <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if not persona.pertenece_soporte %}
+                    <a href="/documentos?action=add" class="btn btn-success"><i class="icon-book"></i> Adicionar Documento</a>
+                {% endif %}
+                {% if search %}
+                    <a href="/documentos" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <div class='span6'>
+            <form class='well input-large'>
+                <select id='tiposel'>
+                        <option value="0">------</option>
+                    {% for t in tipos %}
+                        <option value='{{ t.id }}' {% if t.id == tipo %}selected="selected"{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+
+            </form>
+        </div>
+
+    </div>
+
+
+<div class='row-fluid'>
+    <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>C&oacute;digo</th>
+                    <th>CodDewey</th>
+                    <th>Nombre</th>
+                    <th>Autor</th>
+                    <th>Tutor</th>
+                    <th>Estudiante Autor</th>
+                    <th>Carrera</th>
+                    <th>Docente Tutor</th>
+                    <th>Tipo</th>
+                    <th>A&ntilde;o</th>
+                    <th>Emisi&oacute;n</th>
+                    <th>Digital</th>
+                    <th>F&iacute;sico</th>
+                    <th style="text-align: center;">Copias (Restan)</th>
+                    <th></th>
+
+                </tr>
+            </thead>
+            <tbody>
+            {% for documento in documentos %}
+                <tr>
+                    <td>
+                        {% if not persona.pertenece_soporte %}
+                            <a href="/documentos?action=edit&id={{ documento.id }}"> {{ documento.codigo }}</a>
+                        {% else %}
+                            {{ documento.codigo }}
+                        {% endif %}
+                    </td>
+                    <td>{% if documento.codigodewey %}{{ documento.codigodewey }}{% endif %}</td>
+                    <td>{{ documento.nombre }}</td>
+                    <td>{{ documento.autor }}</td>
+                    <td>{{ documento.tutor }}</td>
+                    <td>{% if documento.inscripcion %}
+                            {{ documento.inscripcion }}
+                        {% endif %}
+                    </td>
+                    <td>{% if documento.carrera %}
+                            {{ documento.carrera }}
+                        {% endif %}
+                    </td>
+                    <td>{% if documento.docente %}
+                            {{ documento.docente }}
+                        {% endif %}
+                    </td>
+                    <td>{{ documento.tipo }}</td>
+                    <td>{{ documento.anno }}</td>
+                    <td>{{ documento.emision }}</td>
+                    <td>{% if documento.digital %}<a href="{{ documento.digital.url }}" class="btn btn-mini"><i class="icon-download"></i> Descargar</a>{% endif %}</td>
+                    <td>{% if documento.fisico %}SI{% else %}NO{% endif %}</td>
+                    <td style="text-align: center;">{{ documento.copias }} ({{ documento.copias_restantes }})</td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+                                {% if not persona.pertenece_soporte %}
+                                    <li><a href="/documentos?action=edit&id={{ documento.id }}"><i class="icon-edit"></i> Editar</a></li>
+                                    <li><a href="/documentos?action=delete&id={{ documento.id }}"><i class="icon-remove"></i> Eliminar</a></li>
+                                    {% if documento.fisico %}
+                                        {% if not documento.copias_restantes %}
+                                            <li><a href="#" style="color: red;"><i class="icon-fullscreen"></i> Agotado</a></li>
+                                        {% else %}
+                                            <li><a href="/documentos?action=addprestamo&id={{ documento.id }}"><i class="icon-thumbs-up"></i> Pr&eacute;stamos ({{ documento.copias_prestadas }})</a></li>
+                                        {% endif %}
+                                    {% endif %}
+
+                                    {% if documento.es_tesis and not documento.tiene_autor %}
+                                            <li><a href="/documentos?action=addautores&id={{ documento.id }}"><i class="icon-pencil"></i> Agregar Nota Tesis </a></li>
+                                    {% endif %}
+
+                                    {% if documento.es_tesis and not documento.tiene_autor%}
+                                            <li><a href="/documentos?action=addplagio&id={{ documento.id }}"><i class="icon-check"></i> Agregar %Plagio </a></li>
+                                    {% endif %}
+
+                                    {% if documento.es_tesis and documento.tiene_autor %}
+                                            <li><a href="/documentos?action=verautores&id={{ documento.id }}"><i class="icon-eye-open"></i> Ver Tesis o Plagio </a></li>
+                                    {% endif %}
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+
+                </tr>
+            {% endfor %}
+            {% if not documentos %}
+                <tr>
+                    <td colspan="11">
+                        NO EXISTEN DOCUMENTOS EN LA BIBLIOTECA
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+
+    </div>
+
+</div>
+
+<div class='row-fluid'>
+    <div class="span12">
+        {% if not persona.pertenece_soporte %}
+            <a href="/documentos?action=add" class="btn btn-success"><i class="icon-book"></i> Adicionar Documento</a>
+        {% endif %}
+
+        {% if paging.num_pages > 20 %}
+            <div class='pagination'>
+                <ul>
+                    {% if paging.primera_pagina %}
+                        <li><a href="/documentos?page=1">1</a></li>
+                        <li><a href="/documentos?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                    {% endif %}
+                    {% for pagenumber in paging.paginas %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/documentos?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if tipo %}&t={{ tipo }}{% endif %}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                    {% if paging.ultima_pagina %}
+                        <li><a href="/documentos?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}{% if tipo %}&t={{ tipo }}{% endif %}" class="active">...</a></li>
+                        <li><a href="/documentos?page={{ paging.num_pages }}{% if tipo %}&t={{ tipo }}{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        {% else %}
+
+            <div class='pagination'>
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/documentos?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if tipo %}&t={{ tipo }}{% endif %}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+        {% endif %}
+
+    </div>
+</div>
+
+{% endblock %}

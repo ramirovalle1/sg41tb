@@ -1,0 +1,86 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            asignaturasMallas = [{% for asignaturamalla in asignaturasmallas %}
+                {"id":"{{ asignaturamalla.id }}", "utilizada": "{{ asignaturamalla.utilizada_materia }}", "rectora": "{{ asignaturamalla.rectora }}", identificacion:"{% if asignaturamalla.identificacion %}{{ asignaturamalla.identificacion }}{% else %}###{% endif %}", "asignatura": "{{ asignaturamalla.asignatura }}", "nivel": "{{ asignaturamalla.nivelmalla.id }}", "eje": "{{ asignaturamalla.ejeformativo.id }}","horas":"{{ asignaturamalla.horas }}", "creditos": "{{ asignaturamalla.creditos }}"}{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            findMaterias = function(n, e) {
+                var l = [];
+                for (i in asignaturasMallas) {
+                    var am = asignaturasMallas[i];
+                    if (am.nivel==n && am.eje==e) {
+                        l.push(am);
+                    }
+                }
+                return l;
+            };
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var nivel = $this.attr('nivel');
+                var eje = $this.attr('eje');
+                var materias = findMaterias(nivel, eje);
+                for (i in materias) {
+                    var materia = materias[i];
+                    $(this).append("<tr><td><b>"+materia.identificacion+"-"+materia.asignatura+"</b><br/>" + materia.horas +"H, "+materia.creditos+"Cred. "+
+
+                            ((materia.rectora=='True')?"<span class='label label-info'>RECTORA</span>":"")+"<br/>" +
+                            ((materia.utilizada=='False')?
+                                    "<a href='/mallas?action=editasign&id="+materia.id+"' class='btn btn-mini btn-info'><i class='icon-edit icon-white'></i></a>" +
+                                    " <a href='/mallas?action=delasign&id="+materia.id+"' class='btn btn-mini btn-danger'><i class='icon-remove icon-white'></i></a>" +
+                            "</td></tr>":"")+"<a href='/syllabus?action=ver&id="+materia.id+"'><i class='icon-link icon-white'></i>Ir a Syllabus</a>" );
+                }
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Malla Curricular: {{ malla.carrera }}, {{ malla.inicio }}</h3>
+            <h5>-</h5>
+        </div>
+        <div class='span1'>
+            <a href="/mallas" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th> </th>
+                {% for nivelmalla in nivelesdemallas %}
+                    <th>{{ nivelmalla }}</th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for eje in ejesformativos %}
+                <tr>
+                    <td>{{ eje.nombre }}</td>
+                    {% for nivelmalla in nivelesdemallas %}
+                        <td>
+                            <table class='table table-bordered cell' nivel='{{ nivelmalla.id }}' eje='{{ eje.id }}'>
+
+                            </table>
+                            <div>
+                                <a href="/mallas?action=addasign&id={{ malla.id }}&nivel={{ nivelmalla.id }}&eje={{ eje.id }}" class='btn btn-success btn-mini'><i class="icon-plus icon-white"></i></a>
+                            </div>
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            <tr></tr>
+            <tr>
+                <td>Totales </td>
+                {% for resumen in resumenes %}
+                    <td><b>{{ resumen.horas }}</b> Horas, <b>{{ resumen.creditos }}</b> Creditos</td>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
+{% endblock %}

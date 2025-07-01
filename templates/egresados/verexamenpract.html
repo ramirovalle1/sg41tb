@@ -1,0 +1,146 @@
+
+<script type="text/javascript">
+    $(function(){
+        $('.validar').click(function(){
+            $("#verexamenpracticopanel").modal('hide');
+            $("#observalidadesac").val('');
+            $("#idexamval").val($(this).attr('idexam'));
+            $("#action").val($(this).attr("accion"));
+            $("#validaexamendesac_panel").modal({"backdrop":"static", width: "40%"});
+            $("#validaexamendesac_panel").modal("show");
+            return false;
+        });
+
+
+        $(".detavaliexa").click(function(){
+            $("#verexamenpracticopanel").modal('hide');
+            var nombre = $(this).attr('nombre');
+            $.get("/egresados",{"action": "detavaliexa","id":$(this).attr('idexame')},function(data) {
+                $("#detallevalid_panel .modal-body").html(data);
+                $("#detallevalid_panel #paneltitle1").html(" Alumno:   "+nombre);
+                $("#detallevalid_panel").modal({"backdrop":"static", keyboard: 'false', width: "60%", height: "200px" });
+                $("#detallevalid_panel").modal("show");
+            }, "html");
+            return false;
+        });
+
+        var idinscripexam = 0;
+
+
+        $(".verexamen").click(function(){
+            window.open('/egresados?action=examen&id='+$(this).attr('idti')+'&idins='+$(this).attr('idins'),"Examen", 'width='+(screen.availWidth)+',height ='+(screen.availHeight)+',fullscreen=yes,menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=no');
+        });
+
+        $(".detavaliexateor").click(function(){
+            $("#verexamenpracticopanel").modal('hide');
+            var nombreconduc = $(this).attr('nombreconduc');
+            $.get("/inscripciones",{"action": "detavaliexa","id":$(this).attr('idinscripex')},function(data) {
+                $("#detallevalid_panel .modal-body").html(data);
+                $("#detallevalid_panel #paneltitle1").html(" Alumno:   "+nombreconduc);
+                $("#detallevalid_panel").modal({"backdrop":"static", keyboard: 'false', width: "60%", height: "200px" });
+                $("#detallevalid_panel").modal("show");
+            }, "html");
+            return false;
+        });
+    });
+</script>
+<div class="row-fluid">
+<div class="span12 ">
+    <table class="table table-condensed ">
+        <thead>
+            <tr>
+                <th>Titulo</th>
+                <th>Puntaje</th>
+                <th>Valido</th>
+                <th>Consulta</th>
+                <th>Ver Examen</th>
+{#                <th>Docente</th>#}
+            </tr>
+        </thead>
+    <tbody>
+        {% for e in examenpracticos %}
+            <tr>
+                <td > {{ e.titulo }}
+
+                    {% if   e.puntaje < nota_examen_pract %} <span class="label label-important">Reprobado</span>{% else %} <span class="label label-success">Aprobado</span> {% endif %}
+
+                </td>
+                <td > {{ e.puntaje }}</td>
+                <td id="valida{{ e.id }}">
+                    {% if e.valida %}
+                        <a idexam="{{ e.id }}"  activ="{{ e.valida }}" {% if not e.inscripcion.inscripcionexamenValido.valida and  perms.sga.change_indicadorevaluacion %} style="cursor: pointer"  class="validar"  {% endif %} accion="validoexamen"> <img src='/static/images/16/true.png' alt='' border="0"/> </a>
+                    {% else %}
+                        <a idexam="{{ e.id }}"  activ="{{ e.valida }}" {% if not e.inscripcion.inscripcionexamenValido.valida and  perms.sga.change_indicadorevaluacion %} style="cursor: pointer" class="validar" {% endif %} accion="validoexamen"> <img src='/static/images/16/false.png' alt='' border="0"/> </a>
+                    {% endif %}
+                </td>
+
+                <td>{% if e.detallevalexamenexist %}<a style="cursor: pointer" idexame="{{ e.id }}" nombre="{{ e.inscripcion.persona.nombre_completo }}" class="btn btn-info detavaliexa">Detalle</a>{% endif %}</td>
+                <td><a class="btn btn-success" href="/egresados?action=verdetexamen&id={{ e.id }}" >Ver examen</a></td>
+{#                <td>{{ e.profesor.persona.nombre_completo}}</td>#}
+            </tr>
+        {% endfor %}
+        {% if not examenpracticos %}
+            <tr>
+                <td > NO EXISTEN REGISTROS
+
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>
+</div>
+
+<div class="row-fluid">
+    <div class="span12">
+        <br/><h3> Examenes Teorico</h3>
+    </div>
+</div>
+<div class="row-fluid">
+<div class="span12 ">
+    <table class="table table-condensed ">
+        <thead>
+            <tr>
+                <th>Examen</th>
+                <th>Puntaje</th>
+{#                <th>F. Inicio</th>#}
+                <th>Valido</th>
+                <th>Consulta</th>
+                <th>Ver Examen</th>
+            </tr>
+        </thead>
+    <tbody>
+        {% for i in inscripcionexamen %}
+            <tr>
+                <td > {{ i.tituloexamencondu.tituloexamen }}
+                    {% if i.finalizado %}
+                        {% if   i.puntaje < nota_examen_teorico %} <span class="label label-important">Reprobado</span>{% else %} <span class="label label-success">Aprobado</span> {% endif %}
+                    {% else %}
+                        <span class="label label-warning">Realizando</span>
+                    {% endif %}
+                </td>
+                <td > {{ i.puntaje }}</td>
+{#                <td > {{ i.fecha|date:'Y-m-d H:m:s' }}</td>#}
+                <td id="valida{{ i.id }}">
+                    {% if i.valida %}
+                        <a idexam="{{ i.id }}"  activ="{{ i.valida }}" {% if perms.sga.change_indicadorevaluacion %} style="cursor: pointer" class="validar" {% endif %} accion="validoexamenteor"> <img src='/static/images/16/true.png' alt='' border="0"/> </a>
+                    {% else %}
+                        <a idexam="{{ i.id }}"  activ="{{ i.valida }}" {% if perms.sga.change_indicadorevaluacion %} style="cursor: pointer" class="validar" {% endif %} accion="validoexamenteor"> <img src='/static/images/16/false.png' alt='' border="0"/> </a>
+                    {% endif %}
+                </td>
+                <td>{% if i.detallevalidaexist %}<a style="cursor: pointer" idinscripex="{{ i.id }}" nombreconduc="{{ i.inscripcion.persona.nombre_completo }}" class="btn btn-info detavaliexateor">Detalle</a>{% endif %}</td>
+                <td>{% if i.finalizado and i.valida or  DEFAULT_PASSWORD == "itb" and  i.valida %}<a class="btn btn-success verexamen" idti="{{ i.id }}" idins="{{ i.inscripcion.id }}">Ver examen</a>{% endif %}</td>
+            </tr>
+        {% endfor %}
+        {% if not inscripcionexamen %}
+            <tr>
+                <td > NO EXISTEN REGISTROS
+
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>
+</div>
+

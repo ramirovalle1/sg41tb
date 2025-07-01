@@ -1,0 +1,269 @@
+
+
+
+<script>
+
+    $(function () {
+        
+          $( document ).ready(function() {
+              $("#cmbcarrerainteresunoregistro").select2({dropdownParent: $("#ventanaregistrarsga .modal-content .modal-body")});
+              $("#cmbcarrerainscripcion").select2({dropdownParent: $("#ventanaregistrarsga .modal-content .modal-body")});
+              $("#cmbgrupoinscripcion").select2({dropdownParent: $("#ventanaregistrarsga .modal-content .modal-body")});
+              $("#cmbcarrerainteresunoregistro").val('{{ datossolicitud.carrera.id }}');
+              $('#cmbcarrerainteresunoregistro').trigger('change.select2');
+              $("#cmbcarrerainscripcion").select2({dropdownParent: $("#ventanaregistrarsga .modal-content .modal-body")});
+              $("#cmbcarrerainscripcion").val('{{ datossolicitud.carrera.id }}');
+              $('#cmbcarrerainscripcion').trigger('change.select2');
+              
+              $("#txtjornda").val('{{ datossolicitud.nombrejornada }}');
+              
+              
+              
+          });   
+          
+          $("#cmbgrupoinscripcion").change(function() {
+
+              Loader.open();  
+              $.post("/solicitudpostulacionbecadmin", {
+                  "action": "datosgrupoprospecto",
+                  idgrupo: $("#cmbgrupoinscripcion").val()
+              }, function (data) {
+
+                  if (data.result == 'ok') {
+
+
+                      $("#cmbcarrerainscripcion").val(parseInt(data.idcarrera));
+                      $("#cmbsessioninscripcion").val(parseInt(data.idsession));
+                      $("#cmbmodalidadinscripcion").val(parseInt(data.idmodalidad));
+
+
+                  } else {
+                      $("#cmbcarrerainscripcion").val(0);
+                      $("#cmbsessioninscripcion").val(0);
+                      $("#cmbmodalidadinscripcion").val(0);
+
+                  }
+                  
+                  Loader.close();
+
+              }, 'json');
+
+          });
+          
+          $("#btnguardarinscripcion").click(function() {
+
+                if ($("#cmbgrupoinscripcion").val()>0) {
+                    
+                    
+                    Loader.open();
+                    
+                    var formData = new FormData();
+        
+                    formData.append('action', 'inscribirpostulacion');
+                    formData.append('idsolicitud', {{ datossolicitud.id }});
+                    formData.append('cmbgrupoinscripcion', $("#cmbgrupoinscripcion").val());
+                    formData.append('cmbsesioninscripcion', $("#cmbsessioninscripcion").val());
+                    formData.append('cmbmodalidadinscripcion', $("#cmbmodalidadinscripcion").val());
+                    formData.append('direccion', $("#txtreferenciageografica").val());
+                    formData.append('calleprincipal', $("#txtcalleprincipal").val());
+                    formData.append('callesecundaria', $("#txtcallesecundaria").val());
+                    formData.append('numerocasa', $("#txtnumerocasareg").val());
+        
+                     $.ajax({
+                        url: '/solicitudpostulacionbecadmin',
+                        type: "POST",
+                        contentType: false,
+                        data: formData,
+                        processData: false,
+                        cache: false,
+                        success: function (data) {
+                            if (data.result == "ok") {
+                                swal("! Solicitud", " Se registro correctamente en SGA", "success");
+        
+                                 location.href = "/solicitudpostulacionbecadmin?s={{ datossolicitud.identificacion }}&carrera={{ carrera }}";
+                                 
+        
+                            } else {
+                                swal("Error", data.error, "error");
+                            }
+        
+                        },
+                        error: function (xhr, ajaxOptions, thrownError) {
+                            swal("Error", "Error Conexion en el Servidor", "error");
+                           
+                        },
+        
+                        complete: function () {
+                             Loader.close();
+        
+                        }
+        
+        
+                    });
+        
+                }else{
+                    swal("Alerta", "Debe seleccionar el grupo", "warning");
+                }
+
+
+
+          });
+
+       
+
+
+         
+
+
+
+     });
+
+    
+</script>
+
+
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="form-group">
+                 <label style="font-size: 20px;color:black;" >Postulante: </label>
+                 <label style="font-size: 20px;"> {{ datossolicitud.nombre_completo_inverso }}  </label>
+            </div>
+        </div>
+    </div>
+
+    <h5>Referencia</h5> <br>
+    
+    <div class="row">
+         <div class="col-md-12">
+                <div class="form-group">
+                     <label >#Casa  <a style="color: #d92550"></a>: </label>
+                     <input id="txtnumerocasareg" type="text"  name="txtnumerocasareg" class="form-control" value="{{ datossolicitud.numerocasa }}"  >
+                </div>
+         </div>
+     </div>
+
+     <div class="row">
+         <div class="col-md-12">
+                <div class="form-group">
+                     <label >Referencia Geográfica (ALGO QUE ESTE CERCA DE SU DOMICILIO)  <a style="color: #d92550"></a>: </label>
+                     <input id="txtreferenciageografica" type="text"  name="txtreferenciageografica" class="form-control" value="{{ datossolicitud.referencia }}"  >
+                </div>
+         </div>
+     </div>
+
+     <h5>Calle</h5> <br>
+
+     <div class="row">
+         <div class="col-md-6">
+                <div class="form-group">
+                     <label >Calle Principal  <a style="color: #d92550"></a>: </label>
+                     <input id="txtcalleprincipal" type="text"  name="txtcalleprincipal" class="form-control" value="{{ datossolicitud.calleprincipal }}"  >
+                </div>
+         </div>
+          <div class="col-md-6">
+                <div class="form-group">
+                     <label >Calle Secundaria  <a style="color: #d92550"></a>: </label>
+                     <input id="txtcallesecundaria" type="text"  name="txtcallesecundaria" class="form-control" value="{{ datossolicitud.callesecundaria }}"  >
+                </div>
+         </div>
+     </div>
+
+
+    <h5>Carrera de la postulación</h5> <br>
+
+     <div class="row">
+        <div class="col-md-12">
+            <div class="form-group">
+                 <label >Carrera <a style="color: #d92550">(*)</a>: </label>
+                  <select id="cmbcarrerainteresunoregistro" style="width: 100%"  disabled  class="custom-select2 form-control">
+                        {% for xcarrera in listcarrera %}
+                           <option value='{{ xcarrera.id }}'>{{ xcarrera.nombre }}</option>
+                        {% endfor %}
+                  </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="form-group">
+                 <label >Jornda <a style="color: #d92550">(*)</a>: </label>
+                 <input id="txtjornda" type="text"  name="txtjornda" class="form-control" disabled >
+            </div>
+        </div>
+
+    </div>
+
+   
+
+    <h5>Datos de la Inscripción</h5> <br>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="form-group">
+                <label>Grupo <a style="color: #d92550;">(*)</a>:</label>
+                <select id="cmbgrupoinscripcion" class="custom-select2 form-control"  name="state" style="width: 100%; height: 38px;">
+                       <option value="0">Seleccionar el grupo de inscripción</option>
+                       {% for xlistgrupoinscripcion in listgrupoinscripcion %}
+                            <option value='{{ xlistgrupoinscripcion.id }}'>{{ xlistgrupoinscripcion.nombre }}</option>
+                       {% endfor %}
+                </select>
+                <p id="helpcmbgrupoinscripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-12">
+            <div class="form-group">
+                <label>Carrera <a style="color: #d92550">(*)</a>:</label>
+               <select id="cmbcarrerainscripcion" style="width: 100%"  disabled class="custom-select2 form-control">
+                   <option value="0">Seleccionar la carrera de inscripción</option>
+                   {% for xcarrera in listcarrera %}
+                        <option value='{{ xcarrera.id }}'>{{ xcarrera.nombre }}</option>
+                   {% endfor %}
+               </select>
+               <p id="helpcmbcarrerainscripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <label>Sesión <a style="color: #d92550;">(*)</a>:</label>
+                <select id="cmbsessioninscripcion" class="custom-select form-control" disabled  >
+                       <option value="0">Seleccionar la Sesión</option>
+                       {% for xlistsesion in listsesion %}
+                            <option value='{{ xlistsesion.id }}'>{{ xlistsesion.nombre }}</option>
+                       {% endfor %}
+                </select>
+                <p id="helpcmbsessioninscripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <label>Modalidad <a style="color: #d92550">(*)</a>:</label>
+               <select id="cmbmodalidadinscripcion"  disabled class="custom-select form-control">
+                   <option value="0">Seleccionar la Modalidad</option>
+                   {% for xlistmodalidad in listamodalidad %}
+                        <option value='{{ xlistmodalidad.id }}'>{{ xlistmodalidad.nombre }}</option>
+                   {% endfor %}
+               </select>
+               <p id="helpcmbmodalidadinscripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal-footer">
+        <button type="button"  class="btn" data-bgcolor="#FA1D06" style="background: #FF0000;color: white" data-dismiss="modal" data-color="#ffffff">Salir</button>
+        <button type="button" id="btnguardarinscripcion" class="btn" style="background: #63A836;color: white" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>
+
+
+    </div>
+
+

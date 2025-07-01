@@ -1,0 +1,584 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript">
+        $(function() {
+
+            $('form').validationEngine();
+            $('#numero,#pregunta,#puntos,#titulo,#tiempo,#descripcion,#profemateid').addClass('validate[required]');
+            {% if info %}
+                smoke.alert('{{ info }}');
+            {% endif %}
+            $('#profesormateria').change(function(){
+                if($('#profesormateria>option:selected').attr("suple")=='True'){
+                    $("#supletorio").attr('checked',false);
+                    $("#supletorio").attr('disabled',true);
+                }
+                else if($('#profesormateria>option:selected').attr("suple")=='False'){
+                    $("#supletorio").attr('checked',true);
+                    $("#supletorio").attr('disabled',true);
+                }else{
+                    $("#supletorio").attr('checked',false);
+                    $("#supletorio").attr('disabled',false);
+                }
+                $("#profemateid").val($('#profesormateria').val())
+            });
+
+
+            buscar_asignatura = function(query, process) {
+                $("#asign").attr("myval",0);
+                $.get("/reportes", {'action':'data', 'model': 'Asignatura',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#asign").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#asign").get(0).results = "";
+                        $("#asign").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#asign').typeahead({source: buscar_asignatura, updater: function(item) {
+                var results = $("#asign").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#asign").attr("myval",datos.id);
+                        if(parseInt($("#idprofe").attr("myval")) != 0)
+                            location.href = "/adminprofeexamen?idprofe="+$("#idprofe").attr("myval")+"&asign="+datos.id;
+                        else
+                            location.href = "/adminprofeexamen?asign="+datos.id;
+                    }
+                }
+                return item;
+            }});
+
+            $('#asign').blur(function(){
+                if($.trim($('#asign').val())=='')
+                {
+                    if(parseInt($("#idprofe").attr("myval")) != 0)
+                        location.href = "/adminprofeexamen?idprofe="+$("#idprofe").attr("myval");
+                    else
+                        location.href = "/adminprofeexamen";
+                }
+            });
+
+            $('#idprofe').blur(function(){
+                if($.trim($('#idprofe').val())=='')
+                {
+                    if(parseInt($("#asign").attr("myval")) != 0)
+                        location.href = "/adminprofeexamen?asign="+$("#asign").attr("myval");
+                    else
+                        location.href = "/adminprofeexamen";
+                }
+            });
+            buscar_profesor = function(query, process) {
+                $("#idprofe").attr("myval",0);
+                $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#idprofe").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#idprofe").get(0).results = "";
+                        $("#idprofe").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#idprofe').typeahead({source: buscar_profesor, updater: function(item) {
+                var results = $("#idprofe").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#idprofe").attr("myval",datos.id);
+                        if(parseInt($("#asign").attr("myval")) != 0)
+                            location.href = "/adminprofeexamen?idprofe="+datos.id+"&asign="+$("#asign").attr("myval");
+                        else
+                            location.href = "/adminprofeexamen?idprofe="+datos.id;
+                    }
+                }
+                return item;
+            }});
+            buscar_grupo = function(query, process) {
+                $("#grupo").attr("myval",0);
+                $.get("/reportes", {'action':'data', 'model': 'Grupo',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#grupo").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#grupo").get(0).results = "";
+                        $("#grupo").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#grupo').typeahead({source: buscar_grupo, updater: function(item) {
+                var results = $("#grupo").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#grupo").attr("myval",datos.id);
+                        location.href = "/adminprofeexamen?grupo="+datos.id;
+                    }
+                }
+                return item;
+            }});
+            {% if profesor %}
+                {% if profesor.persona.cedula %}
+                    $("#idprofe").val('{{ profesor.persona.cedula }} - {{ profesor.persona.nombre_completo }}');
+                {% else %}
+                    $("#idprofe").val('{{ profesor.persona.pasaporte }} - {{ profesor.persona.nombre_completo }}');
+                {% endif %}
+                $("#idprofe").attr('myval','{{ profesor.id }}');
+            {% endif %}
+            {% if asign %}
+                $("#asign").val('{{ asign }}');
+                $("#asign").attr('myval','{{ asign.id }}');
+            {% endif %}
+            {% if grupo %}
+                $("#grupo").val('{{ grupo.nombre }}');
+                $("#grupo").attr('myval','{{ grupo.id }}');
+            {% endif %}
+
+
+            $(".listadoalumnoexamen").click(function(){
+                idasignatura=$(this).attr("inidasignatura");
+                idprofesormateria=$(this).attr("idprofesor");
+                window.open('/reportes?action=run&direct=true&n=lista_alumnos_examen&rt=pdf&preguntaasignatura_id='+idasignatura+"&profesormateria_id="+idprofesormateria);
+            });
+
+{#            /|//////////////////////////////////NUEVA SECCICON ///////////////////#}
+            $(".addtitulos").click(function(){
+                $("#seccionexa").hide();
+                $("#guard").hide();
+                $("#idprofemod").attr('disabled',false);
+                $("#supletorio").attr('checked',false);
+                $("#supletorio").attr('disabled',false);
+                $("#profemateid").val("");
+                $("#profesormateria").val('');
+                $("#titulospanel").modal({"backdrop":"static","width":"50%"});
+                $("#titulospanel").modal("show");
+                $("#titulospanel .help-text").html('');
+            });
+
+            buscar_profesor = function(query, process) {
+                $("#idprofemod").attr("myval",0);
+                $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#idprofemod").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#idprofemod").get(0).results = "";
+                        $("#idprofemod").attr("myval",0);
+                        listing = [];
+                        $("#seccionexa").hide();
+                        $("#guard").hide();
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#idprofemod').typeahead({source: buscar_profesor, updater: function(item) {
+                var results = $("#idprofemod").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#idprofemod").attr("myval",datos.id);
+                        showWaiting("Buscando información","Espere unos segundos por favor...");
+                        $.post("/adminprofeexamen",{'idprofe': datos.id,'editar':'0', 'action': 'consulmateria'}, function(data) {
+                                if (data.result=='ok'){
+                                    var html = '<option value="0" suple="" fecha=""> ----- </option>';
+                                    for (var i in data.profemate) {
+                                        var dato = data.profemate[i];
+                                        html = html + '<option value="'+dato.id+'" suple="'+dato.suple+'" fecha="'+dato.fecha+'"> '+dato.nombre+' </option>';
+                                    }
+                                    $("#profesormateria").html(html);
+                                    $("#seccionexa").show();
+                                    $("#guard").show();
+                                    hideWaiting();
+
+                                }else{
+                                    hideWaiting();
+                                    $("#helpprofe").html("Error al cargar las asignaturas")
+                                }
+
+
+                        }, "json");
+                    }
+                }
+                return item;
+            }});
+
+            $('#profesormateria').change(function(){
+                if($('#profesormateria>option:selected').attr("suple")=='true'){
+                    $("#supletorio").attr('checked',false);
+                    $("#supletorio").attr('disabled',true);
+                }
+                else if($('#profesormateria>option:selected').attr("suple")=='false'){
+                    $("#supletorio").attr('checked',true);
+                    $("#supletorio").attr('disabled',true);
+                }else{
+                    $("#supletorio").attr('checked',false);
+                    $("#supletorio").attr('disabled',false);
+                }
+                $("#profemateid").val($('#profesormateria').val())
+            });
+            $(".edittitulos").click(function(){
+                var objet = this;
+                $("#idprofemod").attr("myval",$(objet).attr("idprofe"));
+                $("#idprofemod").val($(objet).attr("nombrepro"));
+                showWaiting("Buscando información","Espere unos segundos por favor...");
+                $.post("/adminprofeexamen",{'idprofe': $(objet).attr("idprofe"), 'editar':'1','action': 'consulmateria'}, function(data) {
+                    if (data.result=='ok'){
+                        var html = '<option value="0" suple="" fecha=""> ----- </option>';
+                        for (var i in data.profemate) {
+                            var dato = data.profemate[i];
+                            html = html + '<option value="'+dato.id+'" suple="'+dato.suple+'" fecha="'+dato.fecha+'"> '+dato.nombre+' </option>';
+                        }
+                        $("#profesormateria").html(html);
+                        $("#seccionexa").show();
+                        $("#profesormateria").val($(objet).attr('profemate'));
+                        $("#profemateid").val($(objet).attr('profemate'));
+                        hideWaiting();
+
+                    }else{
+                        hideWaiting();
+                        $("#helpprofe").html("Error al cargar las asignaturas")
+                    }
+                }, "json");
+                $("#idprofemod").attr('disabled',true);
+                $("#supletorio").attr('disabled',false);
+                $("#editar").val($(objet).attr('idtitut'));
+                $("#titulo").val($(objet).attr('tituloexamen'));
+                $("#subtitulo").val($(objet).attr('subtituloexamen'));
+                $("#tiempo").val($(objet).attr('tiempo'));
+                $("#descripcion").val($(objet).attr('descripcion'));
+                if($(objet).attr('supletorio') == 'True')
+                {
+                    $("#supletorio").attr('checked',true);
+                }
+                else{
+                    $("#supletorio").attr('checked',false);
+                }
+                if($(this).attr('habilicheck') == 'False')
+                    $("#supletorio").attr('disabled',true);
+                $("#cabeceramodal").html('Editar Examen');
+                $("#titulospanel").modal({"backdrop":"static","width":"50%"});
+                $("#titulospanel").modal("show");
+                $("#titulospanel .help-text").html('');
+                $("#seccionexa").show();
+                $("#guard").show();
+            });
+
+            $("#titulospanel .btn-cerrar").click(function(){
+                $("#profesormateria").val('');
+                $("#cabeceramodal").html('Crear Examen');
+                $('#continuar').removeClass('hidden');
+                $("#editar").val('0');
+                $("#titulo").val('');
+                $("#subtitulo").val('');
+                $("#tiempo").val('');
+                $("#descripcion").val('');
+
+                $("#idprofemod").attr("myval",0);
+                $("#idprofemod").val("");
+                $("#titulospanel").modal("hide");
+                return false;
+            });
+
+            $(".deletetitut").click(function(){
+                    var idtitu = $(this).attr('idtit');
+                    smoke.confirm( 'Esta seguro de eliminar esta pregunta?', function(e){
+                        if (e){
+                              location.href = '/adminprofeexamen?action=deltitut&id='+idtitu;
+                        }
+                        else{
+                        }
+                        }, {
+                        ok: "CONTINUAR",
+                        cancel: 'CANCELAR',
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+            });
+
+
+            $("#guard").click(function(){
+                if($.trim($("#descripcion").val()) == '')
+                    $("#descripcion").val('');
+                $("#supletorio").attr('disabled',false);
+            });
+            var numerost="0123456789:";
+
+            function tiene_numeros(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numerost.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+            $("#tiempo").blur(function(){
+                var v = $("#tiempo").val();
+                var p = tiene_numeros(v);
+                $($("#tiempo").get(0).parentNode).find(".help-text").html("");
+                if(v!=''){
+                    if( v.split(':').length == 2){
+                        if (p != v.length  |  v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | parseInt(v.split(':')[1])> 59 | parseInt(v.split(':')[0]) >= 24 )
+                        {
+                          $($("#tiempo").get(0).parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60 y la hora menor a 24");
+
+                          $("#tiempo").focus();
+                        }
+                        else{
+                            $($("#tiempo").get(0).parentNode).find(".help-text").html("");
+                        }
+                    }
+                    else{
+                        $($("#tiempo").get(0).parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60 y la hora menor a 24");
+
+                        $("#tiempo").focus();
+                    }
+                }
+
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span9" style="text-align: center">
+               <h3> Listado Examenes Parciales por Profesor o Asignatura</h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br/>
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span10" style="text-align: center">
+            <b>Profesor</b>:
+            <input type="text" id="idprofe" class="searchinput input-xxlarge search-query" myval="0" data-provide="typeahead"/>&nbsp;&nbsp;
+                {% if profesor %}<a
+                href="/adminprofeexamen{% if asign %}?asign={{ asign.id }}{% endif %}" class="btn btn-info">Limpiar</a>{% endif %}
+        </div>
+    </div><br/>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span10" style="text-align: center">
+            <b>Asignatura</b>:
+                <input type="text" id="asign" class="searchinput input-xxlarge search-query" myval="0" data-provide="typeahead"/>&nbsp;&nbsp;
+                {% if asign %}<a
+                href="/adminprofeexamen{% if profesor %}?idprofe={{ profesor.id }}{% endif %}" class="btn btn-info">Limpiar</a>{% endif %}
+        </div>
+    </div><br/>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span10" >
+            <b>Grupo</b>:
+                <input type="text" id="grupo" class="searchinput input-large search-query" myval="0" data-provide="typeahead"/>&nbsp;&nbsp;
+                {% if grupo %}<a
+                href="/adminprofeexamen" class="btn btn-info">Limpiar</a>{% endif %}<hr>
+        </div>
+    </div><br/>
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span10">
+            {% if profesor %}
+                <h4>EXAMENES PARCIALES DEL DOCENTE {{ profesor.persona.nombre_completo }} {% if asign %} EN LA ASIGNATURA {{ asign }}{% endif %} </h4>
+            {% endif %}
+            {% if not profesor and asign %}
+                <h4>EXAMENES PARCIALES DE LA ASIGNATURA {{ asign }} </h4>
+            {% endif %}
+        </div>
+    </div><br/>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span3">
+            <a class="btn btn-info addtitulos" style="cursor: pointer"><b><span class="icon-plus"></span> Agregar Examen</b></a>
+        </div>
+    </div><br/>
+    <div class="row-fluid">
+        <div class="span1"></div>
+        <div class="span10" >
+            <table class="table table-condensed table-bordered smaller2 tabla" id='tblreferencia' >
+               <thead>
+                   <tr>
+                       <th style="width: 33%"><h4>Profesor</h4></th>
+                       <th style="width: 20%"><h4>Materia Asignada</h4></th>
+                       <th style="width: 15%"><h4>Titulo</h4></th>
+                       <th style="width: 10%"><h4>SubTitulo</h4></th>
+                       <th style="width: 8%"><h4>Fecha</h4></th>
+                       <th style="width: 3%"><h4>Supletorio</h4></th>
+                       <th style="width: 4%"><h4>Tiempo</h4></th>
+                       <th style="width: 3%"><h4>Activo</h4></th>
+                       <th style="width: 4%"><h4>Acciones</h4></th>
+                    </tr>
+
+               </thead>
+               <tbody>
+
+                    {% for t in  tituloexamenparcial %}
+                        <tr>
+                            <td style="width: 33%"><a {% if not t.activo and not t.existexamenparcial and not t.profesormateria.materia.cerrado %} style="cursor: pointer;text-align: justify;" class="edittitulos"
+                                {% else %} style=";text-align: justify;" {% endif %} idtitut="{{ t.id }}" profemate="{{ t.profesormateria.id }}"
+                                idprofe="{{ t.profesormateria.profesor.id }}"
+                                nombrepro="{% if t.profesormateria.profesor.persona.cedula %}{{ t.profesormateria.profesor.persona.cedula }}{% else %}{{ t.profesormateria.profesor.persona.pasporte }}{% endif %} - {{ t.profesormateria.profesor.persona.nombre_completo }}"
+                                tituloexamen="{{ t.tituloexamen }}" subtituloexamen="{{ t.subtituloexamen }}" nombreinstitucion="{{ t.nombreinstitucion }}"
+                                habilicheck="{{ t.profesormateria.existtituexaparcial }}"
+                                descripcion="{{ t.descripcion }}" tiempo="{{ t.tiempo|time:'H:i' }}" activo="{{ t.activo }}"  supletorio="{{ t.supletorio }}" >{{ t.profesormateria.profesor }}</a></td>
+                            <td>
+                               {{ t.profesormateria.materia.asignatura }} - GRUPO - {{ t.profesormateria.materia.nivel.grupo.nombre }}
+                            </td>
+                            <td>
+                                {{ t.tituloexamen }}
+                            </td>
+                            <td>
+                                {{ t.subtituloexamen }}
+                            </td>
+                            <td>
+                                {{ t.fecha|date:'d-m-Y' }}
+                            </td>
+                            <td style="text-align: center">
+                                {% if t.supletorio %}
+                                    <a ><img src='/static/images/16/true.png' alt='' border="0"/></a>
+                                {% else %}
+                                    <a ><img src='/static/images/16/false.png' alt='' border="0"/></a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ t.tiempo|time:'H:i' }}
+                            </td>
+                            <td>
+                                {% if t.activo %}
+                                    <a href="/adminprofeexamen?action=activa&id={{ t.id }}"><img src='/static/images/16/true.png' alt='' border="0"/></a>
+                                {% else %}
+                                    <a href="/adminprofeexamen?action=activa&id={{ t.id }}"><img src='/static/images/16/false.png' alt='' border="0"/></a>
+                                {% endif %}
+                            </td>
+                            <td>
+
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a href="/adminprofeexamen?action=verinscr&id={{ t.id }}"><i class="icon-eye-open"></i> Ver Matriculados</a></li>
+                                        {% if t.existexamenparcial %}
+                                            <li><a href="" class="listadoalumnoexamen" inidasignatura ="{{t.profesormateria.materia.asignatura.id }}" idprofesor="{{t.profesormateria.id }}"> <i class="icon-pencil"></i> Lista de Examen de Alumnos </a></li>
+                                       {% endif %}
+                                       {% if not t.activo %}
+                                            {% if not t.existexamenparcial %}
+                                                <li>
+                                                    <a  idtit="{{ t.id }}" class="deletetitut" style="cursor: pointer"><i class="icon-remove"></i> Elimnar Examen</a>
+                                                </li>
+                                            {% endif %}
+                                       {% else %}
+                                            <li><a><i class="icon-ban-circle"></i>Desactivar examen para ver mas acciones</a></li>
+                                       {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not tituloexamenparcial and profesor or not tituloexamenparcial and asign or not tituloexamenparcial and grupo %}
+                        <tr>
+                           <td colspan="8">
+                                NO EXISTEN REGISTROS
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if not profesor and not asign and not grupo %}
+                        <tr>
+                           <td colspan="8">
+                                <h3>SELECCIONE UN DOCENTE O UNA ASIGNATURA PARA PODER OBSERVAR LOS EXAMENES</h3>
+                            </td>
+                        </tr>
+                    {% endif %}
+
+               </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="titulospanel">
+        <div class="modal-header" style="word-wrap: break-word;text-align: center">
+            <h3 id="cabeceramodal">Crear Examen</h3><br/>
+            <h4 style="text-align: center" type="text" name='nombreinstitu'/> {{ NOMBRE_INSTITUCION_EXAMEN }} </h4>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/adminprofeexamen" method="POST"  >
+                <input type='hidden' name='action' value='guardar'/>
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='profemateid' id='profemateid' value=""/>
+                <div class="controls" style="margin-left: 1%">
+                    <b>Profesor</b>:
+                    <input type="text" id="idprofemod" class="searchinput input-xxlarge search-query" autocomplete="off" myval="0" data-provide="typeahead"/>
+                    <p style="color: red" id="helpprofe"></p>&nbsp;&nbsp;<br>
+                    <div style="display: none" id="seccionexa">
+                        <b>Supletorio:</b> <input style="width:10%;" type="checkbox" name='supletorio' id="supletorio" /><br/><br/>
+                        <b>Materia:</b>
+                        <select id='profesormateria' />
+
+                        </select>
+                        <b>Examen:</b> <input type="text" name='titulo' id="titulo"/><br/><br/>
+                        <b>Subtitulo:</b> <input  type="text" name='subtitulo' id="subtitulo"/><br/><br/>
+                        <b>Tiempo:</b> <input style="width:10%;" type="text" name='tiempo' id="tiempo"/>
+                        <p class="help-text">{{ field.help_text }} </p><br/><br/>
+                        <b>Mensaje:</b><textarea type='text' id='descripcion' style="width:98%;text-transform: uppercase" rows="6" cols="50" name='descripcion'> </textarea><br/><br/>
+
+                    </div>
+                    <br/><br/><button type="submit" id="guard" class="btn btn-success" style="float: right">Guardar</button>&nbsp;&nbsp;
+                    <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+{% endblock %}

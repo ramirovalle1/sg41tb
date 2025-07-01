@@ -1,0 +1,170 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        indice = 0;
+        datosOK=false;
+        per=0;
+        $("#generar").modal({width: '670px', backdrop: 'static'});
+        $("#id_periodo").attr({"autocomplete":"off"});
+        $("#generar").modal("show");
+        $("#id_coordinacion").val("");
+        $("#id_periodo").val("");
+        $('#id_coordinacion').addClass('input-xxlarge');
+        $('#carrera').addClass('input-xxlarge');
+        $('#id_periodo').addClass('input-xxlarge');
+
+        $("#id_coordinacion").blur(function(){
+            var idcoord =$("#id_coordinacion").val();
+            if (idcoord==''){
+                $($("#id_coordinacion").get(0).parentNode).find(".help-text").html("");
+                $($("#id_coordinacion").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Debe seleccionar Facultad</i></span>"  );
+                $("#carrera").html("");
+                $("#generar .btn-success").hide();
+            }
+        });
+
+        $("#id_coordinacion").change(function(){
+            var coordid = $('#id_coordinacion').val();
+            if (coordid==''){
+                $("#carrera").html("");
+                $($("#id_coordinacion").get(0).parentNode).find(".help-text").html("");
+            }
+            else{
+                $("#generar .btn-success").show();
+                $.post("/xls_asistencias_xcoordinacion", {"action": "buscarCarreras", 'id': coordid}, function (data){
+                    if (data.result == 'ok') {
+                        var carreras='';
+                        for (var x in data.carreras) {
+                             carreras += '<option value="'+data.carreras[x].idcarrera+'"> '+data.carreras[x].nombrecarrera+'</option>';
+                        }
+                        $("#carrera").html(carreras);
+                        $($("#id_coordinacion").get(0).parentNode).find(".help-text").html("");
+                    } else {
+                       $("#helpcmbcarreras").html("Problemas al Cargar Carreras");
+                    }
+                    hideWaiting();
+                }, 'json');
+            }
+        });
+
+        buscar_periodo = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Periodo',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_periodo").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+        $('#id_periodo').typeahead({source: buscar_periodo, updater: function(item) {
+            var results = $("#id_periodo").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_periodo").attr("myval",datos.id);
+                    per=datos.id;
+                    $("#id_periodo").val(per);
+                }
+            }
+            return item;
+        }});
+
+        $("#generar_reporte").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+            var carrera='';
+            var periodo='';
+            var coordinacion = $("#id_coordinacion").val();
+
+            if($("#carrera").val() != ""){
+                carrera = $("#carrera").val();
+            }
+            else{
+                carrera=''
+            }
+            if($("#id_periodo").val() != ""){
+                periodo = per;
+            }
+            else{
+                periodo=''
+            }
+
+            $.post("/xls_asistencias_xcoordinacion", {"action":"generarexcel","coordinacion":coordinacion,"carrera":carrera,"periodo":periodo}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                        location.href = '/reporteexcel';
+                    }, 2500);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json").fail(function() {
+                alert('Error de conexi&oacute;n vuelva a intentarlo');
+                location.reload();
+            });
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Asistencias de Alumnos por Facultad</h3>
+        </div>
+        <div class="modal-body ">
+            <form id="form" action="" method="POST">
+                {% for field in generarform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+            <div style="margin-top: 1em; width: 90%">
+                <label for="">Carrera:</label>
+                <select name="" id="carrera" style="width: 90%">
+                    <option value="0">---</option>
+                </select>
+            </div>
+            <div style="overflow-y: auto"  class='form-horizontal' >
+               Periodo:</br>
+               <input type="text" name="periodo" id="id_periodo" style="width: 90%">
+               <p class="help-text">{{ field.help_text }} </p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-success" id="generar_reporte">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+        <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+
+{% endblock %}

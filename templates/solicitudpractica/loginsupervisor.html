@@ -1,0 +1,85 @@
+{% extends "basebs.html" %}
+{% block  heading %}
+    <script>
+        $(function() {
+            $("#loginsupermod").modal({backdrop: 'static', keyboard: false, width: "30%", maxHeight: ($(window).height()*3)/4 });
+            $("#loginsupermod").modal('show');
+            {% if finalizada %}
+                $("#loginsupermod").html("EVALUACIÓN DEL ESTUDIANTE REALIZADA CON EXITO").addClass('btn btn-info');
+            {% endif %}
+
+            $("#contrasena").blur(function(){
+                $($("#contrasena").get(0).parentNode).find(".help-text").html("");
+            });
+
+            $("#btn-cambiar").click(function(){
+                var valida = true;
+                if($.trim($("#contrasena").val()) == ''){
+                    $($("#contrasena").get(0).parentNode).find(".help-text").html("<a style='color:red'>Ingrese contraseña</a>");
+                    valida = false;
+                }
+                if(valida){
+                    $.post("/supervisor", {action: 'logearse','idsoli':'{{ solicitud.id }}', correo: $("#correo").val(),  contrasena: $("#contrasena").val()}, function(data) {
+                        if (data.result=='ok') {
+                            location.href = '/supervisor?action=evaluar&id={{ solicitud.id }}';
+                        }else{
+                            $("#msj").html("Correo o contraseña incorrecto").addClass('alert alert-danger');
+
+                        }
+                    },'json');
+                }
+
+            });
+
+
+            //Disable mouse right click
+            $("body").on("contextmenu",function(e){
+                return false;
+            });
+            $(document).keydown(function (event) {
+                if (event.keyCode == 123) { // Prevent F12
+                    return false;
+                } else if (event.ctrlKey && event.shiftKey && event.keyCode == 73) { // Prevent Ctrl+Shift+I
+                    return false;
+                }
+            });
+        });
+    </script>
+{% endblock %}
+{% block containertype %}{% endblock %}
+{% block contentextraclass %}bg{{ background }}{% endblock %}
+{% block pagetitle %}Inicio de Sesion - Sistema Gestion Academica{% endblock %}
+{% block canvas %}
+    <div class="modal fade static" id="loginsupermod" style="display: none">
+        <div class="modal-header" id="headloginsuper">
+            <h3 id="paneltitle1" style="text-align: center"> Datos del Usuario</h3>
+
+            <h4 id="msj" style="text-align: center"> </h4>
+        </div>
+        <div class="modal-body" id="bodyloginsuper" style="text-align: center">
+            <div class="row-fluid">
+
+                <label for="correo"><b>Correo: </b></label>
+                <input id='correo' class="input-large" style="border-radius: 4px;text-align: center"/>
+                <p class="help-text"> </p>
+            </div>
+            <div class="row-fluid">
+                <label for="contrasena"><b>Contraseña: </b></label>
+                <input type="password" id='contrasena' class="input-large" style="border-radius: 4px;text-align: center" />
+                <p class="help-text"> </p>
+            </div>
+            <div class="row-fluid">
+                <p class="help-textmensaj"> </p>
+            </div>
+        </div>
+        <div class="modal-footer" id="footloginsuper" style="text-align: center">
+{#            <a style="cursor: pointer" class="btn btn-danger btn-cerrar ">Cerrar</a>#}
+            <a style="cursor: pointer" class="btn btn-primary " id="btn-cambiar"> Ingresar al Sistema</a>
+        </div>
+    </div>
+{% endblock %}
+{% block footerextra %}
+    <div id="largelogo">
+        <!-- <img src="/static/images/iavq/sga_head.png"/> -->
+    </div>
+{% endblock %}

@@ -1,0 +1,334 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+    <script type="text/javascript">
+        $(function() {
+            var materia=0;
+
+            {% if error %}
+                smoke.alert("{{ error }}");
+            {% endif %}
+
+            $(".acta").click(function(){
+                materia = $(this).attr('idacta');
+                $("#recepcionacta").modal({backdrop: 'static',width:"-80% !important",keyboard: false});
+                $("#recepcionacta").modal("show");
+                $("#id_observaciones").val("");
+                $("#id_acta").val("");
+                $("#id_resumen").val("");
+                $("#recepcionacta #materiaid").val(materia);
+            });
+
+             $(".cerraracta").click(function(){
+                $("#recepcionacta").modal("hide")
+             });
+
+            $(".actaalcance").click(function(){
+                materia = $(this).attr('idacta');
+                $("#recepcionactaalcance").modal({backdrop: 'static',width:"-80% !important",keyboard: false});
+                $("#recepcionactaalcance").modal("show");
+                $("#id_observaciones").val("");
+                $("#id_alcance").val("");
+                $("#recepcionactaalcance #materiaid").val(materia);
+            });
+
+             $(".cerraractaalcance").click(function(){
+                $("#recepcionactaalcance").modal("hide")
+             });
+
+            $(".actanivel").click(function(){
+                materia = $(this).attr('idacta');
+                $("#recepcionactanivel").modal({backdrop: 'static',width:"-80% !important",keyboard: false});
+                $("#recepcionactanivel").modal("show");
+                $("#id_observaciones").val("");
+                $("#id_actanivel").val("");
+                $("#recepcionactanivel #materiaid").val(materia);
+            });
+
+             $(".cerraractanivel").click(function(){
+                $("#recepcionactanivel").modal("hide")
+             });
+
+
+
+
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Cronograma de Materias del Profesor : {{ profesor }} </h3>
+            <h5>Per&iacute;odo: {{ periodo }} </h5><br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <a href="/reportes?action=run&direct=true&n=mate_cronogramaprofesor&profesor={{ profesor.id }}&periodo={{ periodo.id }}&rt=pdf" class='btn'><i class="icon-print"></i> Imprimir</a>
+            <a href="/pro_horarios?action=horariobs" class='btn btn-success'><i class="icon-time"></i> Ir al Horario</a>
+        </div>
+    </div>
+    <br>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Asignatura</th>
+                    {% if UTILIZA_ASIGNATURA_RECTORA %}
+                        <th>Rectora</th>
+                    {% endif %}
+                    <th>Nivel {% if not materia.nivel.carrera %}/ Coordinacion{% else %}/ Paralelo / Carrera {% endif %}</th>
+                    <th>Inicia / Termina</th>
+                    <th>Horas / Cr&eacute;ditos</th>
+                    <th>Profesor(es)</th>
+                    <th  style="text-align: center">Acta Notas</th>
+                    <th style="text-align: center">Acta Alcance</th>
+                    <th style="text-align: center">Acta Nivel Cerrado</th>
+
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for materia in materias %}
+                    {%  if materia.aprobada or not VALIDA_MATERIA_APROBADA %}
+                        <tr>
+                        <td>{% if materia.identificacion %}{{ materia.identificacion }}{% else %}###{% endif %}-{{ materia.asignatura }}
+
+{#                        <br>#}
+{#                         {% if  materia.exordinario %}<span class="label label-important"> Ex. Ordinario {{  materia.exordinario|date:"d-m-Y" }} {% endif %} {% if   materia.revision  %} Revisi&oacute;n  {{  materia.revision|date:"d-m-Y" }} {% endif %} {% if  materia.exatrasado %} Ex. Atrasado {{  materia.exatrasado|date:"d-m-Y" }}{% endif %}</span>#}
+                        </td>
+                        {% if UTILIZA_ASIGNATURA_RECTORA %}
+                            <td>{% if materia.rectora %}<img src='/static/images/16/true.png' alt=''/>{% else %}-{% endif %}</td>
+                        {% endif %}
+                        <td> {% if materia.nivel.nivelmalla %} {{ materia.nivel.nivelmalla }}{% else %} {{ materia.nivel }}{% endif %} {% if materia.nivel.grupo %}/ {{ materia.nivel.grupo.nombre }} {% endif %} <br/> {% if  materia.nivel.carrera %} {{ materia.nivel.carrera }} {% else %} {{ materia.nivel.coordinacion.nombre }}{% endif %}</td>
+                        <td><span class="label"> {{ materia.inicio|date:'d-m-Y' }} </span> <br/><br/>
+                        <span class="label"> {{ materia.fin|date:'d-m-Y' }} </span></td>
+                        <td>{{ materia.horas }} Horas <br/> {{ materia.creditos }} Cr&eacute;ditos</td>
+                        <td>
+                            <table class="table table-bordered table-condensed">
+                                {% if materia.profesormateria_set.count %}
+                                    {% for profesormateria in materia.profesores_materia %}
+                                        {% if  profesormateria.fechacorreo %}
+                                        <tr>
+                                            <td>  {{ profesormateria.segmento }}  - <b> {{ profesormateria.profesor.persona.nombre_completo }}</b>  {%  if profesormateria.profesor_aux %} <span class="label label-info">Aux. </span> <b>  {{ profesormateria.profesor_auxiliar.persona.nombre_completo }} </b> {% endif %} [{{ profesormateria.desde|date:'d-m-Y' }} al {{ profesormateria.hasta|date:'d-m-Y' }}] {% if forloop.first and materia.profesores_materia.count > 1 %}<span class="label label-success">PRINCIPAL</span>{% endif %}
+
+                                            </td>
+                                        </tr>
+                                {% endif %}
+                                {% endfor %}
+                           {% endif %}
+                            </table>
+
+                        </td>
+                        <td style="text-align: center">
+                            {% if  materia.acta_entregada %}
+                                <img src='/static/images/16/true.png' width="14px" alt='' border="0"/> <br>
+                                {{ materia.acta_entregada_docente.fecha|date:'d-m-Y' }}
+                            {% else %}
+                                {% if  materia.pendiente_aprobar %}
+                                    {% if materia.pendiente_aprobar.fecha %}
+                                        <br>Pendiente de Aprobaci&oacute;n
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center">
+                            {% if  materia.acta_alcance_entregada %}
+                                {% if materia.acta_alcance_entregada.alcanceentregada  %}
+                                        <img src='/static/images/16/true.png' width="14px" alt='' border="0"/>
+                                        <br> {{ materia.acta_entregada_docente.alcancefecha|date:'d-m-Y' }}
+                                {% else %}
+                                    {% if materia.acta_alcance_entregada.alcancefecha  %}
+                                        <br>Pendiente de Aprobaci&oacute;n
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                         <td style="text-align: center">
+                            {% if  materia.acta_nivelcerrado_entregada %}
+                                {% if materia.acta_nivelcerrado_entregada.actanivelentregada  %}
+                                        <img src='/static/images/16/true.png' width="14px" alt='' border="0"/>
+                                        <br> {{ materia.acta_entregada_docente.actanivelfecha|date:'d-m-Y' }}
+                                {% else %}
+                                    {% if materia.acta_nivelcerrado_entregada.actanivelfecha  %}
+                                        <br>Pendiente de Aprobaci&oacute;n
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                {% if not materia.nivel.cerrado %}
+                                    {% if  materia.puede_entregar_acta or not materia.existe_recepcion_acta %}
+                                        {% if not materia.puede_entregar_acta.fecha or not materia.existe_recepcion_acta  %}
+                                            <li><a href="#" class="acta" idacta="{{ materia.id }}"><span class="icon-file"></span> Entrega Acta de Notas </a> </li>
+                                        {% else %}
+                                            <li><a href="#" class="acta" idacta="{{ materia.id }}"><span class="icon-file"></span> Cambiar Acta de Notas </a> </li>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if materia.puede_entregar_acta_alcance %}
+                                        {% if not materia.puede_entregar_acta_alcance.alcancefecha %}
+                                            <li><a href="#" class="actaalcance" idacta="{{ materia.id }}"><span class="icon-file"></span> Entrega Acta de Alcance </a> </li>
+                                        {% else %}
+                                            <li><a href="#" class="actaalcance" idacta="{{ materia.id }}"><span class="icon-file"></span> Cambiar Acta de Alcance </a> </li>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                      <li><a href="#" class="actanivel" idacta="{{ materia.id }}"><span class="icon-file"></span> Subir Acta (Nivel Cerrado) </a> </li>
+                                {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <a href="/reportes?action=run&direct=true&n=mate_cronogramaprofesor&profesor={{ profesor.id }}&periodo={{ periodo.id }}&rt=pdf" class='btn'><i class="icon-print"></i> Imprimir</a>
+            <a href="/pro_horarios?action=horariobs" class='btn btn-success'><i class="icon-time"></i> Ir al Horario</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="horadescuentpanel" style="display: none;">
+        <div class="modal-header">
+            <h4>Asunto:<textarea name="asunto" id="asunto"  rows="1" tabindex="4" style="text-transform: none;width: 100%"></textarea></h4>
+
+        </div>
+        <div class="modal-body panelbody" style="height:100%">
+            <form id="formulario3" class='form-vertical' action="" method="POST" style="height:100%">
+                <fieldset class="control-group nomargins">
+                    <div class="controls">
+                        <h4>Contenido:<textarea name="comment" id="comment" cols="100%" rows="18" tabindex="4" style="text-transform: none"></textarea></h4>
+
+                        <p class="help-text"> </p>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-inverse" style="background: #49afcd">Enviar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+     </div>
+
+
+    <div class="modal fade static" id="c" style="display: none;">
+        <div class="modal-header">
+            <h4>Asunto:<textarea name="asunto" id="asunto"  rows="1" tabindex="4" style="text-transform: none;width: 100%"></textarea></h4>
+
+        </div>
+        <div class="modal-body panelbody" style="height:100%">
+            <form id="formulario3" class='form-vertical' action="" method="POST" style="height:100%">
+                <fieldset class="control-group nomargins">
+                    <div class="controls">
+                        <h4>Contenido:<textarea name="comment" id="comment" cols="100%" rows="18" tabindex="4" style="text-transform: none"></textarea></h4>
+
+                        <p class="help-text"> </p>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-inverse" style="background: #49afcd">Enviar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+     </div>
+
+    <div class="modal fade static" id="recepcionacta"  style="display: none;width: 500px;left: -110px;margin-left: 20%;margin-top: -97.0104px;" >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Registrar  Acta de Notas y Resumen</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario" style="overflow-y: auto"  class='well' action="/pro_entrega_acta" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addacta' />
+                <input type='hidden' name='materiaid' id='materiaid' value='' />
+
+            {% for field in form %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 40%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+              <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">{% block buttonname %}Guardar{% endblock %}</button>
+{#                {% block extrabuttons %}#}
+{#                    #}
+{#                {% endblock %}#}
+            </form>
+        <a href="#" class="btn cerraracta"> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="recepcionactaalcance"  style="display: none;width: 500px;left: -110px;margin-left: 20%;margin-top: -97.0104px;" >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Registrar  Acta de Alcance </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario" style="overflow-y: auto"  class='well' action="/pro_entrega_acta" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addactaalcance' />
+                <input type='hidden' name='materiaid' id='materiaid' value='' />
+
+            {% for field in formalcance %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 40%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+              <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+
+
+
+            </form>
+            <button class="btn cerraractaalcance" > Cerrar</button>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="recepcionactanivel"  style="display: none;width: 500px;left: -110px;margin-left: 20%;margin-top: -97.0104px;" >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Registrar  Acta (Nivel Cerrado) </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario" style="overflow-y: auto"  class='well' action="/pro_entrega_acta" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addactanivel' />
+                <input type='hidden' name='materiaid' id='materiaid' value='' />
+
+            {% for field in formacatanivel %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 40%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+              <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+
+
+
+            </form>
+            <button class="btn cerraractanivel" > Cerrar</button>
+        </div>
+    </div>
+
+
+
+{% endblock %}

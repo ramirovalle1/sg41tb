@@ -1,0 +1,285 @@
+{% extends "practicasadmin/formvehic.html" %}
+{% block extraheading %}
+{% endblock %}
+{% block javascript %}
+    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>
+{#    <script src='/static/js/adicionarproveedor.js'></script>#}
+
+    <script>
+    $(function() {
+        $($("#id_profesor_id").get(0).parentNode.parentNode).hide();
+
+        $("#id_nombre,#id_presentacion,#id_bodega,#id_cantidad,#id_fechavencimiento,#id_lote,#id_profesor").addClass("validate[required]");
+{#        {% if entregar %}#}
+{#            $($("#id_persona").get(0).parentNode.parentNode).show();#}
+{#        {% else %}#}
+{#            $($("#id_persona").get(0).parentNode.parentNode).hide();#}
+{#        {% endif %}#}
+        $("#id_cantidad").addClass("input-small");
+        $($("#id_nombre").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-success'>DATOS </h4>" );
+        $("#id_fechavencimiento").datepicker({format:"dd-mm-yyyy"});
+        $("#id_lote").addClass("input-medium");
+        $("#id_bodega").addClass("input-large");
+
+        {% if regismed %}
+            $("#id_fechavencimiento").addClass("validate[required]",false);
+            $("#id_motivo,#id_lote").addClass("validate[required]");
+            $("#id_nombre").attr("disabled",true);
+            $("#id_presentacion").attr("disabled",true);
+            $("#id_bodega").attr("disabled",true);
+            $("#id_costo").attr("disabled",true);
+            $("#id_observacion").val("");
+
+
+            $($("#id_fechavencimiento").get(0).parentNode.parentNode).hide();
+            $($("#id_motivo").get(0).parentNode.parentNode).show();
+{#            $($("#id_lote").get(0).parentNode.parentNode).hide();#}
+            var lotestock = 0;
+            var listing = [];
+            var resultpars = [];
+            var existtrasld = false;
+            $("#id_lote").attr({'autocomplete':'off'});
+            $("#id_profesor").attr({'autocomplete':'off'});
+            buscar_lotetras = function(query, process) {
+            $.get("/reportes", {'action':'datafilt', 'model': 'TrasladoMedicamento:registmedicadest__id={{ regismed.id }}',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                    if(data.results.length > 0){
+                        if (data.results) {
+{#                            $("#id_lote").get(0).results = data.results;#}
+{#                            listing = [];#}
+                            for (var i in data.results) {
+                                var dato = data.results[i];
+                                resultpars.push(dato);
+                                listing.push(dato.name);
+                            }
+                            existtrasld = true;
+{#                            process(listing);#}
+                        }
+                    }
+                    if(existdet || existtrasld ){
+{#                        console.log(resultpars);#}
+                        $("#id_lote").get(0).results = resultpars;
+                        process(listing);
+                    }
+                    else{
+                         $("#id_lote").attr("myval","");
+                         $("#id_lote").attr("alias","");
+                         $("#id_lote").val("");
+                         $("#idtipobaja").val('');
+                         $("#tipbaja").val("");
+
+                         $("#id_lote").get(0).results = undefined;
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+            var existdet = false;
+            buscar_lote = function(query, process) {
+            $.get("/reportes", {'action':'datafilt', 'model': 'DetalleRegistroMedicamento:registromedicamento__id={{ regismed.id }}',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+
+                    if(data.results.length > 0){
+
+                        if (data.results) {
+{#                            $("#id_lote").get(0).results = data.results;#}
+                            listing = [];
+                            for (var i in data.results) {
+                                var dato = data.results[i];
+                                resultpars.push(dato);
+                                listing.push(dato.name);
+                            }
+                            existdet = true;
+                            buscar_lotetras(query, process);
+{#                            process(listing);#}
+                        }
+                    }
+                    else{
+                        buscar_lotetras(query, process);
+                    }
+                }, 'json');
+            };
+
+            $('#id_lote').typeahead({source: buscar_lote, updater: function(item) {
+                var results = $("#id_lote").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_lote").attr("myval",datos.id);
+                        $("#idtipobaja").val(datos.id);
+                        var nom = datos.name.split(' - ')[0];
+                        item = nom;
+                        $("#id_lote").attr("alias",nom);
+                        $("#id_cantidad").val(datos.name.split(' - ')[1]);
+                        lotestock = datos.name.split(' - ')[1];
+
+                        if(datos.name.split(' .')[1]=='D'){
+                            $("#tipbaja").val("detalle");
+                        }
+                        if(datos.name.split(' .')[1]=='T'){
+                            $("#tipbaja").val("traslado");
+                        }
+                        $("#id_cantidad").focus();
+                    }
+                }
+                return item;
+            }});
+
+
+        {% endif %}
+        buscar_persona = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    if(data.results.length > 0)
+                    {
+                        $("#id_profesor").get(0).results = data.results;
+                        listing2 = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing2.push(dato.name);
+                        }
+                        process(listing2);
+                    }
+                    else{
+                        $("#id_profesor").attr("myval","");
+                        $("#id_profesor").val("");
+                        $("#id_profesor").attr("alias","");
+                        $("#id_profesor_id").val("");
+
+                    }
+
+                }
+            }, 'json');
+        };
+        $('#id_profesor').typeahead({source: buscar_persona, updater: function(item) {
+            var results2 = $("#id_profesor").get(0).results;
+
+            for (var i in results2) {
+                var datos2 = results2[i];
+
+                if (item==datos2.name) {
+                    $("#id_profesor").attr("myval",datos2.id);
+                    d=datos2.id;
+                    $("#id_profesor_id").val(d);
+                }
+            }
+            return item;
+
+        }});
+
+
+        $("form").validationEngine();
+        var numeros1="0123456789";
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros1.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+        prety = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(2), {prefix: '$', thousandSeparator: ',', decimalSeparator: ".", sufix: '', decimalPlaces: 2});
+        };
+
+        pretyPct = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(1), {prefix: '', thousandSeparator: ',', decimalSeparator: ".", sufix: '%', decimalPlaces: 1});
+        };
+
+        simple = function(sid) {
+            return Big($.fn.floats.simplify_fn($(sid).val(), {prefix: '$', thousandSeparator: ',', sufix: '%'}));
+        };
+
+        simpleV = function(v) {
+            return Big($.fn.floats.simplify_fn(v, {prefix: '$', thousandSeparator: ','}));
+        };
+
+
+        var lotestock=0
+        $("#id_cantidad").val('');
+        $("#id_cantidad").blur(function(){
+            $($("#id_cantidad").get(0).parentNode).find(".help-text").html("");
+            var v = $("#id_cantidad").val();
+            var p = solo_numeros(v);
+            if($("#id_lote").attr("myval") != '' && $("#id_lote").attr("alias") == $("#id_lote").val()){
+                if (p != v.length)
+                {
+                  $($("#id_cantidad").get(0).parentNode).find(".help-text").html("<h6 style='color:red'>Ingresar solo Numeros</h6>");
+                  $("#id_cantidad").val("");
+                  $("#id_cantidad").focus();
+                }
+                else{
+                    {% if regismed %}
+                        var cant = $(this).val();
+                        if(cant!='')
+                        {
+                            if (parseInt(lotestock) < parseInt(cant)) {
+                                $($("#id_cantidad").get(0).parentNode).find(".help-text").html("<h6 style='color:red'>La cantidad excede al stock</h6>");
+                                $("#id_cantidad").val(lotestock);
+                                $("#id_cantidad").focus();
+                            }
+                        }
+                    {% endif %}
+                }
+            }
+            else{
+                {% if regismed %}
+                    $($("#id_lote").get(0).parentNode).find(".help-text").html("<h6 style='color:red'>Seleccionar correctamente el lote</h6>");
+                    $("#id_lote").focus();
+                    $("#id_cantidad").val('');
+                {% else %}
+
+                    if($("#id_lote").val()!= ''){
+                         if (p != v.length)
+                        {
+                          $($("#id_cantidad").get(0).parentNode).find(".help-text").html("<h6 style='color:red'>Ingresar solo Numeros</h6>");
+                          $("#id_cantidad").val("");
+                          $("#id_cantidad").focus();
+                        }
+
+                    }
+                    else{
+                        $($("#id_lote").get(0).parentNode).find(".help-text").html("<h6 style='color:red'>Ingrese el lote</h6>");
+                         $("#id_lote").focus();
+                        $("#id_cantidad").val('');
+                    }
+                {% endif %}
+            }
+
+        });
+        {% if error %}
+            $($("#id_cantidad").get(0).parentNode).find(".help-text").html("<h6 style='color:red'>La cantidad excede al stock</h6>");
+            $("#id_cantidad").val({{ error }});
+            $("#id_cantidad").focus();
+        {% endif %}
+        {% if error2 %}
+            smoke.alert("{{ error2 }}");
+
+        {% endif %}
+        $("#formbutton").click(function(){
+            if($("#id_motivo").val() == ""){
+                $("#formbutton").hide();
+            }
+        });
+    });
+    </script>
+{% endblock %}
+{% block titulo %}
+
+{% endblock %}
+
+{% block formaction %}/registromedicamento{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+{#    <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">Guardar Inscripci&oacute;n</button>#}
+    <input type='hidden' name='action' value='entregar'/>
+
+        <input type='hidden' name='regismed' value='{{ regismed.id }}'/>
+        <input type='hidden' name='idtipobaja' id='idtipobaja' value=''/>
+        <input type='hidden' name='tipbaja' id='tipbaja' value=''/>
+{% endblock %}
+
+{% block formback %}/registromedicamento{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

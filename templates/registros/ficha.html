@@ -1,0 +1,597 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            var totaldescuento=0;
+            var fechadescuento=0;
+
+            $("#iden,#nombre,#apellidos,#direccion,#emailinst").attr("disabled", true);
+            $("#id_fechadesc").datepicker({format:"dd-mm-yyyy"});
+            $("#fechaPrimerPago").datepicker({format:"dd-mm-yyyy"});
+            $("#fechaPrimerPago").hide()
+            $("#id_porcentaje").addClass("input-small");
+
+            $("#verregistrocita").click(function() {
+               $("#registroscita").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+               $("#registroscita").modal('show');
+            });
+            fechahoy = new Date({{ hoy.year }}, {{ hoy.month }}-1, {{ hoy.day }});
+
+            $(".chk_descuento").attr('disabled','disabled');
+
+            habilitar = function(id, descuento){
+                $(".valor_condescuentoadd").html('');
+                descuento_add = 0
+                $("#fechapago"+id).datepicker({format:"dd-mm-yyyy"});
+                if ($("#chk"+id).is(':checked')){
+                    $("#fechapago"+id).attr('readonly',false);
+                    if (descuento>0){
+                        $("#chk_descuento"+id).removeAttr('disabled');
+                    }
+                }else{
+                    $("#fechapago"+id).attr('readonly',true);
+                    $("#chk_descuento"+id).attr('disabled','disabled');
+                    $("#chk_descuento"+id).attr('checked',false);
+                    $("#valor_condescuento"+id).html('');
+                }
+                if ($(".chk").is(':checked')){
+                    $("#descuento").hide();
+                }else{
+                    $("#descuento").show();
+                }
+            };
+
+            var descuento_add = 0
+            habilitar_descuento = function(id, valor_rubro, descuento, factor){
+                $(".valor_condescuentoadd").html('');
+                descuento_add = 0
+                if ($("#chk_descuento"+id).is(':checked')){
+                    descuento_final = parseFloat(descuento)*parseFloat(factor);
+                    var valor_condescuento = parseFloat(valor_rubro)*(parseFloat(1-(descuento_final/100)));
+                    $("#valor_condescuento"+id).html(String("$" +valor_condescuento.toFixed(2)));
+                }else{
+                    $("#valor_condescuento"+id).html('');
+                }
+            };
+
+            $(".valor_condescuentoadd").hide();
+            $("#btn_descuendoadd").click(function(event){
+                event.preventDefault()
+                descuento_add = $('#number_add').val();
+                $(".valor_condescuentoadd").show();
+                {% for r in rubros %}
+                    var id = '{{ r.0.id }}';
+                    var valor=0;
+                    var desc = 0;
+                    var desc_add = parseFloat($('#number_add').val());
+                    if ($("#chk"+id).is(':checked')){
+                        if ($("#chk_descuento"+id).is(':checked')){
+                            desc = parseFloat('{{ r.0.diasvencimiento.factor }}')*parseFloat('{{ r.0.diasvencimiento.porcentaje }}');
+                        }
+                        porcentaje_descuento = 1-((desc+desc_add)/100);
+                        valor = parseFloat(('{{ r.0.adeudado }}')*porcentaje_descuento).toFixed(2)
+                        $("#valor_condescuentoadd"+id).html("+5% -> $"+(valor));
+                    }
+                {% endfor %}
+            });
+
+            if ($("#cerrar").is(':checked')) {
+                finaliza = true;
+            }
+
+            var op2 = $("#opc").val();
+            if (op2 == 2){
+                    $("#mot").show();
+            }
+
+            $("#opc").change(function(){
+                var op = $("#opc").val();
+
+                if (op == 2){
+                    $("#mot").show();
+                }else{
+                    $("#mot").hide();
+                }
+
+            });
+
+            $("#guardardatos").click(function(event) {
+                event.preventDefault()
+                var rubros = [];
+                var rubrosdesc = [];
+                var valida_documento = false;
+                var formData = new FormData();
+                var form = document.getElementById('upload-file');
+                var file = form.files[0];
+                if (file) {
+                    formData.append('archivo', file);
+                    valida_documento = true;
+                }
+                $("#brubros tr").each(function (index) {
+                    if ($(this).attr('alt') > 0) {
+                        if ($('#chk'+$(this).attr('alt')).is(':checked')) {
+                            aplica_descuento = '0'
+                            if ($('#chk_descuento' + $(this).attr('alt')).is(':checked')) {
+                                aplica_descuento = '1'
+                            }
+                            {#if ($('#chk_diferidorubro' + $(this).attr('alt')).is(':checked')) {#}
+                            {#    diferirrubro = '1'#}
+                            {# }else{ ($('#chk_diferidorubro' + $(this).attr('alt')).is(':checked'))#}
+                            {#    diferirrubro = '0'#}
+                            {# }#}
+
+                            var fechap = ($('#fechapago' + $(this).attr('alt'))).val();
+                            var rubroid = $(this).attr('alt');
+                            rubros.push({
+                                'fechap': (fechap),
+                                'rubroid': rubroid,
+                                'aplica_descuento': aplica_descuento
+                            })
+                        }
+                    }
+                });
+
+                if (totaldescuento >0){
+                    $("#brubros tr").each(function (index) {
+                        if ($(this).attr('alt') > 0) {
+                            var rubro_id = $(this).attr('alt')
+                            rubrosdesc.push({'rubro_id':rubro_id})
+                        }
+                    });
+                }
+                guardar = true
+                if  ($("#nota").val() == ' '){
+                    swal.fire("Faltan datos", "Ingrese una observación", "warning")
+                    guardar = false
+                } else if (!valida_documento) {
+                    swal.fire("Datos incompletos", "Ingrese archivo soporte", "warning")
+                    guardar = false
+                } else if ($("#estado").val() == 0) {
+                    swal.fire("Datos incompletos", "Ingrese estado de llamada", "warning")
+                    guardar = false
+                }
+
+                diferido = 0
+                if ($("#chk-diferido").is(':checked')){
+                    diferido = 1
+                    if ($("#num-cuotas").val() == ''){
+                        swal.fire("Datos incompletos", "Ingrese número de cuotas a diferir", "warning")
+                        guardar = false
+                    }
+                }
+
+                formData.append('action', 'guardar')
+                formData.append('descuento_adicional', descuento_add)
+                formData.append('id', '{{ inscripcion.id }}')
+                formData.append('estado', $("#estado").val())
+                formData.append('nota', $("#nota").val())
+                formData.append('tiporespuesta', $("#tiporespuesta").val())
+                formData.append('rubros', JSON.stringify(rubros))
+                formData.append('rubrosdesc', JSON.stringify(rubrosdesc))
+                formData.append('totaldescuento', totaldescuento)
+                formData.append('celular', $("#celular").val())
+                formData.append('fonod', $("#fonod").val())
+                formData.append('email', $("#email").val())
+                formData.append('fechadescuento', fechadescuento)
+                formData.append('diferido', diferido)
+                formData.append('numCuotas', $("#num-cuotas").val())
+                formData.append('fechaPrimerPago', $("#fechaPrimerPago").val())
+
+                if(guardar){
+
+                    Swal.fire({
+                        title: "Generar Gestión",
+                        text: "Los rubros gestionados no se podran editar hasta la fecha de pago ingresada. Desea continuar?",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#3085d6",
+                        cancelButtonColor: "#d33",
+                        confirmButtonText: "Guardar"
+                    }).then(function(result) {
+                        if (result.isConfirmed) {
+                            showWaiting("Guardando", " Espere por favor.....");
+                            $("#guardardatos").hide();
+
+                            $.ajax({
+                                url: '/registros',
+                                type: "POST",
+                                contentType: false,
+                                data: formData,
+                                processData: false,
+                                cache: false,
+                                success: function (data) {
+                                    if (data.result == "ok") {
+                                        location.href='/registros?s={{ inscripcion.persona.nombre_completo_inverso }}';
+                                    } else {
+                                        swal.fire("Error", data.error, "warning")
+                                        $("#guardardatos").show();
+                                    }
+                                    hideWaiting();
+                                },
+                                error: function(xhr, ajaxOptions, thrownError) {
+                                    hideWaiting();
+                                    swal.fire("Error", "Ocurrio un error inesperado: "+data.error, "error")
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+
+
+
+            $("#num-cuotas").hide()
+            $("#chk-diferido").click(function(){
+                if ($("#chk-diferido").is(':checked')){
+                    $("#num-cuotas").show(500)
+                    $("#fechaPrimerPago").show(500)
+
+                    {% for r in rubros %}
+                        descuento_add = 0
+                        $("#fechapago{{ r.0.id }}").datepicker({format:"dd-mm-yyyy"});
+                        $("#chk{{ r.0.id }}").prop('checked', true)
+                        $("#chk{{ r.0.id }}").prop('disabled', true)
+                        $("#fechapago{{ r.0.id }}").attr('readonly',false);
+                        if (descuento_add>0){
+                            $("#chk_descuento{{ r.0.id }}").removeAttr('disabled');
+                        }
+                        if ($(".chk").is(':checked')){
+                            $("#descuento").hide();
+                        }else{
+                            $("#descuento").show();
+                        }
+                    {% endfor %}
+
+                }else {
+                    {% for r in rubros %}
+                        $("#chk{{ r.0.id }}").prop('checked', false);
+                        $("#chk{{ r.0.id }}").prop('disabled', false);
+                        $("#fechapago{{ r.0.id }}").attr('readonly', true);
+                        $("#chk_descuento{{ r.0.id }}").attr('disabled', 'disabled');
+                        $("#chk_descuento{{ r.0.id }}").prop('checked', false);
+                        $("#valor_condescuento{{ r.0.id }}").html('');
+                    {% endfor %}
+                }
+            })
+
+
+        });
+
+    </script>
+    <style>
+        hr {
+            margin: 10px 0;
+        }
+
+    </style>
+{% endblock %}
+{% block canvas %}
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <div class="span3"></div>
+            <div class='span6' style="text-align: center">
+                <h3>REGISTRO DE LLAMADA</h3>
+            </div>
+            <div class="span2"></div>
+            <div class='span1'>
+                <a href="/registros" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            </div>
+        </div>
+        <div class='span12'>
+            <div class='span2'>
+
+            </div>
+            <div class='span8'>
+                <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    <th colspan="3">Datos Personales</th>
+                    </thead>
+                </table>
+            </div>
+        </div>
+
+        <div class='span12'>
+            <div class='span2'>
+            </div>
+
+            <div class="span4">
+                <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>
+                            <b>Identificaci&oacute;n: </b> <input type="text" value="{{ inscripcion.persona.cedula }}" id="iden" style="text-transform: uppercase;width: 200px"/>
+                            <hr ><b>Nombres: </b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" value="{{ inscripcion.persona.nombres }}" id="nombre" style="text-transform: uppercase;width: 400px"/>
+                            <hr><b>Apellidos: </b>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" value="{{  inscripcion.persona.apellido1 }} {{  inscripcion.persona.apellido2 }}" id="apellidos" style="text-transform: uppercase;width: 400px"/>
+                            <hr><b>Direcci&oacute;n: </b>  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" value="{{  inscripcion.persona.direccion }} {{  inscripcion.persona.direccion2 }}" id="direccion" style="text-transform: uppercase;width: 400px"/>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="span4">
+                <table class='table ' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    </thead>
+                    <tbody>
+                    </tr>
+                        <tr>
+                            <td>
+                                <b>Celular:&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </b> <input type="text" value="{{ inscripcion.persona.telefono }}" id="celular" style="text-transform: uppercase;width: 180px"/>
+                                <hr><b>TeleFono Convencional:</b> <input type="text" value="{{ inscripcion.persona.telefono_conv }}" id="fonod" style="text-transform: uppercase;width: 180px"/>
+                                <hr><b>Email Personal: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b><input type="text" value="{{ inscripcion.persona.email }}" id="email"style=";width:400px" />
+                                <hr><b>Email Institucional: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </b><input type="text" value="{{ inscripcion.persona.emailinst }}" id="emailinst"style=";width:400px" />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+          </div>
+
+             <div class='span12'>
+                <div class='span2'>
+                </div>
+                <div class='span8'>
+                    {%  if cerrada == 2%}
+                        <table class='table ' cellpadding="0" cellspacing="0" >
+                            <thead>
+                                <th colspan="8">Estado Llamada</th>
+                            </thead>
+                            <tbody>
+                                <hr>
+                                <tr>
+                                    <td colspan="4">
+                                        <b>Estado Llamada </b>
+                                        <select id="estado" class="form-control">
+                                            <option value="0"> ----- </option>
+                                            {% for l in estadollamada %}
+                                               <option value="{{ l.id }}">
+                                                  {{ l.descripcion }}
+                                               </option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td style="display: none" id='opc_es'></td>
+                                    <td>  <td colspan="3"><b>Observaci&oacute;n: <br>  </b><textarea  id="nota" style="text-transform: uppercase;width: 500px;" rows="3"> </textarea></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <table class='table ' cellpadding="0" cellspacing="0" >
+                            <thead>
+                                <tr><th colspan="5">GESTIONES REALIZADAS</th></tr>
+                                <th style="text-align:left">Fecha</th>
+                                <th>Estado Llamada</th>
+                                <th>Observacion</th>
+                                <th style="text-align:center">Ficha Cerrada</th>
+                                <th style="text-align:center">Usuario</th>
+                            </thead>
+                            <tbody>
+                                {% for r in registrollamada %}
+                                    <tr>
+                                        <td style="text-align:left">{{ r.fecha|date:'d-m-Y' }}</td>
+                                        <td>{{ r.estadollamada.descripcion }}</td>
+                                        <td>{{ r.observacion }}</td>
+                                        <td style="text-align:center">
+                                            {% if r.cerrada %}
+                                                <img src='/static/images/16/true.png' alt='Si' border='0'/><br>
+                                                {{ r.tiporespuesta.descripcion }}
+                                            {% else %}
+                                               <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                            {% endif %}
+                                        </td>
+                                        <td style="text-align:center">{{ r.usuario.username }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+            </div>
+            <div class='span12'>
+                <div class='span2'>
+                </div>
+                <div class='span8'>
+                    <table class='table ' cellpadding="0" cellspacing="0" >
+                        <tbody>
+                            <tr>
+                                {%  if cerrada == 2%}
+                                    <td colspan="4">
+                                        <b>Motivos Para Cerrar Ficha</b>
+                                        <select id="tiporespuesta" class="form-control">
+                                            <option value="0"> ----- </option>
+                                            {% for l in tiporespuesta %}
+                                                <option value="{{ l.id }}">
+                                                    {{ l.descripcion }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class='span12'>
+                <div class='span2'>
+                </div>
+                <div class='span8'>
+                    <table class='table table-bordered' cellpadding="0" cellspacing="0" >
+                    <thead>
+                    <tr>
+                        <th colspan="7" class="border-right">RUBROS</th>
+                        <th colspan="5" style="text-align: center">GESTION</th>
+                    </tr>
+                    <tr>
+                        <th>Nombre</th>
+                        <th style="text-align: center">Tipo</th>
+                        <th style="text-align: center">Fecha Vencimiento </th>
+                        <th style="text-align: center">Dias Vencidos</th>
+                        <th style="text-align: center">Categor&iacute;a</th>
+                        <th style="text-align: center"> Factor </th>
+                        {%  if cerrada == 2 %}
+                            <th style="text-align: center"> Aplicar Descuento </th>
+                            <th style="text-align: center">Valor</th>
+                            <th style="text-align: center"> Valor con Descuento </th>
+                        {% endif %}
+                        <th style="text-align: center">Fecha Posible Pago</th>
+                         {%  if cerrada == 2 %}
+                            <th> Gestionar </th>
+                        {% endif %}
+{#                        <th>Diferir</th>#}
+
+                    </tr>
+                    </thead>
+                    <tbody id='brubros'>
+                    {% for r in rubros %}
+                        <tr alt='{{ r.0.id }}' >
+                            <td> {{ r.0.id }} - {{ r.0.nombre }} </td>
+                            <td style="text-align: center"> {{ r.0.tipo }} </td>
+                            <td style="text-align: center"> {{ r.0.fechavence|date:'d-m-Y' }} </td>
+                            <td style="text-align: center"> {{ r.0.dias_vencidos }} </td>
+                            <td style="text-align: center"> {{ r.1 }} </td>
+                            <td style="text-align: center"> {{ r.0.diasvencimiento.factor }} </td>
+                            {%  if cerrada == 2 %}
+                                <td style="text-align: center"><input class="chk_descuento" rid ='{{ r.0.id }}'  type="checkbox"  id='chk_descuento{{ r.0.id }}' title="Click para habilitar descuento" onclick="habilitar_descuento({{ r.0.id }},{{ r.0.adeudado }},{{ r.0.diasvencimiento.porcentaje }},{{ r.0.diasvencimiento.factor }})"  > {{ r.0.diasvencimiento.porcentaje }}%</td>
+                                <td style="text-align: right">${{ r.0.adeudado|floatformat:2 }}</td>
+                                <td style="text-align: center">
+                                    <label style="color: darkblue" id='valor_condescuento{{ r.0.id }}'></label><br>
+                                    <label style="color: lightseagreen" id='valor_condescuentoadd{{ r.0.id }}' class='valor_condescuentoadd'></label>
+                                </td>
+                            {% endif %}
+                            <td style="text-align: center"><input rid ='{{ r.0.id }}'  id='fechapago{{ r.0.id }}' value='{{ hoy|date:'d-m-Y' }}' readonly type="text"  ></td>
+                            {%  if cerrada == 2 %}
+                                <td style="text-align: center">
+                                    <input class="chk" rid ='{{ r.0.id }}'  type="checkbox"  id='chk{{ r.0.id }}' title="Click Para Ingresar Fecha de Pago" onclick="habilitar({{ r.0.id }},{{ r.0.diasvencimiento.porcentaje }})"  >
+                                </td>
+                            {% endif %}
+{#                            <td style="text-align: center">#}
+{#                                <input  class="" type="checkbox" id="chk_diferidorubro{{ r.0.id }}">#}
+{#                            </td>#}
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+        <style type="text/css">
+            .file-container {
+                {#text-align: center;#}
+            }
+
+            .upload-file {
+                font-size: 14px;
+                background: none;
+                border-radius: 5px;
+{#                border: 1px solid #ddd;#}
+                box-shadow: 5px 5px 5px 0 rgb(0,0,0,.1);
+                padding: 2px 10px 6px 2px;
+            }
+
+            ::-webkit-file-upload-button {
+                color: white;
+                background: #3EA4C2;
+                padding: 10px;
+                border: none;
+                cursor: pointer;
+            }
+
+            .checkbox-container {
+              display: block;
+              position: relative;
+              padding-left: 35px;
+              margin: 0;
+              cursor: pointer;
+              font-size: 18px;
+              user-select: none;
+            }
+
+            .checkbox-container input {
+              position: absolute;
+              opacity: 0;
+              cursor: pointer;
+              height: 0;
+              width: 0;
+            }
+
+            .checkmark {
+              position: absolute;
+              top: 0;
+              left: 0;
+              height: 25px;
+              width: 25px;
+              background-color: #eee;
+            }
+
+            .checkbox-container:hover input ~ .checkmark {
+              background-color: #ccc;
+            }
+
+            .checkbox-container input:checked ~ .checkmark {
+              background-color: #2196F3;
+            }
+
+            .checkmark:after {
+              content: "";
+              position: absolute;
+              display: none;
+            }
+
+            .checkbox-container input:checked ~ .checkmark:after {
+              display: block;
+            }
+
+            .checkbox-container .checkmark:after {
+              left: 9px;
+              top: 5px;
+              width: 5px;
+              height: 10px;
+              border: solid white;
+              border-width: 0 3px 3px 0;
+              transform: rotate(45deg);
+            }
+        </style>
+        
+        <div class="span12">
+            <div class="row-fluid">
+                <div class="span2"></div>
+                <div class="span8 file-container" style="display: flex; flex-direction:column; gap:1em">
+                    <div style="display: flex; align-items:center;">
+                        <a href="#" class="btn btn-info" id='btn_descuendoadd' style="margin: 0">Solicitar descuento</a>
+                        <input type="number" id="number_add" min="5" max="5" style="width: 130px;margin: 0; text-align: center" value="5" />&nbsp%
+                    </div>
+                    <input type="file" class="upload-file" id="upload-file" style="width: 400px"/>
+                    <div style="display: flex; align-items:center; gap:1em">
+                        <label class="checkbox-container">Diferir pago
+                            <input type="checkbox" id="chk-diferido">
+                            <span class="checkmark"></span>
+                        </label>
+                        <input type="number" id="num-cuotas" min="1" max="4" style="width: 130px;margin: 0 4px; text-align: center" placeholder="Numero de cuotas"/>
+                        <input type="text" id="fechaPrimerPago" value="{{ hoy|date:'d-m-Y' }}" style="margin: 0; text-align: center"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class='span12'>
+            <div class='span2'></div>
+            <div class='span8' style="text-align: right">
+            <hr>
+                {%  if cerrada == 2  %}
+                    {%  if not detdescuento %}
+                        <a href="#" class="btn btn-large btn-primary" id="guardardatos" style="text-align: center"><span class="icon-save"></span> Guardar gestión</a >
+                    {% endif %}
+                {% endif %}
+{#                    <a href="/registros?s={{ inscripcion.persona.nombre_completo_inverso }}"><span class="btn btn-danger" style="text-align: center">SALIR</span></a>#}
+            </div>
+        </div>
+
+
+    </div>
+
+{% endblock %}

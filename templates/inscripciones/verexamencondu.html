@@ -1,0 +1,284 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <script type="text/javascript">
+        $(function(){
+            $("#cerrarexam").click(function(){window.close();});
+            var ctrlKeyDown = false;
+
+            $(document).ready(function(){
+                $(document).on("keydown", keydown);
+                $(document).on("keyup", keyup);
+                $(window).on("keydown",keydown);
+                $(window).on("keyup",keyupwin);
+
+            });
+
+            $('ul[class=nav]').hide();
+            $('a[class=brand]').hide();
+            function keydown(e) {
+
+                if ((e.which || e.keyCode) == 116 || ((e.which || e.keyCode) == 82 && ctrlKeyDown)) {
+                    // Pressing F5 or Ctrl+R
+                    e.preventDefault();
+                } else if ((e.which || e.keyCode) == 17) {
+                    // Pressing  only Ctrl
+                    ctrlKeyDown = true;
+                }
+            }
+
+            function keyup(e){
+                // Key up Ctrl
+                if ((e.which || e.keyCode) == 17){
+                    ctrlKeyDown = false;}
+            }
+
+
+
+            document.oncontextmenu = new Function("return false");
+
+            history.pushState(null, null, location.href);
+
+            window.addEventListener('popstate', function(event) {
+                history.pushState(null, null, location.href);
+
+            });
+        });
+
+    </script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' style="text-align: center" >
+        <div class="offset2 span8" >
+            <h3>{{ tituloexamencondu.nombreinstitucion }}</h3>
+            <h4>{{ tituloexamencondu.tituloexamen }}</h4>
+            <h5>{{ tituloexamencondu.subtituloexamen }}</h5>
+            <br/>
+        </div>
+        <div class='span1'>
+
+            {% if inscripcion and tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                    {% with examen=tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                        <h3>PUNTOS:</h3><a class="btn btn-large {% if examen.puntaje >= NOTA_PARA_EXAMEN_CONDUCCION %}btn-success{% else %}btn-danger{% endif %}" style="font-size: 32px">
+                           {% if examen.puntaje %} {{ examen.puntaje }} {% else %} 0.0{% endif %}
+                        </a>
+{#                    {% endwith %}#}
+{#                    {% with deta=tituloexamencondu|args:inscripcion.id|call:"cantidadresp" %}#}
+                        <h3>Respuestas:</h3><a class="btn btn-large {% if examen.cantidadresp >= EXAMEN_TEORIPORC_COMPLEX %}btn-success{% else %}btn-info{% endif %}" style="font-size: 32px">
+                            {{ examen.cantidadresp }}/{{ examen.cantpregunta }}
+                        </a><br/>
+                        <h3>Respuestas Incorrectas:</h3><a class="btn btn-large  btn-danger" style="font-size: 32px">
+                            {{ examen.cantidadrespincorr }}/{{ examen.cantpregunta }}
+                        </a>
+                        <h3>Sin contestar:</h3><a class="btn btn-large btn-warning" style="font-size: 32px">
+                            {{ examen.cantidadrespsincont }}/{{ examen.cantpregunta }}
+                        </a>
+
+                {% endwith %}
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+        <div class='row-fluid'>
+        <div class='offset2 span8' >
+            <form class='form' method="POST">
+                <table class='table' cellpadding="0" cellspacing="0" id="tablepregunto">
+                    {% if inscripcion %}
+                        {% for p in preguntaexamen %}
+                            {% with num=forloop.counter %}
+                                        <thead num="{{ num }}" id="cabecera{{ num }}">
+                                            <tr>
+                                                <th colspan="{% if tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}4 {% else %} 4{% endif %}">
+                                                    <h4{% if DEFAULT_PASSWORD == "itb" %} style="white-space: pre-wrap;text-align: justify;" {% endif %}>{{ forloop.counter }}.- {{ p.respuestaexamen.preguntaexamen.pregunta }} <br><span style="float: right">Puntaje: {{ p.respuestaexamen.preguntaexamen.puntos }}</span>
+                                                   </h4>
+                                                </th>
+                                            </tr>
+                                            {% if p.respuestaexamen.preguntaexamen.imagen %}
+                                                <tr>
+                                                    <td colspan="{% if tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}3{% else %} 2{% endif %}">
+
+                                                            <div class="thumbnail" style="height: 150px">
+
+                                                                <img src="{{ p.respuestaexamen.preguntaexamen.imagen.url }}" alt="" style="width: 150px;height: 150px">
+
+                                                            </div>
+
+                                                    </td>
+                                                    <td>
+                                                    </td>
+                                                </tr>
+                                            {% endif %}
+
+                                            {% if inscripcion and not tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                                                {% for r in p.respuestaexamen.preguntaexamen.respuestaexamen %}
+                                                    <tr
+                                                        {% if inscripcion and r|args:inscripcion.id|call:"exist_respuesta" and tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                                                           {% if r.valida %} style="background: rgba(0, 128, 0, 0.28);"{% endif %}
+                                                        {% endif %}
+                                                        {% if inscripcion and not r|args:inscripcion.id|call:"exist_respuesta" and r.valida and tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                                                            style="background: rgba(0, 128, 0, 0.28);"
+                                                        {% endif %}
+                                                        {% if not inscripcion and r.valida %}
+                                                            style="background: rgba(0, 128, 0, 0.28);"
+                                                        {% endif %}
+                                                    >
+                                                        <td>
+                                                            {% if inscripcion and r|args:inscripcion.id|call:"exist_respuesta" and tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                                                                   {% if r.valida %} <a style="float: left;"><img src='/static/images/16/check.png' alt='' border="0"/></a>{% else %}<a style="float: left"><img src='/static/images/16/delete2.png' alt='' border="0"/></a>{% endif %}
+                                                            {% endif %}
+                                                            {% if inscripcion and not r|args:inscripcion.id|call:"exist_respuesta" and r.valida and tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                                                                <a style="float: left"><img src='/static/images/16/check.png' alt='' border="0"/></a>
+                                                            {% endif %}
+                                                            {% if not inscripcion and r.valida %}
+                                                                <a style="float: left"><img src='/static/images/16/check.png' alt='' border="0"/></a>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% if DEFAULT_PASSWORD == "itb" %}<b style="color: red">R{{ forloop.counter }}.-</b>{% else %}{{ forloop.counter }}.-{% endif %} {{ r.respuesta }}
+                                                        </td>
+                                                        <td>
+                                                            {% if r.imagen %}
+                                                                <div class="thumbnail" style="height: 50px;"  >
+
+                                                                    <img src="{{ r.imagen.url }}" alt="" style="width: 50px;height: 50px">
+
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if inscripcion %}
+                                                                <input type="checkbox" respid="{{ r.id }}" class="elegir" numero="{{ num }}" data-id="{{ num }}{{ forloop.counter }}"
+                                                                       name='respuesta{{ num }}{{ forloop.counter }}' id="respuesta{{ num }}{{ forloop.counter }}"
+                                                                       {% if r|args:inscripcion.id|call:"exist_respuesta" %} {% with respdet=r|args:inscripcion.id|call:"exist_respuesta" %} {% if respdet.fecha %}checked {% endif %}{% endwith %}{% endif %}
+                                                                        {% if tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin"  or DEFAULT_PASSWORD == "itb"%} disabled {% endif %} />
+
+                                                            {% endif %}
+                                                        </td>
+
+                                                    </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                {% for r in p.respuestaexamen.preguntaexamen.respuesta %}
+                                                    <tr
+                                                        {% if inscripcion and r|args:inscripcion.id|call:"exist_respuesta" and tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                                                           {% if r.valida %} style="background: rgba(0, 128, 0, 0.28);"{% endif %}
+                                                        {% endif %}
+                                                        {% if inscripcion and not r|args:inscripcion.id|call:"exist_respuesta" and r.valida and tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                                                            style="background: rgba(0, 128, 0, 0.28);"
+                                                        {% endif %}
+                                                        {% if not inscripcion and r.valida %}
+                                                            style="background: rgba(0, 128, 0, 0.28);"
+                                                        {% endif %}
+                                                    >
+                                                        <td {% if DEFAULT_PASSWORD == "itb" %}style="width: 5%" {% endif %}>
+                                                            {% if inscripcion and r|args:inscripcion.id|call:"exist_respuesta" and tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                                                                   {% if r.valida %} <a style="float: left;"><img src='/static/images/16/check.png' alt='' border="0"/></a>{% else %}<a style="float: left"><img src='/static/images/16/delete2.png' alt='' border="0"/></a>{% endif %}
+                                                            {% endif %}
+                                                            {% if inscripcion and not r|args:inscripcion.id|call:"exist_respuesta" and r.valida and tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                                                                <a style="float: left"><img src='/static/images/16/check.png' alt='' border="0"/></a>
+                                                            {% endif %}
+                                                            {% if not inscripcion and r.valida %}
+                                                                <a style="float: left"><img src='/static/images/16/check.png' alt='' border="0"/></a>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% if DEFAULT_PASSWORD == "itb" %}<b style="color: red">R{{ forloop.counter }}.-</b>{% else %}{{ forloop.counter }}.-{% endif %} {{ r.respuesta }}
+                                                        </td>
+                                                        <td>
+                                                            {% if r.imagen %}
+                                                                <div class="thumbnail" style="height: 50px;"  >
+
+                                                                    <img src="{{ r.imagen.url }}" alt="" style="width: 50px;height: 50px">
+
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if inscripcion %}
+                                                                <input style="float: right" type="checkbox" respid="{{ r.id }}" class="elegir" numero="{{ num }}" data-id="{{ num }}{{ forloop.counter }}"
+                                                                       name='respuesta{{ num }}{{ forloop.counter }}' id="respuesta{{ num }}{{ forloop.counter }}"
+                                                                       {% if r|args:inscripcion.id|call:"exist_respuesta" %} checked {% endif %}
+                                                                        {% if tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" or DEFAULT_PASSWORD == "itb" %} disabled {% endif %} />
+
+                                                                {% if not p.fecha and forloop.last and DEFAULT_PASSWORD == "itb" %}
+                                                                    <br><span style="float: left" class="label label-important">No selecciono ninguna respuesta</span>
+                                                                {% endif %}
+
+                                                            {% endif %}
+                                                        </td>
+
+                                                    </tr>
+                                                {% endfor %}
+                                            {% endif %}
+
+
+                                        </thead>
+                            {% endwith %}
+                        {% endfor %}
+
+                    {% endif %}
+
+                </table>
+                {% if inscripcion and   paging.num_pages == page.number and not tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                    <a id="verifica"  class="btn btn-success">Finalizar
+
+                    </a>
+                {% else %}
+                    {% if tituloexamencondu|args:inscripcion.id|call:"exist_tituexamenfin" %}
+                        <a id="cerrarexam"  class="btn btn-danger" >Cerrar
+
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </form>
+        </div>
+{#        <a id="verifica"  class="btn btn-success">cerrar</a>#}
+    </div>
+{##}
+{#    <div class='row-fluid'>#}
+{#        <div class="offset2 span8">#}
+{##}
+{##}
+{#            {% if paging%}#}
+{#                {% if paging.num_pages > 20 %}#}
+{#                    <div class='pagination'>#}
+{#                        <ul >#}
+{#                            {% if paging.primera_pagina %}#}
+{#                                <li><a href="/examen_conduc?action=examen&id={{ tituloexamencondu.id }}&page=1">1</a></li>#}
+{#                                <li><a href="/examen_conduc?action=examen&id={{ tituloexamencondu.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>#}
+{#                            {% endif %}#}
+{#                            {% for pagenumber in paging.paginas %}#}
+{#                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/examen_conduc?action=examen&id={{ tituloexamencondu.id }}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>#}
+{#                            {% endfor %}#}
+{#                            {% if paging.ultima_pagina %}#}
+{#                                <li><a href="/examen_conduc?action=examen&id={{ tituloexamencondu.id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>#}
+{#                                <li><a href="/examen_conduc?action=examen&id={{ tituloexamencondu.id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>#}
+{#                            {% endif %}#}
+{#                        </ul>#}
+{#                    </div>#}
+{#                {% else %}#}
+{##}
+{#                    <div class='pagination'>#}
+{#                        <ul>#}
+{#                            {% for pagenumber in paging.page_range %}#}
+{#                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/examen_conduc?action=examen&id={{ tituloexamencondu.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>#}
+{#                            {% endfor %}#}
+{#                        </ul>#}
+{#                    </div>#}
+{##}
+{#                {% endif %}#}
+{#            {% endif %}#}
+{##}
+{#        </div>#}
+{#    </div>#}
+
+
+{% endblock %}

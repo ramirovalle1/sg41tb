@@ -1,0 +1,488 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+
+<link rel="stylesheet" type="text/css" href="../../static/vendors/sweetalert/sweetalert2.css">
+<script src="../../static/vendors/sweetalert/sweetalert2.all.js"></script>
+<script src="../../static/vendors/sweetalert/sweet-alert.init.js"></script>
+
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+
+        var idsolicitudse=0;
+
+
+        function buscar(){
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/solicitudadmin?s="+term;
+        }
+
+        $("#search").click(function() {
+           buscar();
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+
+
+        $(".nuevo_solicitud").click(function(){
+
+            location.href = "/solicitudatencion";
+
+        });
+
+
+        $(".eliminar_solicitud").click(function(){
+            var id = $(this).attr("solicitud_id");
+            var nombre = $(this).attr("nombre");
+
+            swal({
+                    title: 'Está Seguro que desea eliminar la solicitud de atención?',
+                    text:  " Código:" +id + " Persona: " + nombre,
+                    type: 'warning',
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5',
+                    buttonsStyling: false,
+                    allowOutsideClick: false,
+
+
+                }).then(function (isConfirm) {
+
+
+                    if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+
+                        showWaiting("Eliminado","Espere un momento por favor...");
+
+                        var formData = new FormData();
+                        formData.append('action', 'eliminarsolicitud');
+                        formData.append('idsolicitud', id);
+
+                        $.ajax({
+                                 url: '/solicitudadmin',
+                                 type: "POST",
+                                 contentType: false,
+                                 data: formData,
+                                 processData: false,
+                                 cache: false,
+                                 success: function (data) {
+                                     if (data.result == "ok") {
+                                         swal("! Solicitud", "Se elimino correctamente la solicitud", "success");
+                                         buscar();
+                                     } else {
+                                         swal("Error", data.message, "error");
+                                         hideWaiting();
+                                     }
+
+                                 },
+                                 error: function (xhr, ajaxOptions, thrownError) {
+                                     swal("Error", "Error Conexion en el Servidor", "error");
+                                     hideWaiting();
+                                 },
+
+                                 complete: function () {
+                                     hideWaiting();
+
+                                 }
+
+
+                         });
+
+                    }
+
+                })
+
+
+        });
+
+
+        ingresarEvidencia=function(idsoli,nom){
+
+              idsolicitudse=  idsoli;
+
+              $("#agregar_solicitud").modal({"backdrop":"static",width:'40%'});
+              $("#agregar_solicitud").modal("show");
+
+        }
+
+
+
+
+        function limpirdatodiagnostico(){
+            $("#txtdescripciondig").val("");
+            $("#filediagnostico").val("");
+
+        }
+
+        function limipiarHelpDiagnostico() {
+
+            $("#helptxtdescripciondig").html("");
+            $("#helfilediagnostico").html("");
+
+        }
+
+        function validarDatosDiagnostico() {
+
+
+             if ($("#txtdescripciondig").val()==""){
+                 $("#helptxtdescripciondig").html("Debe ingresar la descripción");
+                 return 1;
+             }
+
+            if ($("#filediagnostico").val() == "") {
+                     $("#helfilediagnostico").html("Debe adjuntar el archivo del diagnostico");
+                     return 1;
+            }
+
+
+             return 0;
+
+        }
+
+        var validos = " abcdefghijklmnopqrstuvwxyz0123456789-_%,";
+
+        function soloLetrasYNum(campo) {
+             var letra;
+             var bien = true;
+             for (var i = 0; i < campo.length; i++) {
+                 letra = campo.charAt(i).toLowerCase()
+                 if (validos.indexOf(letra) == -1) {
+                     bien = false;
+                 }
+                 ;
+             }
+             if (!bien) {
+                 return 1;
+
+             } else {
+                 return 0;
+             }
+        }
+
+        $("#filediagnostico").change(function(){
+            var x = document.getElementById("filediagnostico");
+            var fileExt = x.value;
+            var validExts = new Array(".doc", ".docx", ".pdf",".png",".jpg");
+            var fileExt1 = fileExt.substring(fileExt.lastIndexOf('.'));
+            var nombre= fileExt.substring(fileExt.indexOf(x.files[0].name),fileExt.lastIndexOf('.'));
+            if (parseInt(soloLetrasYNum(nombre))==1){
+                $("#filediagnostico").val('');
+                $("#helfilediagnostico").html("");
+                swal("Error","El Nombre del Archivo contiene Tilde, espacios en blanco o Caracteres Especiales","error");
+            }else if (validExts.indexOf(fileExt1) < 0){
+                 $("#filediagnostico").val('');
+                $("#helfilediagnostico").html("");
+                swal("Error","El formato del archivo solo debe ser doc,pdf,docx,png,jpg,jpeg","error");
+            }
+        });
+
+
+        $("#btnguardardiag").click(function() {
+
+              limipiarHelpDiagnostico();
+
+              if (validarDatosDiagnostico()==0){
+
+                   showWaiting("Guardando Diagnostico ","Espere un momento por favor...");
+
+                   var formData = new FormData();
+
+                   formData.append('action', 'agregarevidencia');
+                   formData.append('idsolicitud', idsolicitudse);
+                    formData.append('nombre', "Registro de Diagnostico");
+                   formData.append('observacion', $("#txtdescripciondig").val());
+                   if ($("#filediagnostico").val() != "") {
+                        var formarchivodiag = document.getElementById('filediagnostico');
+                        var formarchivootroenviodiagf = formarchivodiag.files[0];
+                        formData.append('archivo', formarchivootroenviodiagf);
+                   }
+
+
+                   $.ajax({
+                             url: '/solicitudadmin',
+                             type: "POST",
+                             contentType: false,
+                             data: formData,
+                             processData: false,
+                             cache: false,
+                             success: function (data) {
+                                 if (data.result == "ok") {
+                                     swal("! Solicitud Atención", "Se guardo correctamente el diagnóstico ", "success");
+                                   buscar();
+
+
+                                 } else {
+                                     swal("Error", data.message, "error");
+
+                                     hideWaiting();
+
+
+                                 }
+
+                             },
+                             error: function (xhr, ajaxOptions, thrownError) {
+                                 swal("Error", "Error Conexion en el Servidor", "error");
+                                hideWaiting();
+                             },
+
+                             complete: function () {
+                                hideWaiting();
+
+                             }
+
+
+                   });
+
+
+              }
+
+        });
+
+        $("#btncancelardig").click(function() {
+            limpirdatodiagnostico();
+            $("#agregar_solicitud").modal('hide');
+        });
+
+
+        vergestion=function(idsol,nomsol){
+
+           idsolicitudse=  idsol;
+           $.get("/solicitudadmin", {'action':'verdiagnostico', 'idps': idsolicitudse}, function(data) {
+
+                             $("#verdignostico .modal-body").html(data);
+                             $("#verdignostico").modal({backdrop: 'static', keyboard: false});
+                 }, "html");
+                 return false;
+
+
+
+        }
+
+        $("#btncancelarverdig").click(function() {
+
+            $("#verdignostico").modal('hide');
+        });
+
+
+
+
+
+
+    });
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span3"></div>
+        <div class="span5"  >
+            <h3 >Listado de Solicitudes de Atención</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class='span2'>
+            <a href="/solicitudatencion" target="_blank" class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Solicitud</a>
+        </div>
+        <div class='span4'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class='span6'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+
+                        <th >Fecha</th>
+                        <th >Identificación</th>
+                        <th >Nombres</th>
+                        <th >Celular</th>
+                        <th >Email</th>
+                        <th >Servicio</th>
+                        <th >Requerimiento</th>
+                        <th >Finalizado</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for c in solicitudatencion %}
+                        <tr>
+                            <td >{{ c.fecha|date:'d-m-Y' }}</td>
+                            <td >{{ c.identificacion }}</td>
+                            <td >{{ c.nombre_completo }} <br>
+
+                                {% if c.usuarioatiende %}
+                                    <span class="tag tag-success" style="font-size: 12px">  Asignado: {{ c.usuarioatiende }} </span>
+                                {% else %}
+                                    <span class="tag tag-danger" style="font-size: 12px">  Sin Asignación </span>
+                                {% endif %}
+
+                            </td>
+                            <td >{{ c.celular }}</td>
+                            <td >{{c.email }}</td>
+                            <td >{{c.tiposervicio.nombre }}</td>
+                            <td >{{c.motivo }}</td>
+                            <td > {% if c.finalizado %}
+                                <img src='../../static/images/check-mark-green.png'   width="14px" alt='Activo' border="0" /><br>
+                                 <span class="tag tag-success" style="font-size: 12px">  Hora Finalización: {{ c.horafinaliza }} </span>
+
+                            {% else %}
+                                <img src='../../static/images/cross.png'  width="14px" alt='Inactivo' border="0"/>
+                            {% endif %}</td>
+
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+
+                                        {% if not c.finalizado %}
+                                            <li><a style="cursor: pointer" onclick="ingresarEvidencia('{{ c.id }}','{{ c.nombre_completo }}')"> <i class="icon-edit"></i> Ingresar Gestión </a></li>
+                                            <li><a style="cursor: pointer" solicitud_id="{{ c.id }}" nombre="{{ c.nombre_completo }}" class="eliminar_solicitud"><i class="icon-remove"></i>  Eliminar</a></li>
+                                        {% else %}
+
+                                                <li><a style="cursor: pointer" solicitud_id="{{ c.id }}" nombre="{{ c.nombre_completo }}" class="eliminar_solicitud"><i class="icon-remove"></i>  Eliminar</a></li>
+
+                                        {% endif %}
+
+                                        {% if c.tienevidencia %}
+                                            <li><a style="cursor: pointer" onclick="vergestion('{{ c.id }}','{{ c.nombre_completo }}')"> <i class="icon-eye-close"></i> Ver Gestion </a></li>
+
+                                        {% endif %}
+
+
+
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not solicitudatencion %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class="span6">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/solicitudadmin?page=1">1</a></li>
+                            <li><a href="/solicitudadmin?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/solicitudadmin?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/solicitudadmin?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/solicitudadmin?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/solicitudadmin?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="agregar_solicitud">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' >Agregar Informe</h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <div class="row-fluid">
+                <div class="span12">
+                    <label for=""><b>Diagnóstico <a style="color: #d92550" data-toggle="tooltip" data-placement="top" title="Este Campo es Obligatorio ">(*)</a>:</b></label>
+                    <input type="file" class="form-control-file form-control height-auto" id="filediagnostico" name="file" accept="image/png, .jpeg, .jpg, image/gif ,.pdf, .doc, .docx">
+                    <span class="file-custom filediagnostico"></span>
+                    <br/>
+                     <p id="helfilediagnostico"  style="text-align: center;font-size: 20px;color:red;"></p>
+                    <span> Tamaño Maximo 4Mb, formato doc,pdf,docx,png,jpg,jpeg</span>
+
+                </div>
+            </div>
+
+            <div class="row-fluid">
+                <div class="span12">
+                    <h4>Descripción:</h4>
+                    <textarea name="txtdescripciondig" id="txtdescripciondig" cols="100%" rows="5" tabindex="4" style="text-transform: none;width: 95% "></textarea>
+                    <p style="color: red" id="helptxtdescripciondig"></p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="btncancelardig" style="background: #FA1D06;color: white" class="btn"  data-bgcolor="#FA1D06" data-color="#ffffff">Cancelar</button>
+                <button type="button" id="btnguardardiag" class="btn" style="background: #63A836;color: white" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>
+            </div>
+
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="verdignostico">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' >Ver Diagnóstico</h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+             <button type="button" id="btncancelarverdig" style="background: #FA1D06;color: white" class="btn"  data-bgcolor="#FA1D06" data-color="#ffffff">Salir</button>
+        </div>
+
+    </div>
+
+
+
+{% endblock %}

@@ -1,0 +1,225 @@
+<script type="text/javascript">
+    $(function(){
+
+        $("#nomalumn").html('Archivos del alumno: {{ inscripcion.persona }}');
+
+        verficaarchivo = function (opc,valobj,documento) {
+            $(".hel-textverarch").html("");
+            $("#verarchivos").modal("hide");
+
+            smoke.confirm("Esta seguro de verificar"+documento+"?", function(e){
+                  if (e) {
+                      $.post("/inscripciones", {"action": "verificacion","opc": opc, "id": {{ inscripcion.id }}}, function (data) {
+                            if (data.result == 'ok') {
+                                $(valobj).attr('disabled',true);
+                                $("#edit"+opc).hide();
+
+                            } else {
+                                $(valobj).attr('checked', false);
+                                $(".hel-textverarch").html("<a style='color:red'>Error vuelva a intentarlo</a> ");
+                            }
+                            hideWaiting();
+                      }, 'json');
+
+                      $("#verarchivos").modal("show");
+                  }else{
+                      $("#edit"+opc).hide();
+                      $(valobj).prop('checked', false);
+                      $("#verarchivos").modal("show");
+                  }
+              }, {
+                ok: "Si",
+                cancel: "No",
+                classname: "custom-class",
+                reverseButtons: true
+            });
+        };
+
+        subirarchivindiv = function (archivosub) {
+
+            $("#verarchivos").modal("hide");
+            var count =0;
+            $("#paneltitle1arch").html("Estudiante: {{ inscripcion.persona.nombre_completo }}");
+            $("#divtitulo").hide();
+            $("#divcedula").hide();
+            $("#divvotacion").hide();
+            $("#divpasaport").hide();
+            $("#divfoto").hide();
+            $("#divcarnetdisca").hide();
+            $("#divcertimsp").hide();
+            $("#"+archivosub).show();
+            $(".cerrarsubar").hide();
+            $(".cancelarsubir").show();
+            $("#subirarchivos").modal({backdrop: 'static', keyboard: false, width: "30%" });
+            $("#subirarchivos").modal("show");
+        };
+
+    });
+</script>
+<div class="row-fluid">
+    <div class="span12">
+        <table class="table table-condensed table-stripped">
+            <thead>
+            <tr>
+                {% if inscripcion.titulo %}
+                    <th style="text-align: center">Titulo</th>
+                {% endif %}
+                {% if inscripcion.persona.cedula %}
+                    {% if inscripcion.archcedula %}
+                        <th style="text-align: center">Cédula</th>
+                    {% endif %}
+                    {% if inscripcion.votacion %}
+                        <th style="text-align: center">Votación</th>
+                    {% endif %}
+                {% endif %}
+                {% if inscripcion.persona.pasaporte %}
+                    {% if inscripcion.archpasaport %}
+                        <th style="text-align: center">Pasaporte</th>
+                    {% endif %}
+                {% endif %}
+                {% if inscripcion.foto %}
+                    <th style="text-align: center">Foto</th>
+                {% endif %}
+                {% if inscripcion.tienediscapacidad %}
+                    {% if inscripcion.carnetdisca %}
+                        <th style="text-align: center">Carnet Disca.</th>
+                    {% endif %}
+                    {% if inscripcion.certimsp %}
+                        <th style="text-align: center">Certi. MSP</th>
+                    {% endif %}
+                {% endif %}
+            </tr>
+            </thead>
+        <tbody>
+            <tr>
+                {% if inscripcion.titulo %}
+                    <td style="text-align: center">
+                        <a href="{{ inscripcion.titulo.url }}" target="_blank" title="Ver PDF"><img src='/static/images/iconos/pdf.png' alt='' border="0"/></a>
+                        {% if not inscripcion.veriftit %}
+                            <br/><a onclick="subirarchivindiv('divtitulo');"><span class="btn btn-info btn-mini">Editar</span></a>
+                        {% endif %}
+                    </td>
+                {% endif %}
+                {% if inscripcion.persona.cedula %}
+                    {% if inscripcion.archcedula %}
+                        <td style="text-align: center">
+                            <a href="{{ inscripcion.archcedula.url }}" target="_blank" title="Ver PDF"><img src='/static/images/iconos/pdf.png' alt='' border="0"/></a>
+                            {% if not inscripcion.verifarchced %}
+                                <br/><a onclick="subirarchivindiv('divcedula');"><span class="btn btn-info btn-mini">Editar</span></a>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    {% if inscripcion.votacion %}
+                        <td style="text-align: center">
+                            <a href="{{ inscripcion.votacion.url }}" target="_blank" title="Ver PDF"><img src='/static/images/iconos/pdf.png' alt='' border="0" /></a>
+                            {% if not inscripcion.verifvota %}
+                                <br/><a onclick="subirarchivindiv('divvotacion');"><span class="btn btn-info btn-mini">Editar</span></a>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                {% endif %}
+                {% if inscripcion.persona.pasaporte %}
+                    {% if inscripcion.archpasaport %}
+                        <td style="text-align: center">
+                            <a href="{{ inscripcion.archpasaport.url }}" target="_blank" title="Ver PDF"><img src='/static/images/iconos/pdf.png' alt='' border="0" /></a>
+                            {% if not inscripcion.verifarchpasp %}
+                                <br/><a onclick="subirarchivindiv('divpasaport');"><span class="btn btn-info btn-mini">Editar</span></a>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                {% endif %}
+                {% if inscripcion.foto %}
+                    <td style="text-align: center">
+                        <a href="{{ inscripcion.foto.url }}" target="_blank" title="Ver Imagen"><img src='{{ inscripcion.foto.url }}' alt='' border="0" style="width: 35%"/></a>
+                        {% if not inscripcion.verifoto %}
+                            <br/><a onclick="subirarchivindiv('divfoto');"><span class="btn btn-info btn-mini">Editar</span></a>
+                        {% endif %}
+                    </td>
+                {% endif %}
+                {% if inscripcion.tienediscapacidad %}
+                    {% if inscripcion.carnetdisca %}
+                        <td style="text-align: center">
+                            <a href="{{ inscripcion.carnetdisca.url }}" target="_blank" title="Ver Imagen"><img src='/static/images/iconos/pdf.png' alt='' border="0"/></a>
+                            {% if not inscripcion.vericarnetd %}
+                                <br/><a onclick="subirarchivindiv('divcarnetdisca');"><span class="btn btn-info btn-mini">Editar</span></a>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    {% if inscripcion.certimsp %}
+                        <td style="text-align: center">
+                            <a href="{{ inscripcion.certimsp.url }}" target="_blank" title="Ver Imagen"><img src='/static/images/iconos/pdf.png' alt='' border="0"/></a>
+                            {% if not inscripcion.vericertimsp %}
+                                <br/><a onclick="subirarchivindiv('divcertimsp');"><span class="btn btn-info btn-mini">Editar</span></a>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                {% endif %}
+
+            </tr>
+
+            <tr>
+                {% if inscripcion.titulo %}
+                    <td style="text-align: center">
+                        <a><input type="checkbox" onclick="verficaarchivo('titulo',this,' el título')" style="width: 45%; height: 30px" {% if inscripcion.veriftit %} disabled checked{% else %}
+
+                          {% if  perms.sga.change_inscripcion %}  {% else %}disabled{% endif %}{% endif %}></a>
+                        <br/><b style="font-size: 1.1em; color:black;">Verificar</b>
+                    </td>
+                {% endif %}
+                {% if inscripcion.persona.cedula %}
+                    {% if inscripcion.archcedula %}
+                        <td style="text-align: center">
+                            <a><input type="checkbox" onclick="verficaarchivo('cedula',this,' la cédula')" style="width: 45%; height: 30px" {% if inscripcion.verifarchced %} disabled checked{% else %}
+                            {% if  perms.sga.change_inscripcion %}  {% else %}disabled{% endif %}{% endif %}></a>
+                            <br/><b style="font-size: 1.1em; color:black;">Verificar</b>
+                        </td>
+                    {% endif %}
+                    {% if inscripcion.votacion %}
+                        <td style="text-align: center">
+                            <a><input type="checkbox" onclick="verficaarchivo('votacion',this,' el papel de votación')" style="width: 45%; height: 30px" {% if inscripcion.verifvota %} disabled checked{% else %}
+                            {% if  perms.sga.change_inscripcion %}  {% else %}disabled{% endif %}{% endif %}></a>
+                            <br/><b style="font-size: 1.1em; color:black;">Verificar</b>
+                        </td>
+                    {% endif %}
+                {% endif %}
+                {% if inscripcion.persona.pasaporte %}
+                    {% if inscripcion.archpasaport %}
+                        <td style="text-align: center">
+                            <a><input type="checkbox" onclick="verficaarchivo('pasaporte',this,' el pasaporte')" style="width: 45%; height: 30px" {% if inscripcion.verifarchpasp %} disabled checked {% else %}
+                            {% if  perms.sga.change_inscripcion %}  {% else %}disabled{% endif %}{% endif %}></a>
+
+                            <br/><b style="font-size: 1.1em; color:black;">Verificar</b>
+                        </td>
+                    {% endif %}
+                {% endif %}
+                {% if inscripcion.foto %}
+                    <td style="text-align: center">
+                        <a><input type="checkbox" onclick="verficaarchivo('foto',this,' la foto')" style="width: 45%; height: 30px" {% if inscripcion.verifoto %} disabled checked{% else %}
+                            {% if  perms.sga.change_inscripcion %}  {% else %}disabled{% endif %}{% endif %}></a>
+                        <br/><b style="font-size: 1.1em; color:black;">Verificar</b>
+                    </td>
+                {% endif %}
+                {% if inscripcion.tienediscapacidad %}
+                    {% if inscripcion.carnetdisca %}
+                        <td style="text-align: center">
+                            <a><input type="checkbox" onclick="verficaarchivo('carnetdisca',this,' el Carnet de Discapacidad')" style="width: 45%; height: 30px" {% if inscripcion.vericarnetd %} disabled checked {% else %}
+                            {% if  perms.sga.change_inscripcion %}  {% else %}disabled{% endif %}{% endif %}></a>
+
+                            <br/><b style="font-size: 1.1em; color:black;">Verificar</b>
+                        </td>
+                    {% endif %}
+                    {% if inscripcion.certimsp %}
+                        <td style="text-align: center">
+                            <a><input type="checkbox" onclick="verficaarchivo('certimsp',this,' el certificado MSP')" style="width: 45%; height: 30px" {% if inscripcion.vericertimsp %} disabled checked {% else %}
+                            {% if  perms.sga.change_inscripcion %}  {% else %}disabled{% endif %}{% endif %}></a>
+
+                            <br/><b style="font-size: 1.1em; color:black;">Verificar</b>
+                        </td>
+                    {% endif %}
+                {% endif %}
+
+            </tr>
+        </tbody>
+    </table>
+    </div>
+</div>

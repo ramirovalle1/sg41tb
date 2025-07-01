@@ -1,0 +1,131 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/recibocaja?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Listado de Recibos de Caja</h3>
+        </div>
+        <div class='span1'>
+            <a href="{% if ret %}/recibocaja?action=pagos&id={{ ret }}{% else %}/{% endif %}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <form class='form-search'>
+                <input class='input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/recibocaja" id='allresults' class='btn btn-danger'><i class="icon-remove icon-white"></i> Todos</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>No.</th>
+                    <th>Nombres</th>
+                    <th>Motivo</th>
+                    <th>Valor</th>
+                    <th>Saldo</th>
+
+{#                    <th>Enviada Impresora</th>#}
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for n in recibocaja %}
+                    <tr>
+                        <td>{{ n.fecha|date:'d-m-Y' }}</td>
+                        <td>{{ n.id }}</td>
+                        <td>{{ n.inscripcion.persona.nombre_completo }}</td>
+                        <td>{{ n.motivo  }} </td>
+                        <td>${{ n.valorinicial|floatformat:2 }}</td>
+                        <td>${{ n.saldo|floatformat:2 }}</td>
+                        <td>
+
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    <!-- Reimprimir Factura -->
+{#                                    <li><a href="#" class='reimprimir' idfactura='{{ factura.id }}' ><i class="icon-print"></i> Reimprimir</a></li>#}
+                                    <!-- Anular la Factura -->
+                                    {% if perms.sga.change_factura %}
+                                         <li><a href="/recibocaja?action=editar&id={{ n.id }}">
+                                             <i class="icon-share-alt"></i> Editar</a></li>
+                                    {% endif %}
+{#                                    {% else %}#}
+{#                                        {% if n.anulada %}#}
+{#                                            <li></li>#}
+{#                                        {% else %}#}
+{#                                            <li></li>#}
+
+{#                                        {% endif %}#}
+                                </ul>
+                            </div>
+
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not recibocaja %}
+                    <tr>
+                        <td colspan="10">
+                            NO HAY NOTAS DE CREDITO
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+
+            <div class='pagination'>
+                <ul>
+                    {% if paging.primera_pagina %}
+                        <li><a href="/recibocaja?page=1">1</a></li>
+                        <li><a href="/recibocaja?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                    {% endif %}
+                    {% for pagenumber in paging.paginas %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/recibocaja?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                    {% if paging.ultima_pagina %}
+                        <li><a href="/recibocaja?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                        <li><a href="/recibocaja?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+
+
+
+        </div>
+    </div>
+{% endblock %}

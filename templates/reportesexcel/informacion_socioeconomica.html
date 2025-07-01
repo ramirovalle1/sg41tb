@@ -1,0 +1,88 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+
+        indice = 0;
+        datosOK=false;
+        $("#id_inicio").attr({"autocomplete":"off"});
+        $("#id_fin").attr({"autocomplete":"off"});
+        $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+
+
+        $("#generar").modal({width: '30%', backdrop: 'static'});
+        $("#generar").modal("show");
+
+
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+            var desde = $("#id_inicio").val();
+            var hasta = $("#id_fin").val();
+            var carrera = $("#id_carrera").val();
+
+
+            $.post("/xls_infosocioeconomica ", {"action":"generaexcel","carrera":carrera,"desde":desde,"hasta":hasta}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 2500);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json").fail(function() {
+            	$("#espera").modal("hide");
+                smoke.alert('Error de conexi&oacute;n');
+                location.reload();
+            });
+
+        });
+
+        $("#generar .btn-cerrar").click(function(){
+            $("#generar").modal("hide");
+        });
+
+    });
+
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Informaci&oacute;n Socioecon&oacute;mica de Estudiantes por Carrera</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario" class='form-horizontal' action="" method="POST" style="text-align:  left;">
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}
+

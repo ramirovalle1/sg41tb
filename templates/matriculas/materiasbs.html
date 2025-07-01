@@ -1,0 +1,234 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src="../../static/vendors/sweetalert/sweetalert2.all.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $("#freeasign").click(function() {
+                var asignatura = $("#asignaturaslibres").val();
+                location.href = "/matriculas?action=freepromote&matricula={{ matricula.id }}&asignatura="+asignatura;
+            });
+            
+            $('.eliminamat').click(function(){
+                var id = $(this).attr('id');
+                smoke.confirm('Esta seguro de eliminar la materia', function(e){
+                if (e){
+                    $.post("/matriculas",{"action": "delmateria","id":id},function(data) {
+                        if(data.result=='ok'){
+                            swal("Alerta","Materia Eliminada","success").then(function (){
+                                location.reload()
+                            });
+                       }else{
+                            swal("Alerta","Materia no se puede eliminar: "+data.mensaje,"warning").then(function (){
+                                location.reload()
+                            });
+                       }
+                    },"json");
+                }else{
+                }
+                }, {
+                ok: "Si",
+                cancel: "No",
+                classname: "custom-class",
+                reverseButtons: true
+                });
+            });
+            
+            $('.pendientemat').click(function(){
+                var id = $(this).attr('id');
+                smoke.confirm('Esta seguro de dejar pendiente la materia', function(e){
+                if (e){
+                    $.post("/matriculas",{"action": "demote","id":id},function(data) {
+                        if(data.result=='ok'){
+                            swal("Alerta","Materia queda pendiente","success").then(function (){
+                                location.reload()
+                                });
+                       }else{
+                            swal("Alerta","Materia no puede quedar pendiente: "+data.mensaje,"warning").then(function (){
+                                location.reload()
+                            });
+                       }
+                    },"json");
+                }else{
+                }
+                }, {
+                ok: "Si",
+                cancel: "No",
+                classname: "custom-class",
+                reverseButtons: true
+                });
+            });
+            
+        });
+        
+        $(function () {
+            var counter = 0, divs = $('#alerta');
+            function hideDiv () {
+                divs.hide()
+            };
+            setInterval(function () {
+                hideDiv();
+            }, 10 * 500);
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    {% if conf %}
+        <div id="alerta" class="alert alert-success">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+        <strong>{{ conf }}</strong>.
+        </div>
+    {% endif %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Materias Asignadas al Alumno: {{ matricula.inscripcion }}</h3>
+            <h4>{{ matricula.nivel.periodo }}</h4>
+            <h5>{% if matricula.nivel.cerrado %}<span class='label label-important'>CERRADO</span>{% endif %} {{ matricula.nivel }}</h5>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/matriculas?action=matricula&id={{ matricula.nivel.id }}{% if ret_nivel %}&ret=1{% endif %}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Asignatura</th>
+                    <th>Nota</th>
+                    <th>Asistencia</th>
+                    <th>Supletorio</th>
+                    <th> </th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for materia in materias %}
+                <tr>
+                    <td>
+                        {{ materia.materia.nombre_completo }}{% if materia.materiaenplan12_set.exists %} <span class='label label-info'>PLAN12</span>{% endif %}<br/>
+                        {% if materia.materia.nivel == matricula.nivel %}
+
+                        {% else %}
+                            <span class='smaller error'>{{ materia.materia.nivel }}</span>
+                       {% endif %}
+                        {% if materia.cerrado %}<span class='label label-important'>CERRADA {{ materia.fechacierre|date:"d-m-Y" }}</span>{% endif %}
+                    </td>
+                    <td>{{ materia.notafinal|floatformat }}</td>
+                    <td>{{ materia.asistenciafinal|floatformat:0 }}%</td>
+                    <td>{{ materia.supletorio  }}</td>
+                    <td>
+                        {% if not materia.cerrado %}
+                            {% if not persona.pertenece_soporte %}
+{#                                <a href="/matriculas?action=demote&id={{ materia.id }}" class='btn btn-info btn-mini'><i class="icon-arrow-down icon-white"></i> Dejar Pendiente</a>#}
+                                <a class="btn  btn-mini btn-info pendientemat" id="{{ materia.id }}" > <i  class="icon-arrow-down icon-white"></i>Dejar Pendiente</a>
+                                {% if genera_rubro_derecho %}<a href='/matriculas?action=derechoexamen&id={{ materia.id }}' class="btn btn-primary btn-mini"><i class="icon-money icon-white"></i> Derecho Examen</a>{% endif %}
+{#                                <a href='/matriculas?action=delmateria&id={{ materia.id }}' class="btn btn-danger btn-mini"><i class="icon-remove icon-white"></i> Eliminar</a>#}
+                                <a class="btn  btn-mini btn-danger eliminamat" id="{{ materia.id }}" > <i  class="icon-remove icon-white"></i>Eliminar</a>
+                            {% endif %}
+                        {% else %}
+                            {% if persona.usuario.is_superuser or perms.sga.change_materiaasignada%}
+{#                                <a href='/matriculas?action=delmateria&id={{ materia.id }}' class="btn btn-danger btn-mini"><i class="icon-remove icon-white"></i> Eliminar</a>#}
+                                <a class="btn  btn-mini btn-danger eliminamat" id="{{ materia.id }}" > <i  class="icon-remove icon-white"></i>Eliminar</a>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <!-- PENDIENTES Y REPROBADAS -->
+            {% if not matricula.nivel.cerrado %}
+            <thead>
+            <tr><th colspan="5">Pendientes y Reprobadas (no asignadas)</th></tr>
+            <tr>
+                <th>Asignatura</th>
+                <th>Nota</th>
+                <th>Asistencia</th>
+                <th>Estado</th>
+                <th> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% if records %}
+                {% for record in records %}
+                    <tr>
+                        <td>
+                            {{ record.asignatura }}<br/>
+                        </td>
+                        <td>{{ record.nota }}</td>
+                        <td>{{ record.asistencia }}%</td>
+                        <td>
+                            <span {% if record.esta_suspensa %}class='error'{% endif %}>
+                            {{ record.estado }}
+                            </span>
+                        </td>
+                        <td>
+                            {% with disponible=record.asignatura|args:periodo|call:"disponible_periodo" %}
+                                {% if disponible %}
+                                    {% if not persona.pertenece_soporte %}
+                                        <a href="/matriculas?action=promote&matricula={{ matricula.id }}&record={{ record.id }}" class='btn btn-success btn-mini'><i class="icon-arrow-up icon-white"></i> Asignar</a>
+                                    {% endif %}
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td align="center" valign="middle" colspan="5">
+                        No hay asignaturas pendientes o reprobadas
+                    </td>
+                </tr>
+            {% endif %}
+
+            <!-- ASIGNACION LIBRE -->
+            <thead>
+            <tr><th colspan="5">Asignaci&oacute;n Libre de Asignaturas de la Carrera</th></tr>
+            </thead>
+            <tbody>
+            <td colspan="5">
+                <form class='form'>
+                <select class='freeselect' id='asignaturaslibres'>
+                    {% for asignatura in asignaturaslibres %}
+                        <option value="{{ asignatura.id }}">{{ asignatura }}</option>
+                    {% endfor %}
+                </select>
+                {% if not persona.pertenece_soporte %}
+                    <a href="#" id='freeasign' class="btn btn-success"><i class="icon-arrow-up icon-white"></i> Asignar</a>
+                {% endif %}
+                </form>
+            </td>
+            </tbody>
+            {% endif %}
+        </table>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+                <tr><th colspan="5">Aprobadas</th></tr>
+                <tr>
+                    <th>Asignatura</th>
+                    <th>Nota</th>
+                    <th>Asistencia</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% if recordsp %}
+                {% for record in recordsp %}
+                    <tr>
+                        <td>{{ record.asignatura }}</td>
+                        <td>{{ record.nota }}</td>
+                        <td>{{ record.asistencia }}%</td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td align="center" valign="middle" colspan="5">
+                        No hay asignaturas aprobadas
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+{% endblock %}

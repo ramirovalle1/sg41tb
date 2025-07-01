@@ -1,0 +1,391 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src="/static/js/smoke.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            var idesc = 0;
+            $(".versolno").click(function(){
+                $("#mensgestion").html('');
+                idesc = $(this).attr('idesc');
+                $.get("/solicitud_practicasadm", {'action':'versolnoapor', 'id': idesc}, function(data) {
+                        $("#vergestionmodal .modal-body").html(data);
+                        $("#vergestionmodal").modal({"backdrop":"static","width":"80%"});
+                        $("#vergestionmodal").modal("show");
+               }, "html");
+               return false;
+            });
+            $("#aprobado").click(function(){
+                if($("#aprobado").is(':checked')){
+                    $("#finalizado").attr('checked',true);
+                }else{
+                    $("#finalizado").attr('checked',false);
+                }
+            });
+            $("#finalizado").click(function(){
+                if($("#aprobado").is(':checked')){
+                    $("#finalizado").attr('checked',true);
+                }
+            });
+            $("#enviarpanel .btn-guardarenv").click(function(){
+                $("#mensgestion").html('');
+                $("#etiquetaenvp").html("").removeClass('alert alert-danger');
+                var aprobado = false;
+                var finalizado = false;
+                var valido = true;
+                var observacion = $("#observacion").val();
+                if($("#aprobado").is(':checked')){
+                    aprobado = true;
+                }
+                if($("#finalizado").is(':checked')){
+                    finalizado = true;
+                }
+                if($.trim($("#observacion").val())==''){
+                    $("#etiquetaenvp").html("Debe ingresar una observación").addClass('alert alert-danger');
+                    valido = false;
+                }
+                if(valido){
+                    $('#enviarpanel').modal('hide');
+                    showWaiting("Guardando Informacion", "espere un momento por favor...");
+                    $.post("/solicitud_practicasadm", {"action":'aceptarescena', "ideschor": $("#idescehora").val(),"observacion":$("#observacion").val(),"aprobado":aprobado ,"finalizado":finalizado }, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            $.get("/solicitud_practicasadm", {'action':'vergestion', 'id': idesc}, function(data) {
+                                $("#vergestionmodal .modal-body").html(data);
+                                $("#vergestionmodal").modal({"backdrop":"static","width":"80%"});
+                                $("#vergestionmodal").modal("show");
+                                $("#mensgestion").html('<div style="width: 70%" class="btn btn-success"><a class="close" data-dismiss="alert">×</a><h4 class="alert-heading"></h4>Registro ingresado</div>');
+                            }, "html");
+                        }else{
+                            $('#enviarpanel').modal('show');
+                            $("#etiquetaenvp").html(data.mensaje).addClass('alert alert-danger');
+                        }
+
+                    }, "json").fail(function() {
+                        hideWaiting();
+                        $('#enviarpanel').modal('show');
+                        $("#etiquetaenvp").html("Error de conexi&oacute;n").addClass('alert alert-danger');
+                    });
+                }
+            });
+            $("#cerrarvergest").click(function(){
+{#                $("#vergestionmodal").modal("hide");#}
+                location.reload();
+            });
+            $("#enviarpanel .btn-cerrarpanelenv").click(function(){
+                $("#enviarpanel").modal("hide");
+                $.get("/solicitud_practicasadm", {'action':'vergestion', 'id': idesc}, function(data) {
+                    $("#vergestionmodal .modal-body").html(data);
+                    $("#vergestionmodal").modal({"backdrop":"static","width":"80%"});
+                    $("#vergestionmodal").modal("show");
+                    $("#mensgestion").html('');
+                }, "html");
+            });
+
+{#            /////////////////////////////////////////edit escaenario /////////////////////////////////////#}
+{#            /////////////////////////////////////////edit escaenario /////////////////////////////////////#}
+            $(".edit").click(function(){
+                idesc = $(this).attr('idesc');
+                if($(this).attr('convenio')=='False')
+                    $("#escenario").val(2);
+                else
+                    $("#escenario").val(1);
+                $("#escenariopanel").modal({backdrop: 'static', keyboard: 'false', width: "25%", maxHeight: ($(window).height()*3)/4 });
+                $("#escenariopanel").modal('show')
+            });
+
+            $("#escenariopanel .btn-guardaresc").click(function(){
+                $("#etiquetap").html("").removeClass('alert alert-danger');
+                var valida = true;
+                if($("#escenario").val() == 0){
+                    valida = false;
+                    $("#etiquetap").html("Seleccione el escenario").addClass('alert alert-danger')
+                }
+                var convenio = false;
+                if($("#escenario").val() == 1){
+                   convenio = true;
+                }
+                if(valida){
+                    $("#escenariopanel").modal('hide');
+                    showWaiting("Guardando información", "espere un momento por favor...");
+                    $.post("/solicitud_practicasadm", {"action":'guardaresce', "escenario": convenio,"idmatr":'{{ matricula.id }}',"idesc":idesc}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            smoke.alert("Registro Ingresado");
+                            setInterval(function(){
+                                $.unblockUI();
+                                location.href='/solicitud_practicasadm?action=escenarios&id={{ inscripcion.id }}';
+                            }, 1800);
+                        }else{
+                            $("#etiquetap").html("Error al ingresar, intentelo nuevamente").addClass('alert alert-danger')
+                            $("#escenariopanel").modal({backdrop: 'static', keyboard: 'false', width: "25%", maxHeight: ($(window).height()*3)/4 });
+                            $("#escenariopanel").modal('show')
+                        }
+
+                    }, "json");
+                }
+            });
+
+            $("#escenariopanel .btn-cerrarpanel").click(function(){
+                $("#escenariopanel").modal('hide');
+                $("#escenario").val(0)
+            });
+            $(".versolictudnoacep").click(function(){
+                var idesc = $(this).attr('idesc');
+                $.get("/solicitud_practicasadm", {'action':'versolictudnoacep', 'id': idesc}, function(data) {
+                    $("#vergestionmodal .modal-body").html(data);
+                    $("#vergestionmodal").modal({"backdrop":"static","width":"50%"});
+                    $("#vergestionmodal").modal("show");
+                    $("#mensgestion").html('');
+                }, "html");
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span5">
+            <header style="text-align: center">
+                <h3>ESCENARIO DE PRACTICAS DE {{ inscripcion.persona.nombre_completo }}
+                </h3><br/>
+            </header>
+        </div>
+
+        <div class="span1">
+            <a href="/solicitud_practicasadm" class="btn btn-danger" style="float: right"><i class="icon-arrow-left"></i>Atras</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span6">
+            <table class='table' cellpadding="0" cellspacing="0" id="tab_logic">
+                <thead>
+                    <tr>
+                        <th > Nivel </th>
+                        <th > Paralelo </th>
+                        <th > Convenio </th>
+                        <th > Fecha </th>
+                        <th > Estado Práctica </th>
+                        <th > Solic. No Acept. </th>
+                        <th > Horas Práctica </th>
+                        <th ></th>
+                    </tr>
+                </thead>
+                <tbody id="ExpeLabAddForm">
+                    {% for e in escenariopracticas %}
+                        {% with soliprac=e.exis_solipracticas solinoacept=e.tiene_solinoaceptada  soliactiva=e.exis_solipracactiv  solinoaprobad=e.exis_solipractnoaprob %}
+                            <tr>
+                                <td style="text-align: center">{{ e.matricula.nivel.nivelmalla }}</td>
+                                <td style="text-align: center">{{ e.matricula.nivel.paralelo }}</td>
+                                <td style="text-align: center">
+                                    <a>
+                                        {% if e.convenio %}
+                                            <img src='/static/images/16/true.png' alt='' border="0"/>
+                                        {% else %}
+                                            <img src='/static/images/16/false.png' alt='' border="0"/>
+                                        {% endif %}
+                                    </a>
+                                </td>
+                                <td style="text-align: center">{{ e.fecha|date:'Y-m-d' }}</td>
+                                <td style="text-align: center">
+                                    {% if not e.fechaenvio %}
+                                        <a class="label label-info"> Sin Iniciar </a>
+                                    {% else %}
+                                        {% if not e.solicitudestudiante and not e.fechafinaliza and not soliprac %} {# ya cambiado #}
+                                            <a class="label label-info"> Escenario Creado </a>
+                                        {% else %}
+                                            {% if  not e.fechafinaliza and soliprac and not soliprac.fecaprobada and not e.convenio %}
+                                                <a class="label label-info">Solicitud Enviada</a>
+                                            {% else %}
+                                                {% if soliprac and soliprac.fecaprobada and not e.convenio and not soliprac.aprobada %}
+                                                    <a class="label label-important"> Solicitud No Aprobada  </a>
+                                                {% else %}
+                                                    {% if  e.fechafinaliza and soliprac and soliprac.fecaprobada and e.convenio and not soliprac.enviada   %}
+                                                        <a class="label label-warning"> Solicitud de convenio creado SIN ENVIAR </a>
+                                                    {% else %}
+                                                        {% if soliprac and not soliprac.fechaacepta and soliprac.fecaprobada and soliprac.aprobada and soliprac.enviada and e.convenio %}
+                                                            <a class="label label-warning"> En espera que el alumno acepte la practica con convenio  </a>
+                                                        {% else %}
+                                                            {% if soliprac and not soliprac.fechaacepta and not soliprac.fecaprobada %}
+                                                                <a class="label label-important"> Solicitud en espera de aprobación  </a>
+                                                            {% else %}
+                                                                {% if soliprac and soliprac.fechaacepta and soliprac.acepto and soliprac.fecaprobada and soliprac.aprobada %}
+                                                                    {% if soliprac.fecfinaliza   %}
+                                                                        {% if soliprac.rechazado   %}
+                                                                            <a class="label label-important">Practica Rechazada </a>
+                                                                        {% else %}
+                                                                            <a class="label label-success">Practica Realizada </a>
+                                                                        {% endif %}
+                                                                    {% else %}
+                                                                        {% if not soliprac.rubroespecie.aplicada   %}
+                                                                            {% if e.convenio   %}
+                                                                                <a class="label label-warning">Solicitud aceptada, en espera que se autorice y aplique la especie, para  iniciar la práctica. </a>
+                                                                            {% else %}
+                                                                                 <a class="label label-warning">Solicitud aprobada, en espera que se autorice y aplique la especie, para  iniciar la práctica. </a>
+                                                                            {% endif %}
+                                                                        {% else %}
+                                                                            {% if not soliprac.fechestudfinal   %}
+                                                                                <a class="label label-info">Práctica en Proceso </a>
+                                                                            {% else %}
+                                                                                <a class="label label-warning">Práctica realizada enviada, esperando finalización </a>
+                                                                            {% endif %}
+                                                                        {% endif %}
+                                                                    {% endif %}
+{#                                                                                <a class="label label-success"> Solicitud con convenio aceptada  </a>#}
+                                                                {% else %}
+                                                                    {% if e.convenio %}
+                                                                        <a class="label label-important"> Solicitud  con convenio no Aceptada  </a>
+                                                                    {% endif %}
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if solinoacept %}
+                                        <a title="Dar click para ver detalle" idesc="{{ e.id }}" style="cursor: pointer" class="label label-info versolictudnoacep"> {{ solinoacept.count }} {% if  solinoacept.count == 1 %} solicitud {% else %} solicitudes {% endif %} no aceptada </a>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center">{{ e.horaspractica }}</td>
+                                <td >
+                                    <div class="btn-group">
+                                        <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                            Acciones
+                                            <span class="caret"></span>
+                                        </a>
+                                        <ul class="dropdown-menu pull-right">
+{#                                            {% if not e.convenio %}#}
+{#                                                <li><a style="cursor:pointer" class="vergestion" idesc="{{ e.id }}" ><i class="icon-eye-open"></i> Ver Gestión y Aprobar</a></li>#}
+{#                                            {% endif %}#}
+{#                                            {% if not e.aprobado and not finalizado and not e.fechafinaliza %}#}
+{#                                                <li><a style="cursor: pointer" class="edit" idesc="{{ e.id }}" convenio="{{ e.convenio }}"><i class="icon-edit"></i> Editar </a></li>#}
+{#                                            {% endif %} #}
+{#                                            {% if e.solicitudestudiante and e.rubroespecievalorada.aplicada and e.rubroespecievalorada.rubro.cancelado and e.aprobado %}#}
+                                            <li>
+
+
+                                                {% if solinoaprobad  %}
+                                                   <a style="cursor:pointer" class="versolno" idesc="{{ e.id }}" >
+                                                        <i class="icon-eye-open"></i> Ver Solicitudes no aprobadas
+                                                   </a>
+                                                {% endif %}
+                                               {% if not soliactiva and e.convenio %}
+                                                   <a style="cursor:pointer" href="/solicitud_practicasadm?action=solicitud&ides={{ e.id }}" idesc="{{ e.id }}" >
+                                                        <i class="icon-edit"></i> Ingresar Solicitud Práctica
+                                                   </a>
+                                               {% endif %}
+                                               {% if soliprac and e.convenio or soliactiva and not e.convenio and soliprac.enviada %}
+                                                   <a style="cursor:pointer" href="/solicitud_practicasadm?action=solicitud&ides={{ e.id }}&idsol={{ soliprac.id }}" idesc="{{ e.id }}" >
+                                                        <i class="icon-eye-open"></i> Ver Solicitud Práctica
+                                                   </a>
+                                               {% endif %}
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+{% block moreblock %}
+    <div class="modal fade static " id="vergestionmodal" style="margin-left: -500"  >
+        <div class="row-fluid modal-header">
+            <div class="row-fluid">
+                <div class="span6"></div>
+                <div class="span6"  id="mensgestion">
+
+                </div>
+            </div>
+            <div class="row-fluid">
+                <h4 id="nomalumn"><i> Gestión del Alumno</i></h4>
+            </div>
+
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a style="cursor: pointer" id="cerrarvergest" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade static" id="enviarpanel" style="width: 20px;">
+            <div class="modal-header">
+                <h4 id="paneltitleenvi" style="text-align: center"> INGRESAR DATOS </h4>
+                <h3 id="panelerror"></h3>
+            </div>
+            <div class="modal-body">
+                <div id="panelbody">
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <p id="etiquetaenvp"></p>
+                            <input type="hidden" id="idescehora" value="0"/>
+                        </div>
+                    </div>
+                    <div class="row-fluid "><br/>
+                        <div class="span12">
+                            <b> APROBADO?: </b><br/>
+                            <input type="checkbox" id="aprobado" style="width: 5%;height: 2em"/>
+                        </div>
+                        <div class="span12">
+                            <b>OBSERVACIÓN: </b><br/>
+                            <textarea type='text' id='observacion' style="width:90%;text-transform: uppercase" rows="10" cols="50" > </textarea>
+                        </div>
+                        <div class="span12">
+                            <b>FINALIZADO?: </b><br/>
+                            <input type="checkbox" id="finalizado" style="width: 5%;height: 2em"/>
+                        </div>
+                    </div>
+
+                    <br/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a style="cursor: pointer" class="btn btn-success btn-guardarenv"> <b> Guardar</b></a>
+                <a style="cursor: pointer" class="btn btn-info btn-cerrarpanelenv">Salir</a>
+
+            </div>
+    </div>
+
+    <div class="modal fade static" id="escenariopanel" style="width: 20px;">
+        <div class="modal-header">
+            <h4 id="paneltitleaprob">Escenario de Práctica</h4>
+        </div>
+        <div class="modal-body">
+            <div id="panelbody">
+                <div class="row-fluid ">
+                    <div class="span12">
+                        <p id="etiquetap"></p>
+                    </div>
+                </div>
+                <div class="row-fluid ">
+                    <div class="span12">
+                        <select id='escenario' class="input-xlarge bigger"/>
+                            <option value='0'>-----</option>
+                            <option value='1'> CON CONVENIO </option>
+                            <option value='2'> SIN CONVENIO </option>
+
+                        </select>
+                    </div>
+                </div>
+                <br/>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer" class="btn btn-success btn-guardaresc"> <b> Guardar</b></a>
+            <a style="cursor: pointer" class="btn btn-info btn-cerrarpanel">Salir</a>
+
+        </div>
+    </div>
+{% endblock %}

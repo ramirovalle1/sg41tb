@@ -1,0 +1,176 @@
+{% extends "layout/formbs.html" %}
+{% load sga_extras %}
+{% block more_css %}
+    <link type='text/css' rel='stylesheet' href="/static/sganuevo/malla/css/programaAnalitico.css?v={{ version }}">
+{% endblock %}
+{% block more_js %}
+{% endblock %}
+{% block before_saving %}
+    lista_items1 = [];
+    lista_items2 = [];
+    obtenerTemasPlanificados();
+    obtenerRecurodacticos();
+    actionFormSubmission();
+{% endblock %}
+{% block form_more_javascript %}
+    <script type="text/javascript">
+        $(function() {
+            $("#addRecurso").click(function () {
+                $(".contenidoRecurso").append('<tr>' +
+                    '<td class="text-justify textNombre">' +
+                    '<textarea class="form-control" data-id="0" rows="2" style="text-transform: none"></textarea></td>' +
+                    '<td class="text-justify textEnlace">' +
+                    '<textarea class="form-control" data-id="0" rows="2" style="text-transform: none"></textarea></td>' +
+                    '<td class="text-center">' +
+                    '<a class="btn btn-sm btn-danger delRecurso" style="margin: 3px"><i class="fa fa-trash"></i></a>' +
+                    '</td>' +
+                     '</tr>');
+                controlador()
+            });
+
+            controlador = function () {
+                $(".delRecurso").click(function () {
+                    $(this).parent().parent().remove();
+                });
+            }
+            
+            $(".delRecurso").click(function () {
+                    $(this).parent().parent().remove();
+            });
+            
+             $(".temaCheckbox").change(function(event) {
+                const idTema = $(this).val();
+                const isChecked = $(this).is(':checked');
+                $(`.subtemaCheckbox_tema_${idTema}`).prop('checked', isChecked);
+            });
+             
+             $(".subtemaCheckbox").change(function(event) {
+                const elementoTema = $(this).parent().parent().parent();
+                const idTema = elementoTema.find(".temaCheckbox").val();
+                const checkboxTema = elementoTema.find(".temaCheckbox");
+                const isChecked = $(`.subtemaCheckbox_tema_${idTema}`).is(':checked');
+                checkboxTema.prop('checked', isChecked);
+             });
+            
+        });
+        function obtenerRecurodacticos() {
+            $(".contenidoRecurso tr").each(function () {
+                const nombreCorto = $(this).find('.textNombre textarea').val();
+                const enlace = $(this).find('.textEnlace textarea').val();
+                lista_items1.push({nombreCorto: `${nombreCorto}`, enlace: `${enlace}`});
+            }); 
+        }
+        
+        function obtenerTemasPlanificados() {
+            $('input[name=temaCheckbox]:checked').each(function () {
+                const idt = $(this).val();
+                const listaSubtemas = [];
+                $(`.subtemaCheckbox_tema_${idt}:checked`).each(function () {
+                    listaSubtemas.push({'id_st': $(this).val()});
+                });
+                lista_items2.push({'id_t': idt, 'subtemas':listaSubtemas})
+            })
+        }
+        
+        {% for unidad in silabosemanal.mis_unidades %}
+            {% with temas=silabosemanal|args:unidad.0|call:"mis_temas_planificados" %}
+                {% for tema in temas %}
+                    $(".temaCheckbox_{{ tema.plananaliticotema.id }}").prop('checked', true);
+                    {% with subtemas=silabosemanal|args:tema.plananaliticotema_id|call:"mis_subtemas_planificados" %}
+                        {% for subtema in subtemas %}
+                            $(".subtemaCheckbox_{{ subtema.plananaliticosubtema.id }}").prop('checked', true);
+                        {% endfor %}
+                    {% endwith %}
+                {% endfor %}
+            {% endwith %}
+        {% endfor %}
+    </script>
+    <style>
+        input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+        }
+    </style>
+{% endblock %}
+{% block frm_title %}{{ title }}{% endblock %}
+{% block frm_subtitle %}Asignatura: {{ silabosemanal.silabo.materia.nombre_completo }}{% endblock %}
+{% block form_destination %}{{ request.path }}?action=planificacionsilabo&id={{ silabosemanal.silabo.id }}&ids={{ idcronograma }}{% endblock %}
+{% block form_action_cancel %}{{ request.path }}?action=planificacionsilabo&id={{ silabosemanal.silabo.id }}&ids={{ idcronograma }}{% endblock %}
+{% block atras %}{{ request.path }}?action=planificacionsilabo&id={{ silabosemanal.silabo.id }}&ids={{ idcronograma }}{% endblock %}
+{% block form_extra %}
+    <input type='hidden' name='action' value='editPlanificacionSemanal'/>
+    <input type='hidden' name='idc' value='{{ idcronograma }}'/>
+    <input type='hidden' name='ids' value='{{ silabosemanal.id }}'/>
+    <div class="tree well mt-3">
+        <li>
+            <span align="center"><strong>CONTENIDOS PROGRAMÁTICOS CON RESULTADOS DE APRENDIZAJE</strong></span>
+            {% with plananalitico=silabosemanal.silabo.plananalitico %}
+                <ul id="idcabecera">
+                    {% for resultado in plananalitico.mis_resultados %}
+                        <li class="resultado">
+                            <span><i class="fa fa-leaf"></i>  <b>RESULTADO DE APRENDIZAJE {{ resultado.2 }}</b>: {{ resultado.1 }}</span>
+                            {% with unidades=plananalitico|args:resultado.0|call:'mis_unidades' %}
+                                {% for unidad in unidades %}
+                                    <ul class="unidad">
+                                        <li class="content-unidad">
+                                            <span><i class="fa fa-leaf"></i>  <b>UNIDAD {{ unidad.2 }}</b>: {{ unidad.1 }}</span>
+                                            {% with temas=plananalitico|args:unidad.0|call:'mis_temas' %}
+                                                {% for tema in temas %}
+                                                    <ul class="tema">
+                                                        <li class="content-tema">
+                                                            <input  type="checkbox" name="temaCheckbox" class="temaCheckbox temaCheckbox_{{ tema.0 }}" value="{{ tema.0 }}"> <span style="border: none; padding: 3px 1px"><b>TEMA {{ tema.2 }}: </b>{{ tema.1 }}</span>
+                                                            {% with subtemas=plananalitico|args:tema.0|call:'mis_subtemas' %}
+                                                                {% for subtema in subtemas %}
+                                                                    <ul class="subtema">
+                                                                        <li class="content-subtema">
+                                                                            <input type="checkbox" class="subtemaCheckbox subtemaCheckbox_tema_{{ tema.0 }} subtemaCheckbox_{{ subtema.0 }}" name="subtemaCheckbox" value="{{ subtema.0 }}"> <i><b>SubTEMA {{ subtema.2 }}</b>: {{ subtema.1 }}</i>
+                                                                        </li>
+                                                                    </ul>
+                                                                {% endfor %}
+                                                            {% endwith %}
+                                                        </li>
+                                                    </ul>
+                                                {% endfor %}
+                                            {% endwith %}
+                                        </li>
+                                    </ul>
+                                {% endfor %}
+                            {% endwith %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endwith %}
+        </li>
+    </div>
+{% endblock %}
+{% block form_suffix %}
+    <div class="row mt-3">
+        <div class="col-12">
+            <table class="table table-bordered text-nowrap customize-table mb-0 align-middle">
+                <thead>
+                <tr>
+                    <th colspan="3" class="text-center" width="90%">Recursos didácticos(link de youtube, ect)</th>
+                </tr>
+                <tr>
+                    <th class="text-center" width="30%">Descripción corta</th>
+                    <th class="text-center">Enlace</th>
+                    <th class="text-center" width="10%"><a class="btn btn-sm btn-success" id="addRecurso"><i class="fa fa-plus"></i></a></th>
+                </tr>
+                </thead>
+                <tbody class="contenidoRecurso">
+                {% for recurso in silabosemanal.mis_recursos_didacticos_link %}
+    <tr>
+                    <td class="text-justify textNombre">
+                    <textarea class="form-control" data-id="{{ recurso.id }}" rows="2" style="text-transform: none">{{ recurso.descripcion }}</textarea></td>
+                    <td class="text-justify textEnlace">
+                    <textarea class="form-control" data-id="{{ recurso.id }}" rows="2" style="text-transform: none">{{ recurso.link }}</textarea></td>
+                    <td class="text-center">
+                    <a class="btn btn-sm btn-danger delRecurso" style="margin: 3px"><i class="fa fa-trash"></i></a>
+                    </td>
+                     </tr>
+                     {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

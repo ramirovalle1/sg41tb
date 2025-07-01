@@ -1,0 +1,211 @@
+{% extends "basebs.html" %}
+{% block  heading %}
+    <script>
+        $(function() {
+            $("#cambioclave").modal({backdrop: 'static', keyboard: false, width: "30%", maxHeight: ($(window).height()*3)/4 });
+            $("#cambioclave").modal('show');
+            var url = 'https://sga.itb.edu.ec/';
+            var sistema = '';
+            $("#user").blur(function(){
+                $("#passante").attr('readonly',true);
+                $("#passnew").attr('readonly',true);
+                $("#passveri").attr('readonly',true);
+                $($("#user").get(0).parentNode).find(".help-text").html("");
+                if($.trim($("#user").val()) != ''){
+                    $.post("/cambioclave", {action: 'consultuser', 'user': $("#user").val()}, function(data) {
+                        if (data.result=='bad') {
+                            $("#passante").val('');
+                            $("#passnew").val('');
+                            $("#passveri").val('');
+                            $($("#user").get(0).parentNode).find(".help-text").html("<a style='color:red'>"+ data.error +"</a>");
+                        }else{
+                            url = data.url;
+                            sistema = data.sistema;
+                            $("#passante").attr('readonly',false);
+                            $("#passnew").attr('readonly',false);
+                            $("#passveri").attr('readonly',false);
+                        }
+                    },'json');
+                }
+            });
+
+            $("#passante").blur(function(){
+                valida = true;
+                $($("#passante").get(0).parentNode).find(".help-text").html("");
+            });
+
+            $("#passnew").blur(function(){
+                $($("#passnew").get(0).parentNode).find(".help-text").html("");
+                if($.trim($("#passnew").val()) != ''){
+                    if(validarclave(this)){
+                        if($.trim($("#passveri").val()) != ''){
+                            if($.trim($("#passnew").val()) != $.trim($("#passveri").val())){
+                                $($("#passnew").get(0).parentNode).find(".help-text").html("<a style='color:red'>Las contraseñas no son iguales</a>");
+                            }
+                        }
+                    }
+                }
+            });
+            var numeros = '1234567890'
+            var mayuscula = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'
+            var minuscula = 'abcdefghijklmnñopqrstuvwxyz'
+            var valida = true;
+            function validarclave(objec){
+                if($(objec).val().length >=8){
+                    var num = 0;
+                    var mayus = false;
+                    var minus = false;
+                    var numer = false;
+                    for(i=0; i<$(objec).val().length; i++){
+                        if (numeros.indexOf($(objec).val().charAt(i),0)!=-1){
+                            numer = true;
+                            num = num +1;
+                        }
+                    }
+                    for(i=0; i<$(objec).val().length; i++){
+                        if (mayuscula.indexOf($(objec).val().charAt(i),0)!=-1){
+                            mayus = true;
+                            num = num +1;
+                        }
+                    }
+                    for(i=0; i<$(objec).val().length; i++){
+                        if (minuscula.indexOf($(objec).val().charAt(i),0)!=-1){
+                            minus = true;
+                            num = num +1;
+                        }
+                    }
+                    if(mayus && numer && minus){
+                        if($(objec).val().length != num){
+                            $("#passnew").focus();
+                            $($("#passnew").get(0).parentNode).find(".help-text").html("<a style='color:red'>La contraseña no de contener caracteres especiales o espacio</a>");
+                            valida = false;
+                            return false;
+                        }
+                        else{
+                            valida = true;
+                            return true;
+                        }
+                    }else{
+                        $("#passnew").focus();
+                        $($("#passnew").get(0).parentNode).find(".help-text").html("<a style='color:red'>La contraseña debe contener números, letras mayusculas y minusculas</a>");
+                        valida = false;
+                        return false;
+                    }
+                }else{
+                    $("#passnew").focus();
+                    $($("#passnew").get(0).parentNode).find(".help-text").html("<a style='color:red'>No cumple con la longitud minima de 8 caracteres</a>");
+                    valida = false;
+                    return false;
+                }
+            }
+
+            $("#passveri").focus(function(){
+                if($.trim($("#passnew").val()) == ''){
+                    $("#passnew").focus();
+                    $($("#passnew").get(0).parentNode).find(".help-text").html("<a style='color:red'>Ingrese contraseña nueva</a>");
+                }
+            });
+
+            $("#passveri").blur(function(){
+                valida = true;
+                $($("#passveri").get(0).parentNode).find(".help-text").html("");
+                if($.trim($("#passnew").val()) != '' && $.trim($("#passveri").val()) != ''){
+                    if($.trim($("#passnew").val()) != $.trim($("#passveri").val())){
+                        valida = false;
+                        $("#passveri").focus();
+                        $($("#passveri").get(0).parentNode).find(".help-text").html("<a style='color:red'>Las contraseñas no son iguales</a>");
+                    }
+                }
+            });
+
+            $("#btn-cambiar").click(function(){
+                if($.trim($("#passante").val()) == ''){
+                    $($("#passante").get(0).parentNode).find(".help-text").html("<a style='color:red'>Ingrese contraseña anterior</a>");
+                    valida = false;
+                }
+                if($.trim($("#passnew").val()) == ''){
+                    $($("#passnew").get(0).parentNode).find(".help-text").html("<a style='color:red'>Ingrese contraseña nueva</a>");
+                    valida = false;
+                }
+                if($.trim($("#passveri").val()) == ''){
+                    $($("#passveri").get(0).parentNode).find(".help-text").html("<a style='color:red'>Repetir contraseña nueva</a>");
+                    valida = false;
+                }
+                if(valida){
+                    $.post("/cambioclave", {action: 'cambiarclave',sistema:sistema,  user: $("#user").val(),  passante: $("#passante").val(), passnew: $("#passnew").val(), passveri: $("#passveri").val()}, function(data) {
+                        if (data.result=='bad') {
+                            $(".help-textmensaj").html("<a class='alert alert-danger'>"+ data.error +"</a>");
+                        }else{
+                            $(".modal-body").html("<a>"+data.mensaje+"</a>");
+                            $("#passnew").attr('readonly',false);
+                            $("#passveri").attr('readonly',false);
+                            $("#btn-cambiar").hide('');
+
+                        }
+                    },'json');
+                }
+
+            });
+
+            $(".btn-cerrar").click(function(){
+                location.href = url;
+            });
+
+
+        });
+    </script>
+{% endblock %}
+{% block containertype %}{% endblock %}
+{% block contentextraclass %}bg{{ background }}{% endblock %}
+{% block pagetitle %}Inicio de Sesion - Sistema Gestion Academica{% endblock %}
+{% block canvas %}
+    <div class="modal fade static" id="cambioclave" style="display: none">
+        <div class="modal-header">
+            <h4 id="msj" style="text-align: center"> </h4>
+            <h3 id="paneltitle1" style="text-align: center"> DATOS PARA CAMBIO DE CLAVE</h3>
+        </div>
+        <div class="modal-body" style="text-align: center">
+            <div class="row-fluid">
+
+                <label for="user"><b>Usuario: </b></label>
+                <input id='user' class="input-large" style="border-radius: 4px;text-align: center"/>
+                <p class="help-text"> </p>
+            </div>
+{#            <div class="row-fluid">#}
+{#                <label for="email"><b>Email: </b></label>#}
+{#                <input id='email' class="input-large" style="border-radius: 4px;text-align: center"> </input>#}
+{#                <p class="help-text"> </p>#}
+{#            </div>#}
+            <div class="row-fluid">
+                <label for="passante"><b>Contraseña Anterior: </b></label>
+                <input type="password" id='passante' class="input-large" style="border-radius: 4px;text-align: center" readonly/>
+                <p class="help-text"> </p>
+            </div>
+            <div class="row-fluid" style="text-align: left;">
+                <h6 style="background-color: transparent;color: #7d7474">La contraseña debe contener números, letras mayusculas y minusculas, su longitud minima es de 8 caracteres</h6>
+            </div>
+            <div class="row-fluid">
+                <label for="passnew"><b>Contraseña Nueva: </b></label>
+                <input type="password"  id='passnew' class="input-large" style="border-radius: 4px;text-align: center" readonly/>
+                <p class="help-text"> </p>
+            </div>
+            <div class="row-fluid">
+                <label for="passveri"><b>Repetir Contraseña: </b></label>
+                <input type="password"  id='passveri' class="input-large" style="border-radius: 4px;text-align: center" readonly/>
+                <p class="help-text"> </p>
+            </div>
+            <div class="row-fluid">
+                <p class="help-textmensaj"> </p>
+            </div>
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a style="cursor: pointer" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a style="cursor: pointer" class="btn btn-primary " id="btn-cambiar"> Cambiar Contrase&nacute;a</a>
+        </div>
+    </div>
+{% endblock %}
+{% block footerextra %}
+    <div id="largelogo">
+        <!-- <img src="/static/images/iavq/sga_head.png"/> -->
+    </div>
+{% endblock %}

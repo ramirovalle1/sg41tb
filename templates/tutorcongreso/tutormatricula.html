@@ -1,0 +1,187 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+
+{#            ////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#            /////////////////////////////INICIO PANTALLA///////////////////////////////////////////////////////////////////////////////#}
+            buscar_carrera = function(query, process) {
+                $("#carrera").attr("myval",0);
+                $("#nivel").attr("disabled",true);
+                $.get("/reportes", {'action':'data', 'model': 'Carrera',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#carrera").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#carrera").get(0).results = "";
+                        $("#carrera").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#carrera').typeahead({source: buscar_carrera, updater: function(item) {
+                var results = $("#carrera").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#carrera").attr("myval",datos.id);
+                        $("#nivel").attr("disabled",false);
+                    }
+                }
+                return item;
+            }});
+
+            buscar_nivel = function(query, process) {
+                $("#nivel").attr("myval",0);
+                $.get("/reportes", {'action':'datafilt', 'model': 'Nivel:carrera__id='+$("#carrera").attr("myval"),
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#nivel").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#nivel").get(0).results = "";
+                        $("#nivel").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#nivel').typeahead({source: buscar_nivel, updater: function(item) {
+                var results = $("#nivel").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#nivel").attr("myval",datos.id);
+                        location.href = '/tutormatricula?idniv='+$("#nivel").attr("myval");
+                    }
+                }
+                return item;
+            }});
+{#            ////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#            /////////////////////////////MODAL PANTALLA///////////////////////////////////////////////////////////////////////////////#}
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span9" style="text-align: center">
+               <h3> Listado de Tutores por Nivel</h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br/>
+    <div class='row-fluid' style="display: none">
+        <div class="span1"></div>
+        <div class="span10" style="text-align: center">
+            <b>Carrera</b>:
+            <input type="text" {% if carrera %} value="{{ carrera.nombre }}" {% endif %} id="carrera" class="searchinput input-xxlarge search-query" myval="{{ carrera.id }}" data-provide="typeahead"/>&nbsp;&nbsp;
+        </div>
+    </div><br/>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span10" style="text-align: center">
+            <b>Nivel</b>:
+                <input type="text" id="nivel" {% if nivel %} value="{{ nivel }}"  {% endif %} class="searchinput input-xxlarge search-query" myval="0" data-provide="typeahead" />&nbsp;&nbsp;
+                {% if nivel %}<a
+                    href="/tutormatricula" class="btn btn-info">Limpiar</a>
+                {% endif %}
+        </div>
+    </div><br/><br/>
+
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span10'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;width: 25%">Tutor</th>
+                        <th style="text-align: center;width: 35%">Grupo - Carrera</th>
+                        <th style="text-align: center;width: 15%">Cant. Asignar</th>
+                        <th style="text-align: center;width: 5%;">Fecha</th>
+                        <th style="text-align: center;width: 7%;">Asignados</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tutorcongresos %}
+                        <tr>
+                            <td>
+                                <a {% if t.numasignado == 0 %} style="cursor: pointer" class="edit" {% endif %}>
+                                    {{ t.persona.flexbox_alias }}
+                                </a>
+                            </td>
+                            <td style="text-align: center;"> {{ t.nivel.grupo.nombre }} - {{ t.nivel.carrera }} </td>
+                            <td style="text-align: center;">{{ t.cantidad }}</td>
+                            <td style="text-align: center;">{{ t.fecha|date:'d-m-Y' }}</td>
+                            <td style="text-align: center;">{{ t.numasignado }}</td>
+                           <td >
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if t.numasignado > 0 %}
+                                            <li><a href="/tutormatricula?action=veralumnos&id={{ t.id }}" style="cursor: pointer"><span class="icon-eye-open"></span> Ver Alumnos </a> </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                           </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span11">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page=1{% if search %}&s={{ search }}{% endif %}">1</a></li>
+                            <li><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page={{ paging.ellipsis_izquierda }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+{% endblock %}

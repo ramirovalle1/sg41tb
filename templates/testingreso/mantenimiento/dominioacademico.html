@@ -1,0 +1,204 @@
+{% extends "basenueva.html" %}
+
+{% block heading %}
+
+<style>
+    body {
+        background-color: #eee
+    }
+    .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+      color: #fff;
+      background-color:  #184679; }
+
+
+    .custom-control-input:checked ~ .custom-control-label::before {
+      color: #fff;
+      border-color:#184679;
+      background-color: #184679;
+    }
+
+     .modal-body-agregar-preguntas  {
+      position: relative;
+      -ms-flex: 1 1 auto;
+      -webkit-box-flex: 1;
+      flex: 1 1 auto;
+      padding: 1rem;
+    }
+
+
+</style>
+
+<script>
+    $(function () {
+        var id_areadominio = 0;
+
+        $("#modal_dominioacademico #btncerrar").click(function() {
+            $("#modal_dominioacademico").modal("hide");
+        });
+
+        $('#btn_adddominio').click(function(){
+            id_areadominio = 0;
+            $("#txt_nombre").val('');
+            $("#cmb_area").val(0);
+            $("#modal_dominioacademico #paneltitle").html('Adicionar Dominio Académico');
+            $("#modal_dominioacademico").modal({"backdrop":"static","width":"40%"});
+            $("#modal_dominioacademico").modal("show");
+        });
+
+        $("#btnguardar").click(function (){
+             var nombre = $("#txt_nombre").val()
+             var tipo = $("#cmb_area").val()
+
+             if($("#cmb_area").val()!=0 && $("#txt_nombre").val()!=''){
+                $.post('/preguntatestingreso',{"action" : 'add_dominioacademico',"nombre" : nombre,"id": id_areadominio,"area":tipo},function(data){
+                    if(data.result == 'ok'){
+                        $("#modal_dominioacademico").modal("hide");
+                        swal('Notificacion !','Se registro correctamente el Dominio Académico','success').then(function(){
+                            location.reload()
+                        })
+                    }else{
+                        swal('Error',data.result, 'error')
+                    }
+                });
+
+             }else {
+                 swal("","Falta Campos","warning")
+             }
+
+         })
+
+        editadominio = function(id, nombre, tipo, idtipo){  {# EDITAR #}
+            id_areadominio = id;
+            $("#txt_nombre").val(nombre);
+            $("#cmb_area").val(tipo);
+            $("#idtipo").val(idtipo)
+            $("#modal_dominioacademico #paneltitle").html('Editar: '+nombre);
+            $("#modal_dominioacademico").modal({"backdrop":"static","width":"40%"});
+            $("#modal_dominioacademico").modal("show");
+        }
+
+    });
+
+
+
+</script>
+
+{% endblock %}
+{% block canvas %}
+
+
+ <div class="mobile-menu-overlay"></div>
+
+ <div class="main-container">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-8 col-sm-12">
+                    <div class="title">
+                        <h4>Mantenimiento Dominios Académicos</h4>
+                    </div>
+                </div>
+
+                 <div class="col-lg-2 col-md-2 col-sm-2">
+                        <div class="title">
+                            <a href="/testingresoadmin" style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                        </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="card-box mb-30">
+            <div class="pd-20">
+                <div class="row">
+                    <div class="col-md-4" style="margin-top: 5px">
+                        <div class="form-group" >
+                            <label > <a style="color: #d92550"></a></label>
+                            <input id="txtbusqueda" type="text" class="form-control" value='{{ search }}' >
+                        </div>
+                    </div>
+                    <div class="col-md-4" style="margin-top: 5px">
+                        <label > <a style="color: #d92550"></a></label>
+                        <div class="form-group">
+                            <a href="#" id="search" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</a>
+                            <a href="#" id="btn_adddominio" class="btn" title="Agregar Dominio Academico" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-plus"></i></a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+					<div class="pb-20">
+						<table class="table table-striped">
+							<thead>
+								<tr>
+                                    <th>Nombre</th>
+									<th>Tipo</th>
+									<th style="text-align: center">Acciones</th>
+								</tr>
+							</thead>
+							<tbody>
+                               {% for d in dominios %}
+                                    <tr>
+                                        <td> {{ d.nombre }} </td>
+                                        <td> {{ d.area }} </td>
+                                        <td style="text-align: center">
+                                            <div class="dropdown">
+                                                <a class="btn btn-link font-24 p-0 line-height-1 no-arrow dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                                                    <i class="dw dw-more"></i>
+                                                </a>
+                                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-icon-list">
+                                                     <a class="dropdown-item" style="cursor:pointer" onclick="editadominio('{{ d.id }}','{{ d.nombre }}','{{ d.area }}','{{ d.area.id }}')" ><i class="dw dw-edit2"></i> Editar</a>
+{#                                                     <a class="dropdown-item" style="cursor:pointer" onclick="eliminar('{{ p.id }}','{{ p.pregunta }}')" ><i class="dw dw-delete-3"></i> Eliminar</a>#}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                               {% endfor %}
+                                {% if not dominios %}
+                                    <tr>
+                                        <td colspan="12">
+                                            NO EXISTEN REGISTROS
+                                        </td>
+                                    </tr>
+                                {% endif %}
+							</tbody>
+						</table>
+					</div>
+        </div>
+</div>
+{# agregar y editar dominio academico#}
+<div  class="modal fade" id="modal_dominioacademico" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" >
+            <div class="modal-header">
+                <h3 id="paneltitle"></h3>
+            </div>
+            <div class="modal-body">
+                <div class="row-fluid">
+                    <div class="col-md-12">
+                        <label >Nombre <a style="color: #d92550"></a>: </label>
+                        <input id="txt_nombre" type="text" class="form-control input-medium" />
+                        <p id="help_txtnombre"  style="text-align: center;font-size: 20px;color:red;"></p>
+
+                        <label >Area de Dominio Académico:</label>
+                        <select id="cmb_area" class="custom-select2 form-control">
+                            <option value="0">-------</option>
+                            {% for a in tipo %}
+                                <option value="{{ a.id }}" {% if a.id %} selected="selected"{% endif %} >{{ a.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <p id="help_txtarea"  style="text-align: center;font-size: 20px;color:red;"></p>
+                         <input type='hidden' name='idtipo'  id='idtipo' value='0'/>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" id="btncerrar" style="background: #FA1D06;color: white" class="btn" data-bgcolor="#FA1D06" data-color="#ffffff">Cerrar</a>
+                <a href="#" id="btnguardar" style="background: #63A836;color: white" class="btn" data-bgcolor="#63A836" data-color="#ffffff">Guardar</a>
+        </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

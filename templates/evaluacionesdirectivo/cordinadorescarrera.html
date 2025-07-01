@@ -1,0 +1,392 @@
+ {% extends "basebs.html" %}
+{% load func_extras %}
+{% block heading %}
+<script type="text/javascript" >
+
+$(function() {
+  $("#search").click(function() {
+    var term = $("#searchfield").val().toUpperCase();
+      {% if periodo %}
+          location.href='/evaluacionesdirectivo?periodo={{ periodo.id }}&acc={{ acc }}&action=evaluardirectivo&s='+term
+      {% else %}
+          location.href='/evaluacionesdirectivo?&acc={{ acc }}&action=evaluardirectivo&s='+term
+      {% endif %}
+
+    });
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+
+    Verreporte = function(id){
+        var acc = '{{ acc }}'
+        $.post("/evaluacionesdirectivo", {"action":"generarexceldirectivocargo",  'id':id, 'acc':acc}, function(data) {
+                if (data.result=='ok'){
+
+                    location.href=data.url;
+                    swal("Notificación",'Reporte Ejecutado','success');
+
+                }else{
+                    swal("Error", data.result, "error");
+                    $("#login-modal7").remove();//ocultamos el modal
+                    $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                    $('.modal-backdrop').remove();
+                    location.href = '/maestria?acc={{ acc }}';
+                }
+            }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                    console.log(errorThrown);
+                    console.log('getJSON request failed! ' + textStatus+ ' eroro jqk'+jqXHR.responseText);
+                    swal("Error", "ERROR DE CONEXION", "error");
+                    $("#login-modal7").remove();//ocultamos el modal
+                    $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                    $('.modal-backdrop').remove();
+                    location.href = '/maestria?acc={{ acc }}';
+            });
+    }
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+    $("#periodo").change(function() {
+        var pid = $("#periodo").val()
+        {#var pid = $(this).attr('pid');#}
+
+        location.href='/evaluacionesdirectivo?periodo='+pid+"&acc={{ acc }}&action=evaluardirectivo"
+
+    });
+    generarExcelDirect=function(idperiodo) {
+      var acc = '{{ acc }}'
+      showWaiting("Generando Excel");
+         $.post("/evaluacionesdirectivo", {
+                "action": "generarexceldirectivoscargo",
+               "periodo": idperiodo,
+                "acc":acc
+            }, function (data) {
+                if (data.result == 'ok') {
+                     location.href=data.url;
+                        swal('Notificación','Reporte Ejecutado','success').then(function () {
+                            //location.href = '/reporteexcel?acc={{ acc }}';
+                            $('#carreramodal').modal('hide')
+                        });
+                    }else{
+                        swal('Error',data.message,'error')
+                    }
+                   hideWaiting()
+        }, 'json');
+    }
+
+
+
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+
+
+});
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+
+{% endblock %}
+{% block canvas %}
+    <div class="pd-ltr-20 xs-pd-20-10">
+        <div class="min-height-50px">
+            <div class="page-header">
+                <div class="row">
+                    <div class="col-lg-8 col-md-2 col-sm-1">
+                        <div class="title">
+                            <h3 >Listado de Coordinadores {% if periodo %}del periodo {{ periodo.periodo.nombre }}{% endif %}</h3></br>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-2 col-sm-2">
+                            <div class="title">
+                                <a href="/evaluacionesdirectivo?acc={{ acc }}" style="float: right;color: white;background: #0b132b" class="btn btn-black"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                            </div>
+                        </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 col-lg-6">
+                            <div class="title"><b>Periodos</b>
+                                 <select id="periodo" class="custom-select2  form-control">
+                                    <option value="">-----</option>
+                                    {% for p in periodos %}'
+                                        <option  {% if p.id == periodo.id %}selected="selected"{% endif %} value="{{ p.id }}" >{{ p.periodo.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-box mb-30">
+                <div class="pd-20">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-3">
+                            <div class="form-group">
+                                <input type="text"  id='searchfield' placeholder="Buscar el nombre del Docente" class="form-control round" value='{{ search }}'>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-lg-6">
+                            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                            {% if search  %}
+                                <a href ="/evaluacionesdirectivo?acc={{ acc }}&action=evaluardirectivo{% if periodo %}&periodo={{ periodo.id }}{% endif %}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+                            {% endif %}
+                        </div>
+                    {% if periodo  %}
+                        <div class="col-md-2 col-lg-2" >
+                           <a href="#" onclick="generarExcelDirect('{{ periodo.id }}')" class="btn btn-success float-right"><i class=""></i>Reporte Directivos</a>
+
+                          </div>
+                    {% endif %}
+                    </div>
+
+                </div>
+
+
+            <div class="pb-20">
+                    <div id="DataTables_Table_0_wrapper" class="dataTables_wrapper dt-bootstrap4 no-footer">
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <table  class="data-table table stripe hover nowrap">
+                                    <thead>
+                                        <tr>
+
+                                            <th class="table-plus datatable-nosort">Nombre</th>
+                                            <th>Cedula/Pasap</th>
+                                            <th>Carrera</th>
+                                            <th>Teléfono</th>
+                                            <th>Email</th>
+                                            <th>Usuario</th>
+                                            <th>  </th>
+                                        </tr>
+                                    </thead>
+
+                                <tbody>
+                                {% for p in coordinador %}
+
+                                    <tr>
+                                        <td>
+                                            {% if p.nombre_completo %}{{ p.nombre_completo }}{% endif %}
+                                        </td>
+
+
+                                        <td>
+                                            {{ p.cedula }} <br/>
+                                            {% if p.extranjero %}
+                                                {% if p.pasaporte %}{{ p.pasaporte }}<br/><span class="bg bg-red tag">Extranjero</span> {% endif %}
+                                            {% endif %}
+                                        </td>
+                                        <td>{% for c in p.carreras %}
+                                                {{ c.carrera }}{% if not forloop.last %},<br>{% endif %}
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                             {% if p.telefono %}{{ p.telefono }}{% endif %}
+                                            <br/>{% if p.telefono_conv %}{{ p.telefono_conv }}{% endif %}
+                                        </td>
+                                        <td>
+                                            {% if p.emailinst %}
+                                                <a style="color: #003bb3">
+                                                    {{ p.emailinst }}
+                                                </a>
+                                                {% endif %}
+                                                {% if p.email %}<br>
+                                                    <a style="color: #003bb3">{{ p.email }}</a>
+                                                {% endif %}
+
+                                        </td>
+
+                                        <td>
+                                            <a>
+                                                {% if not p.usuario.is_active  %}
+                                                    <img src='../../ube/static/vendors/images/cross.png'   width="14px" alt='Inactivo' border="0" />
+                                                {% else %}
+                                                    <img src='../../ube/static/vendors/images/check-mark-green.png'   width="14px" alt='Activo' border="0" />
+                                                {% endif %}
+                                                {{ p.usuario }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <div class="dropdown">
+                                                <a class="btn btn-link font-24 p-0 line-height-1 no-arrow dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                                                <i class="dw dw-more"></i>
+                                                </a>
+                                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-icon-list">
+                                                    {% if  periodo %}
+                                                        {% if not p|args:periodo|call:'eva_finalizado'  %}
+{#                                                        {% if not p.eva_finalizado and periodo %}#}
+                                                        <a  class="dropdown-item"  href='/evaluacionesdirectivo?action=evaluar&idper={{ p.id }}&idperiodo={{ periodo.id }}&acc={{ acc }}'><i class="dw dw-list"></i>Evaluar</a>
+                                                        {% else %}
+                                                            <a  class="dropdown-item"  href='/evaluacionesdirectivo?action=evaluar&idper={{ p.id }}&idperiodo={{ periodo.id }}&acc={{ acc }}'><i class="dw dw-list"></i>Ver Evaluación</a>
+                                                            <a class="dropdown-item" onclick="Verreporte('{{ p.id }}')"><i class="dw dw-list"></i>Reporte Autoevaluacion</a>
+
+                                                        {% endif %}
+
+                                                    {% endif %}
+{#                                                    {% if  p.eva_finalizado and periodo  %}#}
+{#                                                    {% endif %}#}
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                    </tr>
+
+                                {% endfor %}
+
+                                {% if not coordinador %}
+                                    <tr>
+                                        <td colspan="10">
+                                            NO EXISTE REGISTRO
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-12 col-md-12">
+                        <div class="dataTables_paginate paging_simple_numbers">
+                            {% if paging.num_pages > 20 %}
+                                <ul class="pagination" style="float: right">
+                                    {% if paging.primera_pagina %}
+                                        <li class="page-item"><a class="page-link" href="/evaluaciondocente?action=verdocentes&page=1&acc={{ permisopcion.id }}">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="/evaluaciondocente?action=verdocentes&page={{ paging.ellipsis_izquierda }}&acc={{ permisopcion.id }}" class="active">...</a></li>
+                                    {% endif %}
+                                    {% for pagenumber in paging.paginas %}
+                                        <li {% if pagenumber == page.number %}class='page-item active'{% else %}class="page-item"{% endif %} ><a class="page-link" href="/evaluaciondocente?action=verdocentes&page={{ pagenumber }}&acc={{ permisopcion.id }}{% if search %}&s={{ search }}{% endif %}{% if carrera %}&carrera={{ carrera.id }}{% endif %}">{{ pagenumber }}</a></li>
+                                    {% endfor %}
+                                    {% if paging.ultima_pagina %}
+                                        <li class="page-item"><a class="page-link" href="/evaluaciondocente?action=verdocentes&page={{ paging.ellipsis_derecha }}&acc={{ permisopcion.id }}{% if search %}&s={{ search }}{% endif %}{% if carrera %}&carrera={{ carrera.id }}{% endif %}" class="active">...</a></li>
+                                        <li class="page-item"><a class="page-link" href="/evaluaciondocente?action=verdocentes&page={{ paging.num_pages }}&acc={{ permisopcion.id }}{% if search %}&s={{ search }}{% endif %}{% if carrera %}&carrera={{ carrera.id }}{% endif %}">{{ paging.num_pages }}</a></li>
+                                    {% endif %}
+                                </ul>
+                            {% else %}
+                                <ul class="pagination" style="float: right">
+                                    {% for pagenumber in paging.page_range %}
+                                        <li {% if pagenumber == page.number %}class="page-item active"{% else %} class="page-item"{% endif %}><a class="page-link" href="/evaluaciondocente&action=verdocentes?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}&acc={{ permisopcion.id }}{% if carrera %}&carrera={{ carrera.id }}{% endif %}">{{ pagenumber }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+
+
+<div class="modal fade bs-example-modal-xl" id="modalvergestio" role="dialog" aria-labelledby="myModalLabel33" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="login-title">
+                    <label class="modal-title text-text-bold-600 titulo" id="myModalLabel33">Registrar Observación</label>
+                </div>
+            </div>
+            <form>
+              <div class="modal-body">
+                  <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Observacion:</label>
+                                <textarea id="txt_observacion" maxlength="300"  class="form-control" disabled value=""></textarea>
+                                 <p id="helptxt_descripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>
+                        </div>
+                  </div>
+                  <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label>Resolución:</label>
+                                <textarea id="txt_resolucion" maxlength="300"  class="form-control" disabled value=""></textarea>
+                                 <p id="helptxt_descripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>
+                        </div>
+                  </div>
+
+
+              </div>
+              <div class="modal-footer">
+                <button type="button" id="btncancelar" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+
+              </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade bs-example-modal-xl" id=generar tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xs modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="login-title">
+{#                        <label class="modal-title text-text-bold-600" id="myModalLabel33">Listado del Personal Institucional</label>#}
+                </div>
+            </div>
+            <div class="modal-body">
+
+            </div>
+            <div class="modal-footer">
+                 <a href="#" id="ingresardato" class="btn btn-success"><i class=""></i> Generar Excel</a>
+                 <a  class="btn btn-cerrar" style="float: right;cursor: pointer;background: #FA1D06;color: white" data-bgcolor="#FA1D06" data-color="#ffffff"> Cerrar</a>
+            </div>
+        </div>
+    </div>
+</div>
+    <div  class="modal fade " id="modalvideo" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Video</h4>
+
+                </div>
+
+                <div class="modal-body" style="min-height: 700px;max-height: 700px;overflow: auto" >
+                    <div class="row" >
+                        <iframe id="vistavideo" width="800" height="500" src="" frameborder="0" allowfullscreen ></iframe>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"  class="btn" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff">Salir</button>
+                    <button type="button" id="btnguardaraptacompromiso" class="btn" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="modal fade" id="espera"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="row">
+                    <div id="content" class="col-lg-12">
+                        Generando reporte, espere un momento...
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+
+
+
+{% endblock %}

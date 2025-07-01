@@ -1,0 +1,159 @@
+{% extends "layout/basebs.html" %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block more_javascript %}
+	<script type="text/javascript">
+        /*const actionDelete = (registro, action, id) => {
+            const question = `Al eliminar el registro no podra volver a recuperar los datos. <br>¿Está seguro de eliminar el registro <span class="label label-info">${registro}</span>?`;
+            QuestionLayout(question, () => {
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: `${response.message}`,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.reload();
+                        });
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+            }, () => {})
+        }*/
+
+
+        $(function() {
+            $(".action_delete").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const question = `Al eliminar el registro no podra volver a recuperar los datos. <br>¿Está seguro de eliminar el registro <span class="text-info">${name}</span>?`;
+            	console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: `${response.message}`,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.reload();
+                        });
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+				}, ()=>{})
+            });
+        });
+	</script>
+{% endblock %}
+{% block canvas %}
+	<div class="container-fluid ">
+		<div class='row mb-4'>
+			<div class='col-12'>
+				<div class="page_title">
+					<h3 class="fw-semibold">{{ title }}</h3>
+					<h6>Periodo: {{ periodo }}</h6>
+				</div>
+			</div>
+		</div>
+		<div class="row mb-4">
+			<div class="col-12">
+				<a class="btn waves-effect waves-light btn-rounded btn-outline-success lock_screen" href="{{ request.path }}?action=addcronograma"><i class="fa fa-plus"></i> Adicionar planificación</a>
+			</div>
+		</div>
+		<div class='row'>
+			<div class='col-12'>
+				{% for cronograma in cronogramas %}
+					<table class='table table-bordered table-striped text-nowrap customize-table mb-0 align-middle' cellpadding="0" cellspacing="0">
+						<thead>
+						<tr>
+							<th colspan="6">
+								<div class="d-sm-flex d-block align-items-center justify-content-between">
+									<span style="font-size: 16px">Cronograma de Sílabo: <b>{{ cronograma.nombre }}</b></span>
+									<div class="">
+										<a class="btn btn-success btn-sm lock_screen"
+										   href="{{ request.path }}?action=addsemana&id={{ cronograma.id }}"><i
+												class="fa fa-plus"></i></a>
+										<a class="btn btn-info btn-sm lock_screen"
+										   href="{{ request.path }}?action=editcronograma&id={{ cronograma.id }}"><i
+												class="fa fa-edit"></i></a>
+										<a class="btn btn-danger btn-sm action_delete" data-id="{{ cronograma.id }}" data-action="delcronograma" data-name="{{ cronograma.nombre }}"
+										   href="javascript:void(0);"><i class="fa fa-trash"></i></a>
+										<a class="btn btn-warning btn-sm lock_screen"
+										   href="{{ request.path }}?action=view_materias&id={{ cronograma.id }}"><i
+												class="fa fa-list"></i></a>
+									</div>
+								</div>
+
+
+							</th>
+						</tr>
+						<tr>
+							<th style="text-align: left; vertical-align:middle; width: 40%">Objetivo semal</th>
+							<th style="text-align: center; vertical-align:middle; width: 15%">Parcial</th>
+							<th style="text-align: center; vertical-align:middle; width: 10%">Fecha Inicio</th>
+							<th style="text-align: center; vertical-align:middle; width: 10%">Fecha Fin</th>
+							<th style="text-align: center; vertical-align:middle; width: 15%">Numero de semana</th>
+							<th style="text-align: center; vertical-align:middle; width: 10%">Acciones</th>
+						</tr>
+						</thead>
+						<tbody>
+						{% for semana in cronograma.semanas %}
+							<tr>
+								<td style="text-align: justify; vertical-align:middle;">{{ semana.descripcion }}
+									<br>{% if semana.examen %}<span class="label label-warning">Examen</span>{% endif %}
+								</td>
+								<td style="text-align: center; vertical-align:middle;">{{ semana.get_parcial_display }}</td>
+								<td style="text-align: center; vertical-align:middle;">{{ semana.inicio|date:'d-m-Y' }}</td>
+								<td style="text-align: center; vertical-align:middle;">{{ semana.fin|date:'d-m-Y' }}</td>
+								<td style="text-align: center; vertical-align:middle;">{{ semana.numsemana }}</td>
+								<td style="text-align: center; vertical-align:middle;">
+									<a class="btn btn-info btn-sm lock_screen"
+									   href="{{ request.path }}?action=editsemana&id={{ semana.id }}"><i
+											class="fa fa-edit"></i></a>
+									<a class="btn btn-danger btn-sm action_delete" data-id="{{ semana.id }}" data-action="delsemana" data-name="{{ semana.descripcion }}"
+										   href="javascript:void(0);"><i class="fa fa-trash"></i></a>
+								</td>
+							</tr>
+						{% empty %}
+							<tr>
+								<td colspan="6" style="text-align: center; vertical-align:middle;">No existe registros</td>
+							</tr>
+						{% endfor %}
+						</tbody>
+					</table>
+				{% endfor %}
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade static" id="waitpanel" style="display: none;">
+		<div class="modal-header">
+			<h3 id="paneltitle">Titulo</h3>
+		</div>
+		<div class="modal-body">
+			<p id="panelbody"></p>
+		</div>
+		<div class="modal-footer">
+			<a href="javascript:;" class="btn btn-cerrar cerrar_modal">Cerrar</a>
+			<a href="javascript:;" class="btn btn-primary guardar_modal">Guardar</a>
+		</div>
+	</div>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $(".tl").tooltip({placement:"right"});
+
+            $(".detallevisi").click(function() {
+               var id = $(this).attr("id");
+                   $.get("/visitabox", {'action':'detallemedi', 'id': id}, function(data) {
+
+                        $("#detalle_medicina .modal-body").html(data);
+                        $("#detalle_medicina").modal({"backdrop":"static"});
+{#                        $("#detalle_medicina #anular").hide();#}
+                        $("#detalle_medicina").modal("show");
+                   }, "html");
+               return false;
+            });
+            $("#detalle_medicina #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_medicina").modal("hide");
+            });
+
+            $(".especialisdeta").click(function() {
+               var id = $(this).attr("id");
+                   $.get("/visitabox", {'action':'especialisdeta', 'id': id}, function(data) {
+                        $("#detalle_especialista .modal-body").html(data);
+                        $("#detalle_especialista").modal({"backdrop":"static"});
+                        $("#detalle_especialista").modal("show");
+                   }, "html");
+               return false;
+            });
+            $("#detalle_especialista #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_especialista").modal("hide");
+            });
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+        </div>
+        <div class='atright'>
+            {% if grupo %}
+                <a href="/visitabox" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% else %}
+                <a href="/visitabox" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="row-fluid">
+        {% if perms.sga.change_inscripcion %}
+            <div class='span2'>
+                <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>
+            </div>
+        {% endif %}
+        <div class='span5'>
+
+        </div>
+
+        <div class="span2">
+
+        </div>
+        <div class="span2">
+
+        </div>
+
+        <div class="span3" style="text-align: right">
+
+
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Servicio</th>
+                <th>Consulta</th>
+                <th>Motivo</th>
+                <th>Alternativa</th>
+                <th>Observacion</th>
+                <th>Cantidad de Sesiones</th>
+                <th>Sesion No</th>
+                <th>Sede</th>
+                <th>Usuario</th>
+                <th>Fecha</th>
+                {% if perms.sga.change_user %}
+                    <th></th>
+                {% endif %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for detalle in detalle %}
+                    <tr>
+                        <td>{% if detalle.emeregencia %}<span class="label label-important" title="Emergencia">E</span>{% endif %} {{ detalle.tipovisitabox }}</td>
+                        {% if detalle.tipo_consulta %}
+                            <td>{{ detalle.tipo_consulta }}</td>
+                        {% else %}
+                            {% if detalle.sesion_tratamiento %}
+                                <td>{{ detalle.sesion_tratamiento }}</td>
+                            {% else %}
+                                <td> </td>
+                            {% endif %}
+                        {% endif %}
+                        <td>{{ detalle.motivo }}</td>
+                        <td>{{ detalle.alternativa }}</td>
+                        <td>{{ detalle.observacion }}</td>
+                        {% if detalle.sesion_numero %}
+                            <td>{{ detalle.sesion_numero }}</td>
+                        {% else %}
+                             <td>0</td>
+                        {% endif %}
+                        <td>{{ detalle.sesion }}</td>
+                        <td>{{ detalle.sede }}</td>
+                        <td>{{ detalle.usuario }}</td>
+                        <td>{{ detalle.fecha }}</td>
+
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+
+                                    {% if detalle.especialista_exist %}
+                                        <li><a  class="especialisdeta" id="{{ detalle.id }}" href='#'> <i class='icon-edit'></i> Ver Especialista </a></li>
+                                    {% else %}
+                                        {% if not persona.pertenece_soporte %}
+                                            <li><a  href='/visitabox?action=addespecialista&id={{ detalle.id }}'> <i class='icon-edit'></i> Enviar a Especialista </a></li>
+                                        {% endif %}
+                                    {% endif %}
+
+                                    {% if detalle.receta_exist %}
+                                        <li><a class="detallevisi" id="{{ detalle.id }}" href='#'> <i class='icon-edit'></i> Ver Receta </a></li>
+                                        {#Para imprimir receta OCastillo   #}
+                                        <li><a href="/reportes?action=run&direct=true&n=receta_box&visita={{ detalle.id }}&rt=pdf" class='btn btn-info'><i class="icon-print"></i> Imprimir Receta</a></li>
+                                    {% else %}
+                                        {% if not persona.pertenece_soporte %}
+                                            {% if medico|args:detalle.sede|call:"consulta_responsable" %}
+                                                <li><a  href='/visitabox?action=addreceta&id={{ detalle.id }}'> <i class='icon-edit'></i> Recetar </a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+
+                                </ul>
+                            </div>
+                        </td>
+
+                    </tr>
+
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if perms.sga.change_inscripcion %}
+            <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>
+            {% endif %}
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/visitabox?action=detalle&visita={{ visita.id }}&page=1">1</a></li>
+                            <li><a href="/visitabox?action=detalle&visita={{ visita.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/visitabox?action=detalle&visita={{ visita.id }}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/visitabox?action=detalle&visita={{ visita.id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/visitabox?action=detalle&visita={{ visita.id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/visitabox?action=detalle&visita={{ visita.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+    <div class="modal fade static " id="detalle_medicina" style="margin-left: -500"  >
+    <div class="row-fluid modal-header">
+        <h4 ><i> Receta de Medicina </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: left">
+            <a href="#" id="anular" class="btn btn-danger  btn-aceptar">ANULAR RECETA</a>
+        </div>
+        <div style="float: right">
+            <a href="#" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+
+    <div class="modal fade static " id="detalle_especialista" style="margin-left: -500"  >
+    <div class="row-fluid modal-header">
+        <h4 ><i> Especialistas </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a href="#" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+
+
+
+{% endblock %}

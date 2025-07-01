@@ -1,0 +1,73 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+
+    $("#id_fechasustentacion").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+    $("#id_nota,#id_fechasustentacion,#id_autor1").addClass("validate[required]");
+    $("#id_nota,#id_plagio").addClass("input-small")
+    $("#id_autor1").attr({"autocomplete":"off"});
+    $($("#id_autor1_id").get(0).parentNode.parentNode).hide();
+
+    buscar_estudiante = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    if(data.results.length > 0)
+                    {
+                        $("#id_autor1").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#id_autor1").attr("myval","");
+                        $("#id_autor1").val("");
+                        $("#id_autor1").attr("alias","");
+
+                    }
+                }
+            }, 'json');
+        };
+
+    $('#id_autor1').typeahead({source: buscar_estudiante, updater: function(item) {
+        var results = $("#id_autor1").get(0).results;
+        for (var i in results) {
+            var datos = results[i];
+            if (item==datos.name) {
+                $("#id_autor1").attr("myval",datos.id);
+                d=datos.id;
+                $("#id_autor1_id").val(d);
+            }
+        }
+        return item;
+
+    }});
+
+{% endblock %}
+{% block titulo %}
+    <br>
+        <h4>Guardar Informaci&oacute;n de Tesis:  {{ documento.nombre}}</h4>
+        <h4>Autor(es): {{ documento.autor }}</h4>
+    <br/>
+    {% if error == 1 %}
+        <span class="label label-info">
+            ERROR AL GRABAR AUTOR
+        </span>
+    {% endif %}
+
+{% endblock %}
+
+{% block formaction %}/documentos{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='addautores'/>
+    <input type='hidden' name='id' value='{{ documento.id }}'/>
+{% endblock %}
+{% block formback %}/documentos{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

@@ -1,0 +1,526 @@
+<table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+    <thead>
+        <tr>
+            <th style="width: 500px">Estudiante</th>
+            <th style="text-align: center;">Nota1<br>{{ cod1.alias }} </th>
+            <th style="text-align: center;">Nota2<br>{{ cod2.alias }}</th>
+            <th style="text-align: center;">Nota3<br>{{ cod3.alias }}</th>
+            <th style="text-align: center;">Nota4<br>{{ cod4.alias }}</th>
+            <th style="text-align: center;">Examen</th>
+            <th style="text-align: center;">Recup./Mej.</th>
+            <th style="text-align: center;">Nota Final</th>
+            <th style="text-align: center;">Asistencia</th>
+            <th style="text-align: center;">Estado</th>
+            <th style="width: 50px"></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for mat in asignados %}
+        {% if not mat.matricula.esta_retirado %}
+            <tr>
+                <td style="display: flex; flex-direction: column; gap:.2em">
+                    {{ mat.matricula.inscripcion.persona }}
+                    {% if mat.matricula.inscripcion.tiene_deuda_temp %}
+                        <div><span class='label label-important'>Deuda: ${{ mat.matricula.inscripcion.adeuda_a_la_fecha|floatformat:2 }}</span></div>
+                    {% endif %}
+                    {% if mat.obtener_rubroespecie_asentamientonotas %}
+                        {% if mat.obtener_rubroespecie_asentamientonotas.vencida <= DIAS_ESPECIE or mat.obtener_rubroespecie_asentamientonotas.habilita %}
+                            <div>
+                                 <span class="label label-warning tl" title="Para asentar notas, la especie deber primero ser autorizada por coordinación académica.">
+                                    Especie:  {{ mat.obtener_rubroespecie_asentamientonotas.serie }} - {{ mat.obtener_rubroespecie_asentamientonotas.tipoespecie.nombre }}<br>
+                                    Caduca en: {{ mat.obtener_rubroespecie_asentamientonotas.dias_disponibles }} dias
+                                </span>
+                            </div>
+                            <div>
+                                {% if mat.obtener_rubroespecie_asentamientonotas.autorizado %}
+                                    <span class="label label-success">Trámite autorizado por {{ mat.obtener_rubroespecie_asentamientonotas.usrautoriza }}</span>
+                                {% else %}
+                                    <span class="label label-inverse">Especie pendiente de ser autorizada</span>
+                                {% endif %}
+                            </div>
+                            {% if mat.obtener_evaluacion_alcance.enviado and not mat.obtener_evaluacion_alcance.aprobado %}
+                                <div>
+                                    <span class="label label-inverse">Calificaciones enviadas pendientes de aprobación</span>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </td>
+                {% if mat.obtener_evaluacion_alcance.observaciones and mat.obtener_evaluacion_alcance.motivo and mat.obtener_rubroespecie_asentamientonotas %}
+                    <td style="text-align: center">
+                        <b>{{ mat.ver_historiconotas.n1 }}</b><br/>
+                        <input
+                                id='n1{{ mat.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if not mat.obtener_evaluacion_alcance.enviado %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ mat.obtener_evaluacion_alcance.n1 }}"
+                                onchange="cambiarNotaNivelCerrado('{{ mat.obtener_evaluacion_alcance.n1 }}', 'n1', '{{ mat.id }}', '{{ porcnota1 }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"
+                                {% if mat.obtener_evaluacion_alcance.enviado %}disabled{% endif %} />
+                    </td>
+                    <td style="text-align: center">
+                        <b>{{ mat.ver_historiconotas.n2 }}</b><br/>
+                        <input
+                                id='n2{{ mat.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if not mat.obtener_evaluacion_alcance.enviado %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ mat.obtener_evaluacion_alcance.n2 }}"
+                                onchange="cambiarNotaNivelCerrado('{{ mat.obtener_evaluacion_alcance.n2 }}', 'n2', '{{ mat.id }}', '{{ porcnota2 }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"
+                                {% if mat.obtener_evaluacion_alcance.enviado %}disabled{% endif %} />
+                    </td>
+                    <td style="text-align: center">
+                        <b>{{ mat.ver_historiconotas.n3 }}</b><br/>
+                        <input
+                                id='n3{{ mat.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if not mat.obtener_evaluacion_alcance.enviado %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ mat.obtener_evaluacion_alcance.n3 }}"
+                                onchange="cambiarNotaNivelCerrado('{{ mat.obtener_evaluacion_alcance.n3 }}', 'n3', '{{ mat.id }}', '{{ porcnota3 }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"
+                                {% if mat.obtener_evaluacion_alcance.enviado %}disabled{% endif %} />
+                    </td>
+                    <td style="text-align: center">
+                        <b>{{ mat.ver_historiconotas.n4 }}</b><br/>
+                        <input
+                                id='n4{{ mat.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if not mat.obtener_evaluacion_alcance.enviado %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ mat.obtener_evaluacion_alcance.n4 }}"
+                                onchange="cambiarNotaNivelCerrado('{{ mat.obtener_evaluacion_alcance.n4 }}', 'n4', '{{ mat.id }}', '{{ porcnota4 }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"
+                                {% if mat.obtener_evaluacion_alcance.enviado %}disabled{% endif %} />
+                    </td>
+                    <td style="text-align: center">
+                        <b>{{ mat.ver_historiconotas.n5 }}</b><br/>
+                        <input
+                                id='examen{{ mat.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if not mat.obtener_evaluacion_alcance.enviado %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ mat.obtener_evaluacion_alcance.examen }}"
+                                onchange="cambiarNotaNivelCerrado('{{ mat.obtener_evaluacion_alcance.examen }}', 'examen', '{{ mat.id }}', '{{ porcnota5 }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"
+                                {% if mat.obtener_evaluacion_alcance.enviado %}disabled{% endif %} />
+                        <p class="help-text"></p>
+                    </td>
+                    <td style="text-align: center">
+                        <b>{{ mat.ver_historiconotas.recup }}</b><br/>
+                        <input
+                                id='recuperacion{{ mat.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="color:green; text-align: center;{% if not mat.obtener_evaluacion_alcance.enviado %}background: yellow; font-weight: bold;{% endif %}"
+                                value="{{ mat.obtener_evaluacion_alcance.recuperacion }}"
+                                onchange="cambiarNotaNivelCerrado('{{ mat.obtener_evaluacion_alcance.recuperacion }}', 'recuperacion', '{{ mat.id }}', 100, '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"
+                                {% if mat.obtener_evaluacion_alcance.enviado %}disabled{% endif %} />
+                    </td>
+                    <td style="text-align: center">
+                        {{mat.ver_historiconotas.notafinal|floatformat}}<br>
+                        <input
+                                id='final{{ mat.id }}'
+                                type="text"
+                                class="input-mini bigger"
+                                style="font-weight: bold; text-align: center"
+                                value="{{ mat.obtener_evaluacion_alcance.notafinal }}"
+                                disabled/>
+                    </td>
+                    <td style="text-align: center">
+                        <span style="{% if mat.ver_recordmateria.asistencia < asistencia_aprobar %} color:#dc143c; {% else %} color:#006400;{% endif %}">
+                            <b>{{ mat.ver_recordmateria.asistencia|floatformat:'2' }}%</b>
+                        </span>
+                    </td>
+                    <td style="text-align: center">
+                        <span style="{% if mat.ver_historiconotas.estado.id == reprobado %}color: #dc143c; {% else %}color:#006400;{% endif %}">
+                            <b>{{ mat.ver_historiconotas.estado.nombre }} </b>
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+                                {% if mat.tiene_evaluacionalcance.motivoaprobacion %}
+                                    <li>
+                                        <a href="#"id='{{ mat.id }}'
+                                           onclick="verMotivoCoordinador(event,
+                                                   '{{ mat.tiene_evaluacionalcance.motivoaprobacion }}'
+                                           )"
+                                        >
+                                            <i class="icon-list"></i>
+                                            Observaciones de Secretaría
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if mat.ver_asentamiento and mat.tiene_evaluacionalcance.motivo %}
+                                    <li>
+                                        <a href="#"id='{{ mat.id }}'
+                                           onclick="verMotivoNivelCerrado(event,
+                                                   '{{ mat.matricula.inscripcion.persona }}',
+                                                   '{{ mat.tiene_evaluacionalcance.evidencia }}',
+                                                   '{{ mat.tiene_evaluacionalcance.observaciones }}',
+                                                   '{{ mat.tiene_evaluacionalcance.motivo.motivo }}',
+                                                   '{{ mat.tiene_evaluacionalcance.usuario.username }}'
+                                           )"
+                                        >
+                                            <i class="icon-eye-open"></i>
+                                            Ver motivo
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="#"id='{{ mat.id }}'
+                                           onclick="editMotivoNivelCerrado(event,
+                                                   '{{ mat.tiene_evaluacionalcance.observaciones }}',
+                                                   '{{ mat.tiene_evaluacionalcance.motivo.id }}',
+                                                   '{{ mat.tiene_evaluacionalcance.id }}'
+                                           )"
+                                        >
+                                            <i class="icon-edit"></i>
+                                            Editar motivo
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if not mat.tiene_evaluacionalcance.enviado %}
+                                    <li>
+                                        <a href="#" onclick="addAlcanceNotasNivelCerrado(event, '{{ mat.id }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')">
+                                            <i class="icon-save"></i> Guardar alcance de notas
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                {% else %}
+                        {% if mat.ver_historiconotas %}
+                            <td style="text-align: center">{{ mat.ver_historiconotas.n1}}</td>
+                            <td style="text-align: center">{{ mat.ver_historiconotas.n2}}</td>
+                            <td style="text-align: center">{{ mat.ver_historiconotas.n3}}</td>
+                            <td style="text-align: center">{{ mat.ver_historiconotas.n4}}</td>
+                            <td style="text-align: center">{{ mat.ver_historiconotas.n5 }}</td>
+                            <td style="text-align: center">{{mat.ver_historiconotas.recup|floatformat}}</td>
+                            <td style="text-align: center">{{mat.ver_historiconotas.notafinal|floatformat}}</td>
+                        {% else %}
+                            {% if mat.obtener_evaluacion_itb %}
+                                <td style="text-align: center">{{ mat.obtener_evaluacion_itb.n1}}</td>
+                                <td style="text-align: center">{{ mat.obtener_evaluacion_itb.n2}}</td>
+                                <td style="text-align: center">{{ mat.obtener_evaluacion_itb.n3}}</td>
+                                <td style="text-align: center">{{ mat.obtener_evaluacion_itb.n4}}</td>
+                                <td style="text-align: center">{{ mat.obtener_evaluacion_itb.examen }}</td>
+                                <td style="text-align: center">{{mat.obtener_evaluacion_itb.recuperacion|floatformat}}</td>
+                                <td style="text-align: center">{{mat.notafinal|floatformat}}</td>
+                            {% else %}
+                                <td style="text-align: center">0</td>
+                                <td style="text-align: center">0</td>
+                                <td style="text-align: center">0</td>
+                                <td style="text-align: center">0</td>
+                                <td style="text-align: center">0</td>
+                                <td style="text-align: center">0</td>
+                                <td style="text-align: center">0</td>
+                            {% endif %}
+                        {% endif %}
+                    <td style="text-align: center">
+                        {% if mat.ver_recordmateria.asistencia < asistencia_aprobar %} <span style="color: #dc143c;"><b>{{ mat.ver_recordmateria.asistencia|floatformat:'2' }}%</b></span>{% endif %}
+                        {% if mat.ver_recordmateria.asistencia >= asistencia_aprobar %} <span style="color:#006400;"><b>{{ mat.ver_recordmateria.asistencia|floatformat:'2' }}%</b></span>{% endif %}
+                    </td>
+                    <td style="text-align: center">
+                        {% if mat.ver_historiconotas.estado.id == reprobado %} <span style="color: #dc143c;"><b>{{ mat.ver_historiconotas.estado.nombre }} </b></span>{% endif %}
+                        {% if mat.ver_historiconotas.estado.id != reprobado %} <span style="color:#006400;"><b>{{ mat.ver_historiconotas.estado.nombre }} </b></span>{% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+                                {% if mat.obtener_rubroespecie_asentamientonotas %}
+                                    {% if mat.obtener_rubroespecie_asentamientonotas.vencida <= DIAS_ESPECIE or mat.obtener_rubroespecie_asentamientonotas.habilita %}
+                                        {% if mat.obtener_rubroespecie_asentamientonotas.autorizado  %} {# Especie autorizada .get #}
+                                            <li title="Para asentar notas parciales, examen o recuperación, primero debe colocar un motivo, adjuntando un archivo de soporte.">
+                                                <a href="#" id='{{ mat.id }}' onclick="addMotivoNivelCerrado(event, '{{ mat.id }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')">
+                                                    <i class="icon-plus"></i> Adicionar motivo
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    {% if profesor %}
+                                        <li><a href="#" onclick="solicitarAsentamiento(event, '{{ mat.id }}')"><i class="icon-list"></i> Solicitar asentamiento de notas</a></li>
+                                    {% endif %}
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                {% endif %}
+            </tr>
+       {% endif %}
+    {% endfor %}
+    {% if not materia %}
+        <tr>
+            <td colspan="6" align='center'>NO EXISTEN REGISTROS</td>
+        </tr>
+    {% endif %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan='11'>
+                {%  if materia.verifica_alcancenivelcerrado %}
+                    <a id="rep" href="/reportes?action=run&direct=true&n=acta_alcance_nivelcerrado&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Acta de Alcance</a>
+                {% endif %}
+            </td>
+        </tr>
+    </tfoot>
+
+</table>
+
+<div class="modal fade static" id="motivoNivelCerradoModal" style="width: 100px;">
+    <div class="modal-header">
+        <h4  id='paneltitle1'><i> Registrar evidencia cambio de notas</i></h4>
+    </div>
+    <div class="modal-body" style="text-align: left">
+        <form id="formulario5" action="" method="POST">
+            {% for field in evidenciaform %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+        </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn btn-cerrar btn-danger" onclick="cerrarModal('motivoNivelCerradoModal')">Salir</a>
+        <a href="#" class="btn btn-guardar btn-success"><i class="icon-save"></i> Guardar</a>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $("#motivoNivelCerradoModal #id_motivo").val("");
+    $("#motivoNivelCerradoModal #id_observacion").val("");
+    $("#motivoNivelCerradoModal #id_evidencia").val("");
+
+    idMatAsignada = null
+    idRubroEspecie = null
+    editarMotivo = false
+    idEvaluacion = null
+
+    addAlcanceNotasNivelCerrado = function(event, id, idRubroEspecieValorada) {
+        swal.fire({
+            title: 'Enviar cambios',
+            text: 'Las notas ingresadas serán enviadas a Secretaría para ser aprobadas. Desea continuar?',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Si!',
+            cancelButtonText: 'No',
+            confirmButtonClass: 'btn btn-success margin-5',
+            cancelButtonClass: 'btn btn-danger margin-5'
+        }).then(function (isConfirm) {
+            if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                $.post("/alcance_notas", {'action':'verificaCambiosAlcanceNivelCerrado', 'materia_asignada':id, 'rubro_especie':idRubroEspecieValorada}, function(data) {
+                    console.log(data)
+                    if (data.result=="ok") {
+                        $.post("/alcance_notas", {'action':'addAlcanceNivelCerrado', 'materia_asignada':id, 'rubro_especie':idRubroEspecieValorada}, function(data) {
+                            console.log(data)
+                            if (data.result=="ok") {
+                                swal.fire("Notas enviadas", data.mesaje, "info").then(function(){
+                                    location.reload()
+                                })
+                            } else {
+                                swal.fire("Alerta!", data.mensaje, "warning")
+                            }
+                        }, "json");
+                    } else {
+                        swal.fire("Alerta!", data.mensaje, "warning")
+                    }
+                }, "json");
+            }
+        });
+        event.preventDefault();
+    }
+
+    addMotivoNivelCerrado = function(event, id, idRubroEspecieValorada) {
+        editarMotivo = false
+        idMatAsignada = id
+        idEvaluacion = null
+        idRubroEspecie = idRubroEspecieValorada
+        $("#motivoNivelCerradoModal #id_motivo").val("");
+        $("#motivoNivelCerradoModal #id_observacion").val("");
+        $("#motivoNivelCerradoModal #id_evidencia").val("");
+        $("#motivoNivelCerradoModal").modal('show');
+        event.preventDefault();
+    }
+
+{#    Guardar motivo#}
+    $("#motivoNivelCerradoModal .btn-guardar").click(function(){
+        datosok=false;
+        if($("#motivoNivelCerradoModal #id_motivo").val()== ""){
+            datosok=false;
+        }
+        else{
+            if($("#motivoNivelCerradoModal #id_observacion").val()== ""){
+                datosok=false;
+            }
+            else{
+                if($("#motivoNivelCerradoModal #id_evidencia").val()== ""){
+                    datosok=false;
+                }
+                else{
+                    datosok=true;
+                }
+            }
+        }
+        if (!datosok){
+            swal.fire('Notificación', 'Todos los campos son obligatorios, faltan datos por llenar en el formulario.', 'info')
+        } else{
+            $($("#id_evidencia").get(0).parentNode).find(".help-text").html("");
+            showWaiting("Espere unos segundos por favor...");
+            var obs= $("#motivoNivelCerradoModal #id_observacion").val();
+            var motivo = $("#id_motivo").val();
+            var data = new FormData();
+            var inputFileImage = document.getElementById("id_evidencia");
+            var file = inputFileImage.files[0];
+            $("#motivoNivelCerradoModal").modal("hide");
+            data.append('evidencia', file);
+            data.append('action', 'add_motivo_nivel_cerrado');
+            data.append('matasignada', idMatAsignada);
+            data.append('obs', obs);
+            data.append('motivo', motivo);
+            data.append('editar', editarMotivo);
+            data.append('rubroEspecie', idRubroEspecie);
+            data.append('idEvaluacion', idEvaluacion);
+            var url = "/alcance_notas";
+            $.ajax({
+            url:url,
+            type:"POST",
+            contentType:false,
+            data:data,
+            processData:false,
+            cache:false,
+            success: function(data){
+                if(data.result=="ok"){
+                    swal.fire("Registro Creado", data.mensaje, "info").then(function(){
+                        location.reload();
+                    })
+                }else {
+                    swal.fire("Error!", data.mensaje, "error")
+                }
+               }
+            });
+            hideWaiting();
+        }
+    });
+
+    verMotivoNivelCerrado = function(event, nombre, evidencia, observacion, motivo, usuario) {
+        let table = "<table class='table' style='margin-top:2em'>" +
+                        "<tr>" +
+                            "<th>Realizado por</th>" +
+                            "<th>Motivo</th>" +
+                            "<th>Observación</th>" +
+                            "<th style='text-align:center'>Soporte</th>" +
+                        "</tr>" +
+                        "<tr>" +
+                            "<td>"+usuario+"</td>" +
+                            "<td>"+motivo+"</td>" +
+                            "<td>"+observacion+"</td>" +
+                            "<td style='text-align:center'><a href='/media/"+evidencia+"' target='_blank' class='btn btn-primary'><i class='icon-download-alt'></i></a></td>" +
+                        "</tr>" +
+                    "</table>"
+        Swal.fire({
+              title: "ALUMNO SOLICITA<h3>"+nombre+"</h3>",
+              width: 800,
+              padding: "1em",
+              color: "#111",
+              html: table
+        });
+        event.preventDefault();
+    }
+
+    editMotivoNivelCerrado = function(event, observacion, motivo, id) {
+        event.preventDefault()
+        editarMotivo = true
+        idEvaluacion = id
+        document.querySelector('#id_motivo').value = motivo
+        document.querySelector('#id_observacion').value = observacion
+        $("#motivoNivelCerradoModal").modal('show');
+    }
+
+{#    ACTUALZIA NOTAS#}
+    const min_recupera = {{ min_recupera }};
+    const max_recupera = {{ max_recupera }};
+    const min_exa = {{ min_exa }};
+    const max_exa = {{ max_exa }};
+    const MIN_EXAMEN_RECUPERACION = {{ min_exarecupera }};
+
+    cambiarNotaNivelCerrado = function(notaActual, atributoEvaluacionAlcance, idMateriaAsignada, notaValorMaximo, rubroEspecie) {
+        let notaNueva = $("#"+atributoEvaluacionAlcance+idMateriaAsignada).val()
+        console.log(notaNueva)
+        console.log(notaActual)
+        console.log(atributoEvaluacionAlcance)
+        console.log(notaValorMaximo)
+        if (parseInt(notaNueva) > parseInt(notaValorMaximo)) {
+             $("#"+atributoEvaluacionAlcance+idMateriaAsignada).val(notaActual)
+             swal.fire("Notificación!", "Esta nota no puede tener un valor mayor de <strong style='color:green'>"+notaValorMaximo+" puntos</strong>", "error")
+        }else{
+              actualizarnotasNivelCerrado(parseInt(notaNueva), idMateriaAsignada, atributoEvaluacionAlcance, rubroEspecie)
+        }
+    }
+
+    var notaFinal = 0
+    actualizarnotasNivelCerrado = function (nota, asignada, posicion, rubroEspecie) {
+         $.post("/alcance_notas", {'action':'actualiza_notas', 'matasignada':asignada, 'nota':nota, 'posicion':posicion, 'rubro_especie':rubroEspecie}, function(data) {
+             if (data.result=="ok") {
+                $("#final" + asignada).val(data.nota_final)
+                 if (parseInt(data.nota_final) < MIN_EXAMEN_RECUPERACION) {
+                     $("#final" + asignada).css("background", "lightcoral");
+                 } else {
+                     $("#final" + asignada).css("background", "lightgreen")
+                 }
+             } else {
+                self.val(0);
+                location.reload();
+             }
+        }, "json");
+    };
+
+    solicitarAsentamiento = function(event, idMateriaAsignada) {
+        $.post("/alcance_notas", {'action':'puede_generar_especie', 'materia_asignada':idMateriaAsignada}, function(data) {
+             if (data.result=="ok") {
+                 swal.fire({
+                    title: 'Generar solicitud de asentamiento de notas',
+                    text: 'Va a generar una solicitud a su coordinación solicitando permiso para asentamiento de calificaciones por alcance de notas. Desea Continuar?',
+                    type: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5'
+                }).then(function (isConfirm) {
+                    if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                        $.post("/alcance_notas", {'action':'genera_especie_asentamiento_sinvalor', 'materia_asignada':idMateriaAsignada}, function(data) {
+                             if (data.result=="ok") {
+                                swal.fire("Solicitud enviada!", "Debe esperar que un asistente de su coordinacion apruebe el trámite en bandeja.", "info").then(function(e) {
+                                    location.reload()
+                                })
+
+                             } else {
+                                swal.fire("Error", data.mensaje, 'warning')
+                             }
+                        }, "json");
+                    }
+                });
+             } else {
+                swal.fire("No se puede generar solicitud", data.mensaje, 'warning')
+             }
+        }, "json");
+        event.preventDefault();
+    }
+
+    verMotivoCoordinador = function(event, observacion) {
+        event.preventDefault()
+        swal.fire('Observaciones Secretaría', observacion, 'info')
+    }
+
+</script>

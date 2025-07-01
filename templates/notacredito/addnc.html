@@ -1,0 +1,74 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+
+    $(function() {
+        $("#id_valor,#id_motivo, #id_beneficiario").addClass("validate[required]");
+        $("#id_numero, #id_valor").addClass("input-medium");
+        $("#id_motivo, #id_beneficiario").addClass("input-block-level");
+        $("#id_numero").focus();
+
+
+        buscar_inscripcion = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_beneficiario").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#id_beneficiario').typeahead({source: buscar_inscripcion, updater: function(item) {
+                var results = $("#id_beneficiario").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_beneficiario").attr("myval",datos.id);
+
+                    }
+                }
+                return item;
+            }});
+
+            $("#formbutton").click(function(){
+                $("#beneficiario").val($("#id_beneficiario").attr("myval"));
+            });
+
+            chequeaValor = function (){
+                if ($("#id_valor").val()>{{ factura.total }}){
+                    $("#id_valor").val(0.00);
+                }else{
+
+                }
+            };
+
+            $("#id_valor").val({{ factura.total|floatformat:2 }});
+            $("#id_valor").blur(chequeaValor);
+    });
+
+{% endblock %}
+{% block titulo %}
+    ADICIONAR NOTA DE CREDITO
+    <h3>{{ factura }} (Valor: ${{ factura.total|floatformat:2 }})</h3>
+    <h4>{{ factura.cliente }}</h4>
+    <h4>Estudiante: {{ factura.estudiante }}</h4>
+{% endblock %}
+{% block formaction %}/facturas{% endblock %}
+
+{% block formextra %}
+    <input type='hidden' name='action' value='addnc'/>
+    <input type='hidden' name='id' value='{{ factura.id }}'/>
+    <input type='hidden' id='beneficiario' name='bid' value='' />
+{% endblock %}
+{% block formback %}/facturas?id={{ factura.id }}{% endblock %}
+{% block buttonname %}Generar Nota de Cr&eacute;dito{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "basebs.html" %}
+{% block heading %}
+      <script>
+
+     $(function () {
+
+        $("#cmbgrupo").change(function() {
+                var cid = $("#cmbgrupo").val();
+                if ($("#cmbgrupo").val() >0){
+                    location.href='/alu_evaluaciondocente?mid='+cid+"&acc={{ permisopcion.id }}&id={{ inscripcion.id }}&op={{ op }}"
+                }else{
+                    smoke.alert("Debe Seleccionar un nivel")
+                }
+
+        });
+         $("#cmbgrupo").addClass("input-xxlarge");
+         Ver = function(id,ins){
+        location.href="/alu_evaluaciondocente?action=evaluar&id="+id+"&ins="+ins+"&op={{ op }}&acc={{ acc }}"
+    }
+
+    });
+
+
+
+
+
+
+    </script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Evaluaciones del Alumno: {{ inscripcion }}</h3>
+            <h4>{{ matricula.nivel.periodo }}</h4>
+            <h5>{{ matricula.nivel }} {% if matricula.liberada %}<span class="badge badge-info">MATRICULA CON CAMBIO DE PROGRAMACIÓN</span>{% endif %}</h5>
+            {% if  matricula.inscripcion.tiene_tutor %}
+                <h5>Tutor: {{ matricula.inscripcion.tiene_tutor.tutor }}</h5>
+            {% endif %}
+            <br>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span11">
+         <h3 >Matriculas  </h3>
+            <select id="cmbgrupo"  class="custom-select2 form-control">
+            {% for m in matriculas %}
+                <option  value="{{ m.id }}"{% if matricula.id == m.id %} selected {% endif %}>{{ m.nivel }}</option>
+            {% endfor %}
+            </select>
+        </div>
+{#        {% if op %}#}
+            <div class="span1">
+                <div class="title">
+                    <a href="/" class="btn"><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+                </div>
+            </div>
+{#        {% endif %}#}
+    </div>
+     <div class='row-fluid'>
+        <div class="span12">
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Evaluacion</th>
+                        <th>Profesor</th>
+                        <th>Materia</th>
+                        <th></th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in evaluaciones %}
+                            <tr>
+                                <td> {{ e.evaluaciondocente }}</td>
+                                <td> {{ e.profesormateria.profesor }}</td>
+                                <td> {{ e.profesormateria.materia }}</td>
+                                {% if not estutor and not escoordinador%}
+                                    <td ><a class="btn btn-success" onclick="Ver('{{ e.profesormateria.id }}','{{ inscripcion.id }}')">Ver Evaluacion </a></td>
+                                {% else %}
+                                    {% if  e.finalizado %}
+                                        <td><span class="badge badge-success">Finalizado</span></td>
+                                    {% else %}
+                                        <td><span class="badge badge-danger">Pendiente</span></td>
+                                    {% endif %}
+                                {% endif %}
+                            </tr>
+                    {% endfor %}
+                    {% if not evaluaciones %}
+                            <tr>
+                                <td colspan="5"  align='center'>NO EXISTEN DATOS</td>
+                            </tr>
+                    {% endif %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,696 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+<script src="../../static/vendors/sweetalert/sweetalert2.all.js"></script>
+<script src="../../static/vendors/sweetalert/sweet-alert.init.js"></script>
+    <script type="text/javascript">
+
+        $(function() {
+            var idtallauni=0;
+            var idtallazap=0;
+            var matri=0;
+            var opcion='';
+
+            $("#pregunta #id_inicio").attr({"autocomplete":"off"});
+            $("#pregunta #id_fin").attr({"autocomplete":"off"});
+            $("#repentrega_uniforme #id_inicio").attr({"autocomplete":"off"});
+            $("#repentrega_uniforme #id_fin").attr({"autocomplete":"off"});
+            $("#pregunta #id_inicio,#pregunta #id_fin").datepicker({format:"dd-mm-yyyy"});
+            $("#repentrega_uniforme #id_inicio,#repentrega_uniforme #id_fin").datepicker({format:"dd-mm-yyyy"});
+
+{#            $("#search").click(function() {#}
+{#                var term = $("#searchfield").val().toUpperCase();#}
+{#                location.href = "/entregauniformes?s="+term;#}
+{#            });#}
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                var nid = $("#nivelid").val().toUpperCase();
+                var cid = $("#carreraid").val().toUpperCase();
+                if(cid !='' || nid !=''){
+                    if(cid==''){
+                        location.href = "/entregauniformes?s="+term+"&nivel="+nid;
+                    }
+                    else{
+                        location.href = "/entregauniformes?s="+term+"&carrera="+cid;
+                    }
+                }else{
+                    location.href = "/entregauniformes?s="+term;
+
+                }
+            });
+
+            {#BUSQUEDA DEL NIVEL#}
+             buscar_nivel = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Nivel:id__in={{ niveles }}', 'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#searchinput_nivel").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#searchinput_nivel").attr("myval","0");
+                         $("#searchinput_nivel").get(0).results = "";
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+            $("#nivelid").hide();
+            $('#searchinput_nivel').typeahead({source: buscar_nivel, updater: function(item) {
+                var results = $("#searchinput_nivel").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        location.href = "/entregauniformes?nivel="+datos.id;
+{#                        $("#searchinput_nivel").attr("myval",datos.id);#}
+                        $("#nivelid").val(datos.id);
+                    }
+                }
+                return item;
+            }});
+
+            {#BUSQUEDA DE CARRERA#}
+            buscar_carrera = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Carrera:id__in={{ carreras }}','p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#searchinput_carrera").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#searchinput_carrera").attr("myval","0");
+                         $("#searchinput_carrera").get(0).results = "";
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+            $("#carreraid").hide();
+            $('#searchinput_carrera').typeahead({source: buscar_carrera, updater: function(item) {
+                var results = $("#searchinput_carrera").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        location.href = "/entregauniformes?carrera="+datos.id;
+{#                        $("#searchinput_carrera").attr("myval",datos.id);#}
+                        $("#carreraid").val(datos.id);
+                    }
+                }
+                return item;
+            }});
+
+             $(".verobservacion").click(function(){
+                var obs = $(this).attr('observacion');
+                smoke.alert(obs);
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+            buscar_tallauniforme = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'TallaUniforme',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_tallauniforme").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#id_tallauniforme').typeahead({source: buscar_tallauniforme, updater: function(item) {
+                var results = $("#id_tallauniforme").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_tallauniforme").attr("myval",datos.id);
+                        idtallauni=datos.id;
+                        $("#id_tallauniforme").val(idtallauni);
+                    }
+                }
+                return item;
+            }});
+
+            buscar_tallazapatos = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'TallaZapato',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_tallazapatos").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#id_tallazapatos').typeahead({source: buscar_tallazapatos, updater: function(item) {
+                var results = $("#id_tallazapatos").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_tallazapatos").attr("myval",datos.id);
+                        idtallazap=datos.id;
+                        $("#id_tallazapatos").val(idtallazap);
+                    }
+                }
+                return item;
+            }});
+
+            $(".uniformezapatos").click(function(){
+                $("#id_coloruniforme").val("");
+                $("#id_tallauniforme").val("");
+                $("#id_colorzapatos").val("");
+                $("#id_tallazapatos").val("");
+                $("#id_colorzapatos,#id_tallazapatos").attr("disabled",false);
+                $("#uniformezapatos_panel #id_tallauniforme").css("width", '50%');
+                $("#uniformezapatos_panel #id_tallazapatos").css("width", '50%');
+                $("#uniformezapatos_panel").modal({width: '300px', backdrop: 'static'});
+                $("#uniformezapatos_panel").modal("show");
+            });
+
+            $('#id_tallauniforme').typeahead({source: buscar_tallauniforme, updater: function(item) {
+                var results = $("#id_tallauniforme").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_tallauniforme").attr("myval",datos.id);
+                        idtallauni=datos.id;
+                        $("#id_tallauniforme").val(idtallauni);
+                    }
+                }
+                return item;
+            }});
+
+            $(".uniformezapatos").click(function(){
+                var mat = $(this).attr("matid");
+                var op = $(this).attr("opt");
+                matri=mat;
+                opcion=op;
+                $("#id_coloruniforme").val("");
+                $("#id_tallauniforme").val("");
+                $("#id_colorzapatos").val("");
+                $("#id_tallazapatos").val("");
+                $("#uniformezapatos_panel #id_tallauniforme").css("width", '50%');
+                $("#uniformezapatos_panel #id_tallazapatos").css("width", '50%');
+                $("#uniformezapatos_panel").modal({width: '300px', backdrop: 'static'});
+                $("#uniformezapatos_panel").modal("show");
+            });
+
+            $("#uniformezapatos_panel .btn-guardar").click(function() {
+                $("#id_colorzapatos,#id_tallazapatos").attr("disabled",false);
+                coloruniforme= $("#id_coloruniforme").val();
+                tallauniforme= $("#id_tallauniforme").val();
+                colorzapatos= $("#id_colorzapatos").val();
+                tallazapatos= $("#id_tallazapatos").val();
+                $("#uniformezapatos_panel").modal("hide");
+                if (opcion == '1') {
+                    $.post("/entregauniformes", {action: 'add_uniformezapatos', 'id': matri, 'coloruni':coloruniforme,'tallauni':tallauniforme,'colorzap':colorzapatos,'tallazap':tallazapatos }, function(data) {
+                        if (data.result == 'ok') {
+                            smoke.alert("Registro Guardado");
+                            location.href="/entregauniformes";
+                        } else {
+                            alert("Ocurrio un Error... Intentelo mas Tarde");
+                        }
+                    },"json");
+                } else {
+                    $.post("/entregauniformes", {action: 'add_solouniforme', 'id': matri, 'coloruni':coloruniforme,'tallauni':tallauniforme,'colorzap':colorzapatos,'tallazap':tallazapatos }, function(data) {
+                        if (data.result == 'ok') {
+                            smoke.alert("Registro Guardado");
+                            location.href = "/entregauniformes";
+                        } else {
+                            alert("Ocurrio un Error... Intentelo mas Tarde");
+                        }
+                    },"json");
+                }
+            });
+
+            $("#uniformezapatos_panel .btn-cerrar").click(function() {
+                $("#id_coloruniforme").val("");
+                $("#id_tallauniforme").val("");
+                $("#id_colorzapatos").val("");
+                $("#id_tallazapatos").val("");
+                $("#uniformezapatos_panel").modal("hide");
+                return false;
+            });
+
+            $(".mandil").click(function(){
+                var mat = $(this).attr("matid");
+                matri=mat;
+                $.post("/entregauniformes", {action: 'add_mandil', 'id': matri}, function(data) {
+                    if (data.result == 'ok') {
+                        smoke.alert("Registro Guardado");
+                        location.href = "/entregauniformes";
+                    } else {
+                        alert("Ocurrio un Error... Intentelo mas Tarde");
+                    }
+                },"json");
+            });
+
+            $(".solouniforme").click(function(){
+                var mat = $(this).attr("matid");
+                matri=mat;
+                var op = $(this).attr("opt");
+                opcion = op;
+                $("#id_coloruniforme").val("");
+                $("#id_tallauniforme").val("");
+                $("#id_colorzapatos").val("");
+                $("#id_tallazapatos").val("");
+                $("#id_colorzapatos,#id_tallazapatos").attr("disabled",true);
+                $("#uniformezapatos_panel #id_tallauniforme").css("width", '50%');
+                $("#uniformezapatos_panel").modal({width: '300px', backdrop: 'static'});
+                $("#uniformezapatos_panel").modal("show");
+            });
+
+             $("#descargarchivo").click(function() {
+                accion = $(this).attr("ac");
+                $("#pregunta #id_inicio").val('');
+                $("#pregunta #id_fin").val('');
+                $("#pregunta").modal({backdrop: 'static', keyboard: false, width: "15%", height: "15%"});
+                $("#pregunta").modal("show");
+
+            });
+
+            $("#pregunta .btn-consultar").click(function() {
+                $("#pregunta").modal('hide');
+                fechainicio = $("#pregunta #id_inicio").val();
+                fechafin = $("#pregunta #id_fin").val();
+                window.open('/reportes?action=run&direct=true&n=entrega_uniformes&rt=pdf&fecha_inicio='+fechainicio+'&fecha_fin='+fechafin);
+                location.href="/entregauniformes";
+            });
+
+            $("#pregunta .btn-cerrar").click(function() {
+                $("#pregunta").modal('hide');
+            });
+
+            function entregaUniforme(ids){
+                Swal.fire({
+                    title: 'Ingrese una observación!',
+{#                    text: "Ingrese una observacion",#}
+                    type: 'warning',
+                    input: 'text',
+                    inputAttributes: {
+                        autocapitalize: 'off'
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Entregar',
+                    cancelButtonText: 'Cancelar',
+                    inputValidator: function (value) {
+                        if (!value) {
+                            return "Ingrese una observación";
+                        }
+                    }
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                         $.post("/entregauniformes", {'action':'entrega_uniforme','ids':ids, observacion:result.value}, function(data) {
+                            if (data.result=="ok") {
+                                    Swal.fire('Notificacion!','El uniforme se entrego con exito','success').then(function(){
+                                        location.reload()
+                                    });
+                            } else {
+                                Swal.fire('Notificacion!','Error con la entrega','error');
+                            }
+                        }, "json");
+                    }
+                });
+            }
+            $(".checkentregauniforme").click(function(){
+                var ids= $(this).attr("iid");
+                Swal.fire({
+                    title: "Alerta!",
+                    text: "¿Esta seguro que desea validar la entrega de uniforme?",
+                    icon: "question",
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonColor: "#0d437d",
+                    cancelButtonColor: "#d33",
+                    confirmButtonText: "Si",
+                    cancelButtonText: 'Cancelar'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        entregaUniforme(ids);
+                    }
+                    else{
+                        location.reload()
+
+                    }
+                });
+            });
+
+              {#reporte entrega de uniforme#}
+            $("#descargarchivo_uni").click(function() {
+                accion = $(this).attr("ac1");
+                $("#repentrega_uniforme #id_inicio").val('');
+                $("#repentrega_uniforme #id_fin").val('');
+                $("#repentrega_uniforme").modal({backdrop: 'static', keyboard: false, width: "15%", height: "15%"});
+                $("#repentrega_uniforme").modal("show");
+            });
+
+            $("#repentrega_uniforme .btn-consultar2").click(function() {
+                $("#repentrega_uniforme").modal('hide');
+                fechainicio = $("#repentrega_uniforme #id_inicio").val();
+                fechafin = $("#repentrega_uniforme #id_fin").val();
+                window.open('/reportes?action=run&direct=true&n=entrega_uniformes_nuevo&rt=pdf&fecha_inicio='+fechainicio+'&fecha_fin='+fechafin);
+                location.href="/entregauniformes";
+            });
+
+            $("#repentrega_uniforme .btn-cerrar").click(function() {
+                $("#repentrega_uniforme").modal('hide');
+            });
+            
+            $("#estadoselec").change(function(){
+                var estado = $(this).val();
+                if (estado){
+                    location.href = '/entregauniformes?e='+estado;
+                }else{
+                    location.href = '/entregauniformes';
+                }
+
+            });
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Estudiantes Carrera de Salud</h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-right"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <br>
+    <div class='row-fluid'>
+        <div class="span3">
+             <b>Nivel: </b>
+            <input type="text" id="searchinput_nivel" class="input-large" data-provide="typeahead" placeholder="Buscar Nivel"/>
+            <input class='input-large search-query' type='text' id='nivelid' value=''/>
+        </div>
+        <div class="span3">
+            <b>Carreras: </b>
+            <input type="text" id="searchinput_carrera" class="input-large" data-provide="typeahead" placeholder="Buscar Carrera"/>
+            <input class='input-large search-query' type='text' id='carreraid' value=''/>
+        </div>
+        <div class="span2">
+        Estado:
+        <select id="estadoselec">
+                <option value="">-----</option>
+                <option value="1">ENTREGADOS</option>
+                <option value="2" >PENDIENTES</option>
+            </select>
+        </div>
+    
+        <div class="span4">
+            <form class='form-search'>
+                <input class='input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search or filtro or estado1 %}
+                    <a href="/entregauniformes?" id='allresults' class='btn btn-danger'><i class="icon-remove icon-white"></i> Todos</a>
+                {% endif %}
+                
+                 {% if perms.sga.add_entregauniforme %}
+                    <div class="btn-group">
+                    <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+                        Reportes
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu pull-right">
+                        <li><a href="#" id='descargarchivo'><i class="icon-print icon-white" ></i> Registro de Uniformes </a></li>
+                        <li><a href="#" id='descargarchivo_uni'><i class="icon-print icon-white" ></i> Entrega de Uniforme</a></li>
+                    </ul>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Fecha Matricula</th>
+                    <th>CI</th>
+                    <th>Estudiante</th>
+                    <th>Carrera</th>
+                    <th>Nivel</th>
+                    <th>Grupo</th>
+                    <th>Uniforme pagado</th>
+                    <th>Entregado</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for mat in matricula %}
+                    <tr>
+                        <td>{{ mat.fecha|date:'d-m-Y' }}</td>
+                        <td>{{ mat.inscripcion.persona.cedula }}</td>
+                        <td>{{ mat.inscripcion.persona.nombre_completo_inverso }}<br>
+                        {% if entrega %}
+                            {% for e in entrega %}
+                                {% if e.matricula.id == mat.id and e.entregado %}
+{#                                    {% if mat.entregadocorrectamente %}#}
+                                    <a href="#" class="verobservacion" observacion="{{ e.observacion  }}" style="color: green;"> Ver Observacion</a>
+                                    {% endif %}
+                            {% endfor %}
+                        {% endif  %}
+                        </td>
+                        <td>{{ mat.nivel.carrera.nombre }}</td>
+                        <td>{{ mat.nivel.nivelmalla.nombre }}</td>
+                        <td>{{ mat.nivel.grupo.nombre }}</td>
+                        <td style="text-align: center">
+                             {% if mat.rubrocanceladouniforme %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                             {% endif %}
+                        </td>
+                        <td style="text-align: center">
+                            {% if mat.entregadocorrectamente %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+
+                        </td>
+                        <td>
+                             {# ENTREGA DE UNIFORME #}
+                            {% if perms.sga.add_entregauniforme %}
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    {% if mat.rubrocanceladouniforme and mat.checkentregauniforme %}
+                                        <li><a href="#" iid='{{ mat.id }}' class="checkentregauniforme"><i class="icon-certificate"></i> Uniforme Entregado</a></li>
+                                    {% endif %}
+
+
+{#                                    {% if not persona.pertenece_soporte %}#}
+{#                                        {% if not mat.tiene_uniforme %}#}
+{#                                             {% if mat.primernivel %}#}
+{#                                                <li><a class="uniformezapatos" matid="{{ mat.id }}" opt="1" href='#'><i class="icon-list"></i> Entregar</a></li>#}
+{#                                             {% endif %}#}
+{#                                             {% if mat.segundonivel %}#}
+{#                                                <li><a class="mandil" matid="{{ mat.id }}" href='#'><i class="icon-list"></i> Entregar Mandil</a></li>#}
+{#                                             {% endif %}#}
+{#                                             {% if mat.tercernivel or mat.cuartonivel %}#}
+{#                                                <li><a class="solouniforme" matid="{{ mat.id }}" opt="2" href='#'><i class="icon-list"></i> Entregar Uniforme</a></li>#}
+{#                                             {% endif %}#}
+{#                                        {% endif %}#}
+{#                                    {% endif %}#}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not matricula %}
+                    <tr>
+                        <td colspan="10">
+                            NO HA REALIZADO CONSULTA
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if entregas %}
+        <div class='row-fluid'>
+            <div class='span12'>
+                <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th style="background-color: lightblue;text-align: center">CI</th>
+                        <th style="background-color: lightblue;text-align: center">Estudiante</th>
+                        <th style="background-color: lightblue;text-align: center">Carrera</th>
+                        <th style="background-color: lightblue;text-align: center">Nivel</th>
+                        <th style="background-color: lightblue;text-align: center">Grupo</th>
+                        <th style="background-color: lightblue;text-align: center">Fecha Entrega</th>
+                        <th style="background-color: lightblue;text-align: center">Usuario Entrega</th>
+                        <th style="background-color: lightblue;text-align: center">Uniforme</th>
+                        <th style="background-color: lightblue;text-align: center"> Entregado</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for mat in entregas %}
+                        <tr>
+                            <td style="text-align: center">{{ mat.matricula.inscripcion.persona.cedula }}</td>
+                            <td>{{ mat.matricula.inscripcion.persona.nombre_completo }}</td>
+                            <td>{{ mat.matricula.nivel.carrera.nombre }}</td>
+                            <td style="text-align: center">{{ mat.matricula.nivel.nivelmalla.nombre }}</td>
+                            <td style="text-align: center">{{ mat.matricula.nivel.grupo.nombre }}</td>
+                            <td style="text-align: center">{{ mat.fecha|date:'d-m-Y' }}</td>
+                            <td style="text-align: center">{{ mat.usuario.username }}</td>
+                            <td style="text-align: center">
+                                {% if mat.uniforme %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                {% endif %}
+                            </td>
+
+                            <td style="text-align: center">
+                                    {% if mat.entregado %}
+                                        <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not entregas %}
+                        <tr>
+                            <td colspan="10">
+                                NO HAY ENTREGAS REGISTRADAS
+                            </td>
+                        </tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class='row-fluid'>
+        <div class="span12">
+
+            <div class='pagination'>
+                <ul>
+                    {% if paging.primera_pagina %}
+                        <li><a href="/entregauniformes?page=1">1</a></li>
+                        <li><a href="/entregauniformes?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                    {% endif %}
+                    {% for pagenumber in paging.paginas %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/entregauniformes?{% if search %}s={{ search }}&{% endif %}{% if nivel %}nivel={{ nivel }}&{% endif %}{% if carrera %}carrera={{ carrera }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                    {% if paging.ultima_pagina %}
+                        <li><a href="/entregauniformes?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                        <li><a href="/entregauniformes?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="uniformezapatos_panel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Entrega de Uniforme y Zapatos</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario1"  action="" method="POST">
+            {% for field in zapatosuniforme %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-guardar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="pregunta" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese las Fechas</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formfechas %}
+               <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-consultar"> Generar</a>
+        </div>
+    </div>
+    
+     {# REPORTE ENTREGA DE UNIFORMES    #}
+    <div class="modal fade static" id="repentrega_uniforme" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese las Fechas</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formfechas %}
+                <fieldset class="control-group nomargins">
+                    <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-consultar2"> Generar</a>
+        </div>
+    </div>
+
+
+
+{% endblock %}

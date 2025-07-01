@@ -1,0 +1,47 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+
+    buscar_profesor = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_profesor").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+    $('#id_profesor').typeahead({source: buscar_profesor, updater: function(item) {
+    var results = $("#id_profesor").get(0).results;
+    for (var i in results) {
+        var datos = results[i];
+        if (item==datos.name) {
+            $("#id_profesor").attr("myval",datos.id);
+            $("#id_prof").val(datos.id);
+            d=datos.id;
+            $("#id_profesor").val(d);
+        }
+    }
+      return item;
+    }});
+
+{% endblock %}
+{% block titulo %}Ingresar Docente Evaluador{% endblock %}
+{% block formaction %}/egresados{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='ingresodocente'/>
+    <input type='hidden' name='id' value="{{ examen.id }}"/>
+    <input type='hidden' name='id_prof' id='id_prof' value="0"/>
+{% endblock %}
+{% block formback %}/egresados{% endblock %}
+{% block buttonname %}Guardar Datos{% endblock %}

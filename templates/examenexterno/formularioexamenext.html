@@ -1,0 +1,578 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript">
+        $(function() {
+{#            $('form').validationEngine();#}
+
+            $('form').validationEngine();
+            $('#numero,#pregunta,#puntos').addClass('validate[required]');
+            {% if DEFAULT_PASSWORD == 'casade' %}
+                $('#componenteexamen').addClass('validate[required]');
+            {% endif %}
+            $(".editar").click(function(){
+                if($(this).attr('activo') == 'True')
+                {
+                    $("#activo").attr('checked',true);
+                }
+                else{
+                    $("#activo").attr('checked',false);
+                }
+                $("#idpregunexamen").val($(this).attr('idpregunta'));
+                {% if DEFAULT_PASSWORD == 'casade' %}
+                    $("#componenteexamen").val($(this).attr('idcomponid'));
+                {% endif %}
+                $("#numero").val($(this).attr('numero'));
+                $("#puntos").val($(this).attr('puntos'));
+                $("#pregunta").val($(this).attr('pregunta'));
+                $("#preguntapanel").modal({"backdrop":"static","width":"50%"});
+                $("#preguntapanel").modal("show");
+                $("#preguntapanel .help-text").html('');
+
+                var newid = 0;
+                $.post("/adminexamenexterno",{'idpregunta': $(this).attr('idpregunta'), 'action': 'busrespuest'}, function(data) {
+                    if (data.result=='ok'){
+
+                        for (var i in data.respuesta) {
+
+
+                            $.each($("#respuestas div"), function () {
+
+                                if (parseInt($(this).data("id")) > newid) {
+                                    newid = parseInt($(this).data("id"));
+                                }
+                            });
+
+
+                            newid = parseInt(i) + 1;
+
+                            var div = $("<div ></div>", {
+                                id: "agrega" + newid,
+                                con: newid,
+                                "data-id": newid,
+                                "style":'border-bottom: 1px ridge #ebe4eb;'
+                            });
+                            var col=0;
+                            $.each($("#respuestas div:nth(0) section"), function () {
+                                var cur_td = $(this);
+                                var children = cur_td.children();
+                                // Añade el nuevo Elemento en la tabla.
+                                if ($(this).data("name") != undefined) {
+                                    col++;
+                                    var section = $("<section></section>", {
+                                        "data-name": $(cur_td).data("name")
+                                    });
+                                    var c = $(cur_td).find($(children[1]).prop('tagName')).clone().val("");
+                                    c.attr("name", $(cur_td).data("name") + newid);
+                                    c.attr("num",newid);
+                                    c.attr("id", $(cur_td).data("name") + newid);
+                                    c.appendTo($(section));
+            {#                        section.appendTo($(div));#}
+                                    if($(cur_td).data("name") == 'respuestas')
+                                    {
+                                        c = $(cur_td).find($(children[2]).prop('tagName')).clone().val("");
+                                        c.attr("name", $(cur_td).data("name") + newid);
+                                        c.attr("num",newid);
+                                        c.attr("style","text-transform: none");
+                                    }
+                                    else{
+                                        c = $(cur_td).find($(children[2]).prop('tagName')).clone().val("");
+                                        c.attr("name", $(cur_td).data("name") + newid);
+                                        c.attr("num",newid);
+                                    }
+                                    c.appendTo($(section));
+                                    section.appendTo($(div));
+
+                                }else{
+                                    var section = $("<section></section>", {
+                                        'text': $('#respuestas div').length
+                                    }).appendTo($(div));
+                                }
+                            });
+
+                            // Añade la nueva fila.
+                            $(div).appendTo($('#respuestas'));
+
+                            $(div).find("section a.eliminar").on("click", function (){
+
+                                $(this).closest("div").remove();
+                                newid = parseInt(newid) - 1;
+                                if(newid != 0){
+                                    document.getElementById('elimina'+newid).style.display='block';
+                                }
+                            });
+
+                            var dato = data.respuesta[i];
+
+                            if(dato.valida == "True")
+                            {
+                                $('input[name=valida'+newid+']').attr('checked',true);
+                            }
+                            else{
+                                $('input[name=valida'+newid+']').attr('checked',false);
+                            }
+                            $('input[name=respuesta'+newid+']').val(dato.respuesta);
+                            $('input[name=respuesta'+newid+']').addClass('validate[required]');
+                            $('input[name=respuestaid'+newid+']').val(dato.idrespuesta);
+                            $('a[name=elimina'+newid+']').hide();
+                            $('input[name=respuesta'+newid+']').addClass('validate[required]');
+                            $("#cantresp").val(newid);
+
+                        }
+                    }else{
+                        smoke.alert("Error ");
+                    }
+                }, "json");
+
+                band ++;
+            });
+
+            $("#preguntapanel .btn-cerrar").click(function(){
+                $("#preguntapanel").modal("hide");
+                for (i = 0; i < parseInt($("#cantresp").val()); i++) {
+                    var newid = parseInt(i)+1;
+                    $('a[name=elimina'+newid+']').closest("div").remove();
+
+                }
+                $("#cantresp").val(0);
+                $("#addrespt").val(0);
+                $("#addrespuesta").addClass('hidden');
+                $("#pregunta").attr('readonly',false);
+                {% if DEFAULT_PASSWORD == 'casade' %}
+                    $("#componenteexamen").val('');
+                    $("#componenteexamen").attr('disabled',false);
+                {% endif %}
+                $("#numero").attr('readonly',false);
+                $("#puntos").attr('readonly',false);
+                $("#puntos").val('');
+                $("#imagenpr").attr('disabled',false);
+                $("#activo").attr('disabled',false);
+                $("#activo").attr('checked',false);
+                $("#pregunta").val('');
+                $(".formError").removeClass('aparece');
+                $(".formError").addClass('oculta');
+                $("#editar").val('0');
+                $("input[name=action]").val('editarpreg');
+                $("#titulopreguntapanel").html("Editar Preguntas y Respuestas");
+                return false;
+            });
+
+
+            var band = 0;
+            $(".addresp").click(function(){
+                if($(this).attr('activo') == 'True')
+                {
+                    $("#activo").attr('checked',true);
+                }
+                else{
+                    $("#activo").attr('checked',false);
+                }
+
+                $("#activo").attr('disabled',true);
+                $("#idpregunexamen").val($(this).attr('idpregunta'));
+                {% if DEFAULT_PASSWORD == 'casade' %}
+                    $("#componenteexamen").val($(this).attr('idcomponid'));
+                    $("#componenteexamen").attr('disabled',true);
+                {% endif %}
+                $("#numero").val($(this).attr('numero')).attr('readonly',true);
+                $("#puntos").val($(this).attr('puntos')).attr('readonly',true);
+                $("#imagenpr").attr('disabled',true);
+                $("#addrespuesta").removeClass('hidden');
+                $("#addrespuesta").click();
+                $("#addrespt").val(1);
+{#                document.getElementById('addrespuesta').style.display='block';#}
+                $("#pregunta").val($(this).attr('pregunta')).attr('readonly',true);
+                $("#preguntapanel").modal({"backdrop":"static","width":"50%"});
+                $("#preguntapanel").modal("show");
+                $("#preguntapanel .help-text").html('');
+                $("#titulopreguntapanel").html("Agregar Respuestas");
+                if(band==0)
+                {
+                    $("#guardarbutt").click();
+                }
+                band ++;
+                if(!$(".formError").html()){
+                    $(".formError").removeClass('oculta');
+                    $(".formError").addClass('aparece');
+                }
+
+            });
+            $("#addrespuesta").click(function() {
+
+                var newid = 0;
+
+                $.each($("#respuestas div"), function () {
+
+                    if (parseInt($(this).data("id")) > newid) {
+                        newid = parseInt($(this).data("id"));
+                    }
+                });
+                if(newid != 0){
+                    document.getElementById('elimina'+newid).style.display='none';
+                }
+                newid++;
+
+                var div = $("<div ></div>", {
+                    id: "agrega" + newid,
+                    con: newid,
+                    "data-id": newid,
+                    "style":'border-bottom: 1px ridge #ebe4eb;'
+                });
+                var col=0;
+
+                $.each($("#respuestas div:nth(0) section"), function () {
+                    var cur_td = $(this);
+                    var children = cur_td.children();
+                    // Añade el nuevo Elemento en la tabla.
+                    if ($(this).data("name") != undefined) {
+                        col++;
+
+                        var section = $("<section></section>", {
+                            "data-name": $(cur_td).data("name")
+                        });
+
+                        var c = $(cur_td).find($(children[1]).prop('tagName')).clone().val("");
+                        c.attr("name", $(cur_td).data("name") + newid);
+                        c.attr("num",newid);
+                        c.attr("id", $(cur_td).data("name") + newid);
+                        c.appendTo($(section));
+{#                        section.appendTo($(div));#}
+                        if($(cur_td).data("name") == 'respuestas')
+                        {
+                            c = $(cur_td).find($(children[2]).prop('tagName')).clone().val("");
+                            c.attr("name", $(cur_td).data("name") + newid);
+                            c.attr("num",newid);
+                            c.attr("style","text-transform: none");
+                        }
+                        else{
+                            c = $(cur_td).find($(children[2]).prop('tagName')).clone().val("");
+                            c.attr("name", $(cur_td).data("name") + newid);
+                            c.attr("num",newid);
+                        }
+                        c.appendTo($(section));
+                        section.appendTo($(div));
+
+
+                    }else{
+                        var section = $("<section></section>", {
+                            'text': $('#respuestas div').length
+                        }).appendTo($(div));
+                    }
+                });
+
+                // Añade la nueva fila.
+                $(div).appendTo($('#respuestas'));
+
+                $(div).find("section a.eliminar").on("click", function (){
+
+                    if(newid > 1){
+                        $(this).closest("div").remove();
+                        newid = newid - 1;
+                    }
+
+                    if(newid != 0){
+                        document.getElementById('elimina'+newid).style.display='block';
+                    }
+                });
+                $('input[name=respuesta'+newid+']').addClass('validate[required]');
+                $("#cantresp").val(newid);
+
+                // document.getElementsByName('nombre'+newid).val($('#ProductoNombre').val());
+
+            });
+
+
+            $("#guardarbutt").click(function(){
+                if(band!=0){
+                    showWaiting("Guardando Informacion","<i class='fa fa-spinner fa-spin'></i> Espere unos segundos por favor...");
+                }
+                $(".formError").removeClass('oculta');
+                $(".formError").addClass('aparece');
+
+            });
+            $(".eliminarespuesta").click(function(){
+                var idopc = $(this).attr("idopc");
+                var accion = $(this).attr("accion");
+                smoke.confirm( 'Esta seguro de eliminar la respuesta?', function(e){
+                if (e){
+                        location.href = '/adminexamenexterno?action='+ accion +'&id='+ idopc;
+{#                        alert(idresp)#}
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                    });
+            });
+
+
+            $(".eliminpre").click(function(){
+                var idpregunta = $(this).attr("idpregunta");
+                var accion = $(this).attr("accion");
+                smoke.confirm( 'Esta seguro de eliminar la Pregunta?', function(e){
+                if (e){
+                        location.href = '/adminexamenexterno?action=eliminpreg&id='+ idpregunta+'&page={{ numpag }}';
+{#                        alert(idresp)#}
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                    });
+            });
+
+
+            $(".addpregu").click(function(){
+                $("#activo").attr('checked',true);
+                $("input[name=action]").val('guardarpreg');
+                $("#editar").val('verpre');
+                $("#idpregunexamen").val($(this).attr('idtitut'));
+                $("#numero").val($(this).attr('numero'));
+                $("#preguntapanel").modal({"backdrop":"static","width":"50%"});
+                $("#preguntapanel").modal("show");
+                $("#preguntapanel .help-text").html('');
+
+                $("#addrespuesta").removeClass('hidden');
+            });
+
+
+            $("#idgrupocompon").change(function() {
+                var id = $(this).val();
+                if(id){
+                    location.href = '/adminexamenexterno?action=examen&id={{ examenexterno.id }}&g='+id;
+                }
+                else{
+                    location.href = '/adminexamenexterno?action=examen&id={{ examenexterno.id }}';
+                }
+            });
+
+        });
+    </script>
+    <style>
+        .oculta{
+            display: none;
+        }
+        .aparece{
+            display: block;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span10" style="text-align: center">
+            <h3>{{ examenexterno.nombreinstitucion }}</h3>
+            <h4>{{ examenexterno.titulo }}</h4>
+            <h5>{{ examenexterno.subtitulo }}</h5>
+        </div>
+        <div class='span1'>
+            <a href="/adminexamenexterno" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br/>
+
+    <div class='row-fluid'>
+        <div class="span3">
+            <a class="btn btn-info addpregu" idtitut="{{ examenexterno.id }}" numero="{{ examenexterno.numeropregunta }}" style="cursor: pointer"><b><span class="icon-plus"></span> Agregar Pregunta</b></a>
+        </div>
+        {% if DEFAULT_PASSWORD == 'casade' %}
+            <div class="span4">
+                <b>Componentes</b>:
+                <select id='idgrupocompon' class="input-xxlarge bigger"/>
+                    <option value=''>-----</option>
+                    {% for a in componenteexamenes %}
+                        <option value="{{ a.id }}"  {% if grupoid == a.id %}selected="selected"{% endif %}>{{ a.descripcion }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+    </div><br/>
+    <div class="row-fluid" >
+        <div class="span11" style="">
+            <table class='table' cellpadding="0" cellspacing="0" id="tablepregunto">
+                <thead>
+                <tr>
+                    <th ><h4>Preguntas y Respuestas</h4></th>
+                    <th style="text-align: center"><h4>Imagen</h4></th>
+                    <th style="text-align: center"><h4>Correcta</h4></th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for p in preguntaexterno %}
+                        <tr >
+                            <td >
+                                <h4 {% if DEFAULT_PASSWORD == "casade" %} style="white-space: pre-wrap;text-align: justify;" {% endif %}>{{ p.numero }}.- {{ p.pregunta }}{% if DEFAULT_PASSWORD == "casade" %}<span class="label label-success" style="font-size: 8px;float: right">COMPONENTE: {{ p.componenteexamen.descripcion }}</span>{% endif %}</h4>
+                                <li style="cursor: pointer;float: right" idpregunta="{{ p.id }}" {% if DEFAULT_PASSWORD == 'casade' %} idcomponid="{{ p.componenteexamen.id }}" {% endif %} activo="{{ p.activo }}" numero="{{ p.numero }}"  puntos="{{ p.puntos }}" pregunta="{{ p.pregunta }}" title="Editar Preguntar" class="label label-info editar"><span class="icon-edit"></span>editar</li>
+                                <li title="Agregar respuestas" idpregunta="{{ p.id }}" {% if DEFAULT_PASSWORD == 'casade' %} idcomponid="{{ p.componenteexamen.id }}" {% endif %} activo="{{ p.activo }}" numero="{{ p.numero }}" puntos="{{ p.puntos }}" pregunta="{{ p.pregunta }}"  style="cursor: pointer;float: right" class="label label-warning addresp"><span class="icon-plus"></span>Respuesta</li>
+                                {% if not p.examenexterno.exist_personaex %}
+                                    <li title="Eliminar Pregunta" idpregunta="{{ p.id }}"  style="cursor: pointer;float: right" class="label label-important eliminpre"><span class="icon-remove"></span>Eliminar</li>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if p.imagen %}
+                                    <div class="thumbnail" style="height: 50px">
+
+                                        <img src="{{ p.imagen.url }}" alt="" style="width: 50px;height: 50px">
+
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <b>Activo:</b>{% if p.activo %}
+                                    <img src='/static/images/16/true.png' alt='' border="0"/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='' border="0"/>
+                                {% endif %}
+                            </td>
+                            {% for r in p.respuesta %}
+                                <tbody>
+                                    <tr>
+                                        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{% if DEFAULT_PASSWORD == "itb" %}<b style="color: red">R{{ forloop.counter }}.-</b>{% else %}{{ forloop.counter }}.-{% endif %} {{ r.respuesta }}
+                                        </td>
+                                        <td>
+                                            {% if r.imagen %}
+                                                <div class="thumbnail" style="height: 50px;"  >
+
+                                                    <img src="{{ r.imagen.url }}" alt="" style="width: 50px;height: 50px">
+
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td style="text-align: center;word-wrap: break-word">
+                                            {% if r.valida %}
+                                                <img src='/static/images/16/true.png' style="float: left"  alt='' border="0"/>
+                                            {% else %}
+                                                <img src='/static/images/16/false.png' style="float: left" alt='' border="0"/>
+                                            {% endif %}
+                                            {% if not r.exist_detalleex %}
+                                                <li  title="eliminar" idopc="{{ r.id }}" accion="eliminaresp" style="cursor: pointer;float: right" class="label label-important eliminarespuesta">eliminar</li>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+
+    <div class='row-fluid'>
+        <div class="span11" style="">
+            {% if paging.num_pages > 10 %}
+                <div class='pagination'>
+                    <ul >
+                        {% if paging.primera_pagina %}
+                            <li><a href="/adminexamenexterno?action=examen&id={{ examenexterno.id }}&page=1{% if DEFAULT_PASSWORD == "casade" and grupoid %}&g={{ grupoid }}{% endif %}">1</a></li>
+                            <li><a href="/adminexamenexterno?action=examen&id={{ examenexterno.id }}&page={{ paging.ellipsis_izquierda }}{% if DEFAULT_PASSWORD == "casade" and grupoid %}&g={{ grupoid }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/adminexamenexterno?action=examen&id={{ examenexterno.id }}&page={{ pagenumber }}{% if DEFAULT_PASSWORD == "casade" and grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/adminexamenexterno?action=examen&id={{ examenexterno.id }}&page={{ paging.ellipsis_derecha }}{% if DEFAULT_PASSWORD == "casade" and grupoid %}&g={{ grupoid }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/adminexamenexterno?action=examen&id={{ examenexterno.id }}&page={{ paging.num_pages }}{% if DEFAULT_PASSWORD == "casade" and grupoid %}&g={{ grupoid }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/adminexamenexterno?action=examen&id={{ examenexterno.id }}&page={{ pagenumber }}{% if DEFAULT_PASSWORD == "casade" and grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span3">
+            <a class="btn btn-info addpregu" idtitut="{{ examenexterno.id }}" numero="{{ examenexterno.numeropregunta }}" style="cursor: pointer"><b><span class="icon-plus"></span> Agregar Pregunta</b></a>
+        </div>
+    </div><br/>
+    <div class="modal fade static" id="preguntapanel">
+        <div class="modal-header" style="word-wrap: break-word;text-align: center">
+            <h3 id="titulopreguntapanel">Editar Preguntas y Respuestas</h3><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' enctype="multipart/form-data" action="/adminexamenexterno" method="POST"  >
+                <input type='hidden' name='action' value='editarpreg'/>
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='addrespt' id='addrespt' value="0"/>
+                {% if DEFAULT_PASSWORD == "itb" %}
+                    <input type='hidden' name='num_pages' id='num_pages' value="{{ numpag }}"/>
+                {% endif %}
+                <input type='hidden' name='cantresp' id='cantresp' value="0"/>
+                <input type='hidden' name='idpregunexamen' id='idpregunexamen' />
+
+
+                <div class="controls" style="margin-left: 1%">
+                    {% if DEFAULT_PASSWORD == 'casade' %}
+                        <b>Componente:</b>
+                        <select id='componenteexamen' name="componenteexamen" />
+                            <option value=''>-----</option>
+                            {% for a in componenteexamenes %}
+                                <option value="{{ a.id }}" >{{ a.descripcion }}</option>
+                            {% endfor %}
+                        </select><br/><br/>
+                    {% endif %}
+                    <b>N&uacute;mero:</b> <input type="text" name='numero' id="numero" style="width: 5%" {% if preguntaex %} value="{{ preguntaex }}" {% endif %}/>
+                    <p class="help-textnum">{{ field.help_text }} </p>
+                    <b>Pregunta:</b> {% if DEFAULT_PASSWORD == "itb" %} <textarea type="text" name='pregunta' id="pregunta" rows="6" cols="50"  style="text-transform: none" ></textarea>{% else %}<input type="text" name='pregunta' id="pregunta" style="text-transform: none" />{% endif %}<br/><br/>
+                    <b>Imagen:</b><input type="file" name="imagenpr" id="imagenpr" /><br/><br/>
+                    <b>puntos:</b> <input  type="text" name='puntos' id="puntos" style="width: 5%" /><br/><br/>
+                    <b>Activo:</b> <input style="width:10%;" type="checkbox" name='activo' id="activo" checked/>
+
+                    <p class="help-text">{{ field.help_text }} </p>
+                    <a class="btn btn-info hidden" id="addrespuesta"  style="cursor:pointer;float: right"><b><span class="icon-plus"></span> Respuestas</b></a>
+                    <br/><br/><hr style="border: 1px ridge #ebe4eb;">
+                    <div id="respuestas" style="padding-left: 5%">
+                        <div id='agrega0'  data-id="0" con="0" class="hidden">
+                            <section  data-name="respuesta">
+                                <br/><b name="resp0" id="resp0">Respuesta:</b>
+                                <input type="text" name="respuesta0" id="respuesta0" style="text-transform: none"/><br/>
+                            </section>
+                            <section  data-name="imagen">
+                                <br/><b name="img0" id="img0">Imagen:</b>
+                                <input type="file" name="imagen0" id="imagen0"/>
+                            </section>
+                            <section  data-name="valida">
+                                <br/><b name="vali0" id="vali0">Correcta:</b>
+                                <input style="width:10%;" type="checkbox" name="valida0" name="valida0" /><br/>
+                            </section>
+                            <section  data-name="respuestaid">
+                                <br/><b name="respuestaidsid0" id="respuestaids0"></b>
+                                <input type="hidden" name="respuestaid0" name="respuestaid0" /><br/>
+                            </section>
+                            <section  data-name="elimina">
+                                <br/>
+                                <a  class="btn btn-danger eliminar" num="0" style="float: right" name="elimina0" id="elimina0">Eliminar</a>
+                                <br/>
+                            </section>
+
+                        </div>
+                    </div>
+                </div>
+                <br/><br/><button type="submit" class="btn btn-success" id="guardarbutt" style="float: right" >Guardar</button>&nbsp;&nbsp;
+{#                <button type="submit" class="btn btn-warning hidden guardar1" style="float: right" name="continuar">Guardar y continuar</button>&nbsp;&nbsp;#}
+                <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+
+            </form>
+        </div>
+    </div>
+{% endblock %}
+

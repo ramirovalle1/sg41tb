@@ -1,0 +1,286 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+
+
+            $('.subir').click(function(){
+                $("#archivo_wester").modal({"backdrop":"static","width":"60%"});
+                $("#archivo_wester").modal("show");
+                $("#idarc").val($(this).attr('aid'));
+            });
+            $("#archivo_wester .btn-cerrar").click(function(){
+                $("#archivo_wester").modal("hide");
+            });
+
+        $(".editarid").click(function(){
+
+{#            var cuenta=$(this).attr('cuenta_id');#}
+            var pago=$(this).attr('idpago');
+            smoke.prompt("ESCRIBA EL ID DEL RUBRO", function(v) {
+               if (v) {
+
+                            $.post("/archivopichincha",{action:'editarid', cuenta: v, pago: pago}, function(data) {
+                                if (data.result=='ok'){
+                                    alert("EDICION DE CUENTA REALIZADA");
+                                    location.reload()
+                                }else{
+                                    alert("NO SE EDITO LA CUENTA  Error: " + data.result);
+
+                                }
+
+                                }, "json");
+               } else {
+
+                        }
+                    });
+            });
+
+            $("#gestionar").click(function() {
+                var idarc = $(this).attr("idarchivo");
+                smoke.confirm("Se procede a cambiar la gesti&oacute;n del archivo", function(e){
+                if (e){
+                       $.post("/archivopichincha", {"action":'cambiargestion',"archivoid":idarc}, function(data) {
+                           hideWaiting();
+                       if (data.result=='ok'){
+                            smoke.alert("Registro Cambiado");
+                            location.reload();
+                       }else{
+                            smoke.alert("Error Intente Nuevamente");
+                       }
+                    }, "json");
+                    return false;
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+
+            $("#aprobar").click(function() {
+                smoke.confirm("Esta seguro de aprobar la facturacion", function(e){
+                if (e){
+                        showWaiting("Registrando Pagos", "Espere unos segundos por favor...");
+                       $.post("/archivopichincha", {"action":'factura_pichincha'}, function(data) {
+                           hideWaiting();
+                        if (data.mensaje=='ok'){
+                            location.reload();
+                        }else{
+
+                            smoke.alert("Error Intente Nuevamente");
+                        }
+                    }, "json");
+                    return false;
+
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+
+            });
+
+           $("#nuevo").click(function() {
+             $("#espera").modal("show");
+             $.post("/archivowester", {"action":"generar" }, function(data) {
+
+                    if (data.result=='ok'){
+                        $("#espera").modal("hide");
+                        var ventana= window.open();
+                        ventana.location.href=data.url;
+{#                        ventana.target='_blank'#}
+                    }else{
+                        $("#espera").modal("hide");
+                        showWaiting("Error","Intente Nuevamente " + data.result ,true);
+                    }
+                }, "json");
+            return false;
+            });
+            {% if error %}
+                smoke.alert('{{ error }}');
+            {% endif %}
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/archivopichincha?action=ver&id={{ id }}&s="+term;
+            });
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span6"  >
+            <h3 >Archivos de Valores a Pagar {% if fac %}FACTURADOS{% endif %} {% if pen %}PENDIENTES{% endif %}</h3></br>
+        </div>
+
+        <div class="span5" style="text-align: right">
+{#            {% if fac or not pen %}#}
+{#                <a href="/archivopichincha?action=ver&id={{ id }}&pen" id='allresults' class='btn btn-danger'><i class="icon-check-empty"></i> Pendientes</a>#}
+{#            {% endif %}#}
+{#            {% if pen or not fac %}#}
+{#                <a href="/archivopichincha?action=ver&id={{ id }}&fac" id='allresults' class='btn btn-success'><i class="icon-check"></i> Facturados</a>#}
+{#            {% endif %}#}
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/archivopichincha" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span8'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search or fac or pen%}
+                <a href="/archivopichincha?action=ver&id={{ id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class='span3' style="text-align: right">
+           {% if not archivo.gestionado %}
+               {% if not persona.pertenece_soporte %}
+                    <a href="#" id='aprobar' class='btn btn-warning'><i class="icon-refresh icon-white"></i> Aprobar Facturaci&oacute;n </a>
+               {% endif %}
+           {% else%}
+               <a class='btn btn-success'><i class="icon-eye-open icon-white"></i> Registros Facturados </a>
+           {% endif%}
+        </div>
+        <div class='span1' style="text-align: right">
+            {% if perms.sga.add_archivopichincha %}
+                {% if archivo.gestionado %}
+                    {% if not archivo.facturados %}
+                        <a href="#" id='gestionar' idarchivo="{{ archivo.id }}"class='btn btn-danger'><i class="icon-check icon-white"></i> Gestionar </a>
+                    {% endif%}
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped'>
+                <thead>
+                    <tr>
+                        <br>
+                        <th>Fecha Subida</th>
+                        <th>Fecha Proceso</th>
+                        <th>Persona</th>
+                        <th>Cuenta</th>
+                        <th>Cuenta ID</th>
+{#                        <th>Hora</th>#}
+                        <th>Secuencia Cobro</th>
+                        <th>C&eacute;dula</th>
+                        <th>Valor</th>
+{#                        <th style="text-align: center">Archivo Estudiante</th>#}
+                        <th style="text-align: center">Facturado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in registros %}
+                        <tr>
+                            <td> {% if r.fecha %} {{ r.fecha|date:'d-m-Y'  }} {% endif %} </td>
+                            <td> {% if r.fechaproceso %} {{ r.fechaproceso }} {% endif %} </td>
+                            <td> {{ r.cuenta.inscripcion.persona.nombre_completo_inverso  }} </td>
+                            <td> {% if r.cuenta  %}{{ r.cuenta  }}{% else %}Rubro no existe {{ r.rubroid }} {% endif %} </td>
+                            <td>  <a href="#"{% if perms.sga.change_archivopichincha and not r.factura %}class="editarid"{% endif %}idpago="{{ r.id  }}" cuenta_id="{{ r.cuenta.id }}">{{ r.cuenta.id  }}</a></td>
+                            <td> {{ r.secuencialcobro  }} </td>
+                            <td> {{ r.numeroidentificacion  }} </td>
+                            <td> {{ r.valorprocesado  }} </td>
+                            <td  style="text-align: center"> {% if r.factura %} SI {% else %} NO {% endif %}</td>
+                            <td style="text-align: center">
+                                {% if r.factura %}
+                                    <a href='/reportes?action=run&direct=true&n=listado_ingresos_caja&rt=pdf&sesion={{ r.factura.sesion.id }}' target="_blank" class='btn btn-success btn-mini'><i class="icon-download  icon-white"></i> Descargar</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                 {% if not registros %}
+                    <tr>
+                        <td colspan="8">
+                            NO HAY REGISTROS DE ARCHIVO
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class="span12">
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/archivopichincha?action=ver&id={{ id }}&page=1">1</a></li>
+                            <li><a href="/archivopichincha?action=ver&id={{ id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/archivopichincha?action=ver&id={{ id }}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/archivopichincha?action=ver&id={{ id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/archivopichincha?action=ver&id={{ id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/archivopichincha?action=ver&id={{ id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UNOS SEGUNDOS</h3>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="archivo_wester"   >
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle1'><i> Ingrese Archivo </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well {% block form-type %}form-horizontal{% endblock %}' action="/archivopichincha" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='archivopichincha' />
+                <input type='hidden' id='idarc' name='idarc' value='' />
+                {% for field in frmarchivowester %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+
+                <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">{% block buttonname %}Guardar{% endblock %}</button>
+                {% block extrabuttons %}
+                    <a href="#" class="btn btn-cerrar"> Cerrar</a>
+                {% endblock %}
+            </form>
+        </div>
+    </div>
+{% endblock %}

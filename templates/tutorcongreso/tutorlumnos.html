@@ -1,0 +1,191 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+            var tutmatri = 0;
+            $(".ingregestion").click(function(){
+                tutmatri = $(this).attr('idtutmatr');
+                $("#editar").val(0);
+                $("#gestionpanel").modal({"backdrop":"static","width":"40%"});
+                $("#gestionpanel").modal("show");
+            });
+
+            $("#guardarmod").click(function(){
+                $("#ptipo").html('');
+                $("#pgestion").html('');
+                var valida = true;
+                if(parseInt($("#tipo").val()) == 0){
+                    $("#ptipo").html('Seleccione el tipo de gesti&oacute;n');
+                    valida = false;
+                }
+                if($.trim($("#gestion").val()) == ""){
+                    $("#pgestion").html('Escriba la gesti&oacute;n');
+                    valida = false;
+                }
+
+                if(valida){
+                    showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                    $.post("{{ urlcongr }}", {"action":'guardar', "editar":$("#editar").val(), "idtipo":$("#tipo").val(),"gestion":$("#gestion").val(), 'idtumat':tutmatri }, function(data) {
+                        if (data.result=='ok') {
+                            $("#gestionpanel").modal("hide");
+                            hideWaiting();
+                            smoke.alert('Registro Ingresado');
+                            setInterval(function(){
+                                $.unblockUI();
+                                location.href = '{{ urlcongr }}?action=veralumnos&id={{ tutorcongreso.id  }}';
+                            }, 4000);
+
+                        }
+                        else
+                        {
+                            hideWaiting();
+                            $("#pgestion").html(data.mensaj);
+                        }
+                    }, "json");
+                }
+            });
+
+            $(".vergestion").click(function(){
+                $("#hvergest").html("Ver Gestión del alumno "+ $(this).attr('alumno'));
+                $.get("{{ urlcongr }}", {'action':"vergestion", 'idtumat': $(this).attr('idtutmatr')}, function(data) {
+                    $("#vergestionpanel .modal-body").html(data);
+                    $("#vergestionpanel").modal({"backdrop":"static","width":"70%"});
+                    $("#vergestionpanel").modal("show");
+               }, "html");
+            });
+
+            $(".verfinanzas").click(function(){
+                $("#hvergest").html("Finanzas del alumno "+ $(this).attr('alumno'));
+                $.get("{{ urlcongr }}", {'action':"verfinanza", 'idtumat': $(this).attr('idtutmatr')}, function(data) {
+                    $("#vergestionpanel .modal-body").html(data);
+                    $("#vergestionpanel").modal({"backdrop":"static","width":"70%"});
+                    $("#vergestionpanel").modal("show");
+               }, "html");
+            });
+
+
+            $("#vergestionpanel .btn-cerrar").click(function(){
+                $("#vergestionpanel").modal("hide");
+                location.reload();
+                return false;
+            });
+
+            $("#gestionpanel .btn-cerrar").click(function(){
+                $("#gestionpanel").modal("hide");
+                location.reload();
+                return false;
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span9" style="text-align: center">
+               <h3> Listado de Alumnos </h3>
+        </div>
+        <div class='span1'>
+            <a href="{{ urlcongr }}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br/>
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span9">
+               <h4>Nivel: {{ tutorcongreso.nivel }} </h4>
+        </div>
+    </div><br/>
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span9">
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;width: 25%">Alumno</th>
+                        <th style="text-align: center;width: 35%">Carrera</th>
+                        <th style="text-align: center;width: 35%">Nivel</th>
+                        <th style="text-align: center;width: 5%;">Fecha</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tutormatriculas %}
+                        <tr>
+                            <td>
+                                <a >
+                                    {{ t.matricula.inscripcion.persona.nombre_completo }}
+                                </a>
+                            </td>
+                            <td style="text-align: center;"> {{ t.matricula.nivel.carrera }} </td>
+                            <td style="text-align: center;"> {{ t.matricula.nivel }} </td>
+                            <td style="text-align: center;">{{ t.fecha|date:'d-m-Y' }}</td>
+                           <td >
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if not congract %}
+                                            <li><a  style="cursor: pointer" idtutmatr="{{ t.id }}" class="ingregestion"><span class="icon-edit"></span> Ingresar Gesti&oacute;n </a> </li>
+                                        {% endif %}
+                                        {% if t.existetutorseg %}
+                                            <li><a  style="cursor: pointer" class="vergestion"  alumno="{{ t.matricula.inscripcion.persona.nombre_completo }}" idtutmatr="{{ t.id }}"><span class="icon-eye-open"></span> Ver Gesti&oacute;n </a> </li>
+                                        {% endif %}
+                                        <li><a  style="cursor: pointer" class="verfinanzas"  alumno="{{ t.matricula.inscripcion.persona.nombre_completo }}" idtutmatr="{{ t.id }}"><span class="icon-eye-open"></span> Ver Finanzas </a> </li>
+                                    </ul>
+                                </div>
+                           </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div><br/>
+
+    <div class="modal fade static" id="gestionpanel">
+        <div class="modal-header" style="word-wrap: break-word;text-align: center">
+            <h3 id="cabeceramodal">Agregar Gesti&oacute;n</h3><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/tutorcongreso" method="POST"  >
+                <input type='hidden' name='action' value='guardar'/>
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='tutcongrsoid' id='tutcongrsoid' value=""/>
+                <div class="controls" style="margin-left: 1%">
+                    <b id="btipo">Tipo: </b>
+                    <select id='tipo' class="input-xxlarge bigger"/>
+                        <option value='0'>-----</option>
+                        {% for t in tiposeguimientos %}
+                            <option value="{{ t.id }}" >{{ t.descripcion }}</option>
+                        {% endfor %}
+                    </select>
+                    <p id="ptipo" style="color: red"></p><br><br>
+                    <b>Gesti&oacute;n</b><textarea type='text' id='gestion' style="width:90%;text-transform: none" rows="6" cols="50" > </textarea>
+                    <p id="pgestion" style="color: red"></p><br/><br/>
+
+
+                    <br/><br/><a id="guardarmod" class="btn btn-success" style="float: right">Guardar</a>&nbsp;&nbsp;
+                    <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+
+
+    <div class="modal fade static" id="vergestionpanel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h3 id="hvergest" ></h3><br/>
+            <h4 id='paneltitle2' ></h4>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer" >
+            <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+        </div>
+
+    </div>
+{% endblock %}

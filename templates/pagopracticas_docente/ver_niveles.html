@@ -1,0 +1,376 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/pagopracticas_docente?action=ver_niveles&s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+        $(".selectorfecha").addClass('input-small');
+        $(".selectorfecha").datepicker({format:"dd-mm-yyyy",language: "es"}).mask("99-99-9999");
+
+
+        $("#idprofesor_id").addClass('input-xxlarge');
+        var chanselec = false;
+        $(".selectorfecha").on('changeDate', function(ev){
+            chanselec = true;
+        });
+        $(".selectorfecha").blur(function(){
+            if(chanselec){
+                var nid = $(this).attr("nid");
+                var fecha = $(this).val();
+                var objethis = this;
+                var desde = $(this).hasClass("desde");
+                if(fecha==''){
+
+                }
+                else{
+                    showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                    $.post("/pagopracticas_docente", {'action': 'updatefecha', 'id': nid, 'desde': desde, 'fecha': fecha}, function(data) {
+                        if (data.result=='ok') {
+                            $(objethis).attr('valante',fecha);
+                            if (desde) {
+                                $("#selectorfechafin"+nid).val(data.hasta);
+                            }
+                        } else {
+                            if (!desde) {
+                                $("#selectorfechafin"+nid).val(data.hasta);
+                            }
+                        }
+                        hideWaiting();
+                        $(".fechas"+nid).html("["+data.desde+" al "+data.hasta+"]");
+                    });
+                }
+            }else{
+                $(this).val($(this).attr('valante'));
+            }
+            chanselec = false;
+        });
+
+        $(".actualizar_niveles_induccion").click(function(){
+            $.post("/pagopracticas_docente",{"action": "actualizar_niveles_induccion"},function(data) {
+                if(data.result=='ok'){
+                    alert(data.mensaje);
+               }else{
+                    alert(data.mensaje);
+               }
+               location.reload()
+            },"json");
+        });
+
+        $(".activar_induccion_todos").click(function(){
+            $.post("/pagopracticas_docente",{"action": "activar_induccion_todos"},function(data) {
+                if(data.result=='ok'){
+                    alert(data.mensaje);
+               }else{
+                    alert(data.mensaje);
+               }
+               location.reload()
+            },"json");
+        });
+
+        $(".activar_induccion").click(function(){
+            var id = $(this).attr("induccionid");
+            $.post("/pagopracticas_docente",{"action": "activar_induccion", "id":id},function(data) {
+                if(data.result=='ok'){
+                    alert(data.mensaje);
+               }else{
+                    alert(data.mensaje);
+               }
+               location.reload()
+            },"json");
+        });
+
+{#------------------------------------------------------------------------- ADD DOCENTE-----------------------------------------------------#}
+        var nivel_induccion = 0;
+        $('.add_docente').click(function(){
+            nivel_induccion = $(this).attr("nivelinduccion");
+            editar = $(this).attr("editar");
+            if(editar==1){
+                $("#add_docente #paneltitle2").html('Modificar Docente');
+            }else{
+                $("#add_docente #paneltitle2").html('Agregar Docente');
+            }
+            $("#add_docente").modal({"backdrop":"static","width":"40%"});
+            $("#add_docente").modal("show");
+        });
+
+        $("#add_docente .btn-cerrar").click(function(){
+            $("#add_docente").modal("hide");
+        });
+
+        $("#formbutton").click(function(){
+            $.post("/pagopracticas_docente", {action: 'add_docente', profesor: $("#idprofesor").val(), nivelinduccion:nivel_induccion }, function(data) {
+            if (data.result=='bad') {
+               $($("#help_horas").get(0).parentNode).find(".help-text").html("<span style='color: red'><i>" +data.mensaje + "</i>" );
+                $("#help_horas").val("");
+            }else{
+                adicionarNivel(false);
+            }
+            }, "json");
+{#            $("#add_docente").modal("hide");#}
+            location.reload();
+        });
+
+    {#------------------------------------------------------------------BUSCAR PROFESOR---------------------------------------------------------#}
+        buscar_profesor = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Profesor','p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#idprofesor_id").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+{#        $($("#idprofesor").get(0).parentNode.parentNode).hide();#}
+        $('#idprofesor_id').typeahead({source: buscar_profesor, updater: function(item) {
+            var results = $("#idprofesor_id").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#idprofesor_id").attr("myval",datos.id);
+                    ins=datos.id;
+                    $("#idprofesor").val(ins);
+                }
+            }
+            return item;
+        }});
+
+    {#------------------------------------------------------ ELIMINAR REGISTRO----------------------------------------------------------------#}
+    $(".eliminar").click(function(){
+        var id = $(this).attr("nivelinduccion");
+        smoke.confirm('Esta seguro de eliminar este registro?', function(e){
+        if (e){
+            $.post("/pagopracticas_docente",{"action": "eliminar_nivelinduccion","id":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Registro Eliminado");
+               }else{
+                    alert(data.mensaje);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+
+    });
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span11"  >
+            <h3 >Listado Inducci&oacute;n de Pr&aacute;cticas a Grupos</h3></br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/pagopracticas_docente" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span9'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search or periodo%}
+                <a href="/pagopracticas_docente?action=ver_niveles" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class='span3' style="text-align: right;">
+            {% if not persona.pertenece_soporte %}
+                <div class='btn-group'>
+                    <a href="#" class='btn btn-success activar_induccion_todos'><i class="icon-check icon-white"></i> Seleccionar Todos</a>
+                </div>
+                <div class='btn-group'>
+                    <a href="#" class='btn btn-warning actualizar_niveles_induccion'><i class="icon-share icon-white"></i> Actualizar Niveles</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                      <th colspan="5" style="text-align: center"> DATOS DEL GRUPO</th>
+                      <th colspan="5" style="text-align: center"> PER&Iacute;ODO DE PR&Aacute;CTICAS</th>
+                      <th colspan="1" style="text-align: center"></th>
+                    </tr>
+                    <tr>
+                        <th> Grupo</th>
+                        <th style="text-align: center"> Nivel</th>
+                        <th style="text-align: center"> Inicio</th>
+                        <th style="text-align: center"> Fin</th>
+                        <th style="text-align: center"> Matriculados</th>
+                        <th> Docente</th>
+                        <th style="text-align: center"> Per&iacute;odo</th>
+                        <th style="text-align: center"> Inducci&oacute;n</th>
+                        <th style="text-align: center"> Desde</th>
+                        <th style="text-align: center"> Hasta</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for n in niveles_induccion %}
+                        <tr>
+                            <td> {{ n.nivel.paralelo }}</td>
+                            <td style="text-align: center"> {{ n.nivel.nivelmalla.nombre }} </td>
+                            <td style="text-align: center"> {{ n.nivel.inicio|date:'d-m-Y' }} </td>
+                            <td style="text-align: center"> {{ n.nivel.fin|date:'d-m-Y' }} </td>
+                            <td style="text-align: center"> {{ n.nivel.cantidad_matriculados }} </td>
+                            <td> {% if n.profesor %} {{ n.profesor }} {% endif %} </td>
+                            <td style="text-align: center">
+                                <a href='/pagopracticas_docente?action=ver_niveles&p={{ n.nivel.periodo.id }}' induccionid='{{ n.id }}' class='filtrar_periodo'>{{ n.nivel.periodo.nombre }}</a>
+                            </td>
+                            <td style="text-align: center">
+                                {% if not persona.pertenece_soporte %}
+                                    {% if n.induccion %}
+                                        <a href='#' induccionid='{{ n.id }}' class='btn btn-mini activar_induccion'><img src='/static/images/16/true.png' alt='Si' border='0'/></a>
+                                    {% else %}
+                                        <a href='#' induccionid='{{ n.id }}' class='btn btn-mini activar_induccion'><img src='/static/images/16/false.png' alt='No' border='0'/></a>
+                                    {% endif %}
+                                {% else %}
+                                    {% if n.induccion %}
+                                        <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                <input type="text" style="text-align: center" class='selectorfecha desde' nid='{{ n.id }}' value="{{ n.desde|date:'d-m-Y' }}" valante="{{ n.desde|date:'d-m-Y' }}"/>
+                            </td>
+                            <td style="text-align: center">
+                                <input type="text" style="text-align: center" id="fechahasta" class='selectorfecha hasta' nid='{{ n.id }}' value="{{ n.hasta|date:'d-m-Y' }}" valante="{{ n.hasta|date:'d-m-Y' }}"/>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if perms.sga.add_pagopracticasdocente %}
+                                            {% if perms.sga.add_pagopracticasdocente %}
+                                                {% if not n.profesor %}
+                                                    <li><a href="#" class="add_docente" nivelinduccion="{{ n.id }}" editar=0><i class="icon-plus"></i> Agregar Docente</a></li>
+                                                {% else %}
+                                                    <li><a href="#" class="add_docente" nivelinduccion="{{ n.id }}" editar=1><i class="icon-plus"></i> Modificar Docente</a></li>
+                                                {% endif %}
+                                            {% endif %}
+                                                <li><a href="#" class="eliminar" nivelinduccion="{{ n.id }}" editar=1><i class="icon-remove"></i> Eliminar</a></li>
+                                        {% endif %}
+
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not niveles_induccion %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/jornada?action=ver_sesiones&id={{ jornada.id }}&page=1">1</a></li>
+                            <li><a href="/jornada?action=ver_sesiones&id={{ jornada.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/jornada?action=ver_sesiones&id={{ jornada.id }}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/jornada?action=ver_sesiones&id={{ jornada.id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/jornada?action=ver_sesiones&id={{ jornada.id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/jornada?action=ver_sesiones&id={{ jornada.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="add_docente">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/pagopracticas_docente" method="POST" enctype="multipart/form-data">
+                <fieldset class="control-group nomargins">
+                    <label class="control-label" for="id_profesor">Docente: </label>
+                    <input type="hidden" id="idprofesor" />
+                    <input type="text" id="idprofesor_id" />
+                </fieldset>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

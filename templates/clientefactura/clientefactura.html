@@ -1,0 +1,256 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+<script type="text/javascript" >
+
+$(function() {
+    $("form").validationEngine();
+    $("#id_ruc").addClass("validate[required]");
+    $("#id_nombre,#id_direccion,#id_telefono,#id_correo,#id_contrasena,#id_nuncambio").addClass("input-large");
+    $("#search").click(function() {
+        var term = $("#searchfield").val().toUpperCase();
+        location.href = "/clientefactura?s="+term;
+    });
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+    $("#editarcliente .btn-cerrar").click(function(){
+       $("#editarcliente").modal("hide");
+        return false;
+    });
+
+    $('.modificar_cliente').click(function(){
+        $("#id_ruc").val($(this).attr('ruc'));
+        $("#id_nombre").val($(this).attr('nombre'));
+        $("#id_direccion").val($(this).attr('direccion'));
+        $("#id_telefono").val($(this).attr('telefono'));
+        $("#id_correo").val($(this).attr('correo'));
+        $("#id_contrasena").val($(this).attr('contrasena'));
+        $("#id_numcambio").val($(this).attr('numcambio'));
+        $("#editarcliente #idclientefac").val($(this).attr('clientefactura_id'));
+        $("#editarcliente #paneltitle2").html('Editar Datos  ');
+        $("#editarcliente").modal({"backdrop":"static","width":"40%"});
+        $("#editarcliente").modal("show");
+    });
+
+    $(".cambiar_cliente").click(function(){
+            var cliente=$(this).attr('clientefactura_id');
+            smoke.prompt("ESCRIBA EL ID DEL CLIENTE", function(v) {
+               if (v) {
+
+                            $.post("/clientefactura",{action:'cambiar_cliente', factura: v, cliente: cliente}, function(data) {
+                                if (data.result=='ok'){
+                                    alert("EDICION DE CLIENTE REALIZADO");
+                                    location.reload()
+                                }else{
+                                    alert("NO SE EDITO EL CLIENTE  Error: " + data.result);
+
+                                }
+
+                                }, "json");
+               } else {
+
+                        }
+                    });
+            });
+$(".eliminar_cliente").click(function(){
+        var id = $(this).attr("clientefactura_id");
+        smoke.confirm('Esta seguro de eliminar  el cliente', function(e){
+
+        if (e){
+            $.post("/clientefactura",{"action":"eliminar_cliente","idclientefac":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Registro Eliminado");
+               }else{
+                    alert(data.result);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+
+
+});
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span7"  >
+            <h3 >Listado de Clientes </h3></br>
+        </div>
+        <div class="span1">
+            <a href="/mantenimiento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/clientefactura" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">ID</th>
+                        <th style="text-align: center;">RUC</th>
+                        <th style="text-align: center;">Nombre</th>
+                        <th style="text-align: center;">Direcci&oacute;n </th>
+                        <th style="text-align: center;">Tel&eacute;fono</th>
+                        <th style="text-align: center;">Correo</th>
+                        <th style="text-align: center;">Contrasena</th>
+                        <th style="text-align: center;">N&uacute;mero Cambio</th>
+                        <th style="text-align: center;">N&uacute;mero de facturas</th>
+
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for cli in clientefact %}
+
+                        <tr>
+                            <td> {% if cli.id %} {{ cli.id }}{% endif %}</td>
+                            <td> {% if cli.ruc %} {{ cli.ruc }}{% endif %}</td>
+                            <td> {% if cli.nombre %}{{ cli.nombre }}{% endif %}</td>
+                            <td> {% if cli.direccion %}{{ cli.direccion }}{% endif %}</td>
+                            <td> {% if cli.telefono %}{{ cli.telefono }}{% endif %}</td>
+                            <td> {% if cli.correo %}{{ cli.correo }}{% endif %}</td>
+                            <td> {% if cli.contrasena %}{{ cli.contrasena }}{% endif %}</td>
+                            <td> {% if cli.numcambio %}{{ cli.numcambio }}{% endif %}</td>
+                            <td> {{ cli.contar_facturas }}</td>
+
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+
+                                        <li><a style="cursor: pointer" clientefactura_id="{{ cli.id }}"ruc="{{ cli.ruc }}"nombre="{{ cli.nombre }}"direccion="{{ cli.direccion }}" telefono="{{ cli.telefono}}"correo="{{ cli.correo }}" contrasena="{{ cli.contrasena }}" numcambio="{{ cli.numcambio }}"class="modificar_cliente"><i class="icon-edit"></i> Editar</a></li>
+                                        <li><a style="cursor: pointer" clientefactura_id="{{ cli.id }}"class="cambiar_cliente"><i class="icon-edit"></i> Cambiar cliente</a></li>
+                                    {%if cli.contar_facturas == 0 %}
+                                        <li><a style="cursor: pointer"clientefactura_id="{{ cli.id }}" class="eliminar_cliente"><i class="icon-remove"></i>  Eliminar </a></li>
+
+                                    {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                    {% if not clientefact %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/clientefactura?page=1">1</a></li>
+                            <li><a href="/clientefactura?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/clientefactura?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/clientefactura?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/clientefactura?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/clientefactura?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+    <div class="modal fade static" id="editarcliente">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/clientefactura" method="POST"  >
+                <input type='hidden' name='action' value='editar' />
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='idclientefac' id='idclientefac'/>
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

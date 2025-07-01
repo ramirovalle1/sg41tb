@@ -1,0 +1,260 @@
+{#{% extends "formbs.html" %}#}
+{% block heading %}
+    <script src="https://cdn.paymentez.com/checkout/1.0.1/paymentez-checkout.min.js"></script>
+{#            <button class="js-paymentez-checkout">Purchase</button>#}
+
+
+     <script type="text/javascript">
+        var  pypago=0;
+        $("#checkaceptar").change(function(){
+            if ($("#checkaceptar").is(':checked')) {
+
+                 $(".js-paymentez-checkout").show();
+
+            }else{
+                 $(".js-paymentez-checkout").hide();
+
+            }
+        });
+        var tiene20desc;
+        {% if  tiene20desc %}
+            tiene20desc = '1';
+        {% else %}
+            tiene20desc = '0';
+        {% endif %}
+        $("#id_codigo").addClass("input-small");
+         var numerosdec="0123456789";
+
+        function solo_numerosdec(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+
+        $(".btn-cerrar").click(function(){
+            location.href='/conduceonline'
+        });
+
+        $(".btn-enviar").click(function(){
+            $("#modal_verifi").hide();
+            $.post("/conduceonline",{"action": "verificarcodigo", 'tiene20desc' : tiene20desc ,"codigo":$("#id_codigo").val(),"id":pypago },function(data) {
+                if(data.result == "ok"){
+                    $("#espera").modal("hide");
+                    $(".modal-backdrop").attr({style:"z-index:0"});
+                    $(".modal-scrollable").attr({style:"z-index:0"});
+                    smoke.alert("PAGO REALIZADO CORRECTAMENTE");
+                    setInterval(function(){
+                            location.href = '/logout';
+                    }, 2500);
+
+                }else{
+                    if (data.result =='error'){
+                        $("#modal_verifi").hide();
+                        $("#espera").modal("hide");
+
+                        $(".modal-backdrop").attr({style:"z-index:0"});
+                        $(".modal-scrollable").attr({style:"z-index:0"});
+                        var ms;
+                        if (data.msj){
+                            ms= data.msj;
+                        }
+                        smoke.alert("PAGO REALIZADO CORRECTAMENTE");
+                        setInterval(function(){
+                            location.href = '/logout';
+                        }, 2500);
+                    }else{
+                        $(".modal-backdrop").attr({style:"display:None"});
+                        {#                        $(".modal-scrollable").attr({style:"display:None"});#}
+
+                        $("#modal_verifi").show();
+                        {#                        $("#modal_verifi").modal({width: '400px', backdrop: 'static'});#}
+                        $("#id_codigo").val("");
+                        $($("#id_codigo").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El C&oacute;digo Ingresado es Incorecto</h6>");
+                    }
+
+                }
+            },"json");
+        });
+
+
+        $("#id_codigo").blur(function(){
+            var v = $("#id_codigo").val();
+            var p = solo_numerosdec(v);
+            if (v.length == 6){
+                if (p != v.length)
+                {
+                  $($("#id_codigo").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+                  $("#id_codigo").val("");
+                  $("#id_codigo").focus();
+                }
+                else{
+                    $($("#id_codigo").get(0).parentNode).find(".help-text").html("");
+                }
+            }else{
+                $($("#id_codigo").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese 6 Digitos</h6>");
+                  $("#id_codigo").val("");
+                  $("#id_codigo").focus();
+            }
+        });
+
+        $("#verterminosyc").click(function(){
+            $("#modal_terminosycondiciones #paneltitle1").html("T&Eacute;RMINOS Y CONDICIONES");
+            $("#modal_terminosycondiciones").modal({"backdrop":"static", keyboard: false, width: "70%",height:'70%'  });
+           $("#modal_terminosycondiciones").modal("show");
+            return false;
+
+        });
+        $(".salirterminosycondiciones").click(function(){
+           $("#modal_terminosycondiciones").modal("hide");
+            return false;
+
+        });
+        $(".paymentez-checkout-modal__close").click(function(){
+                            alert('cerrar');
+                        });
+
+
+        op=0;
+
+        var paymentezCheckout = new PaymentezCheckout.modal({
+{#              client_app_code: 'KRISTY-EC-CLIENT', // Client Credentials Provied by Paymentez#}
+              client_app_code: 'ITB-EC-CLIENT', // Client Credentials Provied by Paymentez
+{#              client_app_key: '8UlxeLTIS3PMHICYqr5zaKdhRliEgZ', // Client Credentials Provied by Paymentez#}
+              client_app_key: 'YBXZU0UAcW6PcRhiqqdss3NequjylE', // Client Credentials Provied by Paymentez
+              locale: 'es', // User's preferred language (es, en, pt). English will be used by default.
+              env_mode: 'prod', // `prod`, `stg`, `dev`, `local` to change environment. Default is `stg`
+              onOpen: function() {
+                  console.log('modal open');
+              },
+              onClose: function() {
+                  console.log('modal closed');
+                  if (op==1){
+                      $("#espera").modal("show");
+                       $.post("/conduceonline",{"action": "pagar", "datos":respuesta,
+                                                            'usuario':'{{ usuario }}',
+                                                            'usuarioid':{{ usuarioid }},
+                                                            'pagopy':'{{ pagopy.id }}'},function(data) {
+
+                        if(data.result=='ok'){
+                            $("#espera").modal("hide");
+                             smoke.alert("PAGO REALIZADO CORRECTAMENTE");
+                            setInterval(function(){
+                                location.href = '/logout';
+                            }, 2500);
+                            }
+
+                        else{
+                            if (data.result == 'pendiente'){
+                                $("#modal_verifi").show();
+                                $("#modal_verifi").modal({"backdrop":"static", keyboard: false, width: '400px'});
+                                pypago=data.pypago;
+                            }else{
+                                $("#espera").modal("hide");
+                                var msj='';
+                                if (data.msj){
+                                    msj = data.msj;
+                                }
+                                if(data.result=='bad'){
+
+                                     smoke.alert("NO SE REALIZO EL PAGO.. INTENTE NUEVAMENTE");
+                                        setInterval(function(){
+                                            location.href = '/logincondu';
+                                        }, 2500);
+                                    }
+                                }
+                            }
+                    },"json");
+              }else{
+{#                    $.post("/online", {"action":"eliminarid",'pagopy':{{ pagopy.id }} }, function(data) {#}
+{#                    if (data.result=='ok'){#}
+{#                        location.href="/online";#}
+{#                    }else{#}
+{#                        location.href="/online";#}
+{#                    }#}
+{#                    }, "json");#}
+
+                  }},
+              onResponse: function(response) { // The callback to invoke when the Checkout process is completed
+                  console.log('modal response');
+                   respuesta =JSON.stringify(response);
+                  op=1;
+              }
+          });
+
+          var btnOpenCheckout = document.querySelector('.js-paymentez-checkout');
+          btnOpenCheckout.addEventListener('click', function(){
+             var valor = '{{ totalapagar }}';
+            //var valor = $("#porpagar").html().split('$')[1];
+              $("#modal_pagos").modal("hide");
+            if (diferir != 1){
+
+            // Open Checkout with further options:
+            paymentezCheckout.open({
+              user_id: '{{ usuarioid }}',
+              user_email: '', //optional
+              user_phone: '', //optional
+              order_description: 'PAGO DE RUBROS CONDUCE',
+              order_amount:parseFloat(valor),
+{#              order_amount: $("#porpagar").html().split('$')[1],#}
+              order_vat: 0,
+              order_reference: '{{ pagopy.id }}',
+{#              if (diferir != 1){#}
+              order_installments_type: diferir, // optional: The installments type are only available for Equador. The valid values are: https://paymentez.github.io/api-doc/#installments-type
+{#              }#}
+              //order_installments_type: 2, // optional: The installments type are only available for Equador. The valid values are: https://paymentez.github.io/api-doc/#installments-type
+              //order_taxable_amount: 0, // optional: Only available for Datafast (Equador). The taxable amount, if it is zero, it is calculated on the total. Format: Decimal with two fraction digits.
+              //order_tax_percentage: 10 // optional: Only available for Datafast (Equador). The tax percentage to be applied to this order.
+            });
+            }else{
+                // Open Checkout with further options:
+                  paymentezCheckout.open({
+                  user_id: '{{ usuarioid }}',
+                  user_email: '', //optional
+                  user_phone: '', //optional
+                  order_description: 'PAGO DE RUBROS CONDUCE',
+                  order_amount:parseFloat(valor),
+    {#              order_amount: $("#porpagar").html().split('$')[1],#}
+                  order_vat: 0,
+                  order_reference: '{{ pagopy.id }}',
+                  //order_installments_type: 2, // optional: The installments type are only available for Equador. The valid values are: https://paymentez.github.io/api-doc/#installments-type
+                  //order_taxable_amount: 0, // optional: Only available for Datafast (Equador). The taxable amount, if it is zero, it is calculated on the total. Format: Decimal with two fraction digits.
+                  //order_tax_percentage: 10 // optional: Only available for Datafast (Equador). The tax percentage to be applied to this order.
+                });
+            }
+
+          });
+
+          // Close Checkout on page navigation:
+          window.addEventListener('popstate', function() {
+            paymentezCheckout.close();
+          });
+
+
+         $(".salirterminos").click(function(){
+{#             $.post("/online", {"action":"eliminarid",'pagopy':{{ pagopy.id }} }, function(data) {#}
+{#                    if (data.result=='ok'){#}
+{#                        location.href="/online";#}
+{#                    }else{#}
+{#                        location.href="/online";#}
+{#                    }#}
+{#                }, "json");#}
+            $("#modal_pagos").modal('hide');
+             location.href="/logincondu";
+
+           return false;
+        });
+
+
+</script>
+{% endblock %}
+<div class="row-fluid">
+<div class="span12">
+    <input type="checkbox" id="checkaceptar"> <b>  Acepto <a style="cursor: pointer" id="verterminosyc">T&eacute;minos y Condiciones</a> de la compra. </b>
+    {% if tiene20desc %} <br> <p style="font-size: 14px">Tiene un descuento en sus cuotas el valor a pagar es <b>${{ totalapagar  }} </b></p>{% endif %}
+    <br><br>
+</div>
+</div>

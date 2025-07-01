@@ -1,0 +1,580 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+<script type="text/javascript" >
+
+$(function() {
+{#$('#modalevaluacion').modal('show');#}
+
+{#  $("#search").click(function() {#}
+{#    var term = $("#searchfield").val().toUpperCase();#}
+{#    location.href = "/evaluacionesdocentes?s="+term+"&acc={{ acc }}";#}
+{#    });#}
+    $("#periodosel").addClass("input-xxlarge");
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+
+    $("#txtdescripcion,#txtpuntaje").addClass("input-large");
+    $("#txtnombre,#txtpuntaje").attr({"autocomplete":"off"});
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+    $(".adicionarevaluacion").click(function() {
+
+        $('#modalevaluacion').modal('show');
+
+    });
+    $("#versalirperiodo").click(function() {
+
+        location.reload()
+
+    });
+{#salirperiodo#}
+    $("#salirevaluacion").click(function() {
+{#       $("#modalevaluacion").modal({"backdrop":"static","width":'55%'});#}
+        location.reload()
+
+    });
+    $("#salirperiodo").click(function() {
+{#       $("#modalevaluacion").modal({"backdrop":"static","width":'55%'});#}
+        location.reload()
+
+    });
+
+    $("#chkdecano").click(function(){
+         if (document.getElementById("chkdecano").checked){
+             document.getElementById('chkdocente').disabled = true;
+             document.getElementById('chkdirectivo').disabled = true;
+             document.getElementById('chkestudiante').disabled = true;
+         }else{
+            document.getElementById('chkdocente').disabled = false;
+            document.getElementById('chkdirectivo').disabled = false;
+            document.getElementById('chkestudiante').disabled = false;
+         }
+     });
+
+     $("#chkestudiante").click(function(){
+         if (document.getElementById("chkestudiante").checked){
+             document.getElementById('chkdocente').disabled = true;
+             document.getElementById('chkdirectivo').disabled = true;
+             document.getElementById('chkdecano').disabled = true;
+         }else{
+            document.getElementById('chkdocente').disabled = false;
+            document.getElementById('chkdirectivo').disabled = false;
+            document.getElementById('chkdecano').disabled = false;
+         }
+     });
+     $("#chkdocente").click(function(){
+         if (document.getElementById("chkdocente").checked){
+             document.getElementById('chkestudiante').disabled = true;
+             document.getElementById('chkdirectivo').disabled = true;
+             document.getElementById('chkdecano').disabled = true;
+         }else{
+            document.getElementById('chkestudiante').disabled = false;
+            document.getElementById('chkdirectivo').disabled = false;
+            document.getElementById('chkdecano').disabled = false;
+         }
+     });
+     $("#chkdirectivo").click(function(){
+         if (document.getElementById("chkdirectivo").checked){
+             document.getElementById('chkestudiante').disabled = true;
+             document.getElementById('chkdocente').disabled = true;
+             document.getElementById('chkdecano').disabled = true;
+         }else{
+            document.getElementById('chkdocente').disabled = false;
+            document.getElementById('chkestudiante').disabled = false;
+            document.getElementById('chkdecano').disabled = false;
+         }
+     });
+      $("#btnaddeva").click(function() {
+        if($('#chkestudiante').prop('checked')){
+            var op='1'
+         }
+        if($('#chkdocente').prop('checked')){
+            var op='2'
+         }
+         if($('#chkdirectivo').prop('checked')){
+            var op='3'
+         }
+         if($('#chkdecano').prop('checked')){
+            var op='4'
+         }
+        location.href = "/evaluacionesdocentes?action=adicionareva&op="+op;
+
+    });
+    var peri = $("#periodosel").val();
+
+    $('.verperiodoseva').click(function(){
+
+        $('#verperiodosmodal').modal('show');
+   });
+
+    CargarMaterias= function(id){
+        var ideval=id;
+                swal.fire({
+                    title: 'Esta seguro de cargar las materias cerradas?',
+                    {#text: "# Número: "+idpersonadobe,#}
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5'
+                    }).then(function (isConfirm) {
+
+                        if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+
+                             var formData = new FormData();
+                             formData.append('action', 'cargarmaterias');
+                             formData.append('id', ideval );
+                            showWaiting("Cargando Materias ","Espere unos segundos por favor...");
+                             $.ajax({
+                                     url: '/evaluacionesdocentes',
+                                     type: "POST",
+                                     contentType: false,
+                                     data: formData,
+                                     processData: false,
+                                     cache: false,
+                                     success: function (data) {
+
+                                         if (data.result == "ok") {
+                                             swal.fire("!Notificacion", 'Materias Cargadas Correctamente', "success");
+                                             location.reload();
+                                             hideWaiting();
+
+                                         } if (data.result == "badmateria") {
+                                              swal.fire("Error", 'No existen materias cerradas para esos los periodos de evaluacion ingresados', "error");
+{#                                             location.reload();#}
+                                             hideWaiting();
+
+                                         }
+
+                                     },
+                                         error: function (xhr, ajaxOptions, thrownError) {
+                                         swal.fire("Error", "Error Conexion en el Servidor", "error");
+                                     },
+
+                                     complete: function(){
+                                      }
+
+                             });
+                            }
+                         });
+                }
+    Eliminar= function(id){
+        var ideval=id;
+        swal.fire({
+            title: 'Esta seguro de eliminar la evaluación?',
+            {#text: "# Número: "+idpersonadobe,#}
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Si!',
+            cancelButtonText: 'No',
+            confirmButtonClass: 'btn btn-success margin-5',
+            cancelButtonClass: 'btn btn-danger margin-5'
+            }).then(function (isConfirm) {
+                if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+
+                    $("#login-modal4").modal({backdrop: 'static', keyboard: false});
+                     $('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../ube/static/imagen/loader.gif"/><br/> espere un momento...</div>');
+                     var formData = new FormData();
+                     formData.append('action', 'eliminar');
+                     formData.append('id', ideval );
+                     $.ajax({
+                             url: '/evaluacionesdocentes',
+                             type: "POST",
+                             contentType: false,
+                             data: formData,
+                             processData: false,
+                             cache: false,
+                             success: function (data) {
+
+                                 if (data.result == "ok") {
+                                     Swal.fire("!Notificación", "Se eliminó el registro correctamente", "success");
+                                     location.href='/evaluacionesdocentes'
+
+                                 } else {
+                                     swal.fire("Error", data.message, "error").then(function () {
+
+                                     location.reload()
+                                         });
+{#                                     cambiarTab('base-tab'+data.eje,'tab'+data.eje+'edit');#}
+{#                                     $("#login-modal4").remove();//ocultamos el modal#}
+{#                                     $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll#}
+{#                                     $('.modal-backdrop').remove();//eliminamos el backdrop del modal#}
+{#                                     $('#content').html('');#}
+                                 }
+
+                             }
+
+
+                     });
+
+                    }
+
+                 });
+
+
+        }
+    $("#btnguardaperiodo").click(function() {
+        var peri = $("#periodosel").val();
+
+        location.href = "/evaluacionesdocentes?action=cordinadores&periodo="+peri;
+
+    });
+    Actualizar= function(id){
+        var ideval=id;
+                swal.fire({
+                    title: 'Esta seguro de actualizar los docentes?',
+                    {#text: "# Número: "+idpersonadobe,#}
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5'
+                    }).then(function (isConfirm) {
+                        if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                            showWaiting("Actualizando Coordinadores");
+
+{#                            $("#login-modal4").modal({backdrop: 'static', keyboard:/ false});#}
+{#                             $('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../ube/static/imagen/loader.gif"/><br/> espere un momento...</div>');#}
+                             var formData = new FormData();
+                             formData.append('action', 'actualizar');
+                             formData.append('id', ideval );
+                             $.ajax({
+                                     url: '/evaluacionesdocentes',
+                                     type: "POST",
+                                     contentType: false,
+                                     data: formData,
+                                     processData: false,
+                                     cache: false,
+                                     success: function (data) {
+
+                                         if (data.result == "ok") {
+                                             swal.fire("Notificacion", 'Informacion registrada correctamente', "success");
+                                             location.href='/evaluacionesdocentes'
+
+                                         } else {
+{#                                             hideWaiting();#}
+                                             swal.fire("Error", data.message, "error");
+                                             cambiarTab('base-tab'+data.eje,'tab'+data.eje+'edit');
+                                             $("#login-modal4").remove();//ocultamos el modal
+                                             $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                             $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                             $('#content').html('');
+                                         }
+
+                                     },
+                                     error: function (xhr, ajaxOptions, thrownError) {
+                                         hideWaiting();
+                                         swal("Error", "Error Conexion en el Servidor", "error");
+                                         $("#login-modal4").remove();//ocultamos el modal
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+                                     },
+
+                                     complete: function(){
+                                         hideWaiting();
+                                         $("#login-modal4").remove();//ocultamos el modal
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+
+                                      }
+
+
+                             });
+
+                            }
+
+                         });
+
+
+            }
+
+    $('.addperiodo').click(function(){
+        var id = $(this).attr("evaluacion_id");
+
+        $.get("/evaluacionesdocentes", {'action':'verperiodos', 'id':id}, function(data) {
+
+                    $("#adicionarperiodo .modal-body").html(data);
+                    $("#adicionarperiodo").modal({"backdrop":"static","width":'70%'});
+                    $('#adicionarperiodo').show();
+                }, "html");
+
+                return false;
+      });
+
+
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+
+
+});
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span12">
+            <h3 >{% if not estudiante and not docentes and not administrativos %}Listado de Evaluaciones a Docentes{% endif %} {% if estudiante %}Listado de Evaluaciones a Docentes{% endif %}
+                 {% if docentes %}Listado de Autoevaluaciones a Docentes{% endif %}
+                 {% if administrativos %}Listado de Evaluaciones a Directivos{% endif %}   </h3>
+            </div>
+        </div>
+        <div class='row-fluid'>
+         <div class="span9">
+              <a class='btn btn-success adicionarevaluacion'><i class="icon-plus icon-white"></i> Crear Evaluacion</a>
+         </div>
+        <div class="span2">
+            <a class='btn verperiodoseva'><i class='icon-plus icon-red'></i> Coordinadores</a>
+        </div>
+        <div class="span1">
+            <a href="/evaluacionesdocentes" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        </div>
+    <br/>
+        <ul class="nav nav-tabs nav-justified">
+            <li><a href="evaluacionesdocentes?tipo=est" class="ins principal {% if inscripciones %}active{% endif %}">Estudiante</a></li>
+            <li><a href="evaluacionesdocentes?tipo=doc" class="doc {% if docentes %}active{% endif %}">Docentes</a></li>
+            <li><a href="evaluacionesdocentes?tipo=adm" class="adm {% if administrativos %}active{% endif %}">Coordinadores</a></li>
+            <li><a href="evaluacionesdocentes?tipo=dec" class="dec {% if decano %}active{% endif %}">Decanos</a></li>
+
+        </ul>
+
+          <div class='row-fluid'>
+                <div class='span12'>
+                    <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th >Persona </th>
+                                <th >Fecha Creacion</th>
+                                <th >Descripcion</th>
+                                <th style="text-align: center">Estado</th>
+                               <th style="text-align: center"></th>
+                                </tr>
+                            </thead>
+                                <tbody>
+                                {% for d in evaluacion %}
+                                    <tr>
+                                        <td >{{ d.persona_crea }}</td>
+                                        <td >{{ d.fechacreacion|date:'  d-m-Y' }}</td>
+                                        <td >{{ d.descripcion }}</td>
+                                        <td style="text-align: center" onclick="cambiaestado('{{ d.id }}')">
+                                            {% if d.estado  %}
+                                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                            {% else %}
+                                                <img src='/static/images/16/false.png'  alt='No' border='0'/>
+                                            {% endif %}
+                                        </td>
+
+                                     <td>
+                                        <div class="btn-group">
+                                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                                Acciones
+                                                  <span class="caret"></span>
+                                                    </a>
+                                                    <ul class="dropdown-menu pull-right">
+                                                    {% if not docentes and not administrativos and not decano %}
+                                                        <li><a style="cursor: pointer"  class='dropdown-item' onclick="CargarMaterias('{{ d.id }}')"><i class="dw dw-print"></i> Cargar Materias Cerradas </a></li>
+                                                    {% endif %}
+{#                                                    <li><a href="/evaluacionesdocentes?action=agregar&id={{ d.id }}" class='dropdown-item'><i class="dw dw-print"></i> Asignar Materias </a></li>#}
+{#                                                    <li><a href="/evaluacionesdocentes?action=ver&id={{ d.id }}&acc={{ acc }}" class='dropdown-item'><i class="dw dw-print"></i> Ver Materias </a></li>#}
+                                                    <li><a href="/evaluacionesdocentes?action=verformato&id={{ d.id }}" class='dropdown-item'><i class="icon-eye-open"></i> Formato Evaluacion </a></li>
+{#                                                    {% if administrativos %}#}
+{#                                                        <li><a href="#" class='dropdown-item' onclick="Actualizar('{{ d.id }}')"><i class="dw dw-list"></i>Actuzalizar Docentes sin Coordinación</a></li>#}
+{#                                                    {% endif %}#}
+
+{##}
+{##}
+                                                    {% if  docentes %}
+                                                        <li><a href="/evaluacionesdocentes?action=verevaluacion&id={{ d.id }}" class='dropdown-item'  {% if persona.usuario.is_superuser %} title="Permiso: add_evaluacionesdocentes" {% endif %}><i class="dw dw-list"></i> Ver Evaluacion Docentes  </a></li>
+                                                    {% endif %}
+                                                    {% if not docentes and not administrativos and not decano %}
+                                                          <li><a href="/evaluacionesdocentes?action=verevaluacionalumno&id={{ d.id }}" class='dropdown-item'><i class="dw dw-list"></i> Ver Evaluacion Alumnos</a></li>
+
+                                                    {% endif %}
+                                                    {% if perms.sga.delete_evaluaciondocente %}
+                                                        <li><a href="#" class='dropdown-item' onclick="Eliminar('{{ d.id }}')"><i class="icon-remove"></i> Eliminar Evaluacion</a></li>
+                                                    {% endif %}
+                                                       {% if docentes or administrativos or decano%}
+                                                            <li><a href="#" class=" addperiodo" evaluacion_id="{{ d.id }}" ><i class="icon-plus icon-white"></i>  Ver Periodo</a></li>
+                                                       {% endif %}
+{#                                                    {% if administrativos %}#}
+{#                                                            <li><a href="#" class=" addperiodocor" evaluacion_id="{{ d.id }}" ><i class="icon-plus icon-white"></i>  Ver Periodo</a></li>#}
+{#                                                       {% endif %}#}
+{#                                                    <li><a href="#" class='dropdown-item' onclick="adicionarperiodo('{{ d.id }}')"><i class="icon-remove"></i> Adicionar Periodo</a></li>#}
+
+                                             </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                {% endfor %}
+                                {% if not evaluacion %}
+                                    <tr>
+                                        <td colspan="10">
+                                            NO EXISTE REGISTRO
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+      <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/evaluacionesdocente?page=1">1</a></li>
+                            <li><a href="/evaluacionesdocente?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/evaluacionesdocente?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/evaluacionesdocente?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/evaluacionesdocente?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/evaluacionesdocente?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+<div class="modal fade static" id="verperiodosmodal">
+
+        <div class="modal-header " style="word-wrap: break-word" >
+            <h4  id='paneltitle2' > </h4>
+            <h5></h5>
+        </div>
+            <div class="modal-body" >
+                <div class="row-fluid">
+                    <div class="span6">
+                        <div class="form-group">
+                            <label>Periodos Evaluacion(*): </label>
+                            <select id="periodosel" style="width: 180%"   class="custom-select2  form-control imput-xxlarge">
+                                <option  value="">-----</option>
+                                    {% for c in periodos %}'
+                                        <option  style="width: 100%"   {% if c.id == periodos.id %}selected="selected"{% endif %} value="{{ c.id }}" >{{ c }}</option>
+                                    {% endfor %}
+                             </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                <div class="modal-footer">
+{#                    <button type="button"  class="btn btn-success btn-min-width " id="btnguardaperiodo" ><i class="icon-plus icon-white"></i> Clonar </button>#}
+
+                <button type="button"  class="btn btn-success btn-min-width " id="btnguardaperiodo" ><i class="icon-plus icon-white"></i> Continuar </button>
+
+
+                <button type="button" id="salirperiodo" class="btn btn-danger btn-min-width  "><i class="icon-exit icon-white"></i> Salir</button>
+                </div>
+
+            </div>
+<section>
+<div class="modal fade static" id="modalevaluacion">
+
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4 class="modal-title" id="myLargeModalLabel">Adicionar Evaluacion</h4>
+
+        </div>
+
+
+{#        <div class="modal-body">#}
+            <div class="modal-body" style="width:500px;overflow: auto">
+                <div class="row-fluid">
+
+                 <div class="span3">
+                         <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">
+                                <input type="checkbox" class="custom-control-input" id="chkestudiante">
+                                <label class="custom-control-label" for="chkestudiante"><h4 class="form-section"><i class="icon-clipboard4"></i> Estudiante</h4></label>
+                         </div>
+                    </div>
+                  <div class="span3">
+                         <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">
+                                <input type="checkbox" class="custom-control-input" id="chkdocente">
+                                <label class="custom-control-label" for="chkdocente"><h4 class="form-section"><i class="icon-clipboard4"></i> Profesor</h4></label>
+                         </div>
+                    </div>
+                  <div class="span3">
+                         <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">
+                                <input type="checkbox" class="custom-control-input" id="chkdirectivo">
+                                <label class="custom-control-label" for="chkdirectivo"><h4 class="form-section"><i class="icon-clipboard4"></i> Directivo</h4></label>
+                         </div>
+                    </div>
+                <div class="span3">
+                         <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">
+                                <input type="checkbox" class="custom-control-input" id="chkdecano">
+                                <label class="custom-control-label" for="chkdecano"><h4 class="form-section"><i class="icon-clipboard4"></i> Decano</h4></label>
+                         </div>
+                 </div>
+                </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button"  class="btn btn-success btn-min-width " id="btnaddeva" ><i class="icon-plus icon-white"></i> Continuar </button>
+            <button type="button" id="salirevaluacion" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+        </div>
+
+    </div>
+</div>
+</section>
+
+    <div class="modal fade static" id="adicionarperiodo">
+
+        <div class="modal-header " style="word-wrap: break-word" >
+            <h4  id='paneltitle2' > </h4>
+            <h5></h5>
+        </div>
+            <div class="modal-body" >
+
+            </div>
+                <div class="modal-footer">
+                <button type="button" id="versalirperiodo" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+                </div>
+
+            </div>
+
+
+
+
+{% endblock %}

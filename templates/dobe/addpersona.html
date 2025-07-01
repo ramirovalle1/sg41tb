@@ -1,0 +1,58 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+{% endblock %}
+{% block javascript %}
+
+    $($("#id_nombre_id").get(0).parentNode.parentNode).hide();
+    buscar_persona = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Persona',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_nombre").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+
+
+        $('#id_nombre').typeahead({source: buscar_persona, updater: function(item) {
+            var results = $("#id_nombre").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_nombre").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_nombre_id").val(d);
+                }
+            }
+            return item;
+
+        }});
+
+{% endblock %}
+{% block titulo %}
+{{ title }}
+    <br>
+    <br>
+ {{ perfil }}
+
+
+{% endblock %}
+
+{% block formextra %}
+{#    <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">Guardar Inscripci&oacute;n</button>#}
+    <input type='hidden' name='action' value='addpersona'/>
+    <input type='hidden' name='id' value='{{ perfil.id }}'/>
+{% endblock %}
+
+{% block formback %}/dobe?s={{ perfil.inscripcion.persona.cedula }}{% endblock %}
+{% block buttonname %}Guardar y Salir{% endblock %}
+{% block extrabuttons %}
+     <button class="btn btn-info" id="formbutton"  name="continuar"> Guardar  y Continuar </button>
+{% endblock %}

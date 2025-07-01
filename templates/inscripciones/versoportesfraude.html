@@ -1,0 +1,233 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+            addFraude = function(event, idInscripcion) {
+                event.preventDefault()
+                $('#idInscripcion').val(idInscripcion)
+                $.post('/inscripciones', {'action': 'obtener_facturas_fraude', 'id': idInscripcion}, (data) => {
+                    if (data.result == 'ok') {
+                        html = '<option value="0">---</option>'
+                        data.facturas.forEach((factura) => {
+                            html += '<option value="'+factura.id+'">'+factura.value+'</option>'
+                        })
+                        $('#factura').html(html)
+
+                    } else {
+                        swal.fire('No se puede editar', data.mensaje, 'warning')
+                    }
+                });
+                $('#action').val("addplagio")
+                $('#idPlagio').val(0)
+                $('#observacion').val('')
+                $('#factura').val('0')
+                $("#addFraudeModal").modal({width: '500px', backdrop: 'static'});
+                $("#addFraudeModal").modal("show");
+            }
+            
+            closeModal = function(nameModal) {
+                $("#"+nameModal).modal("hide")
+                location.reload()
+            }
+            
+            editFraude = function(event, id, idInscripcion, observacion,factura, facturanombre,total,valor) {
+                $.post('/inscripciones', {'action': 'verifica_edicion_fraude', 'id': id, "inscripcion":idInscripcion}, (data) => {
+                    console.log(factura)
+                    if (data.result == 'ok') {
+                        html = ''
+                        data.facturas.forEach((factura) => {
+                            html += '<option value="'+factura.id+'">'+factura.value+'</option>'
+                        })
+                        $('#idInscripcion').val(idInscripcion)
+                        $('#action').val("addplagio")
+                        $('#idPlagio').val(id)
+                        $('#observacion').val(observacion)
+                        $('#factura').html(html)
+                        $('#factura').val(factura)
+                        $('#valorplagio').val(valor)
+                        $("#addFraudeModal").modal("show");
+
+                        if (!data.habilitaFacturas) {
+                            $('#factura').prop('disabled', true);
+                        }
+                        if (!data.habilitaValorRubro) {
+                            $('#valorplagio').prop('disabled', true);
+                        }
+
+                    } else {
+                        swal.fire('No se puede editar', data.mensaje, 'warning')
+                    }
+                });
+                event.preventDefault()
+                {#$('#idInscripcion').val(idInscripcion)#}
+                {#$('#action').val("addplagio")#}
+                {#$('#idPlagio').val(id)#}
+                {#facturaselect = facturanombre+' $'+total#}
+                {#if (!factura){#}
+                {#    facturaselect = 'Rubro no selecionado'#}
+                {# }#}
+                {#adicional = '<label for="factura"> Rubro de factura selecionado: </label><input type="text" style="text-align:center;" disabled class="input-xlarge" value="'+facturaselect+'"/>';#}
+                {#$('#observacion').val(observacion).after(adicional)#}
+                {#$('#factura').val(factura)#}
+                {#$("#addFraudeModal").modal({width: '500px', backdrop: 'static'});#}
+                {#$("#addFraudeModal").modal("show");#}
+            }
+
+            document.getElementById('formPlagio').addEventListener('submit', function(event) {
+                let observacion = document.getElementById('observacion').value.trim();
+                let factura = document.getElementById('factura').value;
+                let valorplagio = document.getElementById('valorplagio').value;
+                let soportesfraude = document.getElementById('soportesfraude').files.length;
+
+                let mensajes = [];
+
+                if (!observacion) {
+                    mensajes.push("Debe ingresar una observación.");
+                }
+
+                if (factura === "0") {
+                    mensajes.push("Debe seleccionar un rubro pagado con fraude.");
+                }
+
+                if (!valorplagio || valorplagio <= 0) {
+                    mensajes.push("Debe ingresar un valor válido para el nuevo rubro.");
+                }
+
+                if (soportesfraude === 0) {
+                    mensajes.push("Debe adjuntar un archivo de soporte.");
+                }
+
+                if (mensajes.length > 0) {
+                    swal.fire("Datos incompletos", mensajes.join("\n"), "warning")
+                    event.preventDefault();
+                }
+            })
+
+            {% if error %}
+                swal.fire('ERROR', '{{ error }}', 'error')
+            {% endif %}
+
+        });
+    </script>
+    <style>
+        .upload-file {
+            font-size: 14px;
+            background: none;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            padding: 2px 10px 6px 2px;
+        }
+
+        ::-webkit-file-upload-button {
+            color: white;
+            background: #3EA4C2;
+            padding: 9px;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span10'>
+            <h4>Soportes de Fraude con Tarjetas: {{ inscripcion.persona }}</h4>
+            <h5>Carrera: {{ inscripcion.carrera }}</h5>
+        </div>
+        <div class='span2' style="text-align: right">
+            <a href="/inscripciones?s={% if inscripcion.persona.cedula %}{{ inscripcion.persona.cedula }}{% else %}{{ inscripcion.persona.pasaporte }}{% endif %}" class='btn btn-inverse'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span12" style="text-align: right">
+            <a href="#" class="btn btn-success" onclick="addFraude(event, {{ inscripcion.id }})"><span class="icon-plus"></span> Add Fraude Tarjeta</a>
+        </div>
+    </div>
+    <br>
+    <div class="row-fluid">
+        <div class="span12">
+            <table class='table table-bordered table-striped'>
+                <thead>
+                <tr>
+                    <th style="text-align: left;">Observaci&oacute;n</th>
+                    <th style="text-align: center;">Factura fraude</th>
+                    <th style="text-align: center;">Fecha</th>
+                    <th style="text-align: center;">Usuario</th>
+                    <th style="text-align: center;">Soporte</th>
+                    <th style="text-align: center; width: 50px"></th>
+                </tr>
+                </thead>
+            <tbody>
+                {% for s in soportesfraude %}
+                    <tr>
+                        <td >{{ s.observacionplagio }}</td>
+                        <td style="text-align: center;"><a href="/facturas?s={{ s.factura.numero }}">{{ s.factura }}</a></td>
+                        <td style="text-align: center;width: 20%"> {{ s.fecha|date:'d-m-Y' }}</td>
+                        <td style="text-align: center;width: 20%"> {{ s.usuario     }}</td>
+                        <td style="text-align: center;width: 20%">
+                            {% if s.soporte %}
+                            <a href="{{ s.soporte.url }}" target="_blank" title="Ver Imagen"><span class="icon-download-alt"></span> Descargar archivo</a>
+                            {% endif %}
+                        </td>
+                        <td >
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    <li><a href="#" onclick="editFraude(event,'{{ s.id }}','{{ inscripcion.id }}','{{ s.observacionplagio|escapejs }}','{{ s.factura.id }}','{{ s.factura }}', '{{ s.factura.total }}','{{ s.rubro.valor }}')"><i class="icon-adjust icon-eye-open"></i>Editar</a></li>
+{#                                    {% if not s.soporte %}#}
+{#                                        <li><a href="#" docu='{{s.id}}' iid='{{ inscripcion.id }}' nom='{{ inscripcion.persona.nombre_completo }}' obspl='{{s.observacionplagio}}' opcionpl='2' class='editsoporte'><i class="icon-adjust icon-eye-open"></i>Editar</a></li>#}
+{#                                    {% endif %}#}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="addFraudeModal" style="position: relative">
+        <div style="position: absolute; right: 1em; top: .5em">
+            <a href="#" style="text-decoration: none" onclick="closeModal('addFraudeModal')">x</a>
+        </div>
+        <div class="modal-header">
+            <h4>Registrar Observaci&oacute;n Fraude Tarjetas</h4>
+        </div>
+
+        <form action="/inscripciones" method="post" enctype="multipart/form-data" id="formPlagio">
+            <div class="modal-body" style="text-align: left">
+                    <input type="hidden" name="action" id="action">
+                    <input type="hidden" name="id" id="idPlagio">
+                    <input type="hidden" name="idInscripcion" id="idInscripcion">
+                    <div style="padding: .5em 0">
+                        <label for="observacion">Observaciones: </label>
+                        <textarea id="observacion" name="observacion" cols="30" rows="3" style="width: 97%"></textarea>
+                    </div>
+                    <div style="padding: .5em 0">
+                        <label for="factura">Factura pagada con fraude: </label>
+                        <select id="factura" name="factura" style="width: 100%">
+                            <option value="0">---</option>
+{#                            {% for factura in facturas %}#}
+{#                                <option value="{{ factura.id }}" {% if factura.id %}selected="selected"{% endif %}>{{ factura.fecha|date:'d-m-Y' }} | {{ factura }} (${{ factura.total }})</option>#}
+{#                            {% endfor %}#}
+                        </select>
+                    </div>
+                    <div style="padding: .5em 0">
+                        <label for="valorplagio">Valor nuevo rubro: </label>
+                        <input id="valorplagio" type="number" name="valorplagio" style="width: 80px" value="{{ valorplagio|floatformat:2 }}">
+                    </div>
+                    <div style="padding: .5em 0">
+                        <label for="soportesfraude">Archivo soporte: </label>
+                        <input type="file" name="soportesfraude" class="upload-file" id="soportesfraude" style="width: 97%;">
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-success">Guardar</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

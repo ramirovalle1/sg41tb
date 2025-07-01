@@ -1,0 +1,80 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+
+        google.load("visualization", "1", {packages:["corechart"]});
+        google.setOnLoadCallback(drawChartTotales);
+
+        carrera = [{% for c in carreras %}
+            {"id":"{{ c.id }}","nombre":"{{ c.nombre }}","total_madres":{{ c|args:anno|call:"madres_solteras"}}}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        ];
+
+
+
+        function drawChartTotales() {
+            var elements = [];
+            elements.push(['Madres Solteras', 'Total Estudiantes']);
+            for (var i in carrera){
+                var car = carrera[i];
+                elements.push([car.nombre , car.total_madres]);
+            }
+            var data = google.visualization.arrayToDataTable(elements);
+
+            var options = {
+                title: 'Gráfico - Totales Estudiantes - Madres Solteras',
+                'align': 'center',
+                legend: {textStyle: {fontSize: 14}},
+                is3D: true
+            };
+
+            var chart = new google.visualization.PieChart(document.getElementById('piechart_totales'));
+            chart.draw(data, options);
+        }
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+<div class="row-fluid">
+    <div class="span12" style="text-align: center">
+        <h3>TABLA Y GR&Aacute;FICO - MADRES SOLTERAS POR CARRERA - A&Ntilde;O {{ anno }}</h3>
+    </div>
+</div>
+<br>
+<div class="row-fluid">
+    <div class='span6'>
+    <br><br><br>
+        <table class='table table-bordered table-condensed'>
+            <thead>
+                <tr>
+                    <th rowspan="2" class="bigger" style="vertical-align: middle"> CARRERAS</th>
+                    <th rowspan="2" class="bigger" style="text-align: center"> ESTUDIANTES</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in carreras %}
+                <tr class="bigger">
+                    <td>{{ c.nombre }}</td>
+                    <td style="text-align: center">{{ c|args:anno|call:"madres_solteras" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="alert-info">
+                    <td class="bigger" style="text-align: center">TOTALES</td>
+                    <td style="text-align: center; font-size: 17px;"><b>{{ cantidad_total_madres_solteras }}</b></td>
+
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="span6">
+        <div id="piechart_totales" style="height: 500px;"></div>
+    </div>
+</div>
+
+{% endblock %}

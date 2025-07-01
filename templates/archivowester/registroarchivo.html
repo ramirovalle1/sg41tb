@@ -1,0 +1,211 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+
+
+            $('.subir').click(function(){
+                $("#archivo_wester").modal({"backdrop":"static","width":"60%"});
+                $("#archivo_wester").modal("show");
+                $("#idarc").val($(this).attr('aid'));
+            });
+            $("#archivo_wester .btn-cerrar").click(function(){
+                $("#archivo_wester").modal("hide");
+            });
+    $(".eliminarregistro").click(function(){
+        var id = $(this).attr("registrowester_id");
+        smoke.confirm('Esta seguro de eliminar los registros ', function(e){
+
+        if (e){
+            $.post("/archivowester",{"action":"eliminarregistro","idregistro":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Registros Eliminados");
+               }else{
+                    alert(data.result);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+           $("#nuevo").click(function() {
+             $("#espera").modal("show");
+             $.post("/archivowester", {"action":"generar" }, function(data) {
+
+                    if (data.result=='ok'){
+                        $("#espera").modal("hide");
+                        var ventana= window.open();
+                        ventana.location.href=data.url;
+{#                        ventana.target='_blank'#}
+                    }else{
+                        $("#espera").modal("hide");
+                        showWaiting("Error","Intente Nuevamente " + data.result ,true);
+                    }
+                }, "json");
+            return false;
+            });
+            {% if error %}
+                smoke.alert('{{ error }}');
+            {% endif %}
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/archivowester?action=ver&id={{ id }}&s="+term;
+            });
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span6"  >
+            <h3 >Archivos de Valores a Pagar {% if fac %}FACTURADOS{% endif %} {% if pen %}PENDIENTES{% endif %}</h3></br>
+        </div>
+
+        <div class="span4" style="text-align: right">
+            {% if fac or not pen %}
+                <a href="/archivowester?action=ver&id={{ id }}&pen" id='allresults' class='btn btn-danger'><i class="icon-check-empty"></i> Pendientes</a>
+            {% endif %}
+            {% if pen or not fac %}
+                <a href="/archivowester?action=ver&id={{ id }}&fac" id='allresults' class='btn btn-success'><i class="icon-check"></i> Facturados</a>
+            {% endif %}
+            {% if not archivowester.elimarregistros and  archivowester.existeregistrowester and perms.sga.change_archivowester %}
+            <a href="#" class="btn btn-danger eliminarregistro" registrowester_id="{{ archivowester.id }}" ><i class="icon-check-empty"></i> Eliminar Registros</a>
+            {% endif %}
+        </div>
+        <div class="span2">
+            <a href="/archivowester" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search or fac or pen%}
+                <a href="/archivowester?action=ver&id={{ id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped'>
+                <thead>
+                    <tr>
+                        <br>
+                        <th>Persona</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                        <th>Codigo</th>
+                        <th>Cedula</th>
+                        <th>Valor</th>
+                        <th>Cuenta</th>
+                        <th style="text-align: center">Archivo Estudiante</th>
+                        <th style="text-align: center">Facturado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in registros %}
+                        <tr>
+                            <td> {{ r.cuenta_rubro.inscripcion.persona.nombre_completo  }} </td>
+                            <td> {% if r.fecha %} {{ r.fecha|date:'d-m-Y'  }} {% endif %} </td>
+                            <td> {{ r.hora  }} </td>
+                            <td> {{ r.codigo  }} </td>
+                            <td> {{ r.cedula  }} </td>
+                            <td> {{ r.valor  }} </td>
+                            <td> {{ r.cuenta_rubro  }} </td>
+                            <td style="text-align: center"> {% if r.subido %} SI {% else %} NO {% endif %}</td>
+                            <td  style="text-align: center"> {% if r.esta_facturado or r.facturado %} SI {% else %} NO {% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                 {% if not registros %}
+                    <tr>
+                        <td colspan="8">
+                            NO HAY REGISTROS DE ARCHIVO
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class="span12">
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/archivowester?action=ver&id={{ id }}&?page=1">1</a></li>
+                            <li><a href="/archivowester?action=ver&id={{ id }}?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/archivowester?action=ver&id={{ id }}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/archivowester?action=ver&id={{ id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/archivowester?action=ver&id={{ id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/archivowester?action=ver&id={{ id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UNOS SEGUNDOS</h3>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="archivo_wester"   >
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle1'><i> Ingrese Archivo </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well {% block form-type %}form-horizontal{% endblock %}' action="/archivowester" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addarchivowester' />
+                <input type='hidden' id='idarc' name='idarc' value='' />
+                {% for field in frmarchivowester %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+
+                <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">{% block buttonname %}Guardar{% endblock %}</button>
+                {% block extrabuttons %}
+                    <a href="#" class="btn btn-cerrar"> Cerrar</a>
+                {% endblock %}
+            </form>
+        </div>
+    </div>
+{% endblock %}

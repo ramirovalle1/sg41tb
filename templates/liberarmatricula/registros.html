@@ -1,0 +1,157 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/liberarmatricula?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $("#detalle_retiro #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_retiro").modal("hide");
+            });
+
+
+            $(".detalle").click(function() {
+               var vid = $(this).attr("mid");
+                   $.get("/liberarmatricula", {'action':'ver', 'id': vid}, function(data) {
+                        $("#detalle_retiro .modal-body").html(data);
+                        $("#detalle_retiro").modal({"backdrop":"static","width":"40%"});
+                        $("#detalle_retiro").modal("show");
+                   }, "html");
+               return false;
+              });
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Registros de Liberar Matr&iacute;cula</h3>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='span6'>
+        <form class="form-search">
+            <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/retirados" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+        </form>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Nivel</th>
+                <th>Liberada</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for m in matriculas %}
+                <tr>
+                    <td>{{ m.inscripcion }}</td>
+                    <td >{% if m.nivel %}{{ m.nivel.grupo.nombre}} - {{ m.nivel.nivelmalla}} - {{ m.nivel.carrera}}{% endif %}</td>
+                    {% if m.liberada %}
+                        <td style="text-align: center"><img src='/static/images/16/true.png' alt='Si' border='0'/></td>
+                    {% else %}
+                        <td  style="text-align: center"><img src='/static/images/16/false.png' alt='No' border='0'/></td>
+
+                    {% endif %}
+                    <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                        <li><a class="detalle" mid="{{ m.id }}" href='#'> <i class='icon-edit'></i> Ver Detalle </a></li>
+                                </ul>
+                            </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not matriculas %}
+                <tr>
+                    <td colspan="4">
+                        NO HAY REGISTROS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+{#                    {% for pagenumber in paging.page_range %}#}
+{#                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/retirados?page={{ pagenumber }}">{{ pagenumber }}</a></li>#}
+{#                    {% endfor %}#}
+
+                    {% if paging.num_pages > 20 %}
+                        <div class='pagination'>
+                            <ul>
+                                {% if paging.primera_pagina %}
+                                    <li><a href="/liberarmatricula?page=1">1</a></li>
+                                    <li><a href="/liberarmatricula?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                                {% endif %}
+                                {% for pagenumber in paging.paginas %}
+                                    <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/liberarmatricula?page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                                {% endfor %}
+                                {% if paging.ultima_pagina %}
+                                    <li><a href="/liberarmatricula?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                                    <li><a href="/liberarmatricula?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    {% else %}
+
+                        <div class='pagination'>
+                            <ul>
+                                {% for pagenumber in paging.page_range %}
+                                    <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/liberarmatricula?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="detalle_retiro"   >
+    <div class="row-fluid modal-header">
+        <h4 ><i> DETALLLES DE LIBERAR MARTICULA </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a href="#" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+{% endblock %}

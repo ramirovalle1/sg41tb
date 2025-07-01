@@ -1,0 +1,154 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            var valida=0
+
+            function showLocation(pos) {
+{#                          valida = 1;#}
+            }
+
+            function errorHandler(err) {
+              if(err.code == 1) {
+                   valida = 1;
+{#                    alert("Error: Acceso Denegado encienda el gps!");#}
+              }else if( err.code == 2) {
+{#                            alert("Error: la posición no está disponible!");#}
+              }
+            }
+            getLocation();
+            function getLocation(){
+
+               if(navigator.geolocation){
+                  // timeout at 60000 milliseconds (60 seconds)
+                  var options = {timeout:60000};
+                  navigator.geolocation.getCurrentPosition(showLocation,
+                                                           errorHandler,
+                                                           options);
+               }else{
+                  alert("Lo sentimos, navegador no soporta geolocalización!");
+               }
+            }
+            actualizaMaterias = function(id) {
+                location.href = "/pro_clases?filter="+id;
+            };
+
+            $("#materiassel").change(function() {
+                var id = $(this).val();
+                actualizaMaterias(id);
+            });
+
+
+            $(".valida").click(function() {
+{#                alert($(this).attr("val"));#}
+                var id = $(this).attr("val");
+                location.href = "/pro_clases?action=view&id="+id+"&valida="+valida;
+            });
+
+            //fix_height();
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Listado de Lecciones Impartidas o en Curso</h3>
+            <h5>-</h5>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span8'>
+            <form class="form-inline">
+                <select id='materiassel'>
+                    <option value=''></option>
+                    {% for materia in materias %}
+                        <option value='{{ materia.id }}' {% if materia.id == filter.id %}selected="true"{% endif %}>{{ materia.nombre_completo }} {% if materia.nivel.sede %} - {{ materia.nivel.sede }}{% endif %} {% if materia.nivel.carrera %} -  {{ materia.nivel.carrera }}{% endif %} {% if materia.nivel.paralelo %}- {{ materia.nivel.paralelo }}{% endif %} {% if not materia.nivel.carrera %} ({{ materia.nivel.coordinacion.nombre }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div class='span4'>
+
+            {% if filter %}
+                <a href="/pro_clases" id='allresults' class='btn btn-info'><i class="icon-search icon-white"></i> Todos</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Clase</th>
+                <th>Grupos</th>
+                <th>Fecha</th>
+                <th>Hora Entrada</th>
+                <th>Hora Salida</th>
+                <th>Asistencia</th>
+                <th>Abierta</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for lecciongrupo in leccionesgrupo %}
+                <tr>
+                    <td>
+                        <a href='#' class='valida' val='{{ lecciongrupo.id }}'>
+                            <span class='smaller'><b>{{ lecciongrupo.materia.nombre_completo }}</b><br/>
+                                <span class='smaller2'>{{ lecciongrupo.turno }}<br/>
+                                Aula: {{ lecciongrupo.aula }}<br/>
+                                </span>
+                            </span>
+                        </a>
+                    </td>
+                    <td>
+                        {{ lecciongrupo.materia.nivel.periodo.periodo_repr }}<br>
+                        {% for leccion in lecciongrupo.lecciones.all %}
+                            - {{ leccion.clase.materia.nivel }}<br/>
+                        {% endfor %}
+
+                    </td>
+                    <td>{{ lecciongrupo.fecha|date:"d-m-Y" }}</td>
+                    <td>{{ lecciongrupo.horaentrada }}</td>
+                    <td>
+                        {% if not lecciongrupo.abierta %}
+                            {{ lecciongrupo.horasalida }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ lecciongrupo.asistencia_real }}/{{ lecciongrupo.asistencia_plan }} ({{ lecciongrupo.porciento_asistencia }}%)
+                    </td>
+                    <td align='center'>
+                        {% if lecciongrupo.abierta %}
+                            <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                        {% else %}
+                            <img src='/static/images/16/false.png' alt='No' border='0'/>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not leccionesgrupo %}
+                <tr>
+                    <td colspan="7">
+                        NO TIENE CLASES EN EL PERIODO
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                 <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/pro_clases?page={{ pagenumber }}{% if filter %}&filter={{ filter.id }}{% endif %}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                 </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

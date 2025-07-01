@@ -1,0 +1,451 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+<script src="/static/js/notificacionpanel.js"></script>
+<link type="text/css" rel="stylesheet" href="/static/css/datepicker.css"/>
+<script type='text/javascript' src='/static/js/bootstrap-datepicker.js'></script>
+
+<script type="text/javascript">
+
+
+
+    $(function() {
+
+        var idtit = 0;
+        $(".examenejc").click(function(){
+            {% if inscripcion %}
+                idtit = $(this).attr("idtitu");
+                {% if DEFAULT_PASSWORD == 'itb' %}
+                    validlaborato(this);
+                {% else %}
+                    $("#examenmodal .observa").html($(this).attr('descripcion'));
+                    $("#examenmodal").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                    $("#examenmodal").modal("show");
+                {% endif %}
+            {% else %}
+                location.href = '/evaluacion_teleclinica?action=examen&id='+$(this).attr("idtitu");
+            {% endif %}
+        });
+
+        function validlaborato(objethi){
+            var idtitexaval = $(objethi).attr("idtitu");
+            var descrival = $(objethi).attr("descripcion");
+            $.post("/evaluacion_teleclinica", {"action":'validlaborato',"id":idtitexaval}, function(data) {
+                    if (data.result=='ok') {
+                        $("#examenmodal .observa").html(descrival);
+                        $("#examenmodal").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                        $("#examenmodal").modal("show");
+                    }
+                    else{
+                        smoke.alert('Este examen no esta habilitado para este laboratorio');
+                    }
+
+            }, "json");
+        }
+        $("#cerrar").click(function() {
+            idtit=0;
+            $("#examenmodal").modal("hide");
+        });
+        $("#continuar").click(function(){
+            window.open('/evaluacion_teleclinica?action=examen&id='+idtit,"Examen", 'width='+(screen.availWidth)+',height ='+(screen.availHeight)+',fullscreen=yes,menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=no');
+            location.href = '/';
+        });
+        $(".finalizaexamenbtn").click(function(){
+            {% if not inscripcion %}
+                $("#finalizamodal").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#finalizamodal").modal("show");
+            {% endif %}
+        });
+        $("#cerrarmodal").click(function() {
+            $("#finalizamodal").modal("hide");
+        });
+        $("#continfinalizarbtn").click(function(){
+           location.href = '/evaluacion_teleclinica?action=finalizadirec';
+        });
+        {% if info %}
+            {#smoke.alert('{{ info }}');#}
+            Swal.fire("Atencion!", {{info}});
+        {% endif %}
+{#        ///////////////////////////////////////// SOLO ITB /////////////////////////////////////////////////////////////////#}
+        buscar_tipoaula = function(query, process) {
+            $(".help-text2").html('');
+            $(".help-text1").html('');
+            $.get("/reportes", {'action':'databiblio', 'model': 'TipoAula:nombre__icontains="LABORATORIO"',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results.length <=0) {
+                    $("#laboraid").get(0).results = [];
+                    listing = [];
+                    $("#laboraid").attr("myval",0);
+                    $("#laboraid").val("");
+                    process(listing);
+                }else {
+                    $("#laboraid").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.alias);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+        $('#laboraid').typeahead({source: buscar_tipoaula, updater: function(item) {
+            var results = $("#laboraid").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.alias) {
+                    $("#laboraid").attr("myval",datos.id);
+                }
+            }
+            return item;
+        }});
+        $("#add_row").on("click", function() {
+            $(".help-textaddr").html("");
+            vali = 0;
+            $("#LaborAddForm tr").each(function (index) {
+                if ($(this).attr('con') >= 0) {
+                    if(parseInt($('#laboraid').attr("myval")) == 0){
+                        vali = 1;
+                        $(".help-textaddr").html("<h6 style='color:red' >Ingresar Laboratorio</h6>");
+                    }else{
+                        if(parseInt($('#laboraid').attr("myval")) == parseInt($('#laboratorio'+$(this).attr('con')).attr("myval"))){
+                            vali = 1;
+                            $(".help-textaddr").html("<h6 style='color:red' >Laboratorio ya esta registrado</h6>");
+                        }
+                    }
+                }
+            });
+            if (vali == 0 ){
+                $(".form-group2").show();
+                var newid = 0;
+                $.each($("#tab_logic #LaborAddForm tr"), function () {
+                    if (parseInt($(this).data("id")) > newid) {
+                        newid = parseInt($(this).data("id"));
+                    }
+                });
+                newid++;
+
+                var tr = $("<tr></tr>", {
+                    id: "addr" + newid,
+                    con: newid,
+                    "data-id": newid
+                });
+                var col=0;
+                $.each($("#LaborAddForm tr:nth(0) td"), function () {
+                    var cur_td = $(this);
+                    var children = cur_td.children();
+                    // Añade el nuevo Elemento en la tabla.
+
+                    if ($(this).data("name") != undefined) {
+                        col++;
+                        if(col>2) {
+                            var td = $("<td></td>", {
+                                "data-name": $(cur_td).data("name"),
+                                "class": 'hidden'
+                            });
+                        }else{
+                            var td = $("<td></td>", {
+                                "data-name": $(cur_td).data("name")
+                            });
+                        }
+
+
+
+                        var c = '';
+                        for(var x = 0;x < $(children).length;x++)
+                        {
+                            c = $(cur_td).find($(children[x]).prop('tagName')).clone().val("");
+                            if($(children[x]).prop('tagName') != 'BR')
+                            {
+
+                                c.attr("name", $(cur_td).data("name") + newid);
+                                c.attr("id", $(cur_td).data("name") + newid);
+                                c.attr("alt",newid);
+                            }
+                            c.appendTo($(td));
+                            td.appendTo($(tr));
+                        }
+
+
+                    }else{
+                        var td = $("<td></td>", {
+                            'text': $('#LaborAddForm tr').length
+                        }).appendTo($(tr));
+
+                    }
+                });
+
+                // Añade la nueva fila.
+                $(tr).appendTo($('#LaborAddForm'));
+                $('#laboratorio'+newid).html($('#laboraid').val());
+                $('#laboratorio'+newid).attr('myval',$('#laboraid').attr("myval"));
+                $('#laboraid').val('');
+                $('#laboraid').attr('myval',0);
+                $("#activarlabo").show();
+                if (guardando)
+                    enviaractivalab()
+            }
+
+            $(tr).find("td button.row-remove").on("click", function (){
+                $(this).closest("tr").remove();
+                var c = 0;
+                $("#LaborAddForm tr").each(function (index) {
+                    c = c +1;
+                });
+                if (c <2){
+                    $(".form-group2").hide();
+                    $("#activarlabo").hide();
+                }
+
+            });
+        });
+        var idexamtitlab = 0;
+        $(".activaraula").click(function(){
+            idexamtitlab = $(this).attr('idtitex');
+            $(".paneltitleaula").html('<h4>ACTIVAR LABORATORIO PARA:</h4>'+$(this).attr('destitexamen'));
+            $("#aulatitutexamenmodal").modal({backdrop: 'static', keyboard: 'false', width: "30%", maxHeight: ($(window).height()*3)/4});
+            $("#aulatitutexamenmodal").modal("show");
+
+        });
+        $("#cancelarlaborat").click(function(){
+            idexamtitlab = 0;
+            $("#aulatitutexamenmodal").modal("hide");
+            $("#activarlabo").hide();
+            $("#laboraid").attr("myval",0);
+            $("#laboraid").val("");
+            $("#laboraid").val("");
+            $("#LaborAddForm tr").each(function (index) {
+                if ($(this).attr('con') > 0) {
+                    $(this).closest("tr").remove();
+                }
+            });
+            $(".form-group2").hide();
+        });
+        var guardando = false;
+        $("#activarlabo").click(function(){
+            vali=true;
+            if(parseInt($('#laboraid').attr("myval")) != 0){
+                $("#LaborAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        if(parseInt($('#laboraid').attr("myval")) == parseInt($('#laboratorio'+$(this).attr('con')).attr("myval"))){
+                            vali = false;
+                        }
+                    }
+                });
+                if(vali)
+                {
+                    $("#aulatitutexamenmodal").modal("hide");
+                    smoke.confirm("Desea agregar el laboratorio ingresado en la busqueda", function(e){
+                        if (e){
+                                guardando = true;
+                                $('#add_row').click();
+
+                            }else{
+                                enviaractivalab();
+                            }
+                            }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+
+                }
+            }
+            else{
+                enviaractivalab();
+            }
+
+        });
+
+        function enviaractivalab(){
+            guardando = false;
+            vali = false;
+            $("#LaborAddForm tr").each(function (index) {
+                if($(this).attr('con') > 0) {
+                    vali = true;
+                }
+            });
+
+            if(vali){
+                ingreso=[];
+                $("#LaborAddForm tr").each(function (index) {
+                    if($(this).attr('con') > 0) {
+                        ingreso.push({"idtitexamen": idexamtitlab, "idlaborat": $("#laboratorio"+$(this).attr('con')).attr('myval')});
+                    }
+                });
+
+                $.post("/evaluacion_teleclinica", {"action":'activarexamen', "datos": JSON.stringify(ingreso), "id":idexamtitlab}, function(data) {
+                        if (data.result=='ok') {
+                           location.href='/evaluacion_teleclinica';
+                        }
+                        else{
+                            $(".help-textaddr").html("<h6 style='color:red' >Error vuelva a Intentarlo</h6>");
+                            $("#aulatitutexamenmodal").modal({backdrop: 'static', keyboard: 'false', width: "30%", maxHeight: ($(window).height()*3)/4});
+                            $("#aulatitutexamenmodal").modal("show");
+                        }
+
+                }, "json");
+            }
+            else{
+                $("#aulatitutexamenmodal").modal({backdrop: 'static', keyboard: 'false', width: "30%", maxHeight: ($(window).height()*3)/4});
+                $("#aulatitutexamenmodal").modal("show");
+            }
+        }
+    });   {# Fin de Function#}
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class='span6'>
+            <h2 style="text-align: center">Lista de Evaluaciones de Teleclínica</h2>
+            <hr/>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    {% if not persona.pertenece_soporte %}
+        {% if not inscripcion and finalizaautomaticamente%}
+            <div class='row-fluid'>
+                <div class="span3"></div>
+                <div class='span6'>
+                    <button class="btn btn-danger finalizaexamenbtn" style="text-align: center">Finalizar Evaluaci&oacute;n</button>
+
+                </div>
+            </div>
+        {% endif %}
+    {% endif %}
+    <br/>
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span7">
+            <table class="table table-condensed table-bordered">
+                <thead>
+                    <tr class="alert alert-info">
+                        <th colspan="{% if not inscripcion %} {% if examentitactivo and DEFAULT_PASSWORD == 'itb' %} 5 {% else %} 4 {% endif %}{% else %} 3 {% endif %}" style="text-align: center; font-size: 17px;"><b>Lista</b></th>
+                    </tr>
+                    <tr class="alert alert-info">
+                        <th style="font-size: 16px;text-align: center">{% if inscripcion %}Comenzar{% else %}Ver{% endif %}</th>
+                        <th style="font-size: 16px;">Carrera</th>
+                        <th style="font-size: 16px;">Evaluaci&oacute;n</th>                     
+                        <th style="font-size: 16px;">Enlace de Video</th>                     
+                        {% if not inscripcion %}
+                            <th style="font-size: 16px;text-align: center">Activo</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in  tituloexamen %}
+                        <tr style="height: 50px;">
+                            <td style="text-align: center; vertical-align: middle;">
+                                <a style="cursor: pointer" idtitu="{{ t.id }}" descripcion="{{ t.descripcion }}" class="examenejc"><img src="/static/images/circle_arrow1.png" class="modimage"/></a>&nbsp;&nbsp;
+                            </td>
+                            <td style="vertical-align: middle;">
+                                <i>{{ t.carrera.alias }}</i>
+                            </td>
+                            <td class="bigger" style="vertical-align: middle;">
+                                <b> {{ t.tituloexamen }} </b>
+                            </td>
+                            <td class="bigger" style="vertical-align: middle;">
+                                {% if t.link_televideo %}
+                                    <a class="dropdown-item" href="{{  t.link_televideo }}" target="_blank"> Ver video</a>
+                                {% endif %}
+                            </td>
+                            
+                            {% if not inscripcion %}
+                                <td style="text-align: center">
+                                {% if not persona.pertenece_soporte %}
+                                    {% if t.activo %}
+                                        <a href="/evaluacion_teleclinica?action=activa&id={{ t.id }}"><img src='/static/images/16/true.png' alt='' border="0"/></a>
+                                    {% else %}
+                                        <a {% if DEFAULT_PASSWORD == 'itb' %}href="/evaluacion_teleclinica?action=activa&id={{ t.id }}"{% else %} class="activaraula" style="cursor: pointer" idtitex='{{ t.id }}' destitexamen='{{ t.tituloexamen }}'{% endif %}><img src='/static/images/16/false.png' alt='' border="0"/></a>
+                                    {% endif %}
+                                {% else %}
+                                    {% if t.activo %}
+                                        <img src='/static/images/16/true.png' alt='' border="0"/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='' border="0"/>
+                                    {% endif %}
+                                {% endif %}
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="examenmodal" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Estimado Estudiante: </h3><br/>
+            <h4 class="paneltitle">Va a proceder a realizar la evaluación de Telecl&iacute;nica</h4>
+        </div>
+        <div class="modal-body">
+            <p class="observa">  </b>
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer" id="continuar" class="btn btn-info"><i class=""></i> CONTINUAR</a>
+            <a style="cursor: pointer" id='cerrar' class="btn btn-success"><i class=""></i> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="finalizamodal" style="display: none;">
+        <div class="modal-body">
+            <p>Solo se finalizarán las evaluaciones pendientes que hayan excedido su tiempo. </p>
+            <b>Si está seguro de finalizar las evaluaciones dar click en CONTINUAR. </b>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer" id="continfinalizarbtn" class="btn btn-info"><i class=""></i> Continuar</a>
+            <a style="cursor: pointer" id='cerrarmodal' class="btn btn-success"><i class=""></i> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="aulatitutexamenmodal" style="display: none;">
+        <div class="modal-header paneltitleaula">
+
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="recipient-name" class="col-form-label"><b>Laboratorio:</b></label>
+                <input class='searchinput input-xlarge search-query' type='text' id='laboraid' value='{{ search }}' myval='0'/>
+                &nbsp;&nbsp;<a id="add_row" title="Agregar Laboratorio" class='btn btn-info'><i class="icon-plus icon-white"></i> </a>
+                <p class="help-textaddr"></p>
+            </div>
+            <hr>
+
+            <div class="form-group2" style="display: none">
+                <table class='table' cellpadding="0" cellspacing="0" id="tab_logic">
+
+                    <thead>
+                        <tr>
+                            <th style="text-align: center;width: 90%">Laboratorio</th>
+                            <th style="text-align: center;width: 10%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="LaborAddForm">
+                        <tr id='addr0' data-id="0" con="0" class="hidden">
+                            <td data-name="laboratorio">
+                                <h4><a id='laboratorio0' name="laboratorio0" style="width:98%;" myval='0'></a></h4>
+                            </td>
+                            <td data-name="dell">
+                                <button name="dell0" class='btn btn-minis btn-danger glyphicon glyphicon-trash row-remove' ><i class="icon-remove icon-white"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer;display: none" id="activarlabo" class="btn btn-success"><i class=""></i> Activar Examen</a>
+            <a style="cursor: pointer" id='cancelarlaborat' class="btn btn-danger"><i class=""></i> Cancelar</a>
+        </div>
+    </div>
+{% endblock %}
+
+

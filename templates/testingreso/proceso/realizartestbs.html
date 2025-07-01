@@ -1,0 +1,1084 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+   <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <!-- jQuery UI -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<style>
+    body {
+        background-color: #eee
+    }
+    .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+      color: #fff;
+      background-color:  #184679; }
+
+
+    .custom-control-input:checked ~ .custom-control-label::before {
+      color: #fff;
+      border-color:#184679;
+      background-color: #184679;
+    }
+
+     .sortable-list {
+      min-height: 100px;
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .sortable-item {
+      padding: 10px;
+      margin-bottom: 5px;
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: grab;
+    }
+
+    .sortable-item-otro {
+      padding: 10px;
+      margin-bottom: 5px;
+      background-color: #f4f4f4;
+      border: 1px solid #FFFFFF;
+      border-radius: 4px;
+      cursor: grab;
+    }
+
+
+
+
+
+</style>
+
+<script>
+    $(function () {
+
+
+        {#window.onload = carga();#}
+        window.onload = carga2();
+
+        var cronometro;
+        var contador_s;
+        var contador_m;
+
+        function carga2(){
+            contador_s ={{ segundos }};
+            contador_m ={{ minutos }};
+            s = document.getElementById("segundos");
+            m = document.getElementById("minutos");
+            cronometro =setInterval(
+                function (){
+                    if(contador_s==0){
+                        if(contador_m!=0){
+                            contador_s=59;
+                            contador_m--;
+                        }
+                        m.innerHTML = contador_m;
+                        if (contador_m == 0) {
+                            if (contador_s == 0) {
+                                enviarsin_validar();
+                                clearInterval(cronometro);
+                                clearInterval(cronometro1);
+                            }
+                        }
+                    }
+                    s.innerHTML = contador_s;
+                    contador_s--;
+
+                }
+                , 1000);
+        }
+
+        {#function carga() {#}
+        {#    contador_s = 59;#}
+        {#    contador_auxs = 0;#}
+        {#    timpopreguntar=0;#}
+        {#    contador_m ='{{ realizartest.minutofin }}';#}
+        {#    s = document.getElementById("segundos");#}
+        {#    m = document.getElementById("minutos");#}
+        {#    cronometro = setInterval(#}
+        {#        function () {#}
+        {#            if (contador_s == 0) {#}
+        {#                if (contador_m != 0) {#}
+        {#                    contador_s = 59;#}
+        {#                    contador_m--;#}
+        {#                }#}
+        {#                m.innerHTML = contador_m;#}
+        {#                if (contador_m == 0) {#}
+        {#                    if (contador_s == 0) {#}
+        {#                        enviar();#}
+        {#                        clearInterval(cronometro);#}
+        {#                    }#}
+        {#                }#}
+        {#            }#}
+        {#            s.innerHTML = contador_s;#}
+        {#            contador_s--;#}
+        {##}
+        {#        }#}
+        {#        , 1000);#}
+        {# }#}
+
+        {% if inscriptest %}
+            carga2();
+            var ctrlKeyDown = false;
+
+            $(document).ready(function(){
+                $(document).on("keydown", keydown);
+                $(document).on("keyup", keyup);
+                $(window).on("keydown",keydown);
+                $(window).on("keyup",keyupwin);
+            });
+
+            function keydown(e) {
+                if ((e.which || e.keyCode) == 116 || ((e.which || e.keyCode) == 82 && ctrlKeyDown)) {
+                    e.preventDefault();
+                } else if ((e.which || e.keyCode) == 17) {
+                    ctrlKeyDown = true;
+                }
+            }
+
+            function keyup(e){
+                if ((e.which || e.keyCode) == 17){
+                    ctrlKeyDown = false;}
+            }
+
+            function keyupwin(e){
+                if ((e.which || e.keyCode) == 17){
+                    $.post("/inscripciontest",{'idpersona':'{{ persona.id }}', "id_test":{{ realizartest.id }},"segun":contador_s, "minut":contador_m,'action': 'actualizatime'}, function(data) {
+                }, "json").fail(function() {
+                    hideWaiting();
+                    smoke.alert('Error de conexi&oacute;n, cierre y vuelva a ingresar');
+                });
+                e.preventDefault(); // Chrome requiere esto para mostrar un mensaje de confirmación
+                e.returnValue = ''; 
+                ctrlKeyDown = false;
+                }
+            }
+
+            document.oncontextmenu = new Function("return false");
+
+            history.pushState(null, null, location.href);
+
+            window.addEventListener('popstate', function(event) {
+                history.pushState(null, null, location.href);
+
+            });
+            var tiem = 120;
+            var cronometro1;
+            cronometro1 = setInterval(
+                function(){
+                    if(tiem==0)
+                    {
+                        tiem=120;
+                        if(parseInt(contador_m) != 0 || parseInt(contador_s) != 0 )
+                        {
+                        $.post("/inscripciontest",{'idpersona':'{{ persona.id }}', "id_test":{{ realizartest.id }},"segun":contador_s, "minut":contador_m ,'action': 'actualizatime'}, function(data) {
+
+                        }, "json").fail(function() {
+                                hideWaiting();
+                                smoke.alert('Error de conexi&oacute;n, cierre y vuelva a ingresar');
+                            });
+                        }
+                    }
+                    tiem--;
+                    },1000);
+        {% endif %}
+    
+        guardarrespuestas=function(idpregunta,ordenrespuesta,puntaje,repues) {
+
+
+              var formData = new FormData();
+              formData.append('action', 'guardarpreguntaseleccion');
+              formData.append('idtest', '{{ realizartest.id }}');
+              formData.append('idpersona', '{{ persona.id }}');
+              formData.append('idinscripciontest', '{{ inscriptest.id }}');
+              formData.append('idpregunta', idpregunta);
+              formData.append('idordenrespuesta', ordenrespuesta);
+              formData.append('respuesta', repues);
+              formData.append('puntaje', puntaje);
+
+
+              $.ajax({
+                    url: '/inscripciontest',
+                    type: "POST",
+                    contentType: false,
+                    data: formData,
+                    processData: false,
+                    cache: false,
+                    success: function (data) {
+                        if (data.result == "bad") {
+                            swal("Error", data.message, "error");
+                        }
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        swal("Error", "Error Conexion en el Servidor", "error");
+                    }
+              });
+
+
+        }
+
+
+
+        siguientepanel=function(idsessionpanel,idpanelpregunta,numerosession,idarea) {
+
+            /** validar que todas las preguntas correspondiente al area esten contestadas*/
+            var siguientepanel=parseInt(idpanelpregunta)+1;
+            var idsessionpanel=idsessionpanel
+            $.post("/inscripciontest", {
+                 "action": "validarrespuestacontestada",
+                 areaid: idarea,
+                 idinscriptest:'{{ inscriptest.id }}'
+             }, function (data) {
+                 if (data.result == 'ok') {
+
+                        if (parseInt(siguientepanel)> parseInt(numerosession)){
+                            idsessionpanel=parseInt(idsessionpanel)+1;
+                        }
+
+                        var anchoprogreso=document.getElementById('barraprogresosiguiente').style.width;
+                        var cantidad=parseInt(anchoprogreso.substring(0,2))+parseInt(10);
+
+
+
+                        if (cantidad==90){
+                            cantidad=parseInt(cantidad)+parseInt(10);
+                        }
+
+                        $("#lblpagina").html(siguientepanel);
+
+                        document.getElementById("barraprogresosiguiente").style.width=cantidad+"%";
+
+                        $("#tbpanel .recorrer").each(function () {
+                            document.getElementById(this.id).style.display = "none";
+                        });
+
+
+                        document.getElementById("panel__"+idsessionpanel+"_"+siguientepanel).style.display = "block";
+
+
+                 } else {
+
+                     swal("Alerta", data.message, "warning");
+
+                 }
+             }, 'json');
+
+
+
+        }
+
+
+        contestarpregunta=function(codigoobjecto,idpregunta,ordenrespue,puntaje){
+              var xob = $("#"+codigoobjecto).val();
+              if(xob!=""){
+                  Loader.open();
+                  var formData = new FormData();
+                  formData.append('action', 'guardarpreguntaseleccion');
+                  formData.append('idtest', '{{ realizartest.id }}');
+                  formData.append('idpersona', '{{ persona.id }}');
+                  formData.append('idinscripciontest', '{{ inscriptest.id }}');
+                  formData.append('idpregunta', idpregunta);
+                  formData.append('idordenrespuesta', ordenrespue);
+                  formData.append('puntaje', puntaje);
+                  formData.append('respuesta', xob);
+
+                  $.ajax({
+                        url: '/inscripciontest',
+                        type: "POST",
+                        contentType: false,
+                        data: formData,
+                        processData: false,
+                        cache: false,
+                        success: function (data) {
+                            if (data.result == "bad") {
+                                swal("Error", data.message, "error");
+                            }
+                        },
+                        error: function (xhr, ajaxOptions, thrownError) {
+                            swal("Error", "Error Conexion en el Servidor", "error");
+                        },
+                        complete: function(){
+                           Loader.close();
+                        }
+                  });
+
+              }else{
+                   swal("Alerta", 'Debe Ingesar la respuesta', "warning");
+              }
+
+        }
+        enviarsin_validar=function (){
+            listarespuestas= [];
+            var elemdrag = document.getElementsByClassName('sortable-item');
+               for (var i = 0; i < elemdrag.length; i++){
+                   listarespuestas.push({"valorrespuesta":elemdrag[i].innerText,"idpregunta":elemdrag[i].getAttribute('idpregunta'),"idordenrespuesta":elemdrag[i].getAttribute('idordenrepuesta')})
+               }
+
+            $("#tabrepuesta input").each(function () {
+                  var dat=$("#"+this.id).attr('name')
+                  if ($(this).attr('type') === 'radio'){
+                      if ($(this).is(':checked')){
+                          var dat_rad=$("#"+this.id).attr('name_re')
+                          valor_resp=$("#"+dat_rad).val()
+                          listarespuestas.push({"valorrespuesta":valor_resp,"idpregunta":$("#"+this.id).attr('idpregunta'),"idordenrespuesta":$("#"+this.id).attr('idordenrespuesta')})
+                      }
+                  }else if($(this).attr('type') === 'checkbox') {
+                      if ($(this).is(':checked')) {
+                          console.log(dat)
+                        listarespuestas.push({"valorrespuesta":$("#"+dat).val(),"idpregunta":$("#"+this.id).attr('idpregunta'),"idordenrespuesta":$("#"+this.id).attr('idordenrespuesta')})
+                      }
+                  }else{
+                      listarespuestas.push({"valorrespuesta":$("#"+dat).val(),"idpregunta":$("#"+this.id).attr('idpregunta'),"idordenrespuesta":$("#"+this.id).attr('idordenrespuesta')})
+                  }
+                    {#listarespuestas.push({"valorrespuesta":$("#"+dat).val(),"idpregunta":$("#"+this.id).attr('idpregunta'),"idordenrespuesta":$("#"+this.id).attr('idordenrespuesta')})#}
+            });
+              Loader.open();
+              var formData = new FormData();
+              formData.append('action', 'finaliza');
+              formData.append('jrespuestas', JSON.stringify(listarespuestas));
+              formData.append('idtest', '{{ realizartest.id }}');
+              formData.append('idpersona', '{{ persona.id }}');
+              formData.append('idinscripciontest', '{{ inscriptest.id }}');
+              formData.append('minutos', document.getElementById("minutos").innerHTML);
+              formData.append('segundos', document.getElementById("segundos").innerHTML);
+              $.ajax({
+                    url: '/inscripciontest',
+                    type: "POST",
+                    contentType: false,
+                    data: formData,
+                    processData: false,
+                    cache: false,
+                    success: function (data) {
+                        if (data.result == "ok") {
+                            swal("! Test Realizado", "", "success");
+                            location.href = "/inscripciontest?idtest={{ realizartest.id }}";
+
+                        } else {
+                            swal("Error", data.message, "error");
+                        }
+                    },
+                    error: function () {
+                        swal("Error", "Error Conexion en el Servidor", "error");
+
+
+                    },
+                    complete: function(){
+                        Loader.close();
+                    }
+              });
+        }
+        
+        enviar=function (idultimarea) {
+
+             listarespuestas= [];
+
+             $.post("/inscripciontest", {
+                 "action": "validarrespuestacontestada",
+                 idinscriptest:'{{ inscriptest.id }}'
+             }, function (data) {
+                 if (data.result == 'ok') {
+                       var conjuntoPreguntas = {};
+                       var elemdrag = document.getElementsByClassName('sortable-item');
+                       for (var i = 0; i < elemdrag.length; i++){
+                           var idpregunta = elemdrag[i].getAttribute('idpregunta');
+                           if (!conjuntoPreguntas[idpregunta]) {
+                                conjuntoPreguntas[idpregunta] = 1;  // Iniciar contador para esta pregunta
+                            }
+                           listarespuestas.push({"valorrespuesta":elemdrag[i].innerText,"idpregunta":idpregunta,
+                                                "idordenrespuesta":conjuntoPreguntas[idpregunta],  // Nuevo orden basado en la posición actual
+                                                });
+                           // Incrementamos el contador de orden para esa pregunta
+                            conjuntoPreguntas[idpregunta]++;
+                       }
+
+
+                      $("#tabrepuesta input").each(function () {
+                          var dat=$("#"+this.id).attr('name')
+                          if ($(this).attr('type') === 'radio'){
+                              if ($(this).is(':checked')){
+                                  var dat_rad=$("#"+this.id).attr('name_re')
+                                  valor_resp=$("#"+dat_rad).val()
+                                  listarespuestas.push({"valorrespuesta":valor_resp,"idpregunta":$("#"+this.id).attr('idpregunta'),"idordenrespuesta":$("#"+this.id).attr('idordenrespuesta')})
+                              }
+                          }else if($(this).attr('type') === 'checkbox') {
+                              if ($(this).is(':checked')) {
+                                listarespuestas.push({"valorrespuesta":$("#"+dat).val(),"idpregunta":$("#"+this.id).attr('idpregunta'),"idordenrespuesta":$("#"+this.id).attr('idordenrespuesta')})
+                              }
+                          }else{
+                              listarespuestas.push({"valorrespuesta":$("#"+dat).val(),"idpregunta":$("#"+this.id).attr('idpregunta'),"idordenrespuesta":$("#"+this.id).attr('idordenrespuesta')})
+                          }
+                            {#listarespuestas.push({"valorrespuesta":$("#"+dat).val(),"idpregunta":$("#"+this.id).attr('idpregunta'),"idordenrespuesta":$("#"+this.id).attr('idordenrespuesta')})#}
+                      });
+
+                      Loader.open();
+
+                      var formData = new FormData();
+                      formData.append('action', 'enviarespuestas');
+                      formData.append('jrespuestas', JSON.stringify(listarespuestas));
+                      formData.append('idtest', '{{ realizartest.id }}');
+                      formData.append('idpersona', '{{ persona.id }}');
+                      formData.append('idinscripciontest', '{{ inscriptest.id }}');
+                      formData.append('minutos', document.getElementById("minutos").innerHTML);
+                      formData.append('segundos', document.getElementById("segundos").innerHTML);
+
+
+
+
+                      $.ajax({
+                            url: '/inscripciontest',
+                            type: "POST",
+                            contentType: false,
+                            data: formData,
+                            processData: false,
+                            cache: false,
+                            success: function (data) {
+                                if (data.result == "ok") {
+                                    swal("! Test Realizado", "Las respuestas del test se enviaron correctamente", "success");
+                                    location.href = "/inscripciontest?idtest={{ realizartest.id }}";
+
+                                } else {
+                                    swal("Error", data.message, "error");
+
+
+                                }
+                            },
+                            error: function (xhr, ajaxOptions, thrownError) {
+                                swal("Error", "Error Conexion en el Servidor", "error");
+
+
+                            },
+                            complete: function(){
+                                Loader.close();
+                            }
+                      });
+
+                 } else {
+                     swal("Alerta", data.message, "warning");
+                 }
+
+             }, 'json');
+
+
+
+        }
+
+        guardarpreguntadrag=function(iddra,idpregunta,ordenrespue){
+              var el = document.getElementById(iddra);
+
+              Loader.open();
+              var formData = new FormData();
+              formData.append('action', 'guardarpreguntaseleccionotra');
+              formData.append('idtest', '{{ realizartest.id }}');
+              formData.append('idpersona', '{{ persona.id }}');
+              formData.append('idinscripciontest', '{{ inscriptest.id }}');
+              formData.append('idpregunta', idpregunta);
+              formData.append('idordenrespuesta', ordenrespue);
+              formData.append('respuesta', String(el.innerText));
+
+              $.ajax({
+                    url: '/inscripciontest',
+                    type: "POST",
+                    contentType: false,
+                    data: formData,
+                    processData: false,
+                    cache: false,
+                    success: function (data) {
+                        if (data.result == "bad") {
+                            swal("Error", data.message, "error");
+                        }
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        swal("Error", "Error Conexion en el Servidor", "error");
+                    },
+                    complete: function(){
+                       Loader.close();
+                    }
+              });
+        }
+
+
+
+    });
+
+</script>
+
+{% endblock %}
+{% block canvas %}
+
+
+
+
+    <div class="main-container">
+         <div class="page-header">
+            <div class="row">
+                <div class="container pt-5 mb-5">
+                    <div class="text-center">
+                        <div>
+                            <h3 class="menu-header-title text-capitalize mb-3" style="color: #184679;"> {{ realizartest.titulo }} </h3>
+                            <h3 class="menu-header-title text-capitalize mb-3" style="color: #184679;"> <strong>ALUMNO :</strong>   {{ persona.nombre_completo_inverso }} </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-box mb-30">
+            <div class="pd-20">
+                 <div class="row justify-content-between">
+
+                    <div class="col-lg-6 col-6 text-left logo">
+{#                        <h3> Duración : <span id="minutos" class="badge badge-success">{{ realizartest.minutofin }} </span>:<span id="segundos" class="badge badge-success" style="color:white;" >59</span> Minutos</h3>#}
+                        <h3> Duración: <span id="minutos" class="badge badge-success">{{ minutos }} </span>:<span id="segundos" class="badge badge-success" style="color:white;" >{{ segundos }}</span> Minutos</h3>
+                    </div>
+
+{#                    <div class="col-lg-3 col-6 text-left logo">#}
+{#                         <h3>Página  <label id="lblpagina" > </label> de {{ cantidadarea }}</h3>#}
+{#                         <div class="progress mb-20">#}
+{#                                <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" id="barraprogresosiguiente" style="width: 10%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>#}
+{#                         </div>#}
+{#                    </div>#}
+                 </div>
+             </div>
+        </div>
+
+
+
+
+        <div class="card-box mb-30">
+            <div class="pd-20" id="tbpanel">
+
+                        {% for xlistapreguntas in listapreguntas %}
+                                <div class="row">
+
+                                  <div class="col-md-12" style="margin-left: 20px;font-size: 15px"  >
+                                    {% if xlistapreguntas.descripcion %}
+                                        <strong> {{ xlistapreguntas.orden }}.- {{ xlistapreguntas.pregunta }}</strong> <br>
+                                        <p style="margin-left: 20px;font-size: 12px"> {{ xlistapreguntas.descripcion }}</p><br>
+                                    {% else %}
+                                        <strong>{{ xlistapreguntas.orden }}.- {{ xlistapreguntas.pregunta }}</strong> <br>
+                                    {% endif %}
+                                    {% if xlistapreguntas.imagen %}
+                                        <img src="../media/{{ xlistapreguntas.imagen }}" alt="" ><br><br>
+                                    {% endif %}
+                                  </div>
+                                </div>
+                                <div class="row" id="tabrepuesta">
+
+                                   {% if xlistapreguntas.cantidadrespuesta == 1 %}
+                                      <br>
+                                      <div class="col-md-2" >
+                                           <div class="form-group">
+                                               {% if  xlistapreguntas.cajatexto %}
+                                                    <input id="txtresp_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ xlistapreguntas.orden }}','{{ x1.puntaje }}')" idordenpregunta="1" esfecha="0" type="text" class="form-control" >
+                                               {% else  %}
+                                                   {% if xlistapreguntas.checkbox %}
+                                                        <div class="custom-control custom-checkbox mb-5">
+                                                            <input id="chk_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenpregunta="1" esfecha="1" name="chk_{{ xlistapreguntas.id }}" type="checkbox"  class="custom-control-input"  >
+                                                            <label class="custom-control-label" for="chk_{{ xlistapreguntas.id }}"></label>
+                                                        </div>
+
+                                                   {% endif %}
+
+                                               {% endif %}
+                                           </div>
+                                      </div>
+
+                                  {% else %}
+                                      <br>
+                                      {% if xlistapreguntas.checkbox %}
+
+                                          {% for x1 in xlistapreguntas.respuestapregunta %}
+                                              <div class="col-md-1" ></div>
+                                              <div class="col-md-2" >
+                                                   <div class="form-group">
+                                                   {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                           {% if xlistapreguntas.checkbox %}
+
+                                                              {% if respseleccionada.puntaje > 0 %}
+                                                                   <div class="custom-control custom-checkbox mb-5">
+                                                                        <input type="checkbox" id="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" name="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}"  onclick="guardarrespuestas('{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}',this.value)"  esfecha="1" checked  class="custom-control-input">
+                                                                        <label class="custom-control-label" for="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}"><span class="d-block d-sm-block d-md-none" style="font-size: 11px"> </span> {{ x1.respuesta }} </label>
+                                                                   </div>
+                                                               {% else %}
+                                                                    <div class="custom-control custom-checkbox mb-5">
+                                                                        <input type="checkbox" id="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" name="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}" onclick="guardarrespuestas('{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}',this.value)"  esfecha="1" required class="custom-control-input">
+                                                                        <label class="custom-control-label" for="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}"><span class="d-block d-sm-block d-md-none" style="font-size: 11px"> </span>{{ x1.respuesta }}</label>
+                                                                   </div>
+                                                               {% endif %}
+
+                                                           {% endif %}
+                                                   {% endwith %}
+
+                                                   </div>
+                                              </div>
+
+                                          {% endfor %}
+                                       <br>
+                                      {% endif %}
+
+                                      {% if xlistapreguntas.arrastarsoltar %}
+
+                                                <div class="col-md-2" ></div>
+                                                <div class="col-md-4" class="sortable-list" >
+                                                      {% for x3 in xlistapreguntas.tienecolumna %}
+                                                           {% if x3.lado == 1 %}
+
+                                                                  <div  class="sortable-item-otro"> {{ x3.descripcion }}</div>
+
+                                                           {% endif %}
+                                                      {% endfor %}
+                                                </div>
+                                                <div class="col-md-4" id="availableItems_{{ xlistapreguntas.id }}"   class="sortable-list" >
+
+                                                        {% for x3 in xlistapreguntas.tienecolumna2 %}
+                                                            <div class="sortable-item" id="drag_{{ x3.id }}" ondragend="guardarpreguntadrag('drag_{{ x3.id }}','{{ xlistapreguntas.id }}','{{ x3.orden }}')" idpregunta="{{ xlistapreguntas.id }}"  idordenrepuesta="{{ x3.orden }}"  >
+                                                                {{ x3.descripcion }}
+                                                            </div>
+
+                                                        {% endfor %}
+
+                                                </div>
+
+                                      <br>
+                                      {% endif %}
+
+                                      {% if xlistapreguntas.cajatextoleyenda  %}
+
+                                          {% if xlistapreguntas.orden == 5 %}
+                                            {% for x1 in xlistapreguntas.respuestapregunta %}
+
+                                                  <div class="col-md-6" >
+                                                    <table style="margin-left: 15%">
+                                                        {% if x1.orden == 1 %}
+                                                            <tr>
+                                                                <td>¡Qué </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> paisaje contemplamos desde el Mirador!</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 2 %}
+                                                            <tr>
+                                                                <td>Hay una crema que elimina el </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> de las piernas.</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 3 %}
+                                                            <tr>
+                                                                <td>Mi hermano es </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> de la Policia Nacional.</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 4 %}
+                                                            <tr>
+                                                                <td>Podré </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> en las próximas elecciones.</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 5 %}
+                                                            <tr>
+                                                                <td>La modista a va a </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> mi uniforme.</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 6 %}
+                                                            <tr>
+                                                                <td>Agarró el hacha por el </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 7 %}
+                                                            <tr>
+                                                                <td>Las plantas tienen </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 8 %}
+                                                            <tr>
+                                                                <td>Mi deber es </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> la basura.</td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 9 %}
+                                                            <tr>
+                                                                <td>Debemos </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> bien las habichuelas.</td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                    </table>
+                                                  </div>
+                                          {% endfor %}
+                                          {% endif %}
+
+                                          {% if xlistapreguntas.orden == 7 %}
+                                            {% for x1 in xlistapreguntas.respuestapregunta %}
+
+                                                  <div class="col-md-6" >
+                                                    <table style="margin-left: 15%">
+                                                        {% if x1.orden == 1 %}
+                                                            <tr>
+                                                                <td>carter </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 2 %}
+                                                            <tr>
+                                                                <td>honrad </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 3 %}
+                                                            <tr>
+                                                                <td>niñ </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 4 %}
+                                                            <tr>
+                                                                <td>timid </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 5 %}
+                                                            <tr>
+                                                                <td>desnud</td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 6 %}
+                                                            <tr>
+                                                                <td>sensat </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 7 %}
+                                                            <tr>
+                                                                <td>gentil </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 8 %}
+                                                            <tr>
+                                                                <td>port </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 9 %}
+                                                            <tr>
+                                                                <td>torp </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+
+                                                            </tr>
+                                                        {% endif %}
+                                                    </table>
+                                                  </div>
+                                            {% endfor %}
+                                          {% endif %}
+
+                                      {% endif %}
+
+                                      {% if xlistapreguntas.radiobox %}
+
+                                          {% for x1 in xlistapreguntas.respuestapregunta %}
+                                              <div class="col-md-1" ></div>
+                                              <div class="col-md-2" >
+                                                   <div class="form-group">
+                                                   {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                           {% if xlistapreguntas.radiobox %}
+
+                                                               {% if respseleccionada.puntaje > 0 %}
+                                                                   <div class="custom-control custom-radio mb-5">
+                                                                        <input type="radio" id="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" name="radio_{{ xlistapreguntas.id }}" name_re="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}" onclick="guardarrespuestas('{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}',this.value)"  esfecha="1" checked  class="custom-control-input" >
+                                                                        <label class="custom-control-label" for="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}"><span class="d-block d-sm-block d-md-none" style="font-size: 11px"> </span> {{ x1.respuesta }} </label>
+                                                                   </div>
+                                                               {% else %}
+                                                                    <div class="custom-control custom-radio mb-5">
+                                                                        <input type="radio" id="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" name="radio_{{ xlistapreguntas.id }}" name_re="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}"  onclick="guardarrespuestas('{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}',this.value)" esfecha="1" required class="custom-control-input">
+                                                                        <label class="custom-control-label" for="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}"><span class="d-block d-sm-block d-md-none" style="font-size: 11px"> </span>{{ x1.respuesta }}</label>
+                                                                   </div>
+                                                               {% endif %}
+
+                                                           {% endif %}
+                                                   {% endwith %}
+
+                                                   </div>
+                                              </div>
+
+                                          {% endfor %}
+
+
+
+                                      {% endif %}
+
+
+                                      {% if  xlistapreguntas.cajatexto %}
+                                          {% for x1 in xlistapreguntas.respuestapregunta %}
+                                               {% with respseleccionada=xlistapreguntas|args:inscriptest.id|args:x1.orden|call:"validar_respuesta" %}
+                                                   {% if xlistapreguntas.cajatexto %}
+                                                         <div class="col-md-2" >
+                                                           <div class="form-group">
+                                                               {% if respseleccionada %}
+                                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                               {% else %}
+                                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                               {% endif %}
+                                                           </div>
+                                                         </div>
+                                                        {% if x1.imagen %}
+                                                            <div class="col-sm-1" >
+                                                                <img src="../media/{{ x1.imagen }}" alt="" style="max-width: 50px; max-height: 50px; width: auto; height: auto" >
+                                                           </div>
+                                                        {% endif %}
+
+                                                   {% endif %}
+                                               {% endwith %}
+                                          {% endfor %}
+
+                                      {% endif %}
+
+
+                                  {% endif %}
+
+                                </div>
+
+
+
+                        {% endfor %}
+
+                  <div class="modal-footer">
+                        <button type="button" id="btnenviar" onclick="enviar()" class="btn" data-bgcolor="#63A836"  data-color="#ffffff">Enviar</button>
+                  </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap and SortableJS Scripts -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.13.0/Sortable.min.js"></script>
+
+
+    <script>
+      // Initialize SortableJS for both lists
+      new Sortable(document.getElementById('availableItems_6'), {
+        group: 'shared', // Set the same group name for both lists
+        animation: 150
+      });
+
+       new Sortable(document.getElementById('availableItems_11'), {
+        group: 'shared', // Set the same group name for both lists
+        animation: 150
+      });
+
+      new Sortable(document.getElementById('selectedItems'), {
+        group: 'shared', // Set the same group name for both lists
+        animation: 150
+      });
+
+    </script>
+
+
+
+
+
+{% endblock %}

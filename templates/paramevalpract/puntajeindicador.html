@@ -1,0 +1,202 @@
+{% extends 'basebs.html' %}
+{% load sga_extras%}
+{% block heading %}
+    <link type='text/css' rel='stylesheet' href="/static/css/datepicker.css"/>
+    <script src="/static/js/bootstrap-datepicker.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        $(function(){
+            $("#nuevoreg").click(function(){
+                $("#registropanel").modal({backdrop: 'static', keyboard: 'false', width: "40%" });
+                $("#registropanel").modal("show");
+                $("#puntos").val(0);
+                $("#descripcion").val('');
+                $("#descripcion").attr('myval',0);
+                $("#estado").attr('checked',false);
+            });
+            $(".editreg").click(function(){
+                $("#registropanel").modal({backdrop: 'static', keyboard: 'false', width: "40%" });
+                $("#registropanel").modal("show");
+                $("#puntos").val($(this).attr('punto'));
+                $("#descripcion").val($(this).attr('descrip') );
+                $("#descripcion").attr('myval',$(this).attr('idpunt') );
+                if($(this).attr('estado')=='True')
+                    $("#estado").attr('checked',true);
+                else
+                    $("#estado").attr('checked',false);
+            });
+            $(".delreg").click(function(){
+                var idpunt = $(this).attr('idpunt');
+
+                smoke.confirm("Esta seguro de eliminar el registro?", function(e){
+                    if (e){
+                        showWaiting("Eliminando registro", "espere un momento por favor...");
+                        location.href = "/paramevalpract?action=delreg&id="+idpunt;
+                    }else{
+
+                    }
+                        }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                });
+            });
+            {% if noti %}
+                smoke.alert('{{ noti }}');
+            {% endif %}
+            $(".btn-cerrarpanelregis").click(function(){
+                $("#registropanel").modal("hide");
+            });
+            $(".btn-guardarregis").click(function(){
+                $(".btn-guardarregis").hide();
+                $(".btn-cerrarpanelregis").hide();
+                var estado = false;
+                var valida = true;
+                var idindicador = $("#descripcion").attr('myval');
+                if ($("#estado").is(':checked')) {
+                    estado = true;
+                }
+                if ($.trim($("#descripcion").val()) == '') {
+                    valida = false;
+                }
+                if ($.trim($("#puntos").val()) == '' || $("#puntos").val() <= 0) {
+                    valida = false;
+                }
+                if(valida){
+                    showWaiting("Ingresando informacion", "espere un momento por favor...");
+                    $.post("/paramevalpract", {"action":'guardarindic',
+                        "descripcion": $("#descripcion").val(), "idindic": idindicador,"estado": estado, "puntos": $("#puntos").val() }, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            $(".btn-cerrarpanelregis").click();
+                            smoke.alert("Registro Ingresado");
+                            setInterval(function(){
+                                $.unblockUI();
+                                location.href='/paramevalpract?action=indicador';
+                            }, 1000);
+                        }else{
+                            $(".btn-guardarregis").show();
+                            $(".btn-cerrarpanelregis").show();
+                            $("#etiquetap").html("Error al Guardar, intentelo nuevamente").addClass("alert alert-danger");
+                        }
+
+                    }, "json");
+
+                }else{
+                    $(".btn-guardarregis").show();
+                    $(".btn-cerrarpanelregis").show();
+                    $("#etiquetap").html("Faltan datos por ingresar, recuerde que los puntos deben ser mayor a 0").addClass("alert alert-danger");
+                }
+
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span6">
+            <header style="text-align: center">
+                <h2> PUNTAJE DE INDICADORES
+                <a href="/paramevalpract" class="btn btn-danger" style="float: right"><i class="icon-arrow-left"></i>Atras</a></h2>
+            </header>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span6">
+            <a id="nuevoreg" class="btn btn-success" style="float: left;cursor: pointer"><i class="icon-edit"></i> Nuevo Registro</a>
+        </div><br><br>
+    </div>
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span6" style="text-align: center">
+            <table class='table' cellpadding="0" cellspacing="0" id="tab_logic">
+                <thead>
+                    <tr>
+                        <th style="width: 80%">Descripción</th>
+                        <th style="width: 20%">Puntos</th>
+                        <th style="width: 20%">Estado</th>
+                        <th style="width: 20%"></th>
+                        <th style="width: 20%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in puntajesindicadores %}
+                        <tr>
+                            <td>{{ p.descripcion }}</td>
+                            <td>{{ p.puntos }}</td>
+                            <td>
+                                <a href="/paramevalpract?action=estadopun&id={{ p.id }}">
+                                {% if p.estado %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                                </a>
+                            </td>
+                            <td>
+                                {% if not p.existe_evalsuper %}
+                                    <a class="label label-info  btn-small editreg" idpunt='{{ p.id }}'estado='{{ p.estado }}' descrip='{{ p.descripcion }}' punto='{{ p.puntos }}' style="float: right;cursor: pointer"><i class="icon-edit"></i> Editar </a>
+
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not p.existe_evalsuper %}
+                                    <a class="label label-important  btn-small delreg" idpunt='{{ p.id }}' style="float: right;cursor: pointer"><i class="icon-remove"></i> Eliminar </a>
+
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not puntajesindicadores %}
+                        <tr><td colspan="3"><h4>NO HAY REGISTROS </h4></td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+{% block moreblock %}
+    <div class="modal fade static" id="registropanel" style="width: 20px;">
+        <div class="modal-header">
+            <h4 id="paneltitleaprob">Ingresar Datos</h4>
+        </div>
+        <div class="modal-body">
+            <div id="panelbody">
+                <div class="row-fluid ">
+                    <div class="span12">
+                        <p id="etiquetap"></p>
+                    </div>
+                </div>
+                <div class="row-fluid ">
+                    <div class="span12">
+                        <b>Estado:</b>
+                        <input type="checkbox" style="width: 25%;height: 2em;" class="input input-xxlarge convenioemcla" id="estado" alt="0" name="estado"/>
+                    </div>
+                </div>
+                <div class="row-fluid ">
+                    <div class="span12">
+                        <b>Descripción:</b><br>
+                        <input type="text" class="input input-xxlarge" style="text-transform: uppercase" id="descripcion" alt="0" myval="0" name="descripcion"/>
+                    </div>
+                </div>
+                <div class="row-fluid ">
+                    <div class="span12">
+                        <b>Puntos:</b><br>
+                        <input type="number" class="input input-small" id="puntos" alt="0" name="puntos"/>
+                    </div>
+                </div>
+
+                <br/>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a style="cursor: pointer" class="btn btn-success btn-guardarregis"> <b> Guardar</b></a>
+            <a style="cursor: pointer" class="btn btn-info btn-cerrarpanelregis">Salir</a>
+
+        </div>
+    </div>
+{% endblock %}

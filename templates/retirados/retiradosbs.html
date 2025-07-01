@@ -1,0 +1,194 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/retirados?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $("#detalle_retiro #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_retiro").modal("hide");
+            });
+
+
+            $(".detalleretiro").click(function() {
+               var vid = $(this).attr("pid");
+                   $.get("/retirados", {'action':'ver', 'id': vid}, function(data) {
+                        $("#detalle_retiro .modal-body").html(data);
+                        $("#detalle_retiro").modal({"backdrop":"static","width":"40%"});
+                        $("#detalle_retiro").modal("show");
+                   }, "html");
+               return false;
+              });
+
+
+            $("#aniosel").change(function() {
+                var anio = $(this).val();
+                console.log(anio)
+                if (anio){
+                    location.href = '/retirados?aselect='+anio;
+                }else{
+                    location.href = '/retirados';
+                }
+            });
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Alumnos Retirados de Matr&iacute;culas</h3>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+    <div class='span4'>
+        <form class="form-search">
+            <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/retirados" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+        </form>
+    </div>
+        <div class="span4">
+            Año de Retiro:
+            <select id='aniosel' class="input-xlarge"/>
+                <option value=''>-----</option>
+                {% for a in anioselect %}
+                    <option value="{{ a.anio }}" {% if anio == a.anio %}selected="selected"{% endif %}>{{ a.anio }}</option>
+                {% endfor %}
+            </select>
+            {% if anio %}
+                <a href="/retirados" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif  %}
+        </div>
+        <div class="span4">
+            {% if anio %}
+                <h3>Total de Estudiantes Retirados: {{ totalretirados }} </h3>
+            {% endif  %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Nivel</th>
+                <th>Reintegro</th>
+                <th>Fecha Retiro</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for retirado in retirados %}
+                <tr>
+                    <td>{{ retirado.inscripcion }}</td>
+                    <td>{% if retirado.nivel %}{{ retirado.nivel.grupo.nombre}} - {{ retirado.nivel.nivelmalla}} - {{ retirado.nivel.carrera}}{% else %}<span class="label"> HISTORICO </span>{% endif %}</td>
+                    {% if retirado.activo %}
+                        <td><img src='/static/images/16/true.png' alt='Si' border='0'/></td>
+                    {% else %}
+                        <td><img src='/static/images/16/false.png' alt='No' border='0'/></td>
+
+                    {% endif %}
+{#                    <td>{% if retirado.motivo %}{{ retirado.motivo }}{% endif %}</td>#}
+                    <td>{{ retirado.tienedetallematricula.fecha|date:"d-m-Y"  }}</td>
+                    <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+
+                                        <li><a class="detalleretiro" pid="{{ retirado.id }}" href='#'> <i class='icon-edit'></i> Ver Detalle </a></li>
+                                        {% if not retirado.activo and perms.sga.change_retiradomatricula %}
+                                            <li><a href="/retirados?action=seguimiento&id={{ retirado.id }} "> <i class='icon-pencil'></i> Seguimiento </a></li>
+                                            <li><a class="cambiar"  href="/retirados?action=retirar&id={{ retirado.id }} "> <i class='icon-edit'></i> Reintegrar </a></li>
+                                        {% endif %}
+                                    
+                                </ul>
+                            </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not retirados %}
+                <tr>
+                    <td colspan="4">
+                        NO HAY ALUMNOS RETIRADOS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+{#                    {% for pagenumber in paging.page_range %}#}
+{#                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/retirados?page={{ pagenumber }}">{{ pagenumber }}</a></li>#}
+{#                    {% endfor %}#}
+
+                    {% if paging.num_pages > 20 %}
+                        <div class='pagination'>
+                            <ul>
+                                {% if paging.primera_pagina %}
+                                    <li><a href="/retirados?page=1">1</a></li>
+                                    <li><a href="/retirados?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                                {% endif %}
+                                {% for pagenumber in paging.paginas %}
+                                    <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/retirados?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if anio %}&aselect={{ anio }}{% endif %}">{{ pagenumber }}</a></li>
+                                {% endfor %}
+                                {% if paging.ultima_pagina %}
+                                    <li><a href="/retirados?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                                    <li><a href="/retirados?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    {% else %}
+
+                        <div class='pagination'>
+                            <ul>
+                                {% for pagenumber in paging.page_range %}
+                                    <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/retirados?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if anio %}&aselect={{ anio }}{% endif %}">{{ pagenumber }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="detalle_retiro"   >
+    <div class="row-fluid modal-header">
+        <h4 ><i> DETALLES DEL RETIRO </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a href="#" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,296 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript">
+
+        $(function() {
+            var idgraduad = 0;
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/graduados?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $("#search2").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/graduados?s="+term+"&anio=1";
+            });
+
+
+
+            actualizaCarreras = function(id) {
+                location.href = "/graduados?filter="+id;
+            };
+
+            $("#carrerassel").change(function() {
+                var id = $(this).val();
+                actualizaCarreras(id);
+            });
+
+            $('.addarchivo').click(function(){
+                $(".help-text").html('');
+                $("#paneltitle1").html($(this).attr('tit'));
+                $("#idgradua").val(0);
+                $('#id_archivo').val('');
+                cerrardeta = 0;
+                idgraduad = $(this).attr('pid');
+                $("#archivopanel").modal({"backdrop":"static","width":"35%"});
+                $("#archivopanel").modal("show");
+            });
+
+            $("#archivopanel .btn-adicionar").click(function(){
+                if ($("#id_archivo").val() != '')
+                {
+                    $("#idgradua").val(idgraduad);
+                    $("#formbutton").click();
+                }
+                else
+                {
+
+                    $("#idgradua").val(0);
+                    $(".help-text").html('Ingresar archivo').addClass('alert-info');
+                }
+            });
+
+            $("#id_archivo").change(function(){
+                if ($("#id_archivo").val() != '')
+                {
+                    $(".help-text").html('');
+                }
+            });
+
+            $("#archivopanel .btn-cerrar").click(function(){
+                if (cerrardeta == 0){
+                    $("#archivopanel").modal("hide");
+                }
+                else
+                {
+                    cerrardeta == 0;
+                    $("#archivopanel").modal("hide");
+                    detallearchi ();
+                }
+                return false;
+            });
+
+            {% if error %}
+                smoke.alert('{{ error }}');
+            {% endif %}
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Listado de Alumnos Graduados {% if filter %}en {{ filter.nombre }}{% endif %}</h3>
+            <h3>Total: {{ totalgraduados }}</h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span6">
+            <form class='form-search'>
+                <input class='input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> Buscar</a>
+                <a href="#" id='search2' class='btn btn-info'><i class="icon-search icon-white"></i> A&ntilde;o</a>
+                {% if search  or cargo or ejerce%}
+                    <a href="/graduados" id='allresults' class='btn btn-danger'><i class="icon-remove icon-white"></i> Todos</a>
+                {% endif %}
+                </form>
+        </div>
+        <div class="span4">
+            <form class='well'>
+                <select id="carrerassel">
+                    <option value="0">-----</option>
+                    {% for c in carreras %}
+                        <option value='{{ c.id }}' {% if c.id == filter.id %}selected="true"{% endif %}>{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div class="span2">
+           <a href="/graduados?cargo{% if filtro %}&filter={{ filtro }}{% endif %}"  class='btn btn-success'><i class="icon-table icon-white"></i> Cargo </a>
+           <a href="/graduados?ejerce{% if filtro %}&filter={{ filtro }}{% endif %}"  class='btn btn-success'><i class="icon-table icon-white"></i> Ejerce Profesi&oacute;n </a>
+        </div>
+    </div>
+    {% if cargo or ejerce %}
+        <div class='row-fluid'>
+                {% if cargo %}
+                <h3>GRADUADOS CON CARGO {{ cargo }}</h3>
+                {% else %}
+                    <h3>GRADUADOS QUE EJERCEN LA PROFESI&Oacute;N {{ ejerce }}  </h3>
+                {% endif %}
+        </div>
+    {% endif %}
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Estudiante</th>
+                <th>C&eacute;dula</th>
+                <th>Carrera</th>
+                <th>Tema de Tesis</th>
+                <th style="text-align: center;width: 8%">Archivo</th>
+                <th style="text-align: center;width: 8%">URL</th>
+                <th>Nota Tesis</th>
+                <th>Nota Final</th>
+                <th>Fecha Graduado</th>
+                <th>Registro Senescyt</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for graduado in graduados %}
+                <tr>
+                    <td>
+                        {% if perms.sga.change_graduado %}<a href='/graduados?action=edit&id={{ graduado.id }}'>{{ graduado.inscripcion.persona }}</a>{% else %}{{ graduado.inscripcion.persona }}{% endif %}
+                    </td>
+                    <td>{{ graduado.inscripcion.persona.cedula }}</td>
+                    <td>{{ graduado.inscripcion.carrera }}</td>
+
+                    <td>{% if graduado.documentoexiste %} {{ graduado.documentoexiste.documento }} {% else %} {{ graduado.tematesis }} {% endif %}</td>
+                    <td  style="text-align: center;width: 8%"> {% if graduado.archivo %} <a href='{{ graduado.archivo.url }}' class='btn btn-success btn-mini'><i class="icon-download icon-white"></i>Descargar</a> {% endif %}</td>
+                    <td  style="text-align: center;width: 8%"> {% if graduado.archivo %} <a>{{ TESIS_URL }}{{  graduado.archivo.url }}</a> {% endif %}</td>
+
+                    <td>{{ graduado.notatesis }}</td>
+                    <td>{{ graduado.notafinal }}</td>
+                    <td>
+                        {% if graduado.fechagraduado %}{{ graduado.fechagraduado|date:"d-m-Y"  }}{% else %}-{% endif %}
+                    </td>
+                    <td>{{ graduado.registro }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+
+                                {% if perms.sga.change_convenio %}
+                                    <li>
+                                        <a href="/graduados?action=seguimiento&id={{ graduado.id }}">
+                                            <i class="icon-eye-open icon-white"></i>
+                                            {% if graduado.seguimientos.count > 0 %}
+                                                {{ graduado.seguimientos.count }} Seguimiento{% if graduado.seguimientos.count > 1 %}s{% endif %}
+                                            {% else %}
+                                                Sin Seguimiento
+                                            {% endif %}
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                {% if perms.sga.change_graduado %}
+                                    <li><a href="/graduados?action=del&id={{ graduado.id }}"><i class="icon-remove icon-white"></i> Borrar</a></li>
+                                    <li><a class="addarchivo" pid="{{ graduado.id }}" {% if not graduado.archivo %} tit='AGREGAR TESIS A {{ graduado.inscripcion.persona.nombre_completo }}' {% else %}tit='REMPLAZAR TESIS A {{ graduado.inscripcion.persona.nombre_completo }}' {% endif %} style="cursor: pointer"> <i class='icon-edit'></i>{% if not graduado.archivo %} Agregar Tesis {% else %}Remplazar Tesis {% endif %}</a></li>
+                                {% endif %}
+
+{#                                    <li><a href="/inscripciones?action=record&id={{ graduado.inscripcion.id }}&ret=/graduados"><i class="icon-plus icon-white"></i> Registro Acad&eacute;mico</a></li>#}
+                                <li><a href="/inscripciones?action=alumalla&id={{ graduado.inscripcion.id }}"><i class="icon-share-alt"></i> Su Malla</a> </li>
+                                <li><a href="/inscripciones?action=editgraduados&id={{ graduado.inscripcion.id }}&graduado={{ graduado.id }}"><i class="icon-share-alt"></i> Editar Datos Personales</a></li>
+
+                                <li><a href="/graduados?action=datos&id={{ graduado.id }}"><i class="icon-user icon-white"></i> Datos de Contacto</a></li>
+                                <li><a href="/graduados?action=observaciones&id={{ graduado.id }}"><i class="icon-adjust icon-white"></i> Observaciones {% if graduado.cantidadobservaciones %}({{ graduado.cantidadobservaciones }}){% endif %}</a></li>
+
+                                {% if persona.pertenece_soporte %}
+                                    <li>
+                                        <a href="/graduados?action=seguimiento&id={{ graduado.id }}">
+                                            <i class="icon-eye-open icon-white"></i>
+                                            {% if graduado.seguimientos.count > 0 %}
+                                                {{ graduado.seguimientos.count }} Seguimiento{% if graduado.seguimientos.count > 1 %}s{% endif %}
+                                            {% else %}
+                                                Sin Seguimiento
+                                            {% endif %}
+                                        </a>
+                                    </li>
+                                    <li><a href="/inscripciones?action=alumalla&id={{ graduado.inscripcion.id }}"><i class="icon-share-alt"></i> Su Malla</a> </li>
+                                    <li><a href="/graduados?action=datos&id={{ graduado.id }}"><i class="icon-user icon-white"></i> Datos de Contacto</a></li>
+                                    <li><a href="/graduados?action=observaciones&id={{ graduado.id }}"><i class="icon-adjust icon-white"></i> Observaciones {% if graduado.cantidadobservaciones %}({{ graduado.cantidadobservaciones }}){% endif %}</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not graduados %}
+                <tr>
+                    <td colspan="9">
+                        NO HAY GRADUADOS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/graduados?page=1">1</a></li>
+                            <li><a href="/graduados?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/graduados?page={{ pagenumber }}{% if anio %}&anio={{ anio }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if cargo %}&cargo{% endif %}{% if ejerce %}&ejerce{% endif %}{% if filtro %}&filter={{ filtro }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/graduados?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}{% if cargo %}&cargo{% endif %} {% if anio %}&anio={{ anio }}{% endif %}{% if ejerce %}&ejerce{% endif %}{% if filtro %}&filter={{ filtro }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/graduados?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}{% if anio %}&anio={{ anio }}{% endif %}{% if cargo %}&cargo{% endif %}{% if ejerce %}&ejerce{% endif %}{% if filtro %}&filter={{ filtro }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/graduados?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if anio %}&anio={{ anio }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if cargo %}&cargo{% endif %}{% if ejerce %}&ejerce{% endif %}{% if filtro %}&filter={{ filtro }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="modal fade static" id="archivopanel"   >
+        <div class="row-fluid modal-header alert-info" style="text-align: center;width: 94.6%;">
+            <h4  id='paneltitle1'><i> Ingrese Archivo </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well {% block form-type %}form-horizontal{% endblock %}' action="/graduados" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addarchivo' />
+                <input type='hidden' name='idgradua' id='idgradua' hidden />
+                <input type='hidden' name='editar' id='editar' value="0" />
+                <input type='hidden' name='inscripcion' value='{{ inscripcion.id }}' />
+
+{#                <b>Seleccione Archivo:</b> #}
+                <input type="file" name="archivo" id="id_archivo">
+                <p class="help-text">{{ field.help_text }} </p>
+
+                <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton" style="display: none">{% block buttonname %}Guardar{% endblock %}</button>
+{#                {% block extrabuttons %}#}
+{#                    <a href="#" class="btn btn-cerrar"> Cerrar</a>#}
+{#                {% endblock %}#}
+            </form>
+        </div>
+        <div class="modal-footer" >
+            <a href="#" class="btn btn-adicionar btn-success">Adicionar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+{% endblock %}

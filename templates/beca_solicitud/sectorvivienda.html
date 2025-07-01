@@ -1,0 +1,186 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+           var edit = 0;
+           $(".nuevo").click(function() {
+               edit = $(this).attr('edit');
+               if (edit != 0){
+                   $("#descripcion").val($(this).attr('descr'));
+                   $("#paneltitle").html('Edicion de registro');
+               }
+               else
+               {
+                $("#descripcion").val("");
+               }
+               $("#mensaj").html("").removeClass('alert alert-danger');
+               $("#addpanel").modal({"backdrop":"static"});
+               $('#addpanel').show();
+            });
+
+
+           $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/resoluciones?action=motivoresolucion&s="+term;
+            });
+
+           $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $("#addpanel .btn-cerrar").click(function(){
+                $("#addpanel").modal("hide");
+                return false;
+            });
+            $("#addpanel .ingresar").click(function(){
+
+                    if($('#descripcion').val() != '')
+                    {
+
+                        $("#mensaj").html("").removeClass('alert alert-danger');
+                        $.post("/beca_solicitud", {action: 'addsectorvivi', 'descripcion': $('#descripcion').val(), 'edit':edit}, function(data) {
+                            if (data.result=='ok') {
+                               $("#addpanel").modal("hide");
+                                smoke.alert("INGRESO REALIZADO CON EXITO");
+                                setInterval(function(){
+                                    $.unblockUI();
+                                    location.reload();
+                                }, 2000);
+                                return false;
+
+                            }
+                            else
+                            {
+                                $("#addpanel").modal("hide");
+                                smoke.alert("ERROR EN EL INGRESO");
+                                return false;
+                            }
+                        }, "json");
+
+                    }
+                    else
+                    {
+                       $("#mensaj").html("Ingrese descripcion").addClass('alert alert-danger');
+                    }
+
+
+            });
+
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+
+        <div class="span1"></div>
+        <div class="span10">
+            <h3 >Registros de Tipo de Documento para beca </h3></br>
+        </div>
+        <div class="span1">
+            <a href="/beca_solicitud" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span2' style="width: 9%">
+            <table class="table table-condensed table-bordered smaller2 tabla">
+               <thead>
+                <tr>
+                    <th title="Ingreso de Registro" class="nuevo" edit='0' ><a style="cursor: pointer"><i class="icon-share-alt icon-white"></i> Nuevo Registro</a></th>
+                </tr>
+               </thead>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span2'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Descripci&oacute;n</th>
+{#                        <th style="text-align: center;"></th>#}
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for t in sectorvivi %}
+                        <tr>
+                            <td style="text-align: center;" ><a style="cursor: pointer" class="nuevo"  edit='{{ t.id }}' descr='{{ t.descripcion }}'>{{ t.descripcion }}</a></td>
+{#                            <td  style="text-align: center"><a href="#" idarch = '{{ t.id }}' class="btn  btn-danger btn-mini quitar"><i class="icon-remove icon-white"></i></a></td>#}
+                        </tr>
+                    {% endfor %}
+                    {% if not sectorvivi %}
+                        <tr>
+                            <td colspan="2" >NO HAY REGISTRO</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span2">
+
+            {% if perms.med.change_personafichamedica %}
+{#            <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>#}
+            {% endif %}
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/beca_solicitud?action=sectorvivienda&page=1">1</a></li>
+                            <li><a href="/beca_solicitud?action=sectorvivienda&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/beca_solicitud?action=sectorvivienda&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/beca_solicitud?action=sectorvivienda&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/beca_solicitud?action=sectorvivienda&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/beca_solicitud?action=sectorvivienda&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="addpanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle" >Nuevo registro</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <h4>
+                <div style="width:100%;padding-left: 13%">Descripci&oacute;n: <input type='text' id='descripcion' style="width:60%;text-transform: uppercase" />
+            </h4>
+            <div style="padding-left: 13%"> <p id='mensaj' ></p></div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-info ingresar"> Ingresar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,155 @@
+
+
+
+
+
+
+<style>
+
+body {
+    background-color: #eee
+
+}
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color:  #184679; }
+
+.btn-primary {
+  color: #fff;
+  background-color: #184679;
+  border-color: #184679;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+
+</style>
+
+<script>
+
+    $(function () {
+
+
+
+
+       $("#cmbcarrerainteresunocambio").select2({dropdownParent: $("#ventaseleccionarcarrera .modal-content .modal-body")});
+
+
+
+      function validacambiocarrera() {
+
+
+
+            if ($("#cmbcarrerainteresunocambio").val()==0){
+                 swal("Alerta","Debe seleccionar la carrera","warning");
+                 return 1;
+            }
+
+            return 0;
+
+      }
+
+      $("#btnguardarcambiocarrera").click(function () {
+
+            if (validacambiocarrera()==0) {
+
+
+                swal({
+                    title: 'Esta Seguro que desea seleccionar esa carrera?',
+                    text: "# Postulante: " + '{{ datossolicitud.nombre_completo_inverso }}',
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si,Asignarle la Carrera!',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5',
+                    buttonsStyling: false,
+                    allowOutsideClick: false
+
+                }).then(function (isConfirm) {
+
+                    if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+
+                         Loader.open();
+                         var formData = new FormData();
+                        formData.append('action', 'cambiocarrerasolicitud');
+                        formData.append('idsolicitud', '{{ datossolicitud.id }}');
+                        formData.append('carrera', $("#cmbcarrerainteresunocambio").val());
+
+                        $.ajax({
+                            url: '/solicitudpostulacionbecadmin',
+                            type: "POST",
+                            contentType: false,
+                            data: formData,
+                            processData: false,
+                            cache: false,
+                            success: function (data) {
+                                if (data.result == "ok") {
+                                    swal("! Solicitud", "Se cambio correctamente la carrera a la solicitud", "success").then((willDelete) => {
+                                        location.href = "/solicitudpostulacionbecadmin";
+                                    });
+
+                                } else {
+                                    swal("Error", data.message, "error");
+
+                                }
+                            },
+                            error: function (xhr, ajaxOptions, thrownError) {
+                                swal("Error", "Error Conexion en el Servidor", "error");
+                            },
+                            complete: function () {
+                                 Loader.close();
+                            }
+
+
+                        });
+
+
+                    }
+                })
+            }
+
+
+       });
+
+
+
+    });
+</script>
+
+
+
+    <div class="row">
+
+        <div class="col-md-12" >
+               <label style="font-size: 20px;color:black;"> <strong>Postulante: </strong>{{ datossolicitud.nombre_completo_inverso }}  </label>
+        </div>
+
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-12">
+                <div class="form-group">
+                     <label >Carrera <a style="color: #d92550">(*)</a>: </label>
+                      <select style="width: 100%" id="cmbcarrerainteresunocambio"  class="custom-select2 form-control">
+                          <option value="0">Seleccionar la carrera</option>
+                           {% for xliscarrera in liscarrera %}
+                               <option value='{{ xliscarrera.id }}'>{{ xliscarrera.nombre }}</option>
+                           {% endfor %}
+                      </select>
+                </div>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn" data-bgcolor="#FA1D06" style="background: #FF0000;color: white" data-dismiss="modal" data-color="#ffffff">Salir</button>
+        <button type="button" id="btnguardarcambiocarrera" class="btn" style="background: #63A836;color: white" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>
+    </div>
+
+
+

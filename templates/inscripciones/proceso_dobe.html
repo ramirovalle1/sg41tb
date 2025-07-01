@@ -1,0 +1,69 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+     <script type="text/javascript">
+
+        $(function() {
+            {% if proceso %}
+                $($("#id_aprobado").get(0).parentNode.parentNode).hide();
+            {% endif     %}
+
+            $("#aprobar").click(function(){
+                smoke.confirm("ESTA SEGURO DE APROBAR EL PROCESO", function(e){
+                if (e){
+                    $.post("/inscripciones",{"action": "aprobarproceso", "id":"{{ proceso.id }}" },function(data) {
+                        if(data.result == "ok"){
+                         location.reload();
+                        }else{
+                            smoke.alert("Ocurrio un Error.. Intentelo Nuevamente");
+                        }
+                    },"json");
+
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+
+            });
+
+        });
+
+
+
+     </script>
+{% endblock %}
+{% block javascript %}
+
+    $("#id_observacion").addClass("validate[required]");
+
+{% endblock %}
+{% block titulo %}
+    {% if not error  %}Observaci&oacute;n del Estudiante:  {{ inscripcion }} {% else %}<span class="label label-important bigger">El campo observacion es obligatorio  </span><h4>Ingrese Nuevamente los Datos</h4>{% endif %} <br><br>
+    {% if proceso %}
+        {% if proceso.aprobado %}
+        <p style="color: blue">PROCESO DOBE APROBADO</p>
+        {% else %}
+        <p style="color: red">NO TIENE APROBADO EL PROCESO <a id="aprobar" style="cursor: pointer">Clik Aqui para Aprobar</a> </p>
+            {% endif %}
+    {% endif %}
+
+{% endblock %}
+
+{% block formaction %}/inscripciones{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='addproceso'/>
+    <input type='hidden' name='id' value='{{ inscripcion.id }}'/>
+
+{% endblock %}
+{% block formback %}/inscripciones{% endblock %}
+{% block buttonname %}Guardar{% endblock %}
+{% block extrabuttons %}
+    <a href="/inscripciones?s={{ inscripcion.persona.cedula }}" class="btn btn-info" id='salir'> Salir</a>
+{% endblock %}
+

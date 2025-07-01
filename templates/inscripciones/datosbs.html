@@ -1,0 +1,180 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_nacimiento").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+    $("#id_nombres,#id_apellido1,#id_sexo").addClass("validate[required]");
+
+    {% if utiliza_grupos_alumnos %}
+        $("#id_grupo").addClass("validate[required]");
+        grupos = {
+        {% for grupo in grupos_abiertos %}
+            {{ grupo.id }}: {'carrera': {{ grupo.carrera.id }}, 'sesion': {{ grupo.sesion.id }}, 'modalidad': {{ grupo.modalidad.id }} }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        };
+
+        //$("#id_carrera, #id_modalidad, #id_sesion").attr({'disabled':'disabled'});
+        $("#id_grupo").change(function() {
+        var gid = $(this).val();
+        if (gid) {
+        $("#id_carrera").val(grupos[gid].carrera);
+        $("#id_sesion").val(grupos[gid].sesion);
+        $("#id_modalidad").val(grupos[gid].modalidad);
+        } else {
+        $("#id_carrera").val('');
+        $("#id_sesion").val('');
+        $("#id_modalidad").val('');
+        }
+        });
+
+        {% if matriculado %}
+            $($("#id_grupo").get(0).parentNode.parentNode).hide();
+            $($("#id_carrera").get(0).parentNode.parentNode).hide();
+            $($("#id_modalidad").get(0).parentNode.parentNode).hide();
+            $($("#id_sesion").get(0).parentNode.parentNode).hide();
+        {% endif %}
+    {% endif %}
+
+    $("input,select").attr("disabled","disabled");
+     {% if persona.puede_editar_asuntos_estudiantiles %}
+        $("#id_telefono").attr("disabled", false);
+        $("#id_telefono_conv").attr("disabled", false);
+        $("#id_email").attr("disabled", false);
+        $("#id_email1").attr("disabled", false);
+        $("#id_email2").attr("disabled", false);
+        $("#idaccion").attr("disabled", false);
+        $("#idnamevalue").attr("disabled", false);
+        $("#idaccion").val("datosasuntos");
+     {% else %}
+         $("#formbutton").remove();
+     {% endif %}
+
+     {% if perms.sga.change_solicitudbeca %}
+
+         $("#id_autorizacionbecadobe").attr("disabled", false);
+         $("#id_autorizacionbecasencyt").attr("disabled", false);
+         $("#id_aprobacionayudadobe").attr("disabled", false);
+         $("#btnauto").click(function() {
+              smoke.confirm("Esta seguro que desea cambiar el estado de autorizaciòn beca dobe?", function(e){
+                        if (e){
+                        showWaiting("Inscripciones","Espere unos segundos por favor...");
+                            $.get("/inscripciones", {'action':'cambiarautorizacionbecadobe', 'id': '{{ inscripcion.id }}','aprobado':document.getElementById("id_autorizacionbecadobe").checked}, function(data) {
+                                hideWaiting();
+                            }, "html");
+
+
+                        }
+                        }, {
+                        ok: "SI",
+                        cancel: "NO",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+         });
+
+         $("#btnautoSenecy").click(function() {
+              smoke.confirm("Esta seguro que desea cambiar el estado de autorizaciòn beca Senescyt?", function(e){
+                        if (e){
+                        showWaiting("Inscripciones","Espere unos segundos por favor...");
+                            $.get("/inscripciones", {'action':'cambiarautorizacionbecasenescyt', 'id': '{{ inscripcion.id }}','aprobado':document.getElementById("id_autorizacionbecasencyt").checked}, function(data) {
+                                hideWaiting();
+                            }, "html");
+
+
+                        }
+                        }, {
+                        ok: "SI",
+                        cancel: "NO",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+         });
+
+         $("#btnautoayudadobe").click(function() {
+              smoke.confirm("Esta seguro que desea cambiar el estado de autorizaciòn de  Ayuda Financiera?", function(e){
+                        if (e){
+                        showWaiting("Inscripciones","Espere unos segundos por favor...");
+                            $.get("/inscripciones", {'action':'cambiarautorizacionayudabeca', 'id': '{{ inscripcion.id }}','aprobado':document.getElementById("id_aprobacionayudadobe").checked}, function(data) {
+                                hideWaiting();
+                            }, "html");
+
+
+                        }
+                        }, {
+                        ok: "SI",
+                        cancel: "NO",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+         });
+
+
+
+
+     {% endif %}
+
+    $("#formbutton").click(function() {
+                $("#id_nacionalidad").attr("disabled", false);
+                $("#id_provincia").attr("disabled", false);
+                $("#id_canton").attr("disabled", false);
+                $("#id_sexo").attr("disabled", false);
+                $("#id_provinciaresid").attr("disabled", false);
+                $("#id_cantonresid").attr("disabled", false);
+                $("#id_ciudad").attr("disabled", false);
+                $("#id_parroquia").attr("disabled", false);
+                $("#id_sectorresid").attr("disabled", false);
+                $("#id_sangre").attr("disabled", false);
+                $("#id_grupo").attr("disabled", false);
+                $("#id_carrera").attr("disabled", false);
+                $("#id_modalidad").attr("disabled", false);
+                $("#id_especialidad").attr("disabled", false);
+                $("#id_anuncio").attr("disabled", false);
+                $("#id_promocion").attr("disabled", false);
+
+    });
+
+
+
+
+{% endblock %}
+
+
+
+{% block titulo %}
+    Visualizar Datos de Inscripci&oacute;n del Alumno
+{% endblock %}
+<br>
+
+{% block formaction %}/inscripciones{% endblock %}
+
+
+
+{% block formextra %}
+    <input type='hidden' id='idaccion' name='action' value='edit'/>
+    <input type='hidden' id="idnamevalue" name='id' value="{{ inscripcion.id }}"/>
+ {% if perms.sga.change_solicitudbeca %}
+    <div class='row-fluid'>
+
+        <div class='span12'>
+            <div class='span1'></div>
+            <div class='span4'>
+                <a href="#" id="btnauto" class="btn btn-adicionar btn-inverse" style="background: #49afcd">Guardar Autorización Beca Dobe</a> </br></br>
+            </div>
+            <div class='span4'>
+                <a href="#" id="btnautoSenecy" class="btn btn-adicionar btn-inverse" style="background: #49afcd">Guardar Autorización Beca Senescyt</a> </br></br>
+            </div>
+
+            <div class='span3'>
+                <a href="#" id="btnautoayudadobe" class="btn btn-adicionar btn-inverse" style="background: #49afcd">Guardar Autorización Ayuda Dobe</a> </br></br>
+            </div>
+
+        </div>
+
+ {% endif %}
+{% endblock %}
+
+{% block formback %}/inscripciones{% endblock %}
+

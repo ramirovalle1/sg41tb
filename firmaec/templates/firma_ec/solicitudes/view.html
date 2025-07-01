@@ -1,0 +1,227 @@
+{% extends "layout/basebs.html" %}
+{% load sga_extras %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        const actionCancelar = (registro, action, id) => {
+            const question = `¿Está seguro de cancelar el registro de la <span class="text-info fw-bold">${registro}</span>?`;
+            QuestionLayout(question, () => {
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: `${response.message}`,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.reload();
+                        });
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+            }, () => {})
+        }
+
+        const busqueda = async () => {
+            const term = $("#searchinput").val().trim().toUpperCase();
+            const ide = $('[name="filter_estado"]').val();
+            const idt = $('[name="filter_tipo"]').val();
+            let url = "{{ request.path }}"
+            let params = {};
+            if (term.length > 0) {
+                params['s'] = term;
+            }
+            params['ide'] = ide;
+            params['idt'] = idt;
+            let newURL = '';
+            if (params) {
+                newURL = `${url}` + await BaseLayout.encodeQueryString(params);
+            } else {
+                newURL = `${url}`
+            }
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+            });
+            location.href = newURL;
+        };
+        const ver_todos = () =>{
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+            });
+            location.href = "{{ request.path }}";
+        }
+
+
+        $(function () {
+            $("#search").click(function() {
+                busqueda();
+            });
+            $('#searchinput').keyup( function (e) {
+                if (e.keyCode == 13) {
+                    busqueda();
+                }
+            });
+
+            $('[name="filter_estado"]').change( function () {
+                busqueda();
+            });
+
+            $('[name="filter_tipo"]').change( function () {
+                busqueda();
+            });
+
+        });
+
+    </script>
+{% endblock %}
+{% block atras %}{{ request.path }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class='row'>
+            <!-- Filtro de búsqueda -->
+            <div class="col-md-4 mb-2 mb-md-0">
+                <div class="form-floating">
+                    <input class='form-control border border-info' type='text' id='searchinput' name="s" value='{{ s }}' autocomplete="off" placeholder="Buscar solicitudes..." />
+                    <label>
+                        <i class="ti ti-search me-2 fs-4 text-info"></i>
+                        <span class="border-start border-info ps-3 text-info fw-semibold">Buscar solicitud</span>
+                    </label>
+                </div>
+            </div>
+            <!-- Filtro de estado -->
+            <div class='col-md-3 mb-2 mb-md-0'>
+                <div class="form-floating">
+                    <select name="filter_estado" class="form-control border border-info">
+                        <option value="-1" {% if ide == -1 %}selected="selected"{% endif %}>--Todos--</option>
+                        {% for eEstado in eEstados %}
+                            <option value="{{ eEstado.0 }}" {% if ide == eEstado.0 %}selected="selected"{% endif %}>{{ eEstado.1 }}</option>
+                        {% endfor %}
+                    </select>
+                    <label>
+                        <i class="ti ti-search me-2 fs-4 text-info"></i>
+                        <span class="border-start border-info ps-3 text-info fw-semibold">Buscar por estado</span>
+                    </label>
+                </div>
+            </div>
+            <!-- Filtro de tipo -->
+            <div class='col-md-3 mb-2 mb-md-0'>
+                <div class="form-floating">
+                    <select name="filter_tipo" class="form-control border border-info">
+                        <option value="-1" {% if idt == -1 %}selected="selected"{% endif %}>--Todos--</option>
+                        {% for eTipo in eTipos %}
+                            <option value="{{ eTipo.0 }}" {% if idt == eTipo.0 %}selected="selected"{% endif %}>{{ eTipo.1 }}</option>
+                        {% endfor %}
+                    </select>
+                    <label>
+                        <i class="ti ti-search me-2 fs-4 text-info"></i>
+                        <span class="border-start border-info ps-3 text-info fw-semibold">Buscar por tipo</span>
+                    </label>
+                </div>
+
+            </div>
+            <div class='col-md-2'>
+                <div class="d-flex justify-content-end">
+                    {% if s or ide > -1 or idt > -1 %}
+                        <button class="btn text-danger" onclick="ver_todos()" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar busqueda">
+                            <i class="ti ti-x fs-6"></i>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class='table search-table align-middle'>
+                <thead class="header-item">
+                <tr>
+                    <th class="align-middle text-center" style="width: 5% !important;">#</th>
+                    <th class="align-middle text-center" style="width: 15% !important;">Tipo</th>
+                    <th class="align-middle text-center" style="width: 30% !important;">Descripción</th>
+                    <th class="align-middle text-center" style="width: 20% !important;">Archivo</th>
+                    <th class="align-middle text-center" style="width: 20% !important;">Estado</th>
+                    <th class="align-middle text-center" style="width: 10% !important;">Acciones</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for eSolicitud in eSolicitudes %}
+                    <tr class="search-items">
+                        <td class="align-middle text-center fs-2">{{ forloop.counter }}</td>
+                        <td class="align-middle text-center fs-2">{{ eSolicitud.get_tipo_display }}</td>
+                        <td class="align-middle text-left fs-2">
+                            {{ eSolicitud.descripcion }}
+                            {% if ePersona.usuario.is_superuser %}
+                                <br/> <b>Responsable:</b>{{ eSolicitud.responsable }}
+                            {% endif %}
+
+                        </td>
+                        <td class="align-middle text-center">
+                            {% if eSolicitud.archivo %}
+                                <a href="{{ eSolicitud.archivo.archivo.url }}" target="_blank" class="btn btn-sm btn-success text-white">
+                                    <i class="ti ti-cloud-down fs-2 me-2"></i> Descargar
+                                </a>
+                            {% else %}
+                                <span class="badge text-bg-warning fs-2">Sin Archivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="align-middle text-center fs-2">
+                            <span class="badge {{ eSolicitud.color_estado_bg }} fs-2">
+                                {{ eSolicitud.get_estado_display }}
+                            </span>
+                            {% if eSolicitud.estado == 0 %}
+                                <br/> <b>Fecha: </b> {{ eSolicitud.fecha_creacion|date:"d-m-Y H:i:s" }}
+                            {% elif eSolicitud.estado == 1 %}
+                                {% with eSolicitudFirmada=eSolicitud.solicitud_firmada %}
+                                    <br/>
+                                    <span class="text-info">{{ eSolicitudFirmada.fechahora|date:"d-m-Y H:i:s" }}</span>
+                                    <a href="{{ eSolicitudFirmada.archivo.archivo.url }}" target="_blank" class="">
+                                        <i class="ti ti-cloud-down fs-4 ms-2"></i>
+                                    </a>
+                                {% endwith %}
+                            {% elif eSolicitud.estado == 2 %}
+                                {% with eSolicitudCancelada=eSolicitud.solicitud_cancelada %}
+                                    <br/>
+                                    <span class="text-danger">{{ eSolicitudCancelada.fechahora|date:"d-m-Y H:i:s" }}</span>
+                                {% endwith %}
+                            {% endif %}
+                        </td>
+                        <td class="align-middle text-center">
+                            {% if eSolicitud.estado == 0 %}
+                                <div class="action-btn">
+                                    <a href="javascript:void(0)" onclick="handleOpenModalFirmaEC('Firmar {{ eSolicitud.get_tipo_display|lower }}', 'loadFormFirma', {{ eSolicitud.id }})" class="text-primary">
+                                        <i class="ti ti-gavel fs-5"></i>
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="actionCancelar('{{ eSolicitud.descripcion }}', {{ eSolicitud.id }}, 'cancelarSolicitud')" class="text-danger ms-2">
+                                        <i class="ti ti-x fs-5"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No hay registro de solicitudes</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+        {% include 'layout/table/pagination.html' %}
+    </div>
+{% endblock %}

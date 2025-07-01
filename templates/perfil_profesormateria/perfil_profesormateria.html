@@ -1,0 +1,118 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/perfil_profesormateria?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+        });
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span7"  >
+            <h3 >Listado de Mallas</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/mantenimiento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/perfil_profesormateria" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th> Carrera</th>
+                        <th style="text-align: center"> Vigente</th>
+                        <th style="text-align: center"> # Materias</th>
+                        <th style="text-align: center"> Creación</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for c in mallas %}
+
+                        <tr>
+                            <td> <a href="/perfil_profesormateria?action=seleccionar_carrera&id={{ c.id }}"> {{ c.carrera.nombre }} </a></td>
+                            <td style="text-align: center">
+                                {% if c.carrera.vigente %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center"> {{ c.cantidad_materias }} </td>
+                            <td style="text-align: center"> {{ c.inicio|date:"d-m-Y" }} </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not mallas %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/perfil_profesormateria?page=1">1</a></li>
+                            <li><a href="/perfil_profesormateria?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/perfil_profesormateria?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/perfil_profesormateria?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/perfil_profesormateria?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/perfil_profesormateria?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+{% endblock %}

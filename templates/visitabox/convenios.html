@@ -1,0 +1,182 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+            $(".eliminar").click(function(){
+                var id = $(this).attr('pid');
+                smoke.confirm('Esta seguro de eliminar el registro', function(e){
+                    if (e){
+                        location.href = '/conveniobox?action=eliminar&id='+id;
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/conveniobox?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span10"  style="text-align: center">
+            <h3>Convenios y Precios</br>
+
+            </h3></br>
+        </div>
+        <div class="span1">
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span4' {% if search %} style="width:30% "{% else %}style="width:25% "{% endif %}>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Descripcion</a>
+            {% if search %}
+                <a href="/conveniobox" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+    </div>
+    <div class="row-fluid">
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <div class='span5'>
+                {% if not persona.pertenece_soporte %}
+                    <table class="table table-condensed table-bordered smaller2 tabla">
+
+                            <thead>
+                                    <tr>
+                                        {% if perms.sga.delete_perfilinscripcion %}
+            {#                                {% if perms.sga.add_conveniobox %}#}
+                                            <th ><a  title="Tipos de Convenio"  href="/tipoconvenio"><i class="icon-share-alt icon-white"></i> Tipos de Convenio  </a></th>
+            {#                                {% endif  %}#}
+            {#                                {% if perms.sga.add_personalconvenio %}#}
+                                            <th title="Precios" ><a href="/preciobox"><i class="icon-share-alt icon-white"></i> Precios  </a></th>
+            {#                            {% endif  %}#}
+                                        {% endif  %}
+            {#                                {% if perms.sga.add_precioconsulta %}#}
+                                            <th ><a  title="Agregar Persona"  href="/conveniobox?action=addpersona"><i class="icon-share-alt icon-white"></i> Agregar Persona  </a></th>
+            {#                                    {% endif  %}#}
+                                    </tr>
+                           </thead>
+                    </table>
+                {% endif  %}
+            </div>
+
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+
+                <thead>
+                    <tr>
+                        <th>Convenio</th>
+                        <th style="text-align: center;">Identificaci&oacute;n</th>
+                        <th>Nombres</th>
+                        <th style="text-align: center;">Estado</th>
+                        <th style="text-align: center;width:10%;"></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for p in personalconvenio %}
+                        <tr>
+                            <td style="text-align: left;">{{ p.conveniobox }}</td>
+                            <td style="text-align: center;">{{ p.identificacion }}</td>
+                            <td style="text-align: left;">{{ p.nombres }}</td>
+                            <td style="text-align: center;">
+                                    {% if p.activo %}
+                                         <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right" style="text-align: left">
+{#                                    {% if perms.sga.add_visitabox %}#}
+                                        <li><a  href='/conveniobox?action=editar&id={{ p.id }}'> <i class='icon-edit'></i>Editar</a></li>
+                                        <li><a  href="#" pid="{{ p.id }}" class="eliminar" > <i class='icon-remove'></i>Eliminar</a></li>
+{#                                    {% endif %}#}
+                                </ul>
+                            </div>
+                        </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not personalconvenio %}
+                        <tr>
+                            <td colspan="5">NO HAY REGISTROS</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class="span8">
+
+            {% if perms.med.change_personafichamedica %}
+{#            <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>#}
+            {% endif %}
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/conveniobox?page=1{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}">1</a></li>
+                            <li><a href="/conveniobox?page={{ paging.ellipsis_izquierda }}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/conveniobox?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/conveniobox?page={{ paging.ellipsis_derecha }}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/conveniobox?page={{ paging.num_pages }}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/conveniobox?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if grupoids %}&se={{ grupoids }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+{% endblock %}

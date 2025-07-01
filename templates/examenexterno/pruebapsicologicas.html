@@ -1,0 +1,410 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript">
+
+        $(function() {
+
+            var idinscrconduc=0;
+            var nombreconduc="";
+            var nomgrupo="";
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/prueba_psicologica?s="+term;
+            });
+
+            $('#searchfield').bind('keyup', function (e) {
+                var key = e.keyCode || e.which;
+                if (key === 13) {
+                    var term = $("#searchfield").val().toUpperCase();
+                    location.href = "/prueba_psicologica?s="+term;
+                };
+            });
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id>0){
+                    location.href = '/prueba_psicologica?g='+id;
+                }else{
+                    location.href = '/prueba_psicologica';
+                }
+            });
+
+
+            $(".conductest").click(function(){
+
+                idinscrconduc = $(this).attr('idinscriptest');
+                nombreconduc = $(this).attr("nombre");
+                nomgrupo =$(this).attr("grupo");
+                modaltestconduc();
+               return false;
+
+            });
+
+            $(".subirtestinfo").click(function(){
+
+                idinscrconduc = $(this).attr('idinscriptest');
+                nombreconduc = $(this).attr("nombre");
+                $("#testsubir_panel").modal({"backdrop":"static", keyboard: 'false', width: "30%" });
+                $("#testsubir_panel").modal("show");
+
+            });
+
+
+
+            $("#cerrartestconducsubir").click(function() {
+                 var x = document.getElementById("file");
+                 x.value="";
+                $("#testsubir_panel").modal('hide');
+            });
+
+            $("#guadarchivotest").click(function() {
+                 if(validarArchivo()==0){
+                   subirarchivo();
+                 }
+            });
+
+
+
+
+
+            function modaltestconduc(){
+                $.get("/inscripciones",{"action": "inscriptest","id":idinscrconduc},function(data) {
+                        $("#testcondu_panel .modal-body").html(data);
+                        $("#testcondu_panel #paneltitle1").html(" Alumno:   "+nombreconduc);
+                        $("#testcondu_panel").modal({"backdrop":"static", keyboard: 'false', width: "60%" });
+                        $("#testcondu_panel").modal("show");
+               }, "html");
+               return false;
+            }
+
+            $("#cerrartestconduc").click(function() {
+                $("#testcondu_panel").modal('hide');
+            });
+
+            $("#descargarestconduc").click(function() {
+
+                var listexcel=[];
+
+                $('#tbdetalleprospecto tr').each(function () {
+                    listexcel.push({'test':$(this).find("td").eq(0).html(),
+                    "puntaje":$(this).find("td").eq(1).html(),
+                    "observacion":$(this).find("td").eq(2).html()
+                     });
+                });
+
+                 showWaiting("Generando el Archivo","Espere un Momento");
+                 $.post("/prueba_psicologica", {
+                     "action": "generararchivo",
+                     listaresultado:JSON.stringify(listexcel),
+                     idinscripcion: idinscrconduc
+                     }, function (data) {
+                        if (data.result == 'ok') {
+                            location.href=data.url;
+                        }else{
+                            alert("Problema para Generar el Archivo");
+                        }
+                     hideWaiting();
+                 }, 'json');
+
+            });
+
+
+            function validarArchivo(){
+                var x = document.getElementById("file");
+                var validExts = new Array(".xls",".pdf");
+                var fileExt = x.value;
+                fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+                var sizeByte = x.size;
+                var siezekiloByte = parseInt(sizeByte / 1024);
+
+                if (x.files.length == 0) {
+                    alert("Debe seleccionar un archivo");
+                     x.value="";
+                     return 1;
+                } else if (validExts.indexOf(fileExt) < 0){
+                    alert("Solo Archivo xls,pdf");
+                    x.value="";
+                    return 1;
+                }else if (siezekiloByte > $(this).attr('size')){
+                    alert("Tamaño permitido 2MB");
+                    x.value="";
+                    return 1;
+                }
+               return 0;
+            }
+
+
+
+            $("#file").change(function() {
+                validarArchivo();
+            });
+
+
+            function subirarchivo() {
+                 var file = $('#file').prop("files")[0];
+                 var formDataSubir = new FormData();
+                 formDataSubir.append('file', file);
+                 formDataSubir.append('action', 'subir');
+                 formDataSubir.append('idinscripcion', idinscrconduc);
+
+                 showWaiting("Subir Archivo","Espero un momento");
+                 $.ajax({
+                      url:'/prueba_psicologica',
+                      type:"POST",
+                      contentType:false,
+                      data:formDataSubir,
+                      processData:false,
+                      cache:false,
+                      success: function(data)
+                         {
+                              if(data.result=="ok") {
+                                  alert("Se Subio el Archivo");
+                                   var term = $("#searchfield").val().toUpperCase();
+                                   location.href = "/prueba_psicologica?s="+term;
+
+                              }else{
+                                  alert(data.message);
+                              }
+                              $("#testsubir_panel").modal('hide');
+                              hideWaiting();
+                         },
+                      error: function (xhr, ajaxOptions, thrownError) {
+                           console.log(xhr);
+                           console.log(ajaxOptions);
+                           console.log(thrownError);
+                          $("#testsubir_panel").modal('hide');
+                          hideWaiting();
+                          alert("Error Conexion en el Servidor");
+                       }
+                 });
+
+            }
+
+
+            $("#descargarchivogrupo").click(function() {
+
+                 showWaiting("Generando el Archivo","Espere un Momento");
+                 $.post("/prueba_psicologica", {
+                     "action": "generararchivogrupo",
+                     idgruposeleccion: document.getElementById("gruposel").value
+                     }, function (data) {
+                        if (data.result == 'ok') {
+                            location.href=data.url;
+                        }else{
+                            alert("Problema para Generar el Archivo");
+                        }
+                     hideWaiting();
+                 }, 'json');
+
+            });
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                Listado de Test Efectuado
+            </h3>
+            <br>
+        </div>
+    </div>
+
+    <div class='row-fluid' id="idmensaje">
+    </div>
+    <div class="row-fluid">
+
+            <div class='span8'>
+                <div class='span6'>
+                    <form class="form-search"> <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                    <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                    <a href="#" id='descargarchivogrupo' class='btn btn-success'><i class="icon-download icon-white"></i> Descargar</a>
+
+                    </form>
+                </div>
+                <div class="span4">
+                    Grupos:
+                    <select id='gruposel' class="input-medium bigger"/>
+                        <option value='0'>-----</option>
+                        {% for g in grupos %}
+                            <option value="{{ g.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ g.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+            </div>
+    </div>
+
+
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Grupo - Nivel</th>
+                <th>Tel&eacute;fonos</th>
+                <th>Emails</th>
+                <th> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for r in pruebaspsicologicas %}
+                    <tr>
+
+                        <td>{{ r.persona }} <br/>
+                        <td>{{ r.grupo.nombre }} <br/>
+                        <td>
+                            {% if r.persona.telefono %}{{ r.persona.telefono }}{% endif %}
+                            <br/>{% if r.persona.telefono_conv %}{{ r.persona.telefono_conv }}{% endif %}
+                        </td>
+                        <td>
+                            {% if r.persona.emailinst %}
+                                <h6><a href="mailto:{{ r.persona.emailinst }}" style="color: #003bb3">
+                                    {{ r.persona.emailinst }}
+                                </a></h6>
+                            {% else %}
+                                {% if r.persona.email %}
+                                    <h6><a href="mailto:{{ r.persona.email }}" style="color: #003bb3">
+                                        {{ r.persona.email }}</a></h6>
+                                {% else %}
+                                    {% if r.persona.email1 %}
+                                        <h6><a href="mailto:{{ r.persona.email1 }}" style="color: #003bb3">
+                                            {{ r.persona.email1 }}</a></h6>
+                                    {% else %}
+                                        {% if r.persona.email2 %}
+                                            <h6><a href="mailto:{{ r.persona.email2 }}" style="color: #003bb3">
+                                                {{ r.persona.email2 }}</a></h6>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+
+                        </td>
+                        <td>
+                           <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+
+                                <ul class="dropdown-menu pull-right">
+                                    <li><a style="cursor: pointer" class="conductest" idinscriptest="{{ r.id }}" nombre="{{ r.persona.nombre_completo }}" grupo="{{ r.grupo.nombre  }}"><i class="icon-eye-open"></i> Ver Test</a></li>
+                                     {% if r.tiene_test_completo2 %}
+                                        <li><a style="cursor: pointer" class="subirtestinfo" idinscriptest="{{ r.id }}" nombre="{{ r.persona.nombre_completo }}"><i class="icon-edit"></i> Subir Archivo</a></li>
+                                     {% endif %}
+                                    {% if r.ver_archivo %}
+                                        <li><a href="media/{{ r.archivotest }}" style="cursor: pointer" ><i class="icon-edit"></i>Ver Archivo</a></li>
+                                    {% endif %}
+
+                                </ul>
+
+                            </div>
+                        </td>
+
+
+
+                    </tr>
+            {% endfor %}
+            {% if not pruebaspsicologicas %}
+                <tr>
+                    <td colspan="10">
+                        NO HAY INFORMACION DE PRUEBAS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/prueba_psicologica?page=1">1</a></li>
+                            <li><a href="/prueba_psicologica?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/prueba_psicologica?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/prueba_psicologica?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/prueba_psicologica?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/prueba_psicologica?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="testcondu_panel"   >
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                <a style="float: left"  id="cerrartestconduc" class="btn btn-danger  btn-aceptar">   <b> Salir</b></a>
+                <a style="float: left"  id="descargarestconduc" class="btn btn-success  btn-aceptar">   <b> Descargar</b></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="testsubir_panel"   >
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+            <div class="form-group">
+                  <input type="file"   id="file" size="2048"  >
+                  <span class="file-custom"></span>
+            </div>
+
+            <div class="form-group">
+                <h4> El nombre del Archivo a subir debe estar sin tilde</h4>
+                <h5> Maximo 2MB el peso del archivo</h5>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                <a style="float: left"  id="cerrartestconducsubir" class="btn btn-danger  btn-aceptar">   <b> Salir</b></a>
+                <a style="float: left"  id="guadarchivotest" class="btn btn-success  btn-aceptar">   <b> Guardar Archivo</b></a>
+            </div>
+        </div>
+    </div>
+
+
+
+
+{% endblock %}

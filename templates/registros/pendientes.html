@@ -1,0 +1,142 @@
+<div class='row-fluid'>
+    <div class='span1'></div>
+    <div class='span10' id="content-table">
+        <div class="row-fluid">
+            <div class="span6">
+                <div class="fechas" style="display: flex; text-align: center;">
+                    <a href="registros?fecha={{ ayer|date:'d-m-Y' }}{% if asist %}&asist={{ asist.id }}{% endif %}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-arrow-left-square-fill" viewBox="0 0 16 16"><path d="M16 14a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2zm-4.5-6.5H5.707l2.147-2.146a.5.5 0 1 0-.708-.708l-3 3a.5.5 0 0 0 0 .708l3 3a.5.5 0 0 0 .708-.708L5.707 8.5H11.5a.5.5 0 0 0 0-1"/></svg>
+                        &nbsp;&nbsp;
+                    </a>
+                    <input type="text" id="fecha" value="{{ fecha|date:'d-m-Y' }}" style="text-align: center"/>
+                    <a href="registros?fecha={{ tomorrow|date:'d-m-Y' }}{% if asist %}&asist={{ asist.id }}{% endif %}">&nbsp;&nbsp;
+                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" class="bi bi-arrow-right-square-fill" viewBox="0 0 16 16"><path d="M0 14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2a2 2 0 0 0-2 2zm4.5-6.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5a.5.5 0 0 1 0-1"/></svg>
+                    </a>
+                </div>
+            </div>
+            <div class="span6" style="text-align: right">
+                {% if asistente %}
+                    <a href="#" class="btn btn-success" onclick="addSeguimiento2()"><i class="icon-plus"></i> Adicionar Seguimiento</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <table class='table'>
+            <thead>
+                <tr>
+                    {% if asistente %}
+                        <th></th>
+                    {% endif %}
+                    <th style="text-align: center">Posible pago</th>
+                    <th>Inscripcion</th>
+                    <th>Teléfono</th>
+                    <th>Correo</th>
+                    <th>Rubro</th>
+                    <th style="text-align: center">Categoria</th>
+                    <th style="text-align: center">Valor Gestionado</th>
+                    <th style="text-align: center">Rubro Pagado</th>
+                    {% if not asistente %}
+                        <th>Asistente</th>
+                    {% endif %}
+                    <th style="width: 40px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in seguimientos %}
+                    <tr>
+                        {% if asistente %}
+                        <td>
+                            <input type="checkbox" id="chk-{{ s.id }}" onclick="seleccionRubros('{{ s.id }}')" {% if s.rubro.cancelado %} disabled {% endif %}/>
+                        </td>
+                        {% endif %}
+{#                                        <td>#}
+{#                                            <a href="#" class="btn btn-success" onclick="addSeguimiento('{{ s.id }}','{{ s.rubro }}', '{{ s.rubro.inscripcion }}')"><i class="icon-plus"></i></a>#}
+{#                                    <button id="btn-seg-{{ s.id }}" onclick="verHistorial('{{ s.id }}')" {% if not s.historial %}disabled class="btn"{% else %}class="btn btn-info"{% endif %}><i class="icon-arrow-down" id="icon-seg-{{ s.id }}"></i></button>#}
+{#                                        </td>#}
+                        <td style="text-align: center">{{ s.fechaposiblepago|date:'d-m-y' }}</td>
+                        <td>{{ s.seguimiento.inscripcion }}</td>
+                        <td>
+                            <span class="label label-inverse" onclick="copyText(event, '{{ s.seguimiento.inscripcion.persona.telefono }}')" style="cursor: pointer">Celular: {{ s.seguimiento.inscripcion.persona.telefono }}</span>
+                            <br><span class="label" onclick="copyText(event, '{{ s.seguimiento.inscripcion.persona.telefono_conv }}')" style="cursor: pointer">Convencional: {{ s.seguimiento.inscripcion.persona.telefono_conv }}</span>
+                        </td>
+                        <td>
+                            <span class="label label-inverse" onclick="copyText(event, '{{ s.seguimiento.inscripcion.persona.email }}')" style="cursor: pointer">Personal: {{ s.seguimiento.inscripcion.persona.email }}</span>
+                            <br><span class="label" onclick="copyText(event, '{{ s.seguimiento.inscripcion.persona.emailinst }}')" style="cursor: pointer">Institucional: {{ s.seguimiento.inscripcion.persona.emailinst }}</span>
+                        </td>
+                        <td>{{ s.rubro }}</td>
+                        <td style="text-align: center">{{ s.categoria }}</td>
+                        <td style="text-align: right">${{ s.valorgestionado }}</td>
+                        <td style="text-align: center">
+                            {% if s.rubro.cancelado %}
+                                <strong>{{ s.rubro.ultimo_pago.fecha|date:'d-m-Y' }}</strong><br>
+                                <a href="/finanzas?action=pagos&id={{ s.rubro.id }}" target="_blank" style="font-size: 12px; margin: 0; line-height: 0; padding: 0">Ver Pagos</a>
+                            {% else %}
+                                <img src='/static/images/16/false.png' border='0'/>
+                            {% endif %}
+                        </td>
+                        {% if not asistente %}
+                            <td>{{ s.seguimiento.usuario }}</td>
+                        {% endif %}
+                        <td>
+                            <button id="btn-seg-{{ s.id }}" onclick="verHistorial('{{ s.id }}')" {% if not s.historial %}disabled class="btn"{% else %}class="btn btn-info"{% endif %}><i class="icon-arrow-down" id="icon-seg-{{ s.id }}"></i></button>
+                        </td>
+                    </tr>
+
+                    <div >
+                        {% if s.historial %}
+                            <tr id="seg-historial-{{ s.id }}" class="seg-historial">
+                                <td></td>
+                                <td colspan="7">
+                                    <table class="table">
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Observacion</th>
+                                            <th>Fecha posible pago</th>
+                                            <th style="text-align: center">Estado</th>
+                                            <th style="text-align: center">Archivo</th>
+                                        </tr>
+                                        {% for h in s.historial %}
+                                            <tr>
+                                                <td>{{ h.fecha|date:'d-m-Y' }}</td>
+                                                <td>{{ h.observacion }}</td>
+                                                <td>{{ h.fechaposiblepago|date:'d-m-Y' }}</td>
+                                                <td style="text-align: center">
+                                                    {% if h.estado %}
+                                                        <img src='/static/images/16/true.png' border='0'/>
+                                                    {% else %}
+                                                        <img src='/static/images/16/false.png' border='0'/>
+                                                    {% endif %}
+                                                </td>
+                                                <td style="text-align: center">
+                                                    {% if h.archivo %}
+                                                        <a href="/media/{{ h.archivo }}" class="btn btn-info" target="_blank"><i class="icon-download-alt"></i></a>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
+                                </td>
+                            </tr>
+                        {% endif %}
+
+                    </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    copyText = (event, text) => {
+        event.preventDefault()
+        navigator.clipboard.writeText(text).then(function() {
+            Swal.fire({
+                  position: "top-end",
+                  icon: "success",
+                  title: "Texto copiado al portapapeles.",
+                  showConfirmButton: false,
+                  timer: 1500
+            });
+        })
+    }
+</script>

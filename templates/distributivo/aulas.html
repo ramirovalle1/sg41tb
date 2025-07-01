@@ -1,0 +1,108 @@
+<div class="row-fluid">
+    <div class='span10'>
+        <h3>Tabla de Distributivo de Aulas </h3>
+        <h5>
+            Fecha: {{ fecha|date:'d-m-Y' }}<br/>
+            Sede: {{ sede.nombre }}<br/>
+        </h5>
+        <a href="/reportes?action=run&direct=true&n=distributivo_aulas&sede={{ sede.id }}&fecha={{ fecha|date:"d-m-Y" }}&dia={{ dia }}&rt=pdf" class='btn btn-warning'><i class="icon-print"></i> Imprimir Distributivo</a>
+    </div>
+        <div class="row-fluid">
+            <div class="span9">
+                <table class="table table-bordered table-condensed">
+                    <tbody>
+                    {% for ls in lista_aulas %}
+                        {% if ls.0.tipo.id != 9 %}
+                            <tr {% if ls.1 and  ls.2.materia.aula_libre %} class="info" {% endif %}>
+                                <td >{{ ls.0.nombre }}</td>
+                                {% if ls.1 and  ls.2.materia.aula_libre %}
+                                    <td width="15%" >{{ ls.2.materia.nivel.carrera.alias }}</td>
+                                    <td width="25%">
+                                        {{ ls.2.materia.asignatura }} <br/>
+                                        {{ ls.2.turno }}<br/>
+                                        <span class="label label-success" >Horas turno:  {{ ls.2.turno.horas|floatformat:'0' }} Horas </span>
+                                        <br/>{% if ls.3 %}{{ ls.3 }}<br/>{% endif %}
+                                    </td>
+                                    <td style="text-align: center">{{ ls.2.materia.nivel.paralelo }}</td>
+                                    <td style="text-align: center" >{{ ls.2.materia.nivel.sesion.nombre }}</td>
+                                    <td style="text-align: center" >{{ ls.2.materia.nivel.periodo.nombre }}</td>
+                                {% else %}
+
+    {#                                <td colspan="4" width="52%"></td>#}
+                                    <td colspan="5" style="text-align: center; color: green;"> LIBRE </td>
+    {#                                <td> </td>#}
+                                {% endif %}
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table><br/>
+                {% if aulaadmin %}
+                    <table class="table table-bordered table-condensed">
+                        <thead>
+                            <tr>
+                                <th>Auditorios</th>
+                                <th>Motivo</th>
+                                <th>Fecha</th>
+                                <th>Día</th>
+                                <th>Hora Inicio</th>
+                                <th>Hora Fin</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ls in lista_aulas %}
+                                {% if ls.0.tipo.id == 9 %}
+                                        <tr {% if ls.0.tipo.id == 9 and ls.1 %} class="info" {% endif %}>
+                                            <td >{{ ls.0.nombre }}</td>
+                                            {% if ls.1 %}
+                                                <td  > {{ ls.2.motivo }}</td>
+                                                <td > {{ ls.2.fecha|date:"d-m-Y" }}</td>
+                                                <td style="text-align: center">
+                                                    <p id="diasemantab{{ forloop.counter }}" style="text-transform: uppercase"></p>
+
+                                                    <script type="text/javascript">
+                                                         var numcont = "{{ forloop.counter }}";
+                                                        diasemana(new Date(parseInt({{ ls.2.fecha|date:"Y" }}),parseInt({{ ls.2.fecha|date:"m" }})-1,parseInt({{ ls.2.fecha|date:"d" }}), 0,0,0,0));
+
+
+                                                        function diasemana(fechacons){
+                                                            if(fechacons){
+                                                                if (fechacons.getDay() == 5)
+                                                                $("#diasemantab"+numcont).html("Viernes");
+
+                                                                if (fechacons.getDay() == 6)
+                                                                $("#diasemantab"+numcont).html("Sábado");
+
+                                                                if (fechacons.getDay() == 0)
+                                                                $("#diasemantab"+numcont).html("Domingo");
+
+                                                                if (fechacons.getDay() == 1)
+                                                                $("#diasemantab"+numcont).html("Lunes");
+
+                                                                if (fechacons.getDay() == 2)
+                                                                $("#diasemantab"+numcont).html("Martes");
+
+                                                                if (fechacons.getDay() == 3)
+                                                                $("#diasemantab"+numcont).html("Miércoles");
+
+                                                                if (fechacons.getDay() == 4)
+                                                                $("#diasemantab"+numcont).html("Jueves");
+                                                            }
+                                                        }
+                                                    </script>
+                                                </td>
+                                                <td style="text-align: center" > {{ ls.2.horainicio|time:"H:i a" }}</td>
+                                                <td style="text-align: center" > {{ ls.2.horafin|time:"H:i a" }}</td>
+                                            {% else %}
+                                                <td colspan="5" style="text-align: center; color: green;"> LIBRE </td>
+                                            {% endif %}
+                                        </tr>
+                                {% endif %}
+
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+</div>

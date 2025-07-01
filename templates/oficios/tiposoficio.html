@@ -1,0 +1,132 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+           $("#nuevo").click(function() {
+
+                location.href = "/tipooficio?action=add";
+            });
+
+
+           $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/tipooficio?s="+term;
+            });
+
+           $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+
+        <div class="span11"  >
+            <h3 >Listado de Tipos de Oficios</h3>
+        </div>
+        <div class="span1">
+            <a href="/oficios" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/tipooficio" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span2' style="width: 9%">
+            {% if not persona.pertenece_soporte %}
+                <table class="table table-condensed table-bordered smaller2 tabla">
+                   <thead>
+                    <tr>
+                        <th title="Ingreso de Registro" id="nuevo" ><a><i class="icon-share-alt icon-white"></i> Nuevo Registro</a></th>
+                    </tr>
+                   </thead>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+
+        <div class='span2'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Descripcion</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for t in tipooficio %}
+                        <tr>
+                            {% if not persona.pertenece_soporte %}
+                                <td style="text-align: center;" ><a href="/tipooficio?action=edit&id={{ t.id }}">{{ t.nombre }}</a></td>
+                            {% else %}
+                               <td style="text-align: center;" >{{ t.nombre }}</td>
+                            {% endif %}
+
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class="span2">
+
+            {% if perms.med.change_personafichamedica %}
+{#            <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>#}
+            {% endif %}
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/tipooficio?page=1">1</a></li>
+                            <li><a href="/tipooficio?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tipooficio?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/tipooficio?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/tipooficio?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tipooficio?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+{% endblock %}

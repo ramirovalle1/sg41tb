@@ -1,0 +1,78 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_persona").addClass("validate[required]");
+    $("#id_persona").focus();
+    $("#id_persona").attr({"autocomplete":"off"});
+    $("#id_tiempo").addClass("input-medium");
+    $($("#id_persona_id").get(0).parentNode.parentNode).hide();
+
+    chequeaEntrega = function() {
+        if ($("#id_entregado").is(':checked')) {
+            $("#formbutton").attr("disabled", false);
+        }else{
+            $("#formbutton").attr("disabled", true);
+        }
+    }
+    buscar_persona = function(query, process) {
+            $.get("/reportes", {'action':'databiblio','persona':1, 'model': 'Persona',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_persona").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.alias);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+    $('#id_persona').typeahead({source: buscar_persona, updater: function(item) {
+            var results = $("#id_persona").get(0).results;
+            for (var i in results) {
+                var datos2 = results[i];
+                if (item==datos2.alias) {
+                    $("#id_persona").attr("myval",datos2.id);
+                    d2=datos2.id;
+                    $("#id_persona_id").val(d2);
+
+                }
+            }
+            return item;
+
+        }});
+
+    $("#id_entregado").click(chequeaEntrega);
+    chequeaEntrega();
+{% endblock %}
+{% block titulo %}
+    <br>
+        Generar Pr&eacute;stamo de Documento en la Biblioteca
+        <h4>Documento: {{ documento }}</h4>
+    <br/>
+    <div class='span11'>
+        {% if error == '1' %}
+            <span class="label label-info">
+                EL ALUMNO NO ESTA MATRICULADO NO SE PUEDE REALIZAR PRESTAMO
+            </span>
+        {% endif %}
+        {% if error == '2'%}
+            <span class="label label-success">
+                DOCENTE INACTIVO NO SE PUEDE REALIZAR PRESTAMO
+            </span>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block formaction %}/documentos{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='addprestamo'/>
+    <input type='hidden' name='id' value='{{ documento.id }}'/>
+{% endblock %}
+{% block formback %}/documentos{% endblock %}
+{% block buttonname %}Prestar Documento{% endblock %}

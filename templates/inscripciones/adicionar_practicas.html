@@ -1,0 +1,174 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+
+    $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+    $("#id_horas,#id_lugar, #id_profesor, #id_inicio, #id_fin").addClass("validate[required]");
+    $("#id_horas").addClass("input-small");
+    $("#id_lugar, #id_profesor, #id_observaciones").addClass("input-block-level");
+
+    {% if inscripcion.malla_inscripcion.malla.nueva_malla %}
+        $($("#id_nivelmalla").get(0).parentNode.parentNode).show();
+        $("#id_nivelmalla").addClass("validate[required]");
+    {% else %}
+        $($("#id_nivelmalla").get(0).parentNode.parentNode).hide();
+    {% endif %}
+
+    $($("#id_observaciones").get(0).parentNode.parentNode).after("<span class='alert alert-info' style='color: darkblue'><i>ALERTA: Las <b>Observaciones</b> tienen un m&aacute;ximo de <b>300 caracteres</b> y el <b>archivo</b> no debe contener t&iacute;ldes en el nombre del fichero</i></span><br/><br/>");
+    {% if archivo %}
+        $($("#id_archivo").get(0).parentNode.parentNode).after("<span class='alert alert-info' style='color: green'><i><b>Archivo ya ha sido incluido en un nivel anterior</b></i></span><br/>");
+    {% else %}
+        $("#id_archivo").addClass("validate[required]");
+        $($("#id_archivo").get(0).parentNode.parentNode).after("<span class='alert alert-info' style='color: red'><i><b>ALERTA: Debe incluir el archivo</b></i></span><br/>");
+    {% endif %}
+
+    var numeros1="0123456789.";
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros1.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+    }
+
+    $("#id_horas").blur(function(){
+        var v = $("#id_horas").val();
+        var p = solo_numeros(v);
+        if (p != v.length)
+        {
+          $($("#id_horas").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingresar solo Numeros</h6>");
+          $("#id_horas").focus();
+        }
+        else{
+            $($("#id_horas").get(0).parentNode).find(".help-text").html("");
+            if ($("#id_horas").val() > {{horas_practicas}}){
+              $($("#id_horas").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El total de horas es mayor a {{horas_practicas}}</h6>");
+              $("#id_horas").val("");
+              $("#id_horas").focus();
+            }
+        }
+        if (parseInt(v)<=0)
+        {
+          $($("#id_horas").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Número de Horas debe ser Mayor a Cero</h6>");
+          $("#id_horas").focus();
+        }else{
+
+            if (parseInt(v)>0 && $("#id_nivelmalla").val()>0 ){
+
+                $.post("/inscripciones", {action: 'validahorasnivel', numerohoras: $("#id_horas").val(),idnivel:$("#id_nivelmalla").val(),inscriid:'{{ inscripcion.id }}' }, function(data) {
+                        if (data.result=='bad') {
+                           $($("#id_horas").get(0).parentNode).find(".help-text").html("<span style='color: red'><i>" +data.mensaje + "</i>" );
+                            $("#id_horas").val("");
+                        }else{
+                            $($("#id_horas").get(0).parentNode).find(".help-text").html("" );
+                        }
+
+                }, "json");
+            }
+
+
+
+        }
+    });
+
+        var validos = " abcdefghijklmnopqrstuvwxyz0123456789-_%,";
+
+        function soloLetrasYNum(campo) {
+           var letra;
+           var bien = true;
+           for (var i=0; i<campo.length; i++) {
+            letra=campo.charAt(i).toLowerCase()
+            if (validos.indexOf(letra) == -1){bien=false;};
+           }
+           if (!bien) {
+            return 1;
+
+           }else{
+             return 0;
+           }
+        }
+
+    $("#id_archivo").change(function(){
+        var x = document.getElementById("id_archivo");
+        var tamano ='6291456'
+        var validExts = new Array(".doc",".docx",".pdf");
+        var fileExt = x.value;
+        var nombre= fileExt.substring(fileExt.indexOf(x.files[0].name),fileExt.lastIndexOf('.'));
+        fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+        if (x.files.length == 0) {
+              $("#id_archivo").val('');
+            $($("#id_archivo").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Debe Seleccionar el Archivo</h6>");
+        } else if (validExts.indexOf(fileExt) < 0){
+                  $("#id_archivo").val('');
+                  $($("#id_archivo").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Solo Archivos Doc,Docx y Pdf</h6>");
+        } else if(parseInt(x.files[0].size)>parseInt(tamano)){
+                $("#id_archivo").val('');
+                $($("#id_archivo").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Tamaño Maximo del Archivo son 6 MB</h6>");
+        }
+
+        if (parseInt(soloLetrasYNum(nombre))==1){
+            $("#id_archivo").val('');
+            $($("#id_archivo").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El Nombre del Archivo contiene Tilde o Caracteres Especailes</h6>");
+        }else{
+            $($("#id_archivo").get(0).parentNode).find(".help-text").html("");
+        }
+    });
+
+    $("#id_nivelmalla").change(function(){
+
+        var v = $("#id_horas").val();
+        var p = solo_numeros(v);
+        if (p != v.length)
+        {
+          $($("#id_horas").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingresar solo Numeros</h6>");
+          $("#id_horas").focus();
+        }
+        else{
+            $($("#id_horas").get(0).parentNode).find(".help-text").html("");
+            if ($("#id_horas").val() > {{horas_practicas}}){
+              $($("#id_horas").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El total de horas es mayor a {{horas_practicas}}</h6>");
+              $("#id_horas").val("");
+              $("#id_horas").focus();
+            }
+        }
+        if (parseInt(v)<=0)
+        {
+          $($("#id_horas").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Número de Horas debe ser Mayor a Cero</h6>");
+          $("#id_horas").focus();
+        }else{
+
+            if (parseInt(v)>0 && $("#id_nivelmalla").val()>0 ){
+
+                $.post("/inscripciones", {action: 'validahorasnivel', numerohoras: $("#id_horas").val(),idnivel:$("#id_nivelmalla").val(),inscriid:'{{ inscripcion.id }}' }, function(data) {
+                        if (data.result=='bad') {
+                           $($("#id_horas").get(0).parentNode).find(".help-text").html("<span style='color: red'><i>" +data.mensaje + "</i>" );
+                            $("#id_horas").val("");
+                        }else{
+                            $($("#id_horas").get(0).parentNode).find(".help-text").html("" );
+                        }
+
+                }, "json");
+            }
+
+
+
+        }
+
+    });
+
+{% endblock %}
+{% block titulo %}Adicionar Pr&aacute;cticas Preprofesionales realizadas por: {{ inscripcion }}{% endblock %}
+{% block formaction %}/inscripciones{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='addpracticas'/>
+    <input type='hidden' name='id' value='{{ inscripcion.id }}'/>
+{% endblock %}
+{% block formback %}/inscripciones?action=practicas&id={{ inscripcion.id }}{% endblock %}
+{% block buttonname %}Guardar Pr&aacute;ctica{% endblock %}

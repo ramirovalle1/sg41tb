@@ -1,0 +1,914 @@
+{% extends "basebs.html" %}
+{% load humanize %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            var ancho=0;
+            var anchomax = 100;
+
+            refreshbar = (function() {
+                ancho = ancho + 2.5;
+                if (ancho >= anchomax){
+                    ancho = 80;
+                }
+               $(".bar").css("width", ancho.toString()+"%");
+            });
+
+            $("#calcular").click(function() {
+                var tiempo = setInterval(refreshbar, 1000);
+                showWaiting("Recalculando Roles de Pagos a Docentes", "<div class='progress progress-striped active'><div class='bar' style='width: 0%'> </div></div>" );
+                $.post("/rol_pago", {'action': 'calcular', 'id': {{ rolpago.id }}}, function(data) {
+                    hideWaiting();
+                    if (data.result=='ok') {
+                        clearInterval(tiempo);
+                        location.href = "/rol_pago?action=ver&id="+data.rolpago;
+                    } else {
+                        smoke.alert("Error calculando rol de pago: "+data.error);
+                    }
+                }, "json");
+                return false;
+            });
+
+{#            $("#calcular_invitados").click(function() {#}
+{#                var tiempo = setInterval(refreshbar, 1000);#}
+{#                showWaiting("Recalculando Roles de Pagos a Docentes", "<div class='progress progress-striped active'><div class='bar' style='width: 0%'> </div></div>" );#}
+{#                $.post("/rol_pago", {'action': 'calcular', 'id': {{ rolpago.id }}}, function(data) {#}
+{#                    hideWaiting();#}
+{#                    if (data.result=='ok') {#}
+{#                        clearInterval(tiempo);#}
+{#                        location.href = "/rol_pago?action=ver&id="+data.rolpago;#}
+{#                    } else {#}
+{#                        smoke.alert("Error calculando rol de pago: "+data.error);#}
+{#                    }#}
+{#                }, "json");#}
+{#                return false;#}
+{#            });#}
+
+            $(".tl").tooltip({placement:"right"});
+
+            $(".prestamoss").blur(function() {
+                var rpp = $(this).attr("rpp");
+                var valor = $(this).val();
+                var ps = parseFloat(valor);
+                if (isNaN(ps)) {
+                    $(this).val(0);
+                } else {
+                    $.blockUI({message: null});
+                    $.post("/rol_pago",{action: 'prestamoss', 'rpp': rpp, 'valor': valor }, function(data) {
+                        $.unblockUI();
+                        if (data.result=='ok') {
+                            $("#sueldopercibir"+rpp).html(data.sueldopercibir);
+                        } else {
+                            $("#prestamoss"+rpp).val(0);
+                        }
+                    }, "json");
+                }
+
+            });
+
+            $(".descuentoinst").change(function() {
+                var rpp = $(this).attr("rpp");
+                var id = $(this).val();
+                $.blockUI({message: null});
+                $.post("/rol_pago", {'action': 'descuentoinst', 'rpp': rpp, 'id': id}, function(data) {
+                    $.unblockUI();
+                    if (data.result=='ok') {
+                        $("#descuentoinst"+rpp).html(data.proximodescuento);
+                        $("#totaldesc"+rpp).html("$"+data.totaldesc);
+                        $("#salariopercibir"+rpp).html("<b>$"+data.salariopercibir+"</b>");
+                    }
+                }, "json");
+            });
+
+
+        {#   NUEVAS FUNCIONES PARA EL ROL DE DOCENTES  #}
+
+            {# DIAS LABORADOS #}
+
+            $("#diaspanel .btn-guardar").click(function(){
+                var nuevosdias = parseInt($("#nuevosdias").val());
+                var rppid = $("#nuevosdias").attr("rppid");
+                if (nuevosdias > 0 && nuevosdias < 31){
+                    $.blockUI({message: null});
+                    $.post("/rol_pago", {'action':'actualizadias', 'nuevosdias': nuevosdias, 'rppid': rppid}, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok') {
+                            $("#dias"+rppid).html(data.nuevosdiastrabajados);
+                            $("#salariomes"+rppid).html("$"+data.nuevosalariomes);
+                             $("#totalingg"+rppid).html("$"+data.totalinggrav);
+                            $("#totalingresos"+rppid).html("$"+data.totalingresos);
+                            $("#bonificaciondocencia"+rppid).html("$"+data.bonificaciondocencia);
+                            $("#iess"+rppid).html("$"+data.iess);
+                            $("#totaldesc"+rppid).html("$"+data.totaldesc);
+                            $("#salariopercibir"+rppid).html("<b>$"+data.salariopercibir+"</b>");
+                            $("#diaspanel").modal("hide");
+                        }
+                    }, "json");
+                }else{
+                    alert("Por favor introduzca un numero valido de dias ");
+                }
+                return false;
+            });
+
+            $("#diaspanel .btn-cerrar").click(function(){
+                $("#diaspanel").modal("hide");
+                return false;
+            });
+
+            $(".dias").click(function(){
+                var dias = $(this).html();
+                var prof = $(this).attr("prof");
+                var rpp = $(this).attr("rpp");
+                $("#diaspanel").modal({width: '500px', backdrop: 'static'});
+                $("#diaspanel .diastitle").html("CANTIDAD DE DIAS LABORADOS <br/>Profesor: " + prof);
+                $("#diaspanel .diastitle2").html('Dias: ' + dias);
+                $("#diaspanel .diasbody").html("<div>Nuevos D&iacute;as: <input class='input-mini' id='nuevosdias' value='0' rppid="+rpp+"></div>");
+                $("#diaspanel").modal("show");
+                return false;
+            });
+
+            {#  TUTORIAS #}
+
+            $("#tutoriaspanel .btn-guardar").click(function(){
+                var valortutorias = parseFloat($("#valortutorias").val());
+                var rppid = $("#valortutorias").attr("rppid");
+                if (valortutorias >= 0){
+                    $.blockUI({message: null});
+                    $.post("/rol_pago", {'action':'tutorias', 'valortutorias': valortutorias, 'rppid': rppid}, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok') {
+                            $("#tutorias"+rppid).html("$"+data.nuevovalortutorias);
+                            $("#totalingg"+rppid).html("$"+data.totalinggrav);
+                            $("#totalingresos"+rppid).html("$"+data.totalingresos);
+                            $("#iess"+rppid).html("$"+data.iess);
+                            $("#totaldesc"+rppid).html("$"+data.totaldesc);
+                            $("#salariopercibir"+rppid).html("<b>$"+data.salariopercibir+"</b>");
+                            $("#tutoriaspanel").modal("hide");
+                        }
+                    }, "json");
+                }else{
+                    alert("Por favor introduzca un numero correcto para las tutorias ");
+                }
+                return false;
+            });
+
+            $("#tutoriaspanel .btn-cerrar").click(function(){
+                $("#tutoriaspanel").modal("hide");
+                return false;
+            });
+
+            $(".tutorias").click(function(){
+                var prof = $(this).attr("prof");
+                var rpp = $(this).attr("rpp");
+                $("#tutoriaspanel").modal({width: '500px', backdrop: 'static'});
+                $("#tutoriaspanel .tutoriastitle").html("VALOR POR TUTORIAS REALIZADAS <br/>Profesor: " + prof);
+                $("#tutoriaspanel .tutoriasbody").html("<div>Ingrese Valor por Tutorias: <input class='input-small' id='valortutorias' value='0' rppid="+rpp+"></div>");
+                $("#tutoriaspanel").modal("show");
+                return false;
+            });
+
+
+            {#  OTROS INGRESOS  #}
+
+            $("#otrosingpanel .btn-guardar").click(function(){
+                var valorotrosing = parseFloat($("#valorotrosing").val());
+                var rppid = $("#valorotrosing").attr("rppid");
+                if (valorotrosing >= 0){
+                    $.blockUI({message: null});
+                    $.post("/rol_pago", {'action':'otrosingresos', 'valorotrosing': valorotrosing, 'rppid': rppid}, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok') {
+                            $("#otrosing"+rppid).html("$"+data.nuevovalorotrosing);
+                            $("#totalingg"+rppid).html("$"+data.totalinggrav);
+                            $("#totalingresos"+rppid).html("$"+data.totalingresos);
+                            $("#iess"+rppid).html("$"+data.iess);
+                            $("#totaldesc"+rppid).html("$"+data.totaldesc);
+                            $("#salariopercibir"+rppid).html("<b>$"+data.salariopercibir+"</b>");
+                            $("#otrosingpanel").modal("hide");
+                        }
+                    }, "json");
+                }else{
+                    alert("Por favor introduzca un numero correcto para otros ingresos ");
+                }
+                return false;
+            });
+
+            $("#otrosingpanel .btn-cerrar").click(function(){
+                $("#otrosingpanel").modal("hide");
+                return false;
+            });
+
+            $(".otrosing").click(function(){
+                var prof = $(this).attr("prof");
+                var rpp = $(this).attr("rpp");
+                $("#otrosingpanel").modal({width: '500px', backdrop: 'static'});
+                $("#otrosingpanel .otrosingtitle").html("VALOR POR OTROS INGRESOS <br/>Profesor: " + prof);
+                $("#otrosingpanel .otrosingbody").html("<div>Ingrese Valor de Otros Ingresos: <input class='input-small' id='valorotrosing' value='0' rppid="+rpp+"></div>");
+                $("#otrosingpanel").modal("show");
+                return false;
+            });
+
+            {#  OTROS DESCUENTOS  #}
+
+            $("#otrosdescpanel .btn-guardar").click(function(){
+                var valorotrosdesc = parseFloat($("#valorotrosdesc").val());
+                var rppid = $("#valorotrosdesc").attr("rppid");
+                if (valorotrosdesc >= 0){
+                    $.blockUI({message: null});
+                    $.post("/rol_pago", {'action':'otrosdescuentos', 'valorotrosdesc': valorotrosdesc, 'rppid': rppid}, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok') {
+                            $("#otrosdesc"+rppid).html("$"+data.nuevovalorotrosdesc);
+                            $("#totaldesc"+rppid).html("$"+data.totaldesc);
+                            $("#salariopercibir"+rppid).html("<b>$"+data.salariopercibir+"</b>");
+                            $("#otrosdescpanel").modal("hide");
+                        }
+                    }, "json");
+                }else{
+                    alert("Por favor introduzca un numero correcto para otros descuentos ");
+                }
+                return false;
+            });
+
+            $("#otrosdescpanel .btn-cerrar").click(function(){
+                $("#otrosdescpanel").modal("hide");
+                return false;
+            });
+
+            $(".otrosdesc").click(function(){
+                var prof = $(this).attr("prof");
+                var rpp = $(this).attr("rpp");
+                $("#otrosdescpanel").modal({width: '500px', backdrop: 'static'});
+                $("#otrosdescpanel .otrosdesctitle").html("VALOR POR OTROS DESCUENTOS <br/>Profesor: " + prof);
+                $("#otrosdescpanel .otrosdescbody").html("<div>Ingrese Valor de Otros Descuentos: <input class='input-small' id='valorotrosdesc' value='0' rppid="+rpp+"></div>");
+                $("#otrosdescpanel").modal("show");
+                return false;
+            });
+
+            {#  PRESTAMOS IESS  #}
+
+            $("#prestamoiesspanel .btn-guardar").click(function(){
+                var valorprestamoiess = parseFloat($("#valorprestamoiess").val());
+                var rppid = $("#valorprestamoiess").attr("rppid");
+                if (valorprestamoiess >= 0){
+                    $.blockUI({message: null});
+                    $.post("/rol_pago", {'action':'prestamoiess', 'valorprestamoiess': valorprestamoiess, 'rppid': rppid}, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok') {
+                            $("#prestamoiess"+rppid).html("$"+data.nuevovalorprestamoiess);
+                            $("#totaldesc"+rppid).html("$"+data.totaldesc);
+                            $("#salariopercibir"+rppid).html("<b>$"+data.salariopercibir+"</b>");
+                            $("#prestamoiesspanel").modal("hide");
+                        }
+                    }, "json");
+                }else{
+                    alert("Por favor introduzca un numero correcto para los prestamos iess ");
+                }
+                return false;
+            });
+
+            $("#prestamoiesspanel .btn-cerrar").click(function(){
+                $("#prestamoiesspanel").modal("hide");
+                return false;
+            });
+
+            $(".prestamoiess").click(function(){
+                var prof = $(this).attr("prof");
+                var rpp = $(this).attr("rpp");
+                $("#prestamoiesspanel").modal({width: '500px', backdrop: 'static'});
+                $("#prestamoiesspanel .prestamoiesstitle").html("VALOR POR PRESTAMOS IESS <br/>Profesor: " + prof);
+                $("#prestamoiesspanel .prestamoiessbody").html("<div>Ingrese Valor de Prestamos IESS: <input class='input-small' id='valorprestamoiess' value='0' rppid="+rpp+"></div>");
+                $("#prestamoiesspanel").modal("show");
+
+                return false;
+            });
+
+            {#  HORAS EXTRAS #}
+
+            $("#hextraspanel .btn-guardar").click(function(){
+                var rppid = $("#hextrass").attr("rppid");
+                var salariocontratado = parseFloat($("#salariocontratado"+rppid).attr("value"));
+                var costoporhora = Math.round(salariocontratado/ 240 * 100)/100;
+                var valorhextrass = $("#hextrass").val()*costoporhora*1.5;
+                var valorhextrase = $("#hextrase").val()*costoporhora*2.0;
+                var valorhextras = valorhextrase + valorhextrass;
+
+                if (valorhextras >= 0){
+                    $.blockUI({message: null});
+                    $.post("/rol_pago", {'action':'horasextras', 'valorhextrass':valorhextrass.toFixed(2), 'valorhextrase':valorhextrase.toFixed(2), 'rppid': rppid}, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok') {
+                            $("#hextras"+rppid).html("$"+data.nuevovalorhextras);
+                            $("#hextras"+rppid).attr("value", data.nuevovalorhextras);
+                            $("#totalingg"+rppid).html("$"+data.totalinggrav);
+                            $("#totalingresos"+rppid).html("$"+data.totalingresos);
+                            $("#iess"+rppid).html("$"+data.iess);
+                            $("#totaldesc"+rppid).html("$"+data.totaldesc);
+                            $("#salariopercibir"+rppid).html("<b>$"+data.salariopercibir+"</b>");
+                            $("#hextraspanel").modal("hide");
+                        }
+                    }, "json");
+                }else{
+                    alert("Por favor introduzca un numero correcto para el valor segun horas extras ");
+                }
+                return false;
+            });
+
+            $("#hextraspanel .btn-cerrar").click(function(){
+                $("#hextraspanel").modal("hide");
+                return false;
+            });
+
+            actualizaTotalHExtras = function(rppid){
+                var salariocontratado = parseFloat($("#salariocontratado"+rppid).attr("value"));
+                var costoporhora = Math.round(salariocontratado/ 240 * 100)/100;
+                var valorhextrass = $("#hextrass").val()*costoporhora*1.5;
+                var valorhextrase = $("#hextrase").val()*costoporhora*2.0;
+
+                var valortotalhextras = valorhextrase + valorhextrass;
+                $("#valortotalhextras").html("$"+valortotalhextras.toFixed(2));
+                $("#hextras"+rppid).attr("value",valortotalhextras);
+            };
+
+
+            $(".hextras").click(function(){
+                var prof = $(this).attr("prof");
+                var rpp = $(this).attr("rpp");
+
+                $("#valortotalhextras").html($("#hextras"+rpp).attr("value"));
+
+                var valorhextrass = 0;
+                var salariocontratado = parseFloat($("#salariocontratado"+rpp).attr("value"));
+                var costoporhora = Math.round(salariocontratado/ 240 * 100)/100;
+
+                $("#hextraspanel").modal({width: '500px', backdrop: 'static'});
+                $("#hextraspanel .hextrastitle").html("HORAS EXTRAS LABORADAS <br/>Profesor: " + prof + "<br/><br/>Salario Contratado: $"+salariocontratado + "&nbsp;&nbsp;CostoxHora: $"+ costoporhora);
+                $("#hextraspanel .hextrasbody").html("<h5>Horas Suplementarias: <input class='input-mini' id='hextrass' value='0' rppid="+rpp+"> Valor HS: <span class='bigger' id='valorhextrass' rppid="+rpp+"> $0.00</span></h5>" +
+                                                     "<br/><h5>Horas Extraordinarias: <input class='input-mini' id='hextrase' value='0' rppid="+rpp+"> Valor HE: <span class='bigger' id='valorhextrase' rppid="+rpp+"> $0.00</span></h5>");
+
+                $("#hextraspanel").modal("show");
+
+                if (!$("#hextras").attr("value")){
+                    $("#hextras").html("$0.00");
+                }else{
+                    $("#hextras").html($(this).attr("value"));
+                }
+
+
+                $("#hextrass").blur(function(){
+                    if ($("#hextrass").val() > 0){
+                        valorhextrass = $("#hextrass").val()*costoporhora*1.5;
+                        $("#valorhextrass").html("$"+valorhextrass.toFixed(2));
+                    }else{
+                        $("#valorhextrass").html("0.00");
+                        $("#hextrass").val(0);
+                    }
+                    actualizaTotalHExtras(rpp);
+
+                });
+
+                $("#hextrase").blur(function(){
+                    if ($("#hextrase").val() > 0){
+                        var valorhextrase = $("#hextrase").val()*costoporhora*2.0;
+                        $("#valorhextrase").html("$"+valorhextrase.toFixed(2));
+                    }else{
+                        $("#valorhextrase").html("0.00");
+                        $("#hextrase").val(0);
+                    }
+                    actualizaTotalHExtras(rpp);
+                });
+
+                return false;
+            });
+
+            {#  IMPUESTO A LA RENTA - DATOS #}
+
+            $("#irentapanel .btn-cerrar").click(function(){
+                $("#irentapanel").modal("hide");
+                return false;
+            });
+
+            {# Visualizar en Modal los Datos del Calculo Impuesto a la Renta Calculado #}
+            $(".detalleirenta").click(function(){
+                var rolppid = $(this).attr("rpp");
+                var nombre = $(this).attr("name");
+                var rol = $(this).attr("rol");
+                $.blockUI({message: null});
+                $.get("/rol_pago", {'action': 'detalleirenta', 'rpp': rolppid}, function(data){
+                    $.unblockUI();
+                    $("#irentapanel").modal({width: '1000px', backdrop: 'static'});
+                    $("#irentapanel .irentatitle").html("Calculo IMPUESTO RENTA CALCULADO (IRC) <br/> Rol: " + rol + "<br/>Empleado: " + nombre);
+                    $("#irentapanel .irentabody").html(data);
+                    $("#irentapanel").modal("show");
+                }, "html");
+
+                return false;
+            });
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            {% if p %}
+                <h3> Roles de Pago a Docentes Invitados</h3>
+            {% else %}
+                <h3> Roles de Pago a Docentes General</h3>
+            {% endif %}
+
+            <h4>{{ rolpago }}</h4>
+        </div>
+        <div class='span1'>
+            <a href="/rol_pago" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br/>
+    <div class="row-fluid">
+        <div class="span10">
+            <a href="#" class="btn btn-primary" id="calcular"><i class="icon-plus"></i> Recalcular Rol de Pago y Detalles</a>
+            {% if not p %}
+                <a href="/rol_pago?action=ver&p=1&id={{ rolpago.id }}"class="btn btn-primary" id="calcular_invitados"><i class="icon-plus"></i> Ver Rol Docentes Invitados</a>
+            {% else %}
+                <a href="/rol_pago?action=ver&id={{ rolpago.id }}"class="btn btn-primary" id="calcular_invitados"><i class="icon-plus"></i> Ver Rol Docentes General</a>
+            {% endif %}
+        </div>
+        <div class="span2">
+            <a href="/reportes?action=run&direct=true&n=nom_personal_docente_general&rt=pdf&rol_id={{ rolpago.id }}" class="btn btn-info"><i class="icon-print icon-white"></i> Imprimir Todos los Roles</a>
+        </div>
+    </div>
+    <br/>
+
+    <div class='row-fluid'>
+        <div class='span12' style="overflow: auto;">
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="font-size: 11px;">
+                <thead>
+                <tr>
+                    <th></th>
+                    {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 or MODELO_CONDU %}
+                        <th colspan="12" style="font-size: 14px; text-align: center;">INGRESOS</th>
+                    {% else %}
+                        <th colspan="11" style="font-size: 14px; text-align: center;">INGRESOS</th>
+                    {% endif %}
+                    {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 or MODELO_CONDU %}
+                        <th colspan="9" style="font-size: 14px; text-align: center; color: red;">DESCUENTOS</th>
+                    {% else %}
+                        <th colspan="8" style="font-size: 14px; text-align: center; color: red;">DESCUENTOS</th>
+                    {% endif %}
+
+                    <th colspan="2" style="font-size: 14px; text-align: center;"></th>
+                </tr>
+                <tr>
+                    <th>Profesor</th>
+
+                {# INGRESOS   #}
+
+                    <th>Dias</th>
+                    <th style="text-align: center">Salario Contratado</th>
+                    <th style="text-align: center">Salario Mes</th>
+                    <th style="text-align: center">Salario Docencia</th>
+                    <th style="text-align: center">Bonif. Docencia</th>
+                    {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                        <th style="text-align: center">IVA(12%)</th>
+                    {% endif %}
+                    <th style="text-align: center">Tutorias</th>
+                    <th style="text-align: center">Horas Extras</th>
+                    <th style="text-align: center">Otros Ing.</th>
+                    <th style="text-align: center">Total Ing. Gravados</th>
+                    <th style="text-align: center">Fondo Reserva</th>
+                    <th style="text-align: center">Total Ingresos</th>
+
+                {# DESCUENTOS   #}
+
+                    {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                        <th style="text-align: center">Ret.IVA (100%)</th>
+                    {% else %}
+                        <th style="text-align: center">IESS (9.45%)</th>
+                    {% endif %}
+                    <th style="text-align: center">Pres. IESS</th>
+                    <th colspan="2" style="text-align: center">Pres. Inst.</th>
+                    <th style="text-align: center">Anticipo Quincena</th>
+                    <th style="text-align: center">Multas</th>
+                    {#OCU para Casade                #}
+                    {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                        <th style="text-align: center">Ret.Fuente(10%)</th>
+                    {% endif %}
+                    {#OCU para Conducción                #}
+                    {% if MODELO_CONDU %}
+                        <th style="text-align: center">Ret.Fuente(8%)</th>
+                    {% else %}
+                        <th style="text-align: center">Impto.Renta</th>
+                    {% endif %}
+
+                    <th style="text-align: center">Otros desc.</th>
+                    <th style="text-align: center">Total Descuentos</th>
+                    <th style="text-align: center">Valor a Percibir</th>
+                    <th style="text-align: right"></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for rolpagoprofesor in rolespagoprofesores %}
+                    <tr>
+
+                {#   INGRESOS #}
+
+                        <td>
+                            {% if rolpagoprofesor.es_fijo %}
+                                <span class="label label-success tl smaller" title="Profesor Fijo">F</span>
+                            {% endif %}
+                        {% if rolpagoprofesor.es_administrativo %}
+                                <span class="label label-success tl smaller" title="Es Administrativo">A</span>
+                            {% endif %}
+                                {{ rolpagoprofesor.profesor.persona.nombre_completo_inverso }} <br/>
+                            {% if rolpagoprofesor.datos_perfil_incompletos %}
+                                <span class="label label-important smaller"> Perfil Incompleto</span>
+                            {% endif%}
+                        </td>
+
+                    {# Dias Trabajados #}
+                        <td style="text-align: center;">
+                            <a href="#" class="dias" id="dias{{ rolpagoprofesor.id }}" rpp="{{ rolpagoprofesor.id }}" prof="{{ rolpagoprofesor.profesor.persona.nombre_completo }}">{{ rolpagoprofesor.dias }}</a>
+                        </td>
+
+                    {# Salario Contratado #}
+                        <td style="text-align: right;" id='salariocontratado{{ rolpagoprofesor.id }}' value='{{ rolpagoprofesor.salario }}'>
+                            ${{ rolpagoprofesor.salario|floatformat:2|intcomma }}
+                        </td>
+
+                    {# Salario Mes - Se calcula a partir de los dias y el salario contratado #}
+                        <td style="text-align: right;" id="salariomes{{ rolpagoprofesor.id }}">
+                            {% if rolpagoprofesor.salariomes %}
+                                ${{ rolpagoprofesor.salariomes|floatformat:2|intcomma }}
+                            {% endif %}
+                        </td>
+
+                    {# Valor Salario por Docencia y Horas de docencia #}
+                        <td style="text-align: right;">
+                            ${{ rolpagoprofesor.valortotal|floatformat:2|intcomma }}<br/>
+                            ({{ rolpagoprofesor.horastrabajo|floatformat }}h)
+                        </td>
+                    {# Valor Bonificacion por Docencia #}
+                    {# Si el docente NO es administrativo se calcula salariodocencia - salariomes #}
+                    {# Si el docente SI es administrativo bonifxdocencia = salariodocencia segun horas clases  #}
+                        <td style="text-align: right" id="bonificaciondocencia{{ rolpagoprofesor.id }}" rpp="{{ rolpagoprofesor.id }}">
+                            ${{ rolpagoprofesor.diferenciavalor|floatformat:2|intcomma }}
+                        </td>
+
+                    {# Para presentar el valor del iva factura  en CASADE OCU 23-05-2014         #}
+                    {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                        <td style="text-align: right" id="iess{{ rolpagoprofesor.id }}">${{ rolpagoprofesor.modelo_descuento.iess|floatformat:2|intcomma }} </td>
+                    {% endif %}
+
+                    {# Valor Tutorias - Se pasan como valores directos #}
+                    {#  OCU 07-07-2014 No hay horas tutorias en Conduccion #}
+                    {% if not MODELO_CONDU %}
+                        <td style="text-align: center;">
+                            <a href="#" class="tutorias" id="tutorias{{ rolpagoprofesor.id }}" rpp="{{ rolpagoprofesor.id }}" prof="{{ rolpagoprofesor.profesor.persona.nombre_completo }}">${{ rolpagoprofesor.tutorias|floatformat:2|intcomma }}</a>
+                        </td>
+                    {% else %}
+                         <td style="text-align: right;" id="tutorias{{ rolpagoprofesor.id }}">
+                            {% if rolpagoprofesor.tutorias %}
+                                ${{ rolpagoprofesor.tutorias|floatformat:2|intcomma }}
+                            {% endif %}
+                        </td>
+                    {% endif %}
+
+                    {# Valor Horas Extras - Ventana para calculos segun horas suplementarias y extraordinarias #}
+                    {#  OCU 07-07-2014 No hay horas extras en Conduccion #}
+                    {% if not MODELO_CONDU %}
+                        <td style="text-align: center;">
+                            <a href="#" class="hextras" id="hextras{{ rolpagoprofesor.id }}" value="{{ rolpagoprofesor.horas_extras }}" rpp="{{ rolpagoprofesor.id }}" prof="{{ rolpagoprofesor.profesor.persona.nombre_completo }}">${{ rolpagoprofesor.horas_extras|floatformat:2|intcomma }}</a>
+                        </td>
+                    {% else %}
+                         <td style="text-align: right;" id="hextras{{ rolpagoprofesor.id }}">
+                            {% if rolpagoprofesor.horas_extras %}
+                                ${{ rolpagoprofesor.horas_extras|floatformat:2|intcomma }}
+                            {% endif %}
+                        </td>
+                    {% endif %}
+
+                    {# Valor Otros Ingresos - Se pasan como valores directos #}
+                    {#  OCU 07-07-2014 No hay horas otros ingresos en Conduccion #}
+                    {% if not MODELO_CONDU %}
+                        <td style="text-align: center;">
+                            <a href="#" class="otrosing" id="otrosing{{ rolpagoprofesor.id }}" rpp="{{ rolpagoprofesor.id }}" prof="{{ rolpagoprofesor.profesor.persona.nombre_completo }}">${{ rolpagoprofesor.otrosing|floatformat:2|intcomma }}</a>
+                        </td>
+                    {% else %}
+                        <td style="text-align: right;" id="otrosing{{ rolpagoprofesor.id }}">
+                            {% if rolpagoprofesor.otrosing %}
+                                ${{ rolpagoprofesor.otrosing|floatformat:2|intcomma }}
+                            {% endif %}
+                        </td>
+                    {% endif %}
+
+                    {# Valor Total Ingresos Gravados #}
+                        <td style="text-align: center;" id="totalingg{{ rolpagoprofesor.id }}">
+                            ${{ rolpagoprofesor.total_ingresos_gravados|floatformat:2|intcomma }}
+                        </td>
+
+                    {# Fondo de Reserva #}
+                        <td style="text-align: center;">
+                            {% if rolpagoprofesor.fondoreserva %}
+                                ${{ rolpagoprofesor.fondoreserva|floatformat:2|intcomma }}
+                                <br/>
+                                ({{ rolpagoprofesor.rol_perfil.fechaafiliacion|date:'d-m-Y' }})
+                            {% else %}
+                                $0.00
+                            {% endif %}
+                        </td>
+
+                    {# Valor Total de Ingresos - incluye el fondo de reserva si tiene, sino son los ingresos gravados #}
+                        <td style="text-align: center;" id="totalingresos{{ rolpagoprofesor.id }}">
+                            ${{ rolpagoprofesor.total_ingresos_general|floatformat:2|intcomma }}
+                        </td>
+
+                {# DESCUENTOS #}
+
+                        {# IESS 9.35% o IVA 12% #}
+                        <td style="text-align: right" id="iess{{ rolpagoprofesor.id }}">${{ rolpagoprofesor.modelo_descuento.iess|floatformat:2|intcomma }} </td>
+
+                    {# Prestamos IESS #}
+                    {#  OCU 07-07-2014 No hay prestamos IESS en Conduccion #}
+                    {% if not MODELO_CONDU %}
+                        <td>
+                            {% if rolpagoprofesor.es_fijo %}
+                                <a href="#" class="prestamoiess" id="prestamoiess{{ rolpagoprofesor.id }}" rpp="{{ rolpagoprofesor.id }}" prof="{{ rolpagoprofesor.profesor.persona.nombre_completo }}">${{ rolpagoprofesor.modelo_descuento.prestamoiess|floatformat:2|intcomma }}</a>
+                            {% endif %}
+                        </td>
+                    {% else %}
+                        <td style="text-align: right;" id="prestamoiess{{ rolpagoprofesor.id }}">
+                            {% if rolpagoprofesor.prestamoiess %}
+                                ${{ rolpagoprofesor.prestamoiess|floatformat:2|intcomma }}
+                            {% endif %}
+                        </td>
+                    {% endif %}
+
+                    {# Prestamos Institucionales #}
+                        {% if rolpagoprofesor.profesor.persona.prestamo_inst_sin_cancelar %}
+                            <td>
+                                <select class="input-small descuentoinst" rpp='{{ rolpagoprofesor.id }}' >
+                                    <option value="0">Sin descuento</option>
+                                    {% for pi in rolpagoprofesor.profesor.persona.prestamo_inst_sin_cancelar %}
+                                        <option value="{{ pi.id }}" {% if rolpagoprofesor.modelo_descuento.prestamoinst.id == pi.id %}selected="selected"{% endif %}>${{ pi.proximo_descuento|floatformat:2|intcomma }} de (${{ pi.valor|floatformat:2|intcomma }} - {{ pi.motivo }})</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td id="descuentoinst{{ rolpagoprofesor.id }}" nowrap>
+                                ${{ rolpagoprofesor.modelo_descuento.descuentoprestamoinst|floatformat:2|intcomma }}
+                            </td>
+                        {% else %}
+                            <td colspan="2"></td>
+                        {% endif %}
+
+                    {# Anticipos de Quincena - si es Docente Administrativo #}
+                        <td>
+                            {% if rolpagoprofesor.es_administrativo %}
+                                ${{ rolpagoprofesor.modelo_descuento.quincena|floatformat:2|intcomma }}
+                            {% endif %}
+                        </td>
+
+                    {# Multas #}
+                        <td id="multa{{ rolpagoprofesor.id }}">
+                            ${{ rolpagoprofesor.modelo_descuento.descuentomulta|floatformat:2|intcomma }}
+                        </td>
+
+                    {# Impuesto a la Renta  #}
+                        <td style="text-align: right">
+                            <a href="#" class="detalleirenta {% if rolpagoprofesor.modelo_descuento.irenta %}larger{% endif %}" rpp="{{ rolpagoprofesor.id }}" name="{{ rolpagoprofesor.profesor.persona.nombre_completo }}" rol="{{ rolpagoprofesor.rol.nombre }}">
+                                ${{ rolpagoprofesor.modelo_descuento.irenta|floatformat:2|intcomma }}
+                            </a>
+                        </td>
+
+                    {# Otros descuentos #}
+                    {#  OCU 07-07-2014 No hay  otros descuentos en Conduccion #}
+                    {% if not MODELO_CONDU %}
+                        <td style="text-align: center;">
+                            <a href="#" class="otrosdesc" id="otrosdesc{{ rolpagoprofesor.id }}" rpp="{{ rolpagoprofesor.id }}" prof="{{ rolpagoprofesor.profesor.persona.nombre_completo }}">${{ rolpagoprofesor.modelo_descuento.otrosdesc|floatformat:2|intcomma }}</a>
+                        </td>
+                    {% else %}
+                        <td style="text-align: right;" id="otrosdesc{{ rolpagoprofesor.id }}">
+                            {% if rolpagoprofesor.otrosdesc %}
+                                ${{ rolpagoprofesor.otrosdesc|floatformat:2|intcomma }}
+                            {% endif %}
+                        </td>
+                    {% endif %}
+
+
+                    {# Total descuentos #}
+                        <td style="text-align: center;" id="totaldesc{{ rolpagoprofesor.id }}">
+                            ${{ rolpagoprofesor.modelo_descuento.totaldesc|floatformat:2|intcomma }}
+                        </td>
+
+                    {# Valor Total - Salario a percibir #}
+                        <td id="salariopercibir{{ rolpagoprofesor.id }}" style="text-align: right; font-size: 12px;"><b>${{ rolpagoprofesor.salariopercibir|floatformat:2|intcomma }} </b></td>
+
+
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    <li><a href="/rol_pago?action=roldetalleprofesor&id={{ rolpagoprofesor.id }}"><i class="icon-list-alt"></i> Detalle Rol</a></li>
+                                    <li><a href="/docentes?action=rolpagoperfil&id={{ rolpagoprofesor.profesor.id }}&ret={{ rolpagoprofesor.rol.id }}" ><i class="icon-share"></i> Perfil</a></li>
+                                    <li><a href="/docentes?action=gastospersonales&id={{ rolpagoprofesor.profesor.id }}&rol={{ rolpagoprofesor.rol.id }}"><span class="icon-shopping-cart" style="font-style: italic;"></span> Gastos Personales (${{ rolpagoprofesor.profesor.gastos_personales_sri.total|floatformat:2 }})</a></li>
+                                    <li><a href="/reportes?action=run&direct=true&n=nom_personal_docente_porempleado&rt=pdf&rol_id={{ rolpagoprofesor.rol.id }}&profesor={{ rolpagoprofesor.profesor.id }}"><i class="icon-print"></i> Imprimir Rol Profesor</a> </li>
+                                </ul>
+                             </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not rolespagoprofesores %}
+                    <tr>
+                        <td colspan="25">NO EXISTEN ROLES DE PAGOS DE PROFESORES</td>
+                    </tr>
+                {% endif %}
+                </tbody>
+                <tfoot>
+                    <tr class="alert-info">
+                        <th colspan="2"></th>
+                    {# INGRESOS   #}
+{#                        <th>Dias</th>#}
+                        <th style="text-align: center">Salario Contratado</th>
+                        <th style="text-align: center">Salario Mes</th>
+                        <th style="text-align: center">Salario Docencia</th>
+                        <th style="text-align: center">Bonif. Docencia</th>
+                        {# OCU  solo CASADE #}
+                        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                             <th style="text-align: center">IVA 12%</th>
+                        {% endif %}
+
+                        <th style="text-align: center">Tutorias</th>
+                        <th style="text-align: center">Horas Extras</th>
+                        <th style="text-align: center">Otros Ing.</th>
+                        <th style="text-align: center">Total Ing. Gravados</th>
+                        <th style="text-align: center">Fondo Reserva</th>
+                        <th style="text-align: center">Total Ingresos</th>
+                    {# DESCUENTOS   #}
+                        {# OCU  Casade ret. IVA 100% #}
+                        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                             <th style="text-align: center">RET.IVA 100%</th>
+                        {% else %}
+                             <th style="text-align: center">IESS (9.45%)</th>
+                        {% endif %}
+                        <th style="text-align: center">Pres. IESS</th>
+                        <th colspan="2" style="text-align: center">Pres. Inst.</th>
+                        <th style="text-align: center">Anticipo Quincena</th>
+                        <th style="text-align: center">Multas</th>
+
+                        {# OCU Casade ret. fuente 10%  #}
+                        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                             <th style="text-align: center">Ret.Fuente (10%)</th>
+                        {% endif %}
+                        {# OCU Conduccion ret. fuente 8%   #}
+                        {% if MODELO_CONDU %}
+                             <th style="text-align: center">Ret.Fuente (8%)</th>
+                        {% else %}
+                             <th style="text-align: center">IRenta</th>
+                        {% endif %}
+
+                        <th style="text-align: center">Otros desc.</th>
+                        <th style="text-align: center">Total Descuentos</th>
+                        <th style="text-align: center">Valor a Percibir</th>
+                        <th></th>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="larger">
+                            Total Docentes: {{ rolpago.cantidad_docentes }}<br/>
+                            Promedio Dias: {{ rolpago.promedio_dias|floatformat }}
+                        </td>
+                        <td style="text-align: right;">${{ rolpago.total_salariocontratado|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_salariomes|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_salariodocencia|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_bonificaciondocencia|floatformat:2|intcomma }}</td>
+                        {# OCU Casade #}
+                        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                            <td style="text-align: right;">${{ rolpago.total_iess|floatformat:2|intcomma }}</td>
+                        {% endif %}
+
+                        <td style="text-align: right;">${{ rolpago.total_tutorias|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_horasextras|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_otrosingresos|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_ingresosgravados|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_fondoreserva|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_ingresos|floatformat:2|intcomma }}</td>
+
+                        {% if MODELO_CONDU %}
+                            <td style="text-align: right;">${{ rolpago.total_iess|floatformat:2|intcomma }}</td>
+                        {% else %}
+                            <td style="text-align: right;">${{ rolpago.total_iess|floatformat:2|intcomma }}</td>
+                        {% endif %}
+                        <td style="text-align: right;">${{ rolpago.total_prestamosiess|floatformat:2|intcomma }}</td>
+                        <td colspan="2" style="text-align: right;">${{ rolpago.total_prestamosinst|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_quincena|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_multas|floatformat:2|intcomma }}</td>
+                         {# OCU CASADE #}
+                        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                            <td style="text-align: right;">${{ rolpago.total_irenta|floatformat:2|intcomma }}</td>
+                        {% else %}
+                            <td style="text-align: right;">${{ rolpago.total_irenta|floatformat:2|intcomma }}</td>
+                        {% endif %}
+                        <td style="text-align: right;">${{ rolpago.total_otrosdescuentos|floatformat:2|intcomma }}</td>
+                        <td style="text-align: right;">${{ rolpago.total_descuentos|floatformat:2|intcomma }}</td>
+
+                        <td style="text-align: right;" class="larger"><b>${{ rolpago.total_valor_percibir|floatformat:2|intcomma }}</b></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="diaspanel" style="display: none;">
+        <div class="modal-header">
+            <h5 class="diastitle"></h5>
+            <h5 class="diastitle2"></h5>
+        </div>
+        <div class="modal-body diasbody">
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-guardar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="tutoriaspanel" style="display: none;">
+        <div class="modal-header">
+            <h5 class="tutoriastitle"></h5>
+        </div>
+        <div class="modal-body tutoriasbody">
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-guardar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="hextraspanel" style="display: none;">
+        <div class="modal-header">
+            <h5 class="hextrastitle"></h5>
+        </div>
+        <div class="modal-body hextrasbody">
+        </div>
+        <div class="modal-footer hextrasfoot">
+            <div>
+                <span id='valortotalhextras' class="label label-success bigger" style="text-align: center;"></span>
+                <a href="#" class="btn btn-guardar btn-success">Guardar</a>
+                <a href="#" class="btn btn-cerrar">Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="otrosingpanel" style="display: none;">
+        <div class="modal-header">
+            <h5 class="otrosingtitle"></h5>
+        </div>
+        <div class="modal-body otrosingbody">
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-guardar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="prestamoiesspanel" style="display: none;">
+        <div class="modal-header">
+            <h5 class="prestamoiesstitle"></h5>
+        </div>
+        <div class="modal-body prestamoiessbody">
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-guardar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="otrosdescpanel" style="display: none;">
+        <div class="modal-header">
+            <h5 class="otrosdesctitle"></h5>
+        </div>
+        <div class="modal-body otrosdescbody">
+        </div>
+        <div class="modal-footer">
+
+            <a href="#" class="btn btn-guardar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="irentapanel" style="display: none;">
+        <div class="modal-header">
+            <h5 class="irentatitle"></h5>
+        </div>
+        <div class="modal-body irentabody"> </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,549 @@
+{% extends "layout/basebs.html" %}
+{% load sga_extras %}
+{% block more_ccs %}
+    <link rel="stylesheet" href="/static/modernize/dist/libs/datatables.net-bs5/css/dataTables.bootstrap5.min.css?v={{ version }}">
+    <link href="https://cdn.datatables.net/1.13.2/css/jquery.dataTables.min.css?v={{ version }}" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.2/css/dataTables.bootstrap5.min.css?v={{ version }}" rel="stylesheet">
+    <style>
+        .table-responsive .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 2px 4px !important;
+            border: 0px solid #dfe5ef !important;
+        }
+    </style>
+{% endblock %}
+{% block more_js %}
+    <script src="/static/modernize/dist/libs/datatables.net/js/jquery.dataTables.min.js?v={{ version }}"></script>
+    <script src="https://cdn.datatables.net/1.13.2/js/jquery.dataTables.min.js?v={{ version }}"></script>
+    <script src="https://cdn.datatables.net/1.13.2/js/dataTables.bootstrap5.min.js?v={{ version }}"></script>
+{% endblock %}
+{% block atras %}{{ request.path }}{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+
+        $.extend(true, $.fn.dataTable.defaults, {
+            oLanguage: {
+                sSearch: "<strong>Filtro:</strong> _INPUT_",
+                sLengthMenu: "<strong>Registros por página:</strong> _MENU_",
+                sZeroRecords: "No se encontraron resultados",
+                sProcessing: "Procesando...",
+                sEmptyTable: "Ningún dato disponible en esta tabla",
+                sInfo: "Mostrando registros del _START_ al _END_ de un total de _TOTAL_ registros",
+                sInfoEmpty: "Mostrando registros del 0 al 0 de un total de 0 registros",
+                sInfoFiltered: "(Filtrado de _MAX_ total de registros)",
+                sLoadingRecords: "Cargando...",
+                oPaginate: {
+                    "sFirst": `<i class='ti ti-player-skip-back'></i>`,
+                    "sLast": `<i class="ti ti-player-skip-forward"></i>`,
+                    "sNext": `<i class="ti ti-player-track-next"></i>`,
+                    "sPrevious": `<i class="ti ti-player-track-prev"></i>`
+                },
+            }
+        });
+
+        const actionQuitar = (registro, action, id) => {
+            const question = `¿Está seguro de quitar el registro <span class="text-info fw-bold">${registro}</span>?`;
+            QuestionLayout(question, () => {
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: `${response.message}`,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.reload();
+                        });
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+            }, () => {})
+        }
+
+        const actionAgregar = (registro, action, idc, idm) => {
+            const question = `¿Está seguro de agregar el registro <span class="text-info fw-bold">${registro}</span>?`;
+            QuestionLayout(question, () => {
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', { 'action': action, 'idc': idc, 'idm': idm }, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: `${response.message}`,
+                            icon: 'success'
+                        }).then(function(result) {
+                            console.log("result: ", result);
+                            if (result.isConfirmed) {
+                                const vModal = $("#modalDatatable");
+                                const vTable = $('.datatable table', $(vModal));
+                                $(vTable).dataTable().fnDraw(false);
+                            }
+                        });
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+            }, () => {})
+        }
+
+        const busqueda = async () => {
+            const id = parseInt('{{ eCronograAcademico.id }}');
+            const action = 'view_materias';
+            const term = $("#searchinput").val().trim().toUpperCase();
+            const idm = $('[name="filter_malla"]').val();
+            const idn = $('[name="filter_nivel"]').val();
+            let url = "{{ request.path }}"
+            let params = {};
+            if (term.length > 0) {
+                params['s'] = term;
+            }
+            params['action'] = action;
+            params['id'] = id;
+            params['idm'] = idm;
+            params['idn'] = idn;
+            let newURL = '';
+            if (params) {
+                newURL = `${url}` + await BaseLayout.encodeQueryString(params);
+            } else {
+                newURL = `${url}`
+            }
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+            });
+            location.href = newURL;
+        };
+
+        const ver_todos = () =>{
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+            });
+            //console.log("{{ request.path }}?action=view_materias&id={{ eCronograAcademico.id }}")
+            location.href = "{{ request.path }}?action=view_materias&id={{ eCronograAcademico.id }}";
+        }
+
+        const datatable = (vModal, vTable) => {
+            const $vModal = $(vModal);
+            const $vTable = $(vTable);
+            $vTable.dataTable({
+                bJQueryUI: false,
+                bAutoWidth: false,
+                bProcessing: false,
+                bServerSide: true,
+                bSort: false,
+                sPaginationType: "full_numbers",
+                iDisplayLength: 25,
+                bInfo: true,
+                //dom: 'Bfrtip',
+                dom: '<"row m-0 p-0"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                    '<"row m-0 p-0"<"col-sm-12"t>>' +
+                    '<"row m-0 p-0"<"col-sm-12 col-md-12 col-lg-6 d-flex justify-content-center align-items-center"i><"col-sm-12 col-md-12 col-lg-6 d-flex justify-content-center align-items-center"p>>',
+                sAjaxSource: "{{ request.path }}",
+                sServerMethod: "GET",
+                initComplete: function() {
+                    // Mover el select fuera del label
+                    var lengthLabel = $('div.dataTables_length label');
+                    var lengthSelect = lengthLabel.find('select');
+                    lengthLabel.after(lengthSelect); // Mueve el select fuera del label
+
+                    // Mover el input fuera del label
+                    var searchLabel = $('div.dataTables_filter label');
+                    var searchInput = searchLabel.find('input');
+                    searchLabel.after(searchInput); // Mueve el input fuera del label
+
+                    // Remover clases pt-4 y pb-4 de los contenedores
+                    $('div.dataTables_length').removeClass('pt-4 pb-4');
+                    $('div.dataTables_filter').removeClass('pt-4 pb-4');
+                },
+                fnServerParams: function (aoData) {
+                    //LoadingLayout(true, $('tbody', $(this)));
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                        target: $('tbody', $(this))
+                    });
+                    const idm = $('[name="f_malla"]', $vModal).val();
+                    const idn = $('[name="f_nivel"]', $vModal).val();
+                    aoData.push(
+                        {"name": "action", "value": 'loadDataTable'},
+                        {"name": "id", "value": parseInt('{{ eCronograAcademico.id }}')},
+                        {"name": "idm", "value": idm},
+                        {"name": "idn", "value": idn},
+                    );
+                    //console.log(aoData);
+                },
+                aoColumnDefs:
+                    [
+                        {
+                            aTargets: [0],
+                            width: "5%",
+                            //responsivePriority: 20,
+                            fnCreatedCell: function (nTd, sData, oData, iRow, iCol) {
+                                if (sData != 'NULL') {
+                                    $(nTd).css('text-align', 'center')
+                                    $(nTd).css('vertical-align', 'middle')
+                                    $(nTd).css('padding', '2px')
+                                }
+                            }
+                        },
+                        {
+                            aTargets: [1],
+                            width: "65%",
+                            //responsivePriority: 1,
+                            mRender: function (data, type, row) {
+                                return `<div>
+                                            <h6 class="fs-2 fw-semibold mb-0">
+                                                ${data['asignatura']}
+                                            </h6>
+                                            <p class="fs-2 mb-0"><b class="fw-semibold">Malla: </b><span class="text-muted fs-2">${data['malla']}</span></p>
+                                            <span class="fs-2 mb-0"><b class="fw-semibold">Horas: </b><span class="badge bg-info fs-2">${data['horas']}</span></span>
+                                            <span class="fs-2 mb-0"><b class="fw-semibold">Créditos: </b><span class="badge bg-info fs-2">${data['creditos']}</span></span>
+                                        </div>`;
+
+                            },
+                            fnCreatedCell: function (nTd, sData, oData, iRow, iCol) {
+                                if (sData != 'NULL') {
+                                    $(nTd).css('text-align', 'left')
+                                    $(nTd).css('vertical-align', 'middle')
+                                    $(nTd).css('padding', '8px')
+                                }
+                            }
+                        },
+                        {
+                            aTargets: [2],
+                            width: "10%",
+                            //responsivePriority: 1,
+                            fnCreatedCell: function (nTd, sData, oData, iRow, iCol) {
+                                if (sData != 'NULL') {
+                                    $(nTd).css('text-align', 'center')
+                                    $(nTd).css('vertical-align', 'middle')
+                                    $(nTd).css('padding', '2px')
+                                }
+                            }
+                        },
+                        {
+                            aTargets: [3],
+                            width: "10%",
+                            //responsivePriority: 1,
+                            mRender: function (data, type, row) {
+                                return `<p class="fs-2 mb-0">${data['inicio']}</p>
+                                        <p class="fs-2 mb-0">${data['fin']}</p>`;
+
+                            },
+                            fnCreatedCell: function (nTd, sData, oData, iRow, iCol) {
+                                if (sData != 'NULL') {
+                                    $(nTd).css('text-align', 'center')
+                                    $(nTd).css('vertical-align', 'middle')
+                                    $(nTd).css('padding', '2px')
+                                }
+                            }
+                        },
+                        {
+                            aTargets: [4],
+                            width: "10%",
+                            mRender: function (data, type, row) {
+
+                                return `<input type="hidden" class="dt-col-id" value="${data['id']}"/> <input type="hidden" class="dt-col-name" value="${data['name']}"/>`;
+                            },
+                            fnCreatedCell: function (nTd, sData, oData, iRow, iCol) {
+                                if (sData != 'NULL') {
+                                    $(nTd).css('text-align', 'center')
+                                    $(nTd).css('vertical-align', 'middle')
+                                    $(nTd).css('padding', '2px')
+                                }
+                            }
+                        },
+                    ]
+                ,
+                fnDrawCallback: function (oSettingst) {
+                    //Core.Loading.wait(false, $('tbody', $(this)));
+                    LoadingLayout.hide({
+                        target: $('tbody', $(this))
+                    });
+                    let count = 0;
+                    $('.dt-col-id').each(function () {
+                        const id = $(this).val();
+                        const $html = $('#el-templates [element="table-row-actions"] .table-controls').clone();
+                        const name = $('.dt-col-name').eq(count).val();
+                        $('.dt-action-plus', $html).click(function () {
+                            actionAgregar(name, 'agregarMateria', parseInt('{{ eCronograAcademico.id }}'), id);
+                        });
+
+                        count++;
+                        $('.tip', $html).tooltip();
+                        $(this).after($html);
+                    });
+                }
+
+            });
+        }
+
+        $(function() {
+            const vModal = $("#modalDatatable");
+            const vTable = $('.datatable table', $(vModal));
+
+            $("#search").click(function() {
+                busqueda();
+            });
+            $('#searchinput').keyup( function (e) {
+                if (e.keyCode == 13) {
+                    busqueda();
+                }
+            });
+
+            $('[name="filter_malla"]').change( function () {
+                busqueda();
+            });
+
+            $('[name="filter_nivel"]').change( function () {
+                busqueda();
+            });
+
+            $('[name="f_malla"]', $(vModal)).change( function () {
+                $(vTable).dataTable().fnDraw(false);
+            });
+
+            $('[name="f_nivel"]', $(vModal)).change( function () {
+                $(vTable).dataTable().fnDraw(false);
+            });
+
+            $('.action-open').click( function () {
+                $(vModal).modal({backdrop: 'static', keyboard: false}).modal("show");
+            });
+
+            $('.action-close', $(vModal)).click( function () {
+                $(vModal).modal("hide");
+            });
+            $(vModal).on('show.bs.modal', async function() {
+                console.log("ppp");
+                await datatable(vModal, vTable);
+                $(".dataTables_length, .dataTables_filter").addClass('pt-4 pb-4');
+
+                $(".dataTables_length select").addClass('form-select');
+                $(".dataTables_filter input").addClass('form-control');
+                $(vTable).on('click', 'tbody td, tbody span.dtr-data', function (e) {
+                    console.log("******* ******** hizo clic en ");
+                });
+                $(vTable).addClass('border-top border-bottom border-start');
+                $(vModal).show();
+
+                //Core.Modal.setModalMaxHeight(this);
+            });
+            // Supongamos que tienes un modal con id="myModal"
+            $(vModal).on('hidden.bs.modal', function () {
+                // Destruir la instancia de DataTable
+                if ($.fn.DataTable.isDataTable('.datatable table')) {
+                    $(vTable).DataTable().destroy();
+                }
+
+                // Opcional: si deseas eliminar el contenido del DataTable también
+                $(vTable).empty();
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Actualizando registros...</div>`,
+                });
+                location.reload();
+            });
+        });
+
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="container-fluid ">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                    <h6>Cronograma: {{ eCronograAcademico.nombre }}</h6>
+                </div>
+            </div>
+        </div>
+        <div class='row mb-2'>
+            <!-- Filtro de búsqueda -->
+            <div class="col-md-6 col-lg-3 mb-2 mb-lg-0">
+                <div class="form-floating">
+                    <input class='form-control border border-info' type='text' id='searchinput' name="s" value='{{ s }}' autocomplete="off" placeholder="Buscar materia..." />
+                    <label>
+                        <i class="ti ti-search me-2 fs-4 text-info"></i>
+                        <span class="border-start border-info ps-3 text-info fw-semibold">Buscar materia</span>
+                    </label>
+                </div>
+            </div>
+            <!-- Filtro de nivel malla -->
+            <div class='col-md-6 col-lg-2 mb-2 mb-lg-0'>
+                <div class="form-floating">
+                    <select name="filter_nivel" class="form-control border border-info">
+                        <option value="0" {% if idn == 0 %}selected="selected"{% endif %}>--Todos--</option>
+                        {% for eNivelMalla in eNivelMallas %}
+                            <option value="{{ eNivelMalla.id }}" {% if idn == eNivelMalla.id %}selected="selected"{% endif %}>{{ eNivelMalla.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                    <label>
+                        <i class="ti ti-search me-2 fs-4 text-info"></i>
+                        <span class="border-start border-info ps-3 text-info fw-semibold">Buscar por nivel</span>
+                    </label>
+                </div>
+            </div>
+            <!-- Filtro de malla -->
+            <div class='col-md-12 col-lg-6 mb-2 mb-lg-0'>
+                <div class="form-floating">
+                    <select name="filter_malla" class="form-control border border-info">
+                        <option value="0" {% if idm == 0 %}selected="selected"{% endif %}>--Todos--</option>
+                        {% for eMalla in eMallas %}
+                            <option value="{{ eMalla.id }}" {% if idm == eMalla.id %}selected="selected"{% endif %}>{{ eMalla }}</option>
+                        {% endfor %}
+                    </select>
+                    <label>
+                        <i class="ti ti-search me-2 fs-4 text-info"></i>
+                        <span class="border-start border-info ps-3 text-info fw-semibold">Buscar por malla</span>
+                    </label>
+                </div>
+            </div>
+            <div class='col-md-12 col-lg-1'>
+                <div class="d-flex justify-content-end">
+                    {% if s or idm > 0 or idn > 0 %}
+                        <button class="btn text-danger" onclick="ver_todos()" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar busqueda">
+                            <i class="ti ti-x fs-6"></i>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class='table table-bordered table-striped customize-table mb-0 align-middle'>
+                <thead class="header-item">
+                <tr>
+                    <th style="text-align: justify; width: 70%; vertical-align:middle">Materia</th>
+                    <th style="text-align: center; width: 10%; vertical-align:middle">Nivel</th>
+                    <th style="text-align: center; width: 10%; vertical-align:middle">Fecha</th>
+                    <th style="text-align: center; width: 10%; vertical-align:middle">
+                        <a href="javascript:void(0)" class="btn btn-sm btn-primary action-open"><i class="ti ti-plus me-2"></i>Agregar</a>
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for eCronograAcademicoMateria in eCronograAcademicoMaterias %}
+                    <tr>
+                        <td style="text-align: justify; vertical-align:middle">
+                            <div>
+                                <h6 class="fs-2 fw-semibold mb-0">
+                                    {{ eCronograAcademicoMateria.materia.nombre_completo }}
+                                </h6>
+                                <p class="fs-2 mb-0"><b class="fw-semibold">Malla: </b><span class="text-muted fs-2">{{ eCronograAcademicoMateria.materia.nivel.malla }}</span></p>
+                                <span class="fs-2 mb-0"><b class="fw-semibold">Horas: </b><span class="badge bg-info fs-2">{{ eCronograAcademicoMateria.materia.horas }}</span></span>
+                                <span class="fs-2 mb-0"><b class="fw-semibold">Créditos: </b><span class="badge bg-info fs-2">{{ eCronograAcademicoMateria.materia.creditos }}</span></span>
+                            </div>
+                        </td>
+                        <td class="fs-2" style="text-align: center; vertical-align:middle">
+                            {{ eCronograAcademicoMateria.materia.nivel.nivelmalla.nombre }}
+                        </td>
+                        <td class="fs-2" style="text-align: center; vertical-align:middle">
+                            <p class="fs-2 mb-0">{{ eCronograAcademicoMateria.materia.inicio|date:'d-m-Y' }}</p>
+                            <p class="fs-2 mb-0">{{ eCronograAcademicoMateria.materia.fin|date:'d-m-Y' }}</p>
+                        </td>
+                        <td style="text-align: center; vertical-align:middle">
+                            <button class="btn btn-sm btn-danger" onclick="actionQuitar('{{ eCronograAcademicoMateria.materia.nombre_completo }}', 'quitarMateria', {{ eCronograAcademicoMateria.id }})">
+                                <i class="ti ti-x me-2"></i>Quitar
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'layout/table/pagination.html' %}
+
+    </div>
+
+    <div class="modal fade" id="modalDatatable" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-fullscreen-xl-down modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><span></span> Listado de materias del periodo {{ periodo.nombre|lower }}</h5>
+                    <button type="button" class="btn btn-mini close action-close m-0 p-0">
+                        <i class="align-middle fa fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body with-padding">
+                    <div class='row mb-2'>
+                        <!-- Filtro de nivel malla -->
+                        <div class='col-md-12 col-lg-4 mb-2 mb-lg-0'>
+                            <div class="form-floating">
+                                <select name="f_nivel" class="form-control border border-info">
+                                    <option value="0" selected="selected">--Todos--</option>
+                                    {% for eNivelMalla in eNivelMallas_filter %}
+                                        <option value="{{ eNivelMalla.id }}">{{ eNivelMalla.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label>
+                                    <i class="ti ti-search me-2 fs-4 text-info"></i>
+                                    <span class="border-start border-info ps-3 text-info fw-semibold">Buscar por nivel</span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- Filtro de malla -->
+                        <div class='col-md-12 col-lg-8 mb-2 mb-lg-0'>
+                            <div class="form-floating">
+                                <select name="f_malla" class="form-control border border-info">
+                                    <option value="0" selected="selected">--Todos--</option>
+                                    {% for eMalla in eMallas_filter %}
+                                        <option value="{{ eMalla.id }}">{{ eMalla }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label>
+                                    <i class="ti ti-search me-2 fs-4 text-info"></i>
+                                    <span class="border-start border-info ps-3 text-info fw-semibold">Buscar por malla</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="datatable table-responsive table-responsive-md table-responsive-lg">
+                        <table class='table table-bordered table-striped customize-table mb-0 align-middle' style="width:100%">
+                            <thead class="header-item">
+                            <tr>
+                                <th style="text-align: center; width: 5%">#</th>
+                                <th style="text-align: center; width: 65%">Materia</th>
+                                <th style="text-align: center; width: 10%">Nivel</th>
+                                <th style="text-align: center; width: 10%">Fechas</th>
+                                <th style="text-align: center; width: 10%">Acción</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm btn-danger action-close">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="el-templates" style="display:none;">
+        <div element="table-row-actions">
+            <table>
+                <tbody>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td>
+                        <div class="table-controls">
+                            <a class="btn btn-danger btn-icon dt-action-plus tip m-0 p-1" data-placement="top"
+                               title="Adicionar materia"><i class="align-middle fa fa-check m-0 p-0"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+{% endblock %}

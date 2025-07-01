@@ -1,0 +1,92 @@
+<script type="text/javascript">
+    $(function (){
+        function validardatostipogestion(){
+            if ($("#idtipogestion").val() == 0){
+                $("#helptipogestion").html("Seleccione tipo de gestión")
+                return 1;
+            }
+            if($("#descripcion").val() == ""){
+                $("#helpdescripcion").html("Debe ingresar la descripción")
+                return 1;
+            }
+            return 0;
+        }
+
+        function limpiar(){
+            $("#helptipogestion").html("")
+            $("#helpdescripcion").html("")
+        }
+
+        $("#btnguardarg").click(function(){
+            limpiar()
+            if(validardatostipogestion()==0){
+                $("#ingr_gestion").modal("hide");
+                var formadata = new FormData();
+                formadata.append('action', 'agregargestion' );
+                formadata.append('idsolic', '{{ solicitudbeca.id }}');
+                formadata.append('idtipogestion', $("#idtipogestion").val() );
+                formadata.append('descripcion', $("#descripcion").val());
+                showWaiting("Tipo Gestion Becas","Espere unos segundos por favor...");
+                $("#agregarregistro").modal("hide");
+                $.ajax({
+                    url : '/admin_ayudafinanciera',
+                    data : formadata,
+                    type : 'POST',
+                    contentType:false,
+                    processData:false,
+                    cache:false,
+                    success : function(json) {
+                        if(json.result== 'ok'){
+                              swal("Solicitud", "Se guardo la gestion correctamente", "success").then(function(){
+                                    location.href="/admin_ayudafinanciera?opcion={{ opcion }}&id={{ solicitudbeca.inscripcion.id }}";
+                                });
+
+                        }else{
+                            swal("Error", json.message, "error");
+                        }
+                    },
+                    error : function(xhr, status) {
+                        smoke.alert('Disculpe, existió un problema');
+                    },
+                    complete : function(xhr, status) {
+                        hideWaiting();
+
+                    }
+                });
+            }
+        });
+
+        $("#ingr_gestion .btn-cerrar").click(function() {
+            $("#ingr_gestion").modal("hide");
+            return false;
+        });
+    });
+
+</script>
+
+<div class="row-fluid">
+    <div class="span12">
+        <h4>Tipo de Gestión:</h4>
+        <select style="width: 95%" id='idtipogestion'>
+             <option value='0'>SELECCIONE TIPO DE GESTIÓN</option>
+            {% for listgestionbeca in tipogestionbeca %}
+                 <option value='{{listgestionbeca.id  }}'>{{ listgestionbeca.nombre }}</option>
+            {% endfor %}
+        </select>
+        <p style="color: red" id="helptipogestion"></p>
+    </div>
+</div>
+
+<div class="row-fluid">
+    <div class="span12">
+        <h4>Descripción:</h4>
+        <textarea name="descripcion" id="descripcion" cols="100%" rows="5" tabindex="4" style="text-transform: none;width: 95% "></textarea>
+        <p style="color: red" id="helpdescripcion"></p>
+    </div>
+</div>
+
+<div class="modal-footer">
+    <a href="#" class="btn btn-success" id="btnguardarg" style= "background: #49afcd">Guardar</a>
+    <a href="#" class="btn btn-cerrar" id="cerrar" > Cerrar</a>
+
+</div>

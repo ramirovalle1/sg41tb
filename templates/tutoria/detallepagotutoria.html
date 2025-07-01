@@ -1,0 +1,152 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/tutoria?s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+        $("#nuevo").click(function() {
+
+            location.href = "/tutoria?action=add";
+        });
+
+        $(".activar").click(function() {
+            var id = $(this).attr("id");
+            $.post("/tutoria",{"action": "activacion", "id": id },function(data) {
+                    if(data.result=='ok'){
+                    location.reload();}
+                    else{
+                        smoke.alert('El estudiante tiene activo una tutoria')
+                    }
+            },"json");
+        });
+
+    });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+{#        <div class="span1"></div>#}
+        <div class="span5"  style="text-align: center">
+            <h3 >{{ profesor }}</h3>
+            <h3 >Detalle de Pago Tutorias</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/admin_tutoria" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/tutoria" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span6'>
+
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+
+                <thead>
+                    <tr>
+{#                        <th style="text-align: center;width: 25%">Profesor</th>#}
+                        <th style="text-align: center;width: 25%">Rol</th>
+                        <th style="text-align: center;width: 12%;">total tutorias</th>
+                        <th style="text-align: center;width: 12%;">Valor total de tutorias</th>
+                        <th style="text-align: center;width: 13%;">Valor x Cancelar</th>
+                        <th style="text-align: center;width: 12%;">Valor Cancelado</th>
+                        <th style="text-align: center;width: 13%;">Saldo</th>
+                        <th style="text-align: center;width: 15%">Fecha Pago</th>
+                        <th style="text-align: center;width: 15%">Codigo Rol Conta.</th>
+{#                        <th></th>#}
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for d in detallepago %}
+                        <tr>
+{#                            <td style="text-align: center;"><a href="#">{{ d.pagotutoria }}</a></td>#}
+                            <td style="text-align: center;">{{ d.rol }}</td>
+                            <td style="text-align: center;">{{ d.totaltutoria }}</td>
+                            <td style="text-align: center;">{{ d.valortutorias }}</td>
+                            <td style="text-align: center;">{{ d.total_detalle }}</td>
+                            <td style="text-align: center;">{{ d.valorpago }}</td>
+                            <td style="text-align: center;">{{ d.saldo }}</td>
+
+                            <td style="text-align: center;">{{ d.fechapago }}</td>
+                            <td style="text-align: center;">{{ d.contarol }}</td>
+
+{#                            <td style="text-align: center;">#}
+{#                                <div class="btn-group">#}
+{#                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">#}
+{#                                        Acciones#}
+{#                                    </a>#}
+{#                                    <ul class="dropdown-menu pull-right">#}
+{#                                        <li><a  href='/tutoria?action=delete&id={{ t.id }}'> <i class='icon-edit'></i> Eliminar </a></li>#}
+{#                                    </ul>#}
+{#                                </div>#}
+{#                            </td>#}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class="span6">
+
+            {% if perms.med.change_personafichamedica %}
+{#            <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>#}
+            {% endif %}
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/tutoria?page=1">1</a></li>
+                            <li><a href="/tutoria?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tutoria?page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/tutoria?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/tutoria?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tutoria?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+{% endblock %}

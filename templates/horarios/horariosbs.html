@@ -1,0 +1,131 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            niveles = [{% for nivel in niveles %}
+                {"id":"{{ nivel.id }}","cerrado": {% if nivel.cerrado %}true{% else %}false{% endif %}, "fechacierre": "{{ nivel.fechacierre|date:'d-m-Y' }}","modalidad": "{{ nivel.grupo.modalidad.nombre }}", "carrera": "{{ nivel.carrera_id }}", "sede": "{{ nivel.sede.id }}","sesion": "{{ nivel.sesion }}","nivelmalla":"{{ nivel.nivelmalla }}","paralelo": "{{ nivel.paralelo }}","inicio":"{{ nivel.inicio_repr }}","fin":"{{ nivel.fin_repr }}","grupo":"{{ nivel.grupo }}"}{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            findNiveles = function(s, c) {
+                var l = [];
+                for (i in niveles) {
+                    var am = niveles[i];
+                    if (am.sede==s && am.carrera==c) {
+                        l.push(am);
+                    }
+                }
+                return l;
+            };
+
+            mostrar_nivel = function() {
+                var id = $(this).attr("id");
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").hide();
+                $("."+id).show();
+            };
+
+            mostrar_todos = function() {
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").show();
+            };
+
+            mostrar_ninguno = function() {
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").hide();
+            };
+            $(".nivelninguno").click(mostrar_ninguno);
+
+
+            $(".niveltodos").click(mostrar_todos);
+
+
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var carrera = $this.attr('carrera');
+                var sede = $this.attr('sede');
+                var sesion = $this.attr('sesion');
+                var nivelmalla = $this.attr('nivelmalla');
+                var paralelo = $this.attr('paralelo');
+
+                var niveles = findNiveles(sede, carrera);
+                for (i in niveles) {
+                    var nivel = niveles[i];
+                    var nivelmalla = nivel.nivelmalla;
+
+                    var idboton = "bot"+nivelmalla.replace(' ','').toLowerCase()+"_"+carrera+"_"+sede;
+                    var $boton = $(this).find("#"+idboton);
+                    if ($boton.length==0) {
+                        var botones = $this.find(".niveles button");
+                        var insertado = false;
+                        for (var ii=0; ii<botones.length; ii++) {
+                            var boton2 = botones.get(ii);
+                            if ($(boton2).html()>nivelmalla) {
+                                $(boton2).before("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                                insertado = true;
+                                break;
+                            }
+                        }
+                        if (!insertado) {
+                            $this.find(".niveles").append("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                        }
+                        $this.find("#"+idboton).click(mostrar_nivel);
+                    }
+
+                    $(this).append("<tr style='display: none' class='nivelrow "+idboton+"'><td><b>"+((nivel.cerrado)?"<span class='label label-important'>CERRADO</span> ":"")+nivel.paralelo+" - "+nivel.nivelmalla+" (Del " + nivel.inicio +" al "+ nivel.fin + ") - "+nivel.modalidad+" "+nivel.sesion+ " - </b></td><td>"+
+                        //" <a href='/niveles?action=edit&id="+nivel.id+"'><img src='/static/images/16/edit2.png' alt='' border=''/></a>" +
+                        //" <a href='/niveles?action=del&id="+nivel.id+"'><img src='/static/images/16/delete2.png' alt='' border=''/></a>" +
+                            " <a href='/horarios?action=horario&id="+nivel.id+"' class='btn btn-info btn-mini'><i class='icon-time icon-white'></i> Horario</a>" +
+                            "</td></tr>");
+                }
+
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Horarios de Niveles Acad&eacute;micos</h3>
+            <h5>Periodo: <b>{{ periodo.nombre }}</b>, Desde: <b>{{ periodo.inicio|date:'d-m-Y' }}</b> Hasta: <b>{{ periodo.fin|date:'d-m-Y' }}</b></h5>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <!-- SEDES -->
+    <div class='row-fluid'>
+        <div class="span12">
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            {% for sede in sedes %}
+                <thead>
+                <tr>
+                    <th colspan="2">{{ sede.nombre }}</th>
+                </tr>
+                <tr>
+                    <th width='30%'>Carreras</th>
+                    <th width='70%'>Niveles</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for carrera in carreras %}
+                    <tr>
+                        <td>{{ carrera.nombre }}</td>
+                        <td>
+                            <table class='cell table table-bordered' sede='{{ sede.id }}' carrera='{{ carrera.id }}'>
+                                <thead>
+                                <th colspan="2">
+                                    <div class="btn-group niveles" data-toggle="buttons-radio">
+                                        <button class="btn btn-mini niveltodos">Todos</button>
+                                        <button class='btn btn-mini btn-warning nivelninguno'><i class="icon-chevron-up"></i></button>
+                                    </div>
+                                </th>
+                                </thead>
+
+
+                            </table>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+
+            {% endfor %}
+        </table>
+        </div>
+    </div>
+{% endblock %}

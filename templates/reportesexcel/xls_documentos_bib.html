@@ -1,0 +1,114 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+
+        buscar_carrera = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Carrera',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#txtCarrera").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+         };
+         $('#txtCarrera').typeahead({source: buscar_carrera, updater: function(item) {
+                var results = $("#txtCarrera").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#txtCarrera").attr("myval",datos.id);
+                    }
+                }
+                return item;
+            }});
+
+        $("#generar").modal({width: '500px', backdrop: 'static'});
+        $("#generar").modal("show");
+
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+{#            var carrera = $("#txtCarrera").attr("myval");#}
+            $.post("/xls_documentos_bib", {"action":"generarexcel", "sede":$('#txtSede').val(), "anno":$('#anno').val(), "tipo":$('#txtTipo').val()}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 250);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json");
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Documentos Biblioteca</h3>
+        </div>
+        <form>
+            <div class="modal-body" style="padding: 20px">
+                <input type="hidden" name="action" value="generarexcel"/>
+{#                <div class="form-group" style="width: 97%; margin-bottom: 10px">#}
+{#                    <label for="">Carrera: </label>#}
+{#                    <input type="text" name="idCarrera" class="form-control" id="txtCarrera"/>#}
+{#                </div>#}
+                <div class="form-group" style="margin-bottom: 10px">
+                    <label for="">Sede: </label>
+                    <select name="idSede" id="txtSede" class="form-control">
+                        {% for s in sedes %}
+                            <option value="{{ s.id }}">{{ s.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px">
+                    <label for="">Tipo Documento: </label>
+                    <select id="txtTipo" class="form-control">
+                        {% for t in tipos %}
+                            <option value="{{ t.id }}">{{ t.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px">
+                    <label for="">Año: </label>
+                    <input type="number" id="anno" class="form-control" value="2023" style="width: 80px" min="1900" max="2050"/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-adicionar btn-success">Generar Reporte</a>
+{#                <button type="submit" class="btn btn-primary">Generar Reporte</button>#}
+                <a href="#" class="btn btn-cerrar btn-danger">Salir</a>
+            </div>
+        </form>
+
+    </div>
+
+    <div class="modal fade static" id="espera" style="display: none;"  >
+        <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}
+

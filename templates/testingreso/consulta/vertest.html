@@ -1,0 +1,706 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+<style>
+    body {
+        background-color: #eee
+    }
+    .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+      color: #fff;
+      background-color:  #184679; }
+
+
+    .custom-control-input:checked ~ .custom-control-label::before {
+      color: #fff;
+      border-color:#184679;
+      background-color: #184679;
+    }
+
+     .sortable-list {
+      min-height: 100px;
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .sortable-item {
+      padding: 10px;
+      margin-bottom: 5px;
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: grab;
+    }
+
+    .sortable-item-otro {
+      padding: 10px;
+      margin-bottom: 5px;
+      background-color: #f4f4f4;
+      border: 1px solid #FFFFFF;
+      border-radius: 4px;
+      cursor: grab;
+    }
+
+
+
+</style>
+
+<script>
+    $(function () {
+
+
+
+
+      $("#btnimprimirconclusion").click(function() {
+
+        $("#myLargeModalLabelimprime").html("Imprimir Conclusiones");
+         Loader.open();
+
+         {#$("#alertcargando").removeClass('d-none');#}
+         var ruta='';
+         var game=document.getElementById("vistacarta");
+         game.setAttribute("src","");
+
+           $.get("/reportes",{"action": "run","n":"resultado_test_ingreso_conclusion","rt":"pdf","persona_id":{{inscripciondata.persona.id}} },function(data) {
+
+                       ruta = data.reportfile;
+                       game.setAttribute("src",ruta);
+                       {#$("#alertcargando").addClass('d-none');#}
+
+                       Loader.close();
+
+                       $("#ventresultadotest").modal({backdrop: 'static', keyboard: false});
+
+
+                    },"json");
+
+
+
+
+          return false;
+      });
+
+
+
+
+    });
+
+</script>
+
+{% endblock %}
+{% block canvas %}
+
+
+
+
+    <div class="main-container">
+         <div class="page-header">
+
+           <div class="row">
+               <div class="col-lg-12 col-12 text-left logo">
+                    <h3 class="menu-header-title text-capitalize mb-3" style="color: #184679;"> <strong>ALUMNO :</strong>   {{ inscripciondata.persona.nombre_completo_inverso }} </h3>
+               </div>
+           </div>
+           <div class="row">
+               <div class="col-lg-10 col-10 text-left logo">
+                    <div>
+                        <h3 class="menu-header-title text-capitalize mb-3" style="color: #184679;"> {{ inscripciondata.test.titulo }} </h3>
+                    </div>
+                </div>
+               <div class="col-lg-2 col-md-2 col-sm-2">
+                    <div class="title">
+                        <a href="/testingresoadmin" style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+               </div>
+           </div>
+        </div>
+        <div class="card-box mb-30">
+            <div class="pd-20">
+                 <div class="row justify-content-between">
+                    <div class="col-lg-6 col-6 text-left logo">
+                         <h3> Tiempo Realizado : <span id="minutos" style="font-size: 20px" class="badge badge-success">{{ inscripciondata.tiemporeali }} minutos/segundos</span >  </h3> </br>
+
+                         <div class="progress mb-20">
+                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" id="barraprogresosiguiente" style="width: 100%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                         </div>
+                    </div>
+                    <div class="col-lg-4 col-4 text-left logo">
+                        <label > <a style="color: #d92550"></a></label>
+                        <div class="form-group">
+{#                            <button type="button" id="btnimprimir" class="btn" data-bgcolor="#184679" data-color="#ffffff" title="Imprimir Test"><i class="dw dw-invoice"></i> Imprimir Prueba </button>#}
+                            <button type="button" id="btnimprimirconclusion" class="btn" data-bgcolor="#63A836" data-color="#ffffff" title="Imprimir Conclusiones Test"><i class="dw dw-invoice"></i> Imprimir Conclusiones </button>
+                        </div>
+
+                    </div>
+
+
+                 </div>
+                 <div class="row justify-content-between">
+                       <div class="col-lg-6 col-6 text-left logo">
+                          <h3> Tabla de Conclusiones :</h3>
+
+                          <table class="table table-striped">
+                              <thead>
+                                <tr>
+                                  <th scope="col">Desde</th>
+                                  <th scope="col">Hasta</th>
+                                  <th scope="col">Descricpion</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                              {% for xlistatablaconclu in listatablaconclu %}
+                                    <tr>
+
+                                        <th scope="row" {% if inscripciondata.puntaje > xlistatablaconclu.desde and  inscripciondata.puntaje <= xlistatablaconclu.hasta %} style="background-color: olivedrab" {% endif %}>{{ xlistatablaconclu.desde }}</th>
+                                        <th scope="row" {% if inscripciondata.puntaje > xlistatablaconclu.desde and  inscripciondata.puntaje <= xlistatablaconclu.hasta %} style="background-color: olivedrab" {% endif %}>{{ xlistatablaconclu.hasta }}</th>
+                                        <th scope="row" {% if inscripciondata.puntaje > xlistatablaconclu.desde and  inscripciondata.puntaje <= xlistatablaconclu.hasta %} style="background-color: olivedrab" {% endif %}>{{ xlistatablaconclu.descripcion }}</th>
+
+
+                                    </tr>
+                               {% endfor %}
+                              </tbody>
+                          </table>
+                       </div>
+                       <div class="col-lg-4 col-4 text-left logo">
+                            <h1>TOTAL</h1>
+                            <h2>{{ inscripciondata.puntaje }} <span>puntos</span></h2>
+                       </div>
+
+
+                 </div>
+             </div>
+        </div>
+
+
+        <div class="card-box mb-30">
+
+            <div class="pd-20" id="tbpanel">
+
+                    {% for xlistapreguntas in listapreguntas %}
+                        <div class="row">
+                              <div class="col-md-12" >
+                                {% if xlistapreguntas.descripcion %}
+                                    <strong>{{ xlistapreguntas.orden }}.- {{ xlistapreguntas.pregunta }}</strong> <br>
+                                    <p style="margin-left: 20px;font-size: 15px"> {{ xlistapreguntas.descripcion }}</p><br>
+                                {% else %}
+                                    <strong>{{ xlistapreguntas.orden }}.- {{ xlistapreguntas.pregunta }}</strong> <br>
+                                {% endif %}
+                                {% if xlistapreguntas.imagen %}
+                                    <img src="../media/{{ xlistapreguntas.imagen }}" alt="" ><br><br>
+                                {% endif %}
+                              </div>
+                        </div>
+                        <div class="row">
+                              {% if xlistapreguntas.cantidadrespuesta == 1 or xlistapreguntas.marquesina %}
+                                  <div class="col-md-2" >
+                                       <div class="form-group">
+                                       </div>
+                                  </div>
+                              {% else %}
+                                  {% if xlistapreguntas.checkbox %}
+                                     {% for x1 in xlistapreguntas.respuestapregunta %}
+                                        {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                            {% if xlistapreguntas.checkbox %}
+                                                <div class="col-md-1" ></div>
+                                                <div class="col-md-2" >
+                                                    <div class="form-group">
+                                                         {% if respseleccionada.puntaje > 0 %}
+
+                                                           <div class="custom-control custom-checkbox mb-5">
+                                                                <input type="checkbox" id="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" name="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}" disabled checked  class="custom-control-input">
+                                                                <label class="custom-control-label" for="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}"><span class="d-block d-sm-block d-md-none" style="font-size: 11px"> </span> {{ x1.respuesta }} </label>
+                                                           </div>
+                                                         {% else %}
+                                                            <div class="custom-control custom-checkbox mb-5">
+                                                                <input type="checkbox" id="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" name="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}" disabled required class="custom-control-input">
+                                                                <label class="custom-control-label" for="chk_{{ x1.id }}_pre_{{ xlistapreguntas.id }}"><span class="d-block d-sm-block d-md-none" style="font-size: 11px"> </span>{{ x1.respuesta }}</label>
+                                                            </div>
+                                                         {% endif %}
+                                                    </div>
+                                                </div>
+
+                                            {% endif %}
+
+
+                                        {% endwith %}
+                                     {% endfor %}
+                                  {% endif %}
+
+                                  {% if xlistapreguntas.cajatextoleyenda  %}
+
+                                          {% if xlistapreguntas.orden == 5 %}
+                                            {% for x1 in xlistapreguntas.respuestapregunta %}
+
+                                                  <div class="col-md-6" >
+                                                    <table style="margin-left: 15%">
+                                                        {% if x1.orden == 1 %}
+                                                            <tr>
+                                                                <td>¡Qué </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> paisaje contemplamos desde el Mirador!</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 2 %}
+                                                            <tr>
+                                                                <td>Hay una crema que elimina el </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> de las piernas.</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 3 %}
+                                                            <tr>
+                                                                <td>Mi hermano es </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> de la Policia Nacional.</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 4 %}
+                                                            <tr>
+                                                                <td>Podré </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}"  disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> en las próximas elecciones.</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 5 %}
+                                                            <tr>
+                                                                <td>La modista a va a </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> mi uniforme.</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 6 %}
+                                                            <tr>
+                                                                <td>Agarró el hacha por el </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 7 %}
+                                                            <tr>
+                                                                <td>Las plantas tienen </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 8 %}
+                                                            <tr>
+                                                                <td>Mi deber es </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> la basura.</td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 9 %}
+                                                            <tr>
+                                                                <td>Debemos </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                                <td> bien las habichuelas.</td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                    </table>
+                                                  </div>
+                                          {% endfor %}
+                                          {% endif %}
+                                          {% if xlistapreguntas.orden == 7 %}
+                                            {% for x1 in xlistapreguntas.respuestapregunta %}
+
+                                                  <div class="col-md-6" >
+                                                    <table style="margin-left: 15%">
+                                                        {% if x1.orden == 1 %}
+                                                            <tr>
+                                                                <td>carter </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 2 %}
+                                                            <tr>
+                                                                <td>honrad </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 3 %}
+                                                            <tr>
+                                                                <td>niñ </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 4 %}
+                                                            <tr>
+                                                                <td>timid </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 5 %}
+                                                            <tr>
+                                                                <td>desnud</td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 6 %}
+                                                            <tr>
+                                                                <td>sensat </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 7 %}
+                                                            <tr>
+                                                                <td>gentil </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 8 %}
+                                                            <tr>
+                                                                <td>port </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+
+                                                            </tr>
+                                                        {% endif %}
+                                                        {% if x1.orden == 9 %}
+                                                            <tr>
+                                                                <td>torp </td>
+                                                                <td>
+                                                                    <div class="form-group">
+                                                                         {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                                           {% if respseleccionada %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% else %}
+                                                                                <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" disabled type="text" class="form-control" >
+                                                                           {% endif %}
+                                                                         {% endwith %}
+                                                                    </div>
+                                                                </td>
+
+
+                                                            </tr>
+                                                        {% endif %}
+                                                    </table>
+                                                  </div>
+                                            {% endfor %}
+                                          {% endif %}
+
+
+
+                                  {% endif %}
+
+                                  {% if xlistapreguntas.arrastarsoltar %}
+
+                                        <div class="col-md-2" ></div>
+                                        <div class="col-md-4" class="sortable-list" >
+                                              {% for x3 in xlistapreguntas.tienecolumna %}
+                                                   {% if x3.lado == 1 %}
+
+                                                          <div  class="sortable-item-otro"> {{ x3.descripcion }}</div>
+
+                                                   {% endif %}
+                                              {% endfor %}
+                                        </div>
+                                       <div class="col-md-4" id="availableItems_{{ xlistapreguntas.id }}"  >
+                                           {% for x1 in xlistapreguntas.respuestapregunta %}
+                                               {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                    {% if xlistapreguntas.arrastarsoltar %}
+                                                           <div class="sortable-item" id=drag_{{ respseleccionada.id }}  >
+                                                            {{ respseleccionada.respuesta }}
+                                                          </div>
+                                                   {% endif %}
+                                               {% endwith %}
+                                           {% endfor %}
+                                       </div>
+
+                                        <br>
+                                  {% endif %}
+
+                                  {% if xlistapreguntas.radiobox %}
+
+                                          {% for x1 in xlistapreguntas.respuestapregunta %}
+                                              {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                {% if xlistapreguntas.radiobox %}
+                                                    <div class="col-md-1" ></div>
+                                                    <div class="col-md-2" >
+                                                        <div class="form-group">
+                                                             {% if respseleccionada.puntaje > 0 %}
+
+                                                               <div class="custom-control custom-radio mb-5">
+                                                                   <input type="radio" id="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" name="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}" disabled   checked  class="custom-control-input">
+                                                                   <label class="custom-control-label" for="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}"><span class="d-block d-sm-block d-md-none" style="font-size: 11px"> </span> {{ x1.respuesta }}</label>
+                                                               </div>
+                                                             {% else %}
+                                                                <div class="custom-control custom-radio mb-5">
+                                                                    <input type="radio" id="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" name="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}" idpregunta="{{ xlistapreguntas.id }}" idordenrespuesta="{{ x1.orden }}" value="{{ x1.respuesta }}"  disabled class="custom-control-input">
+                                                                    <label class="custom-control-label" for="radio_{{ x1.id }}_pre_{{ xlistapreguntas.id }}"><span class="d-block d-sm-block d-md-none" style="font-size: 11px"> </span>{{ x1.respuesta }}</label>
+                                                                </div>
+                                                             {% endif %}
+                                                        </div>
+                                                    </div>
+
+                                                {% endif %}
+                                              {% endwith %}
+
+                                          {% endfor %}
+
+
+
+                                      {% endif %}
+
+                                   {% if  xlistapreguntas.cajatexto %}
+                                          {% for x1 in xlistapreguntas.respuestapregunta %}
+                                               {% with respseleccionada=xlistapreguntas|args:inscripciondata.id|args:x1.orden|call:"validar_respuesta" %}
+                                                   {% if xlistapreguntas.cajatexto %}
+                                                         <div class="col-md-3" >
+                                                           <div class="form-group">
+                                                               {% if respseleccionada %}
+                                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" value="{{respseleccionada.respuesta  }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" disabled>
+                                                               {% else %}
+                                                                    <input id="txtresp_sub_{{ x1.id }}" name="txtresp_sub_{{ x1.id }}" idpregunta="{{ xlistapreguntas.id }}" onblur="contestarpregunta('txtresp_sub_{{ x1.id }}','{{ xlistapreguntas.id }}','{{ x1.orden }}','{{ x1.puntaje }}')"  idordenrespuesta="{{ x1.orden }}" type="text" class="form-control" >
+                                                               {% endif %}
+                                                           </div>
+                                                         </div>
+                                                   {% endif %}
+                                               {% endwith %}
+                                          {% endfor %}
+
+                                      {% endif %}
+
+
+                              {% endif %}
+                        </div>
+
+                    {% endfor %}
+
+                  <hr>
+                 <div class="col-md-6 mb-30">
+                    <div class="card-box pricing-card-style2">
+                        <div class="pricing-card-header">
+                            <div class="left">
+                                <h4>TOTAL</h4>
+                            </div>
+                            <div class="right">
+                                <div class="pricing-price">
+                                    {{ inscripciondata.puntaje }}<span>puntos</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <div  class="modal fade " id="ventresultadotest" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="width: 1200px;left: -100px">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabelimprime">Imprimir Test</h4>
+
+                </div>
+                <div class="modal-body" style="width:1200px;min-height: 750px;max-height: 750px;overflow: auto" >
+                     <div class="row" >
+{#                        <div id="alertcargando" class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../testsenescyt/static/imagen/loader.gif"/><br/> Obteniedo el reporte espere un momento...</div>#}
+                        <embed id="vistacarta" src="" type="application/pdf" width="100%" height="700px" />
+                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"  class="btn" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff">Salir</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+    <div class="modal fade" id="login-modal-reporte"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="row">
+                    <div id="content-reporte" class="col-lg-12">
+                        Guardando Información espero un momento...
+                    </div>
+                </div>
+            </div>
+        </div>
+   </div>
+
+
+ {% endblock %}

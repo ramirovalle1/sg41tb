@@ -1,0 +1,138 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/box_medical?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Listado de Estudiantes </h3>
+            <br>
+        </div>
+        <div class='atright'>
+           <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class='span6'>
+            <form class="form-search">
+                <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/box_medical" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <!-- <th>[x]</th> -->
+                    <th>Nombre</th>
+                    {% if utiliza_grupos_alumnos %}
+                        <th>Grupo/Nivel</th>
+                    {% endif %}
+                    <th>Cedula/Pasap</th>
+                    <th>Email/Tel&eacute;f.</th>
+                    <th>Fecha Ingreso</th>
+                    <th>Carrera</th>
+                    <th>Datos M&eacute;dicos</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for inscripcion in inscripciones %}
+                    <tr>
+                        <td>
+                            {% if inscripcion.tienediscapacidad %}
+                                <img src='/static/images/discapacidad.png' alt="Discapacidad"/>
+                            {% endif %}
+                            {{ inscripcion.persona }}
+                            {% if inscripcion.persona.datos_medicos_incompletos %}
+                                <br/><span class="label label-important">Datos M&eacute;dicos incompletos</span>
+                            {% endif %}
+                            {% if inscripcion.persona.valoracion_medica_incompleta %}
+                                <br/><span class="label label-warning">Valoraci&oacute;n M&eacute;dica incompleta</span>
+                            {% endif %}
+                        </td>
+                        {% if utiliza_grupos_alumnos %}
+                            <td>
+                                {{ inscripcion.grupo.nombre }}
+                                {% if inscripcion.grupo.nivel_grupo %} - {{ inscripcion.grupo.nivel_grupo.nivelmalla.nombre }}<br>
+                                    <span class="label smaller"> ({{ inscripcion.grupo.nivel_grupo.inicio|date:'d-m-Y' }} - {{ inscripcion.grupo.nivel_grupo.fin|date:'d-m-Y' }})</span>
+                                {% endif %}
+
+                            </td>
+                        {% endif %}
+                        <td>{{ inscripcion.persona.cedula }} <br/> {% if inscripcion.persona.pasaporte %}{{ inscripcion.persona.pasaporte }}{% endif %}</td>
+                        <td>
+                            {% for email in inscripcion.persona.emails %}
+                                <a href="mailto:{{ email }}">{{ email }}</a>{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+
+                            <br/>{{ inscripcion.persona.telefono }}
+                        </td>
+                        <td>{{ inscripcion.fecha|date:"d-m-Y"  }}</td>
+                        <td>{{ inscripcion.carrera }}</td>
+
+                        <td>
+                            <a href="/box_medical?action=ficha&id={{ inscripcion.id }}" class='btn btn-success btn-mini'><i class="icon-plus icon-white"></i> Ficha</a>
+                            <a href="/box_medical?action=valoracion&id={{ inscripcion.id }}" class='btn btn-info btn-mini'><i class="icon-eye-open icon-white"></i> Valoraci&oacute;n</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+          {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/box_medical?page=1">1</a></li>
+                            <li><a href="/box_medical?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/box_medical?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/box_medical?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/box_medical?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/box_medical?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+          {% endif %}
+
+    </div>
+
+{% endblock %}

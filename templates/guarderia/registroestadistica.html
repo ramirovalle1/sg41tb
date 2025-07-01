@@ -1,0 +1,123 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+
+        google.load("visualization", "1", {packages:["corechart"]});
+        google.setOnLoadCallback(drawChart1);
+        google.setOnLoadCallback(drawChart2);
+
+        edades = [{% for c in total_edades %}
+            {"edad":"{{ c.0 }}","total":{{ c.1.0 }}}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        ];
+
+
+        function drawChart2() {
+            var elements = [];
+            elements.push(['Edades','Registros por Edades']);
+            for (var i in edades){
+                var edad= edades[i];
+                    elements.push([edad.edad, edad.total]);
+            }
+            var data = google.visualization.arrayToDataTable(elements);
+
+            var options = {
+              title: 'Gráfico - Registros por Edades '+{{ anno }},
+              'align': 'top',
+              is3D: true
+            };
+
+            var chart = new google.visualization.PieChart(document.getElementById('edades'));
+            chart.draw(data, options);
+        }
+
+        grupos = [{% for c in lista_carreras_grupos %}
+            {"carrera":"{{ c.0 }}","total_estudiantes":{{ c.1.0 }}}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        ];
+
+
+        function drawChart1() {
+            var elements = [];
+            elements.push(['Carrera','Total Estudiantes Beneficiados']);
+            for (var i in grupos){
+                var grupo = grupos[i];
+                elements.push([grupo.carrera, grupo.total_estudiantes]);
+            }
+            var data = google.visualization.arrayToDataTable(elements);
+
+            var options = {
+              title: 'Gráfico - Total Estudiantes Beneficiados '+{{ anno }},
+              'align': 'top',
+              is3D: true
+            };
+
+            var chart = new google.visualization.PieChart(document.getElementById('piechart_3d'));
+            chart.draw(data, options);
+        }
+
+
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+<div class="row-fluid">
+    <div class="span11">
+        <h3 style="text-align: center"> TABLA Y GR&Aacute;FICOS DE REGISTRO GUARDERIA {{ anno }}</h3>
+    </div>
+    <div class='span1'>
+        <a href="/guarderia" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+    </div>
+</div>
+<br/>
+
+<div class='row-fluid'>
+    <div class='span3'></div>
+    <div class='span6'>
+        <table class='table table-bordered table-condensed'>
+            <thead>
+                <tr>
+                    <h3 style="text-align: center"> TOTAL DE BENEFICIADOS {{ anno }}</h3>
+                    <th rowspan="2" class="bigger" style="vertical-align: middle"> CARRERAS</th>
+                    <th   style="text-align: center" class="bigger">CANTIDAD</th>
+                </tr>
+
+            </thead>
+            <tbody>
+                {% for ls in lista_carreras_grupos %}
+                <tr class="bigger">
+                    <td>{{ ls.0 }}</td>
+                    {% for l in ls.1 %}
+                        <td style="text-align: center;">{{ l }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="alert-info">
+                    <td class="bigger" style="text-align: center">TOTALES</td>
+{#                    {% for g in grupos_socioeconomicos %}#}
+                    <td style="text-align: center; font-size: 17px"><b>{{ total_b }}</b></td>
+{#                    {% endfor %}#}
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+</div>
+
+<div class='row-fluid' >
+
+    <div class="span6">
+        <div id="piechart_3d" style="height: 417px;"></div>
+    </div>
+
+    <div class="span6" style="left: -20px">
+        <div id="edades" style="height: 500px;"></div>
+    </div>
+</div>
+
+{% endblock %}

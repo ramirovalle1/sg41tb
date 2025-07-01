@@ -1,0 +1,130 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            actualizaMaterias = function(id) {
+                location.href = "/adm_docentes?action=clases&id={{ profesor.id }}&s="+id;
+            };
+
+            $("#materiassel").change(function() {
+                var id = $(this).val();
+                actualizaMaterias(id);
+            });
+            {% if error %}
+                smoke.alert("No se puede Eliminar la Clase");
+            {% endif %}
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3 style="text-align: center">Listado de Clases Impartidas por: {{ profesor }}</h3>
+            <h5>Per&iacute;odo: {{ periodo }}</h5>
+        </div>
+        
+        <div class='atright'>
+            <a href="/adm_docentes" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class='span12'>
+            <form class="well">
+                <select id='materiassel'>
+                    <option value=''></option>
+                    {% for materia in materias %}
+                        <option value='{{ materia.id }}' {% if search.id == materia.id %}selected="selected"{% endif %}>{{ materia.nombre_completo }} {% if materia.nivel.sede %} - {{ materia.nivel.sede }}{% endif %} {% if materia.nivel.carrera %} -  {{ materia.nivel.carrera }}{% endif %} {% if materia.nivel.paralelo %}- {{ materia.nivel.paralelo }}{% endif %} {% if not materia.nivel.carrera %} ({{ materia.nivel.coordinacion.nombre }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+                {% if search %}
+                    <a href="/adm_docentes?action=clases&id={{ profesor.id }}" id='allresults' class='btn btn-danger'><i class="icon-remove icon-white"></i> Volver</a>
+                {% endif %}
+
+            </form>
+
+        </div>
+        {%  if  perms.sga.delete_leccion %}
+            <a href="/adm_docentes?action=nuevaclase&id={{ profesor.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Abrir Nueva Clase</a>
+        {% endif %}
+        <div><br></div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Clase</th>
+                <th>Grupos</th>
+                <th>Fecha</th>
+                <th>Hora Entrada</th>
+                <th>Hora Salida</th>
+                <th>Asistencia</th>
+                <th>Abierta</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for lecciongrupo in leccionesgrupo %}
+                <tr>
+                    <td>
+                        <a href='/adm_docentes?action=editclase&id={{ lecciongrupo.id }}&pm={{ lecciongrupo.pm }}'>
+                            <span class='smaller'><b>{{ lecciongrupo.materia.nombre_completo }}</b><br/>
+                                <span class='smaller2'>{{ lecciongrupo.turno }}<br/>
+                                HORAS TURNO {{ lecciongrupo.turno.horas|floatformat:'0' }} Horas<br/>
+                                Aula: {{ lecciongrupo.aula }}<br/>
+                                </span>
+                            </span>
+                        </a>
+                    </td>
+                    <td>
+                        <span class='smaller2'>
+                        {% for leccion in lecciongrupo.lecciones.all %}
+                            - {{ leccion.clase.materia.nivel }}<br/>
+                        {% endfor %}
+                        </span>
+                    </td>
+                    <td>{{ lecciongrupo.fecha|date:"d-m-Y" }}</td>
+                    <td>{{ lecciongrupo.horaentrada }}</td>
+                    <td>
+                        {% if not lecciongrupo.abierta %}
+                            {{ lecciongrupo.horasalida }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ lecciongrupo.asistencia_real }}/{{ lecciongrupo.asistencia_plan }} ({{ lecciongrupo.porciento_asistencia }}%)
+                    </td>
+                    <td>
+                        {% if lecciongrupo.abierta %}
+                            <img src='/static/images/16/true.png' border='0'/>
+                        {% else %}
+                            <img src='/static/images/16/false.png' border='0'/>
+                        {% endif %}
+                    </td>
+                    <td>
+{#                        <!-- <a href='/adm_docentes?action=editclase&id={{ lecciongrupo.id }}'><span><img src='/static/images/16/edit2.png' alt='' border="0"/></span></a> -->#}
+                        {% if not lecciongrupo.plan_clase %}
+                            <a href='/adm_docentes?action=deleteclase&id={{ lecciongrupo.id }}' class="btn btn-danger btn-mini"><i class="icon-remove icon-white"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+        {%  if  perms.sga.delete_leccion %}
+            <a href="/adm_docentes?action=nuevaclase&id={{ profesor.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Abrir Nueva Clase</a>
+        {% endif %}
+            <div class='pagination'>
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/adm_docentes?action=clases&id={{ profesor.id}}&page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

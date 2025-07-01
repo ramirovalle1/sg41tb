@@ -1,0 +1,130 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <link type="text/css" rel="stylesheet" href="/static/css/jquery.flexbox.css"/>
+    <script type='text/javascript' src='/static/js/jquery.flexbox.js'></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+        google.load("visualization", "1", {packages:["corechart"]});
+        google.setOnLoadCallback(drawChart);
+
+        carreras = [{% for carrera in carreras %}
+            {"id":"{{ carrera.id }}","nombre":"{{ carrera.nombre }}","menor30": {{ carrera.matriculados_menor_30 }}, "entre31_40": {{ carrera.matriculados_31_40 }}, "entre41_50": {{ carrera.matriculados_41_50 }}, "entre51_60": {{ carrera.matriculados_51_60 }}, "mayor61": {{ carrera.matriculados_mayor_61 }}}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        ];
+
+        function drawChart() {
+            var elements_menor30 = [];
+            var elements_entre31_40 = [];
+            var elements_entre41_50 = [];
+            var elements_entre51_60 = [];
+            var elements_mayor_61 = [];
+            elements_menor30.push(['Carreras', 'Menores 30']);
+            elements_entre31_40.push(['Carreras', 'Entre 31 y 40']);
+            elements_entre41_50.push(['Carreras', 'Entre 41 y 50']);
+            elements_entre51_60.push(['Carreras', 'Entre 51 y 60']);
+            elements_mayor_61.push(['Carreras', 'Mayor 61']);
+
+            for (var i in carreras) {
+                var carrera = carreras[i];
+                elements_menor30.push([carrera.nombre, carrera.menor30]);
+                elements_entre31_40.push([carrera.nombre, carrera.entre31_40]);
+                elements_entre41_50.push([carrera.nombre, carrera.entre41_50]);
+                elements_entre51_60.push([carrera.nombre, carrera.entre51_60]);
+                elements_mayor_61.push([carrera.nombre, carrera.mayor61]);
+            }
+            var datamenor30 = google.visualization.arrayToDataTable(elements_menor30);
+            var dataentre31_40 = google.visualization.arrayToDataTable(elements_entre31_40);
+            var dataentre41_50 = google.visualization.arrayToDataTable(elements_entre41_50);
+            var dataentre51_60 = google.visualization.arrayToDataTable(elements_entre51_60);
+            var datamayor61 = google.visualization.arrayToDataTable(elements_mayor_61);
+
+            var optionsmenor30 = {
+                title: 'MENORES DE 30 ANIOS ({{ total_matriculados_menor_30 }})',
+                'is3D':true,
+                'legend': {position: 'bottom', textStyle: {color: 'black', fontSize: 10}},
+                'width':480,
+                'height':350
+
+            };
+
+            var optionsentre31_40 = {
+                title: 'MATRICULADOS ENTRE 31 y 40 ANIOS ({{ total_matriculados_31_40 }})',
+                'is3D':true,
+                'legend': {position: 'bottom', textStyle: {color: 'black', fontSize: 10}},
+                'width':480,
+                'height':350
+
+            };
+
+            var optionsentre41_50 = {
+                title: 'MATRICULADOS ENTRE 41 y 50 ANIOS ({{ total_matriculados_41_50 }})',
+                'is3D':true,
+                'legend': {position: 'bottom', textStyle: {color: 'black', fontSize: 10}},
+                'width':480,
+                'height':350
+
+            };
+
+            var optionsentre51_60 = {
+                title: 'MATRICULADOS ENTRE 51 y 60 ANIOS ({{ total_matriculados_51_60 }})',
+                'is3D':true,
+                'legend': {position: 'bottom', textStyle: {color: 'black', fontSize: 10}},
+                'width':480,
+                'height':350
+
+            };
+
+            var optionsmayor61 = {
+                title: 'MATRICULADOS MAYOR 61 ANIOS ({{ total_matriculados_mayor_61 }})',
+                'is3D':true,
+                'legend': {position: 'bottom', textStyle: {color: 'black', fontSize: 10}},
+                'width':480,
+                'height':350
+
+            };
+
+            var chartmenores30 = new google.visualization.PieChart(document.getElementById('piechart_menores30'));
+            var chartentre31_40 = new google.visualization.PieChart(document.getElementById('piechart_entre31_40'));
+            var chartentre41_50 = new google.visualization.PieChart(document.getElementById('piechart_entre41_50'));
+            var chartentre51_60 = new google.visualization.PieChart(document.getElementById('piechart_entre51_60'));
+            var chartmayor61 = new google.visualization.PieChart(document.getElementById('piechart_mayor61'));
+
+            chartmenores30.draw(datamenor30, optionsmenor30);
+            chartentre31_40.draw(dataentre31_40, optionsentre31_40);
+            chartentre41_50.draw(dataentre41_50, optionsentre41_50);
+            chartentre51_60.draw(dataentre51_60, optionsentre51_60);
+            chartmayor61.draw(datamayor61, optionsmayor61);
+        }
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th colspan="3" style="text-align: center;">
+                        <h2>Gr&aacute;ficos por Carreras</h2>
+                        <h3>Total de Estudiantes Matriculados: {{ total_matriculados }}</h3>
+                    </th>
+
+                </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><div class="span4" id="piechart_menores30"></div></td>
+                        <td><div class="span4" id="piechart_entre31_40"></div></td>
+                        <td><div class="span4" id="piechart_entre41_50"></div></td>
+                    </tr>
+                    <tr>
+                        <td><div class="span4" id="piechart_entre51_60"></div></td>
+                        <td><div class="span4" id="piechart_mayor61"></div></td>
+                    </tr>
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

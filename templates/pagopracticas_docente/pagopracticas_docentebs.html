@@ -1,0 +1,460 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#id_inicio, #id_fin, #id_valor").addClass('input-small');
+        $("#id_inicio, #id_fin, #id_profesor, #id_descripcion").addClass("validate[required]");
+
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/pagopracticas_docente?s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+
+                $("#search").trigger("click");
+            }
+        });
+
+        buscar_profesor = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Profesor', 'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_profesor").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.id);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+         $('#id_profesor').typeahead({source: buscar_profesor, updater: function(item) {
+            var results = $("#id_profesor").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_profesor").attr("myval",datos.id);
+                    id_per = datos.id;
+                }
+            }
+            return item;
+        }});
+
+    {#------------------------------------------------------ ADICIONAR----------------------------------------------------------------#}
+    $('.addpago').click(function(){
+        document.getElementById("formulario").reset();
+        $("#id_valor").attr('disabled',false);
+        $("#id_profesor").attr('disabled',false);
+        $("#idpago").val(0);
+        $("#add_pago #paneltitle2").html('Adicionar pago docente');
+        $("#add_pago").modal({"backdrop":"static","width":"50%"});
+        $("#add_pago").modal("show");
+    });
+
+    {#------------------------------------------------------ MODIFICAR----------------------------------------------------------------#}
+    $('.modificar').click(function(){
+        $("#id_profesor").val($(this).attr('docente'));
+        $("#id_inicio").val($(this).attr('inicio'));
+        $("#id_fin").val($(this).attr('fin'));
+        $("#id_valor").val($(this).attr('valor'));
+        $("#id_descripcion").val($(this).attr('descripcion'));
+        $("#idpago").val($(this).attr("pagoid"));
+        $("#id_profesor").attr('disabled',true);
+        var rol = $(this).attr("rol")
+        if(rol==1){
+            $("#id_valor").attr('disabled',true);
+        }else{
+            $("#id_valor").attr('disabled',false);
+        }
+        $("#add_pago #paneltitle2").html('Editar pago docente');
+        $("#add_pago").modal({"backdrop":"static","width":"40%"});
+        $("#add_pago").modal("show");
+    });
+
+    $("#add_pago .btn-cerrar").click(function(){
+        $("#add_pago").modal("hide");
+    });
+
+
+    {#------------------------------------------------------ ELIMINAR REGISTRO----------------------------------------------------------------#}
+    $(".eliminar").click(function(){
+        var id = $(this).attr("pagoid");
+        var docente = $(this).attr("docente");
+        smoke.confirm('Esta seguro de eliminar el registro del docente: "'+docente+'?', function(e){
+        if (e){
+            $.post("/pagopracticas_docente",{"action": "eliminar","id":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Registro Eliminado");
+               }else{
+                    alert(data.mensaje);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+
+    {#------------------------------------------------------ APROBAR PAGO----------------------------------------------------------------#}
+    $(".aprobar").click(function(){
+        var id = $(this).attr("pagoid");
+        var docente = $(this).attr("docente");
+        var mensaje = '';
+        {% if hoy >= rol.inicio and hoy <= rol.fin %}
+            mensaje = 'Este pago entra dentro del rol vigente';
+{#            mensaje = 'Este pago entra dentro del rol vigente: '+String(rol.nombre)+' ('+String(rol.inicio)+' al '+String(rol.fin)+')';#}
+        {% else %}
+            mensaje = '(No entra dentro del rol vigente)'
+        {% endif %}
+        smoke.confirm('Esta seguro de aprobar el pago al docente: "'+docente+'?. '+mensaje, function(e){
+        if (e){
+            $.post("/pagopracticas_docente",{"action": "aprobar_pago","id":id},function(data) {
+               smoke.alert(data.mensaje);
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+
+    $(".habilitar_registros").click(function(){
+        var id = $(this).attr("pagoid");
+        $.post("/pagopracticas_docente",{"action": "habilitar_registros","id":id},function(data) {
+            if(data.result=='ok'){
+                alert(data.mensaje);
+           }else{
+                alert(data.mensaje);
+           }
+           location.reload()
+        },"json");
+    });
+
+    {#------------------------------------------------------PANTALLA VER NIVELES----------------------------------------------------------------#}
+        $(".ver_niveles").click(function() {
+            descripcion = $(this).attr("nombre");
+            profesor = $(this).attr("profesor");
+            $("#pagoid").val($(this).attr('pagoid'));
+
+            $.get("/pagopracticas_docente",{"action": "ver_nivelesdepago","id":$(this).attr("pagoid")},function(data) {
+                $("#ver_niveles .modal-body").html(data);
+                $("#ver_niveles #paneltitle1").html(descripcion.toUpperCase()+" (PAGO A: "+profesor+")");
+                $("#ver_niveles").modal({"backdrop":"static","width":"50%"});
+                $("#ver_niveles").modal("show");
+           }, "html");
+        });
+
+        $("#ver_niveles .btn-cerrar").click(function(){
+            $("#ver_niveles").modal("hide");
+        });
+
+        $("#ver_niveles #agregar").click(function() {
+            $("#agregar_nivel").modal("show");
+        });
+
+        $("#agregar_nivel .btn-cerrar").click(function(){
+            $("#agregar_nivel").modal("hide");
+        });
+
+        $("#agregar_nivel .btn-success").click(function(){
+            $("#agregar_nivel").modal("hide");
+            var nivel = $("#id_nivel_id").val();
+            $.post("/pagopracticas_docente",{"action": "add_niveldepago","pago":$("#pagoid").val(), "nivel":nivel},function(data) {
+                if(data.result=='ok'){
+
+               }else{
+                    alert(data.mensaje);
+               }
+
+            },"json");
+        });
+
+    {#------------------------------------------------------------------BUSCAR NIVEL---------------------------------------------------------#}
+        buscar_nivel = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Nivel','p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_nivel").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+        $($("#id_nivel_id").get(0).parentNode.parentNode).hide();
+        $('#id_nivel').typeahead({source: buscar_nivel, updater: function(item) {
+            var results = $("#id_nivel").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_nivel").attr("myval",datos.id);
+                    ins=datos.id;
+                    $("#id_nivel_id").val(ins);
+                }
+            }
+            return item;
+        }});
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+
+    });
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span11"  >
+            <h3 >Listado Practicas Pre-Profesionales</h3></br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span8'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/pagopracticas_docente" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class='span4' style="text-align: right;">
+            <div class='btn-group'>
+                <a href="/pagopracticas_docente?action=ver_niveles" class='btn btn-info'><i class="icon-list icon-white"></i> Programacion de Grupos a Practicas</a>
+            </div>
+            {% if not persona.pertenece_soporte %}
+                <div class='btn-group'>
+                    <a href="#" class='btn btn-success addpago'><i class="icon-plus icon-white"></i> Adicionar</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th> Descripcion</th>
+                        <th> Docente</th>
+                        <th style="text-align: center"> Desde</th>
+                        <th style="text-align: center"> Hasta</th>
+                        <th style="text-align: center"> Valor</th>
+{#                        <th style="text-align: center"> # Practicas</th>#}
+                        <th style="text-align: center"> Informe</th>
+                        <th style="text-align: center"> Pago Aprobado</th>
+                        <th style="text-align: center"> Adicionar Practicas</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for p in pagos %}
+                        <tr>
+                            <td> {{ p.descripcion }} </td>
+                            <td>{{ p.profesor.persona.nombre_completo_inverso }} <br>
+                                <span style="color: #6f7c8d"> {% if p.profesor.persona.cedula %} {{ p.profesor.persona.cedula }} {% else %} {{ p.profesor.persona.pasaporte }} {% endif %}</span>
+                            </td>
+                            <td style="text-align: center"> {{ p.inicio|date:'d-m-Y' }} </td>
+                            <td style="text-align: center"> {{ p.fin|date:'d-m-Y' }} </td>
+                            <td style="text-align: center">
+                                {% if p.valor %}
+                                    ${{ p.valor|floatformat:2 }}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if p.archivo %}
+                                    <a href='{{ p.download_link }}' class='btn btn-success btn-mini'><i class="icon-download  icon-white"></i> Descargar</a>
+                                {% else %}
+
+                                {% endif %}
+                             </td>
+                            <td style="text-align: center">
+                                {% if p.pagoaprobado %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/><br>
+                                   <span style="color: #6f7c8d">{{ p.fechaaprobacion|date:'d-m-Y' }}</span>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if p.habilitar %}
+                                    <a href='#' pagoid='{{ p.id }}' class='btn habilitar_registros'><img src='/static/images/16/true.png' alt='Si' border='0'/></a>
+                                {% else %}
+                                    <a href='#' pagoid='{{ p.id }}' class='btn habilitar_registros'><img src='/static/images/16/false.png' alt='No' border='0'/></a>
+                                {% endif %}<br>
+                                <span style="color: #6f7c8d; text-align: left">Pendientes de aprobar: {{ p.cantidad_noaprobados }}</span><br>
+                                <span style="color: #6f7c8d; text-align: right">Aprobados: {{ p.cantidad_aprobados }}</span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if perms.sga.add_pagopracticasdocente %}
+                                            <li><a href="/pagopracticas_docente?action=ver_practicas&id={{ p.id }}"><i class="icon-list"></i> Ver Practicas</a></li>
+                                            <li><a mat_id='{{ c.asignatura.id }}' profesor='{{ p.profesor }}' nombre='{{ p.descripcion }}' pagoid="{{ p.id }}" class="ver_niveles" style="cursor: pointer"><i class="icon-eye-open"></i>  Ver Grupos</a></li>
+                                            {% if not p.rol %}
+                                                {% if p.puede_eliminar and not p.pagoaprobado %}
+                                                    <li><a href="#" class='eliminar' pagoid='{{ p.id }}' docente='{{ p.profesor }}'><i class="icon-remove"></i>  Eliminar</a></li>
+                                                {% endif %}
+                                                <li><a href="#" class='modificar' rol={% if p.rol %}1{% else %}0{% endif %} pagoid='{{ p.id }}' descripcion='{{ p.descripcion }}' docente="{{ p.profesor.id }}" inicio='{{ p.inicio|date:'d-m-Y' }}' fin='{{ p.fin|date:'d-m-Y' }}' valor='{{ p.valor }}'><i class="icon-edit"></i> Modificar</a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if perms.sga.change_pagopracticasdocente %}
+                                            {% if not p.rol %}
+                                                {% if not p.pagoaprobado %}
+                                                    <li><a href="#" class='aprobar' pagoid='{{ p.id }}' docente='{{ p.profesor }}'><i class="icon-check"></i> Aprobar pago</a></li>
+                                                {% else %}
+                                                        <li><a href="#" class='aprobar' pagoid='{{ p.id }}' docente='{{ p.profesor }}'><i class="icon-check"></i> Desaprobar pago</a></li>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not pagos %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/pagopracticas_docente?page=1">1</a></li>
+                            <li><a href="/pagopracticas_docente?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/pagopracticas_docente?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/pagopracticas_docente?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/pagopracticas_docente?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/pagopracticas_docente?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="modal fade static" id="add_pago">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/pagopracticas_docente" method="POST" enctype="multipart/form-data">
+                <input type='hidden' name='action' value='add' />
+                <input type='hidden' id='idpago' name='idpago' />
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="ver_niveles"   >
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+
+        <div class="modal-body" >
+    {#        ver_docente.html#}
+        </div>
+
+        <div class="modal-footer">
+            <div >
+                <a style="float: left" href="#" id="agregar" class="btn btn-success">Agregar Paralelo</a>
+                <a style="float: left" href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_nivel">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal'>
+                <input type='hidden'  name='pago' id='pagoid' />
+                {% for c in nivelesform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

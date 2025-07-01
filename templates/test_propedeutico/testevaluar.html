@@ -1,0 +1,176 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <script type="text/javascript">
+        var cronometro;
+        $(function() {
+            if ({{ nume }}==0)
+            {
+                $(".selector").addClass("validate[required]");
+
+                $("form").validationEngine();
+            }
+            $("#enviar").click(function() {
+{#                alert(5);#}
+                $("#enviar").hide();
+            });
+
+            $(".selector").change(function() {
+{#                alert(2);#}
+                $("#enviar").show();
+            });
+
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' style="text-align: center" >
+        <div class='span11' >
+            <h3>{{ test.descripcion }}</h3>
+            <h4>Alumno: {{ inscripcion.persona }}</h4>
+            <h4>Fecha: {{ fecha|date:"d-m-Y"}}</h4>
+            <br/>
+        </div>
+        <div class='span1' >
+            {% if nume == 1 %}
+                <html>
+                <head>
+                    <script type="text/javascript">
+                        var cronometro;
+                        function detenerse()
+                        {
+                            clearInterval(cronometro);
+                        }
+
+                        function carga()
+                        {
+                            contador_s =59;
+                            contador_m ={{ minutos }};
+                            s = document.getElementById("segundos");
+                            m = document.getElementById("minutos");
+                            cronometro = setInterval(
+                                function(){
+                                    if(contador_s==0)
+                                    {
+                                        if(contador_m!=0 )
+                                        {
+                                            contador_s=59;
+                                            contador_m--;
+                                        }
+                                        m.innerHTML = contador_m;
+                                        if(contador_m==0)
+                                        {
+                                            if(contador_s==0 )
+                                            {
+                                                $("#enviar").click();
+                                                clearInterval(cronometro);
+                                            }
+                                        }
+                                    }
+
+                                    s.innerHTML = contador_s;
+                                    contador_s--;
+                                }
+                                ,1000);
+                        }
+                    </script>
+
+                </head>
+                <body onload="carga()">
+                    <button class="btn ">
+                    <p style="font-size: 30px;margin-top: 10px" >
+                     <span id="minutos">{{ minutos }}</span>:<span id="segundos">59</span>
+                    </p>
+                    </button>
+                </body>
+            </html>
+            {% endif %}
+        </div>
+
+    </div>
+
+
+    {% if nume == 0 %}
+        <div class='row-fluid' style="margin-left: 225px;width: 1150px">
+        <div class='span8' style="width: 1000px">
+            <form class='form' method="POST">
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th colspan="2" style="text-align: center">Preguntas </th>
+                        <th style="text-align: center">Opcion</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        {% for pre in pregunta %}
+                            <tr>
+                                <td>{{ pre.orden }}.- </td>
+                                <td colspan="2">{{ pre.pregunta }}</td>
+                                <td>
+                                    <select name="valor{{ pre.id }}"  id="valor{{ pre.id }}" class="selector">
+                                        <option value="">------------</option>
+                                        <option value="1">ME INTERESA</option>
+                                        <option value="2">NO ME INTERESA</option>
+                                    </select>
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button id="enviar" type="submit" class="btn btn-success">Guardar Test
+                    <input type="hidden" name='id' value="{{ inscripcion.id }}"/>
+                    <input type="hidden" name="test" value="{{ test.id }}">
+                </button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+        <div class='row-fluid' style="margin-left: 225px;width: 1150px">
+        <div class='span8' style="width: 1000px">
+            <form class='form' method="POST">
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th style="text-align: center">Preguntas </th>
+                        <th colspan="5" style="text-align: center">Opcion</th>
+                    </tr>
+                    </thead>
+                    {% for pre in pregunta %}
+                        <tr>
+                            <td class="col{{ forloop.counter }}">{{ forloop.counter }}</td>
+                            <td style="text-align: center">
+                                {% if not pre.tipotest.personalidad %}
+                                    <img src='media/{{ pre.imagen }}' alt='Si' border='0'/>
+                                {% else %}
+                                    {{ pre.pregunta }}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <select name="valor{{ pre.id }}"  id="valor{{ pre.id }}" class="selector" style="width: 50px;text-align: center;border-bottom-style: outset;">
+                                    <option value="">------------</option>
+                                    {% for par in parametro %}
+                                        <option value="{{ par.id }}">{{ par.descripcion }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                </table>
+                <button id="enviar" type="submit" class="btn btn-success">Guardar Test
+                    <input type="hidden" name='id' value="{{ inscripcion.id }}"/>
+                    <input type="hidden" name="test" value="{{ test.id }}">
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}

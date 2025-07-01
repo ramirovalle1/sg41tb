@@ -1,0 +1,376 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+
+        $("#id_nivel").addClass("validate[required]");
+        $("#id_nivel").attr({"autocomplete":"off"});
+
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/tutor_grupo?s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+        $($("#id_nivel_id").get(0).parentNode.parentNode).hide();
+        buscar_nivel = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Nivel', 'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results.length > 0) {
+                    $("#id_nivel").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+                else{
+                    $("#id_nivel").attr("myval","");
+                    $("#id_nivel").val("");
+                    $("#id_nivel").attr("alias","");
+                }
+            }, 'json');
+        };
+
+        $('#id_nivel').typeahead({source: buscar_nivel, updater: function(item) {
+        var results = $("#id_nivel").get(0).results;
+        for (var i in results) {
+            var datos = results[i];
+            if (item==datos.name) {
+                $("#id_nivel").attr("myval",datos.id);
+                d=datos.id;
+                $("#id_nivel_id").val(d);
+
+            }
+        }
+        return item;
+
+    }});
+
+{#----------------------------------------------------------------- ADD TUTOR----------------------------------------------------------------#}
+        $('.nuevo_tutor').click(function(){
+            document.getElementById("formulario").reset();
+            $("#idtutor").val('');
+            $("#agregar_tutor #paneltitle2").html('Adicionar Tutor');
+            $("#agregar_tutor").modal({"backdrop":"static","width":"40%"});
+            $("#agregar_tutor").modal("show");
+        });
+
+        {#------------------------------------------------------- MODIFICAR TUTOR----------------------------------------------------------------#}
+        $('.modificar_tutor').click(function(){
+            $("#idtutor").val($(this).attr('idtutor'));
+            $("#agregar_tutor #paneltitle2").html('Modificar tutor');
+            $("#agregar_tutor").modal({"backdrop":"static","width":"40%"});
+            $("#agregar_tutor").modal("show");
+        });
+
+        $("#agregar_tutor .btn-cerrar").click(function(){
+            $("#agregar_tutor").modal("hide");
+        });
+
+        {#----------------------------------------------------------------- ADD GRUPO----------------------------------------------------------------#}
+        $('.add_grupo').click(function(){
+            $("#idasistente").val($(this).attr('idasistente'));
+            $("#id_activo").attr('checked',true);
+            $("#agregar_grupo #paneltitle2").html('Adicionar Grupo al tutor "'+($(this).attr('nombre_tutor'))+'"');
+            $("#agregar_grupo").modal({"backdrop":"static","width":"40%"});
+            $("#agregar_grupo").modal("show");
+        });
+
+         $("#agregar_grupo .btn-cerrar").click(function(){
+            $("#agregar_grupo").modal("hide");
+        });
+
+        {#------------------------------------------------------PANTALLA VER GRUPOS----------------------------------------------------------------#}
+
+        $(".ver_grupos").click(function() {
+            idasistente = $(this).attr("idasistente");
+            nombre_tutor = $(this).attr("nombre_tutor");
+            $("#idasistente").val($(this).attr('idasistente'));
+            $("#id_activo").attr('checked',true);
+            $("#agregar_grupo #paneltitle2").html('Adicionar Grupo al tutor "'+($(this).attr('nombre_tutor'))+'"');
+            $.get("/tutor_grupo",{"action": "ver_grupos","id":idasistente},function(data) {
+                $("#ver_groups .modal-body").html(data);
+                $("#ver_groups #paneltitle1").html('Grupos del tutor "'+nombre_tutor+'"');
+                $("#ver_groups").modal({"backdrop":"static","width":"70%"});
+                $("#ver_groups").modal("show");
+           }, "html");
+        });
+
+        $("#ver_groups .btn-cerrar").click(function(){
+            $("#ver_groups").modal("hide");
+            location.reload();
+        });
+
+        $("#ver_groups #agregar").click(function() {
+            $("#agregar_grupo").modal("show");
+        });
+
+        {#------------------------------------------------------- MODIFICAR DATOS----------------------------------------------------------------#}
+        $('.modificar_datos').click(function(){
+            idasistente = $(this).attr("idasistente");
+            nombre_tutor = $(this).attr("nombre_tutor");
+            $("#editar_datos #idasistente").val($(this).attr('idasistente'));
+            $("#id_telefono").val($(this).attr('telefono'));
+            $("#id_correo").val($(this).attr('correo'));
+            $("#editar_datos #paneltitle2").html('Modificar datos del tutor "'+nombre_tutor+'"');
+            $("#editar_datos").modal({"backdrop":"static","width":"40%"});
+            $("#editar_datos").modal("show");
+        });
+
+        $("#editar_datos .btn-cerrar").click(function(){
+            $("#editar_datos").modal("hide");
+        });
+
+
+        {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+        {% if error %}
+            smoke.alert('{{ error }}');
+        {% endif %}
+
+        {#------------------------------------------------------ ACTUALIZAR ----------------------------------------------------------------#}
+        $(".btn_actualizar").click(function(){
+            smoke.confirm('Se desactivaran los niveles que se encuentren cerrados', function(e){
+            if (e){
+                $.post("/tutor_grupo",{"action": "actualizar"},function(data) {
+                    if(data.result=='ok'){
+                        alert("Datos Actualizados");
+                   }else{
+                        alert(data.result);
+                   }
+                   location.reload()
+                },"json");
+            }else{
+            }
+            }, {
+            ok: "Si",
+            cancel: "No",
+            classname: "custom-class",
+            reverseButtons: true
+            });
+        });
+
+    });
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span9"  >
+            <h3 >Listado de Tutores</h3></br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span2'>
+            <a href="#" class='btn btn-success nuevo_tutor'><i class="icon-plus icon-white"></i> Adicionar Tutor</a><br>
+        </div>
+        <div class="span12"></div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span8'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/tutor_grupo" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class='span2' style="text-align: right">
+            <a href="#" class='btn btn-info btn_actualizar'><i class="icon-share icon-white"></i> Actualizar</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span10'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th> Nombres</th>
+                        <th style="text-align: center"> Telefono</th>
+                        <th style="text-align: center"> Correo Electronico</th>
+                        <th style="text-align: center"> Departamento</th>
+                        <th style="text-align: center"> # Grupos Activos</th>
+                        <th style="text-align: center"> # Grupos Total</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for t in tutores %}
+                        <tr>
+                            <td>{{ t.persona.nombre_completo_inverso }} <br>
+                                <span style="color: blue"> {% if t.persona.cedula %} {{ t.persona.cedula }} {% else %} {{ t.persona.pasaporte }} {% endif %}</span>
+                            </td>
+                            <td style="text-align: center"> {{ t.persona.telefono }} </td>
+                            <td style="text-align: left"> {{ t.persona.email }} </td>
+                            <td style="text-align: left"> {{ t.departamento.descripcion }} </td>
+                            <td style="text-align: center"> {{ t.num_grupos_activos }} </td>
+                            <td style="text-align: center"> {{ t.num_grupos }} </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a href="#" class='ver_grupos' nombre_tutor='{{ t.persona.nombre_completo_inverso }}' idasistente='{{ t.id }}'><i class="icon-list"></i>  Ver Grupos</a></li>
+                                        <li><a href="#" class='add_grupo' nombre_tutor='{{ t.persona.nombre_completo_inverso }}' idasistente='{{ t.id }}'><i class="icon-list"></i>  Adicionar Grupo</a></li>
+                                        <li><a href="#" class='modificar_datos' nombre_tutor='{{ t.persona.nombre_completo_inverso }}' idasistente='{{ t.id }}' telefono='{{ t.persona.telefono }}' correo='{{ t.persona.email }}'><i class="icon-edit"></i>  Editar Datos de Tutor</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not tutores %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span10">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/tutor_grupo?page=1">1</a></li>
+                            <li><a href="/tutor_grupo?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tutor_grupo?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/tutor_grupo?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/tutor_grupo?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tutor_grupo?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_tutor">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/tutor_grupo" method="POST"  >
+                <input type='hidden' name='action' value='add_tutor' />
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_grupo">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario1" style="overflow-y: auto"  class='well form-horizontal' action="/tutor_grupo" method="POST"  >
+                <input type='hidden' name='action' value='add_grupo' />
+                <input type='hidden' name='idasistente' id='idasistente' />
+                {% for c in form1 %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="ver_groups">
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+
+        <div class="modal-body" >
+    {#        ver_docente.html#}
+        </div>
+
+        <div class="modal-footer">
+            <div >
+                <a style="float: left" href="#" id="agregar" class="btn btn-success">Agregar grupo</a>
+                <a style="float: left" href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="editar_datos">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario1" style="overflow-y: auto"  class='well form-horizontal' action="/tutor_grupo" method="POST"  >
+                <input type='hidden' name='action' value='edit_tutor' />
+                <input type='hidden' name='idasistente' id='idasistente' />
+                {% for c in form2 %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

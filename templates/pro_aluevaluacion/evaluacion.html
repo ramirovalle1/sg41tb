@@ -1,0 +1,100 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <script type="text/javascript">
+        $(function() {
+            $(".selector").addClass("validate[required]");
+
+            $("form").validationEngine();
+
+            datosevaluacion = { {% for dato in evaluacion.datoinstrumentoevaluacion_set.all %}"indicador{{ dato.indicador.id }}":  {"id": {{ dato.id }}, "indicador": {{ dato.indicador.id }}, "valor": {{ dato.valor }}, "observaciones": "{{ dato.observaciones }}"} {% if not forloop.last %}, {% endif %}    {% endfor %} };
+
+            if ({% if evaluacion.datoinstrumentoevaluacion_set.all %}{{ evaluacion.datoinstrumentoevaluacion_set.all.count }}{% else %}0{% endif %}>0) {
+                $("select,textarea").attr({disabled:"disabled"});
+                $("#enviar").hide();
+
+                $("select").each(function() {
+                    var id = $(this).attr("id");
+                    var indicador = parseInt(id.substring(5));
+                    var datos = datosevaluacion['indicador'+indicador];
+                    $(this).val(datos.valor);
+                    $("#obs"+indicador).val(datos.observaciones);
+                });
+            }
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            {% if profesor2 %}
+                <h3>Evaluaci&oacute;n del Docente: {{ profesor2 }}</h3>
+            {%  else %}
+                <h3>Evaluaci&oacute;n del Docente: {{ profesor }}</h3>
+            {%  endif %}
+            <h4>Fecha: {{ fecha|date:"d-m-Y"}}</h4>
+            <h5>{{ inscripcion.persona }}</h5>
+            <h5>Per&iacute;odo: {{ periodo }}</h5>
+            <br/>
+        </div>
+        <div class='span1'>
+            <a href="/pro_aluevaluacion" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <form class='form' method="POST">
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Ambitos e Indicadores </th>
+                            <th>Evaluaci&oacute;n</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    {% for ambito in ambitos %}
+                        <thead>
+                            <tr>
+                                <th style="font-size: 17px" colspan="6">{{ ambito.ambito.nombre }}</th>
+                            </tr>
+                        </thead>
+                        {% for indicador in ambito.indicadores %}
+                            <tr>
+                                <td colspan="2">{{ indicador.indicador.nombre }}</td>
+                                <td>
+                                    <select name="valor{{ indicador.id }}"  id="valor{{ indicador.id }}" class="selector">
+                                        <option value="">------------</option>
+                                        {% for c in calificacion %}
+                                            <option value="{{ c.id }}">{{ c.descripcion }}</option>
+                                        {% endfor %}
+{#                                        <option value="1">MAL</option>#}
+{#                                        <option value="2">REGULAR</option>#}
+{#                                        <option value="3">BIEN</option>#}
+{#                                        <option value="4">MUY BIEN</option>#}
+{#                                        <option value="5">EXCELENTE</option>#}
+                                    </select>
+                                </td>
+                                <td>
+                                    <textarea id="obs{{ indicador.id }}" name="obs{{ indicador.id }}" rows="1"></textarea>
+                                </td>
+                            </tr>
+
+                        {% endfor %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+                <button id="enviar" type="submit" class="btn btn-success">Guardar Evaluaci&oacute;n
+                    <input type="hidden" name='id' value="{{ inscripcion.id }}"/>
+                    <input type="hidden" name="p" value="{{ profesor.id }}">
+{#                    {% if profesor2 %}#}
+{#                        <input type="hidden" name="p2" value="{{ profesor2.id }}">#}
+{#                    {% endif %}#}
+                </button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "basebs.html" %}
+{% load humanize %}
+
+{% block heading %}
+
+    <script type="text/javascript">
+        $(function() {
+
+            $("#diferir").click(function () {
+
+                smoke.confirm("ESTA SEGURO DE DIFERIR LA DEUDA", function(e){
+                    if (e){
+                        showWaiting("Diferiendo pagos","Espere por favor.....");
+                        $.post("/diferircuota",{"action": "diferir", "meses":$("#mesesdiferir").val() , "id":'{{ inscripcion.id }}' },function(data) {
+                            if(data.result == "ok"){
+                                 location.href='/?info=Se proceso correctamente, revisar sus finanzas'
+                            }else{
+                                hideWaiting();
+                                smoke.alert("Ocurrio un Error.. "+data.error);
+                            }
+                        },"json");
+
+                        }else{
+                        }
+                        }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                });
+
+            });
+            $("#mesesdiferir").change(function () {
+                if($("#mesesdiferir").val() != 0){
+                    var html = '';
+                    var valor = parseFloat(parseFloat('{{ valordiferir }}')/parseInt($("#mesesdiferir").val()));
+                    var total = parseFloat(0);
+                    var valordif = parseFloat('{{ valordiferir }}').toFixed(2);
+                    {% for g in meses_diferir %}
+
+                        if(parseInt('{{ g.0 }}')<=$("#mesesdiferir").val()){
+                            if(parseInt('{{ g.0 }}')==$("#mesesdiferir").val()) {
+                                valor = parseFloat(valordif - total);
+                                total = total + parseFloat(valordif - total);
+                            }
+                            else {
+                                total = total + parseFloat(valor.toFixed(2));
+                            }
+                            html = html +'<tr><td>{{ g.1 }}</td><td>'+valor.toFixed(2)+'</td></tr>';
+                        }
+                    {% endfor %}
+                    $("#boddiferido").html(html);
+                    $("#footdiferido").html('<tr><td><b>TOTAL</b></td><td><h5>'+total.toFixed(2)+'</h5></td></tr>');
+                    $("#tabdiferido").show();
+                }else{
+                    $("#boddiferido").html(html);
+                    $("#tabdiferido").hide();
+                }
+
+            });
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+
+    <div class="row-fluid"><br><br>
+        <div class="span3"></div>
+        <div class="span6" style="text-align: center">
+            <h3 >DIFERIR CUOTAS</h3><br>
+            <h3 class="alert alert-info">Las cuotas se diferiran desde <b class="color:red">{{ fechainidiferir|date:'d-m-Y' }}</b></h3>
+        </div>
+
+        <div class='atright'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid"><br><br>
+        <div class="span3"></div>
+        <div class="span6">
+            <div class="span3 btn btn-block">
+                <h1>${{ valordiferir }}</h1>
+            </div>
+            <div class="span1"></div>
+            <div class="span8"><br>
+                <div class="input-group">
+                    <b>MESES A DIFERIR</b>:
+                    <select id='mesesdiferir' class="input-medium form-control"  style="text-align: right;"/>
+                        <option value='0'>-----</option>
+                        {% for g in meses_diferir %}
+                            <option value="{{ g.0 }}" style="font-size: 18px;font-weight: bold;">{{ g.0 }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row-fluid"><br><br>
+        <div class="span3"></div>
+        <div class="span6" id="tabdiferido" style="display: none;text-align: center">
+            <table class='table table-bordered table-condensed'  >
+                <thead>
+                    <tr>
+                        <th><h4>FECHA</h4></th>
+                        <th><h4>VALOR</h4></th>
+                    </tr>
+                </thead>
+                <tbody id="boddiferido">
+                </tbody>
+                <tfoot id="footdiferido">
+                </tfoot>
+
+            </table>
+            <br>
+            <a class="btn btn-success" id="diferir">DIFERIR</a>
+        </div>
+    </div>
+{% endblock %}

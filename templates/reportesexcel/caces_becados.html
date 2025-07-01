@@ -1,0 +1,113 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+
+        indice = 0;
+        $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"});
+        datosOK=false;
+
+        $("#generar").modal({width: '500px', backdrop: 'static'});
+        $("#generar").modal("show");
+        $("#generar #id_inicio").val("");
+        $("#generar #id_fin").val("");
+
+        $("#id_inicio,#id_fin").attr({"autocomplete":"off"});
+        $("#id_porperiodo").click();
+        $("#generar #id_fin").val("");
+        $("#generar #id_inicio").val("");
+        $("#generar #id_inicio").attr('disabled',true);
+        $("#generar #id_fin").attr('disabled',true);
+        $("#id_porperiodo").click(function(){
+            if ($("#id_porperiodo").is(":checked")) {
+                $("#generar #id_inicio").val("");
+                $("#generar #id_fin").val("");
+                $("#generar #id_inicio").val("");
+                $("#generar #id_inicio").attr('disabled',true);
+                $("#generar #id_fin").attr('disabled',true);
+                $("#generar #id_periodo").attr('disabled',false);
+
+
+            }else{
+                $("#generar #id_inicio").attr('disabled',false);
+                $("#generar #id_fin").attr('disabled',false);
+                $("#generar #id_periodo").attr('disabled',true);
+                $("#generar #id_periodo").val("");
+            }
+        });
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+            var inicio = $("#id_inicio").val();
+            var fin = $("#id_fin").val();
+            var periodo=0;
+            if ($("#id_porperiodo").is(":checked")) {
+                periodo = $("#generar #id_periodo").val();
+            }else{
+                periodo='';
+            }
+
+
+            $.post("/caces_becados", {"action":"generarexcel","inicio":inicio,"fin":fin, "periodo":periodo}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 2500);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json");
+{#            return false;#}
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+
+
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Ingrese el rango de Fecha a Consultar</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="form" class='form-horizontal' action="" method="POST">
+
+                {% for field in generarform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}
+
+

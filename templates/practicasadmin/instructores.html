@@ -1,0 +1,253 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val();
+                location.href = "/practicasadmin?action=instructores&s="+term;
+            });
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+                $("#eliminar").modal('hide');
+
+            });
+
+            $(".resetearusuario").click(function() {
+                var pro = $(this).attr("pro");
+                $(".btn-resetear").attr("pro",pro);
+                $("#resetear").modal("show");
+            });
+
+            $(".btn-resetear").click(function() {
+
+                var pro = $(this).attr("pro");
+
+                $("#resetear").modal("hide");
+                location.href = '/practicasadmin?action=resetear&id='+pro;
+            });
+
+            $(".eliminar").click(function() {
+                var pro = $(this).attr("pro");
+                $(".btn-eliminar").attr("pro",pro);
+                $("#eliminar").modal("show");
+            });
+
+            $(".btn-eliminar").click(function() {
+
+                var id = $(this).attr("pro");
+                alert(id)
+                $("#resetear").modal("hide");
+                location.href = '/practicasadmin?action=eliminar&id='+id;
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                {% if not activos and not inactivos and not todos %}  Listado de Instructores Activos{% endif %}
+                {% if activos %}Listado de Instructores Activos{% endif %}
+                {% if inactivos %}Listado de Instructores Inactivos{% endif %}
+                {% if todos %}Listado de Instructores {% endif %}
+            </h3>
+
+            {% if cantidadcarreras > 0 %}
+                <h4>Carreras que no tienen definido coordinador para este periodo</h4>
+                {% for carrera in carreras %}
+                    <span class="label label-info">{{ carrera }}</span>
+                {% endfor %}
+            {% endif %}
+            <br>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><span class="icon-arrow-left" style="font-style: italic;"></span> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        {% if perms.sga.change_profesor %}
+            <div class='span5' style="width: 200px">
+                <a href="/practicasadmin?action=add" class='btn btn-success'><span class="icon-plus icon-white" style="font-style: italic;"></span> Adicionar instructores</a>
+            </div>
+        {% endif %}
+        <div class='span4' style="width: 905px">
+            <form class="form-search" action="/practicasadmin?action=instructores" method="get" name="busqueda">
+                <input class='searchinput input-medium search-query' type='text' name="s" id="searchfield" value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><span class="icon-search icon-white" style="font-style: italic;"></span> Buscar</a>
+            </form>
+        </div>
+        <div class="span3" style="text-align: right;">
+            {% if activos %}
+                <a href="/practicasadmin?action=instructores&i=1" class='btn btn-danger'> Inactivos</a>
+                <a href="/practicasadmin?action=instructores&t=1" class='btn'> Todos</a>
+            {% endif %}
+            {% if inactivos %}
+                <a href="/practicasadmin?action=instructores&a=1" class='btn btn-success'> Activos</a>
+                <a href="/practicasadmin?action=instructores&t=1" class='btn btn-info'> Todos</a>
+            {% endif %}
+            {% if todos %}
+                <a href="/practicasadmin?action=instructores&a=1" class='btn btn-success'> Activos</a>
+                <a href="/practicasadmin?action=instructores&i=1" class='btn btn-warning'> Inactivos</a>
+            {% endif %}
+            {% if not activos and not inactivos and not todos %}
+                <a href="/practicasadmin?action=instructores&i=1" class='btn btn-warning'> Inactivos</a>
+                <a href="/practicasadmin?action=instructores&t=1" class='btn btn-info'> Todos</a>
+            {% endif  %}
+        </div>
+
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped'>
+            <thead>
+            <tr>
+                <th>Nombre</th>
+{#                <th>Usuario</th>#}
+                <th>Cedula/Pasap</th>
+                <th>Email/Telef</th>
+                <th>Categoria</th>
+                <th>Dedicacion</th>
+                <th>Fecha Ingreso</th>
+                <th>Activo</th>
+{#                <th> </th>#}
+            </tr>
+            </thead>
+            <tbody>
+            {% for profesor in profesores %}
+                <tr>
+                    <td style="width: 25%">
+{#                        {% if profesor.tienediscapacidad %}#}
+{#                            <img src='/static/images/discapacidad.png' alt="Discapacidad"/>#}
+{#                        {% endif %}#}
+                        {% if perms.sga.change_profesor %}
+                            <a href='/practicasadmin?action=edit&id={{ profesor.id }}'>{{ profesor }}</a>
+                        {% else %}
+                            {{ profesor }}
+                        {% endif %}
+
+
+                    </td>
+{#                    <td>{{ profesor.persona.usuario }}</td>#}
+                    <td>{{ profesor.persona.cedula }} <br/> {{ profesor.persona.pasaporte }}</td>
+                    <td>
+                        {% for email in profesor.persona.emails %}
+                            <a>{{ email }}</a>
+                        {% endfor %}
+                        <br/>
+{#                        {% if profesor.persona.emailinst %}<a href="mailto:{{ profesor.persona.emailinst }}" style="color: #003bb3">{{ profesor.persona.emailinst }}</a><br/>{% endif %}#}
+                        {{ profesor.persona.telefono }} <br> {{ profesor.persona.telefono_conv }}</td>
+                    <td>{{ profesor.categoria.nombre }}</td>
+                    <td>{{ profesor.dedicacion.nombre }}</td>
+                    <td>{{ profesor.fechaingreso|date:"d-m-Y" }}</td>
+                    <td>
+                        <a href="{% if perms.sga.change_profesor %}/practicasadmin?action=activation&id={{ profesor.id }}{% else %}#{% endif %}">
+                            {% if profesor.activo %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+                        </a>
+                    </td>
+{#                    <td>#}
+{#                        <div class="btn-group">#}
+{#                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">#}
+{#                                Acciones#}
+{#                                <span class="caret"></span>#}
+{#                            </a>#}
+{#                            {% if perms.sga.change_profesor %}#}
+{#                                <ul class="dropdown-menu pull-right">#}
+{#                                    {% if profesor.persona.cv %}#}
+{#                                        <li><a href='{{ profesor.persona.cv.download_cv }}'><span class="icon-download" style="font-style: italic;"></span> Bajar CV</a></li>#}
+{#                                        <li><a href="/instructores?action=borrarcv&id={{ profesor.id }}"><span class="icon-remove" style="font-style: italic;"></span> Borrar CV</a></li>#}
+{#                                    {% else %}#}
+{#                                        <li><a href="/instructores?action=cargarcv&id={{ profesor.id }}"><span class="icon-plus" style="font-style: italic;"></span> Cargar CV</a></li>#}
+{#                                    {% endif %}#}
+{#                                    <li>#}
+{#                                        <a href="/instructores?action=titulacion&id={{ profesor.id }}"><span class="icon-flag" style="font-style: italic;"></span>#}
+{#                                            {% if profesor.titulacionprofesor_set.all %}#}
+{#                                                {{ profesor.titulacionprofesor_set.count }} T&iacute;tulo{% if profesor.titulacionprofesor_set.count > 1 %}s{% endif %}#}
+{#                                            {% else %}#}
+{#                                                Sin T&iacute;tulos#}
+{#                                            {% endif %}#}
+{#                                        </a>#}
+{#                                    </li>#}
+{#                                    {% if perms.sga.change_profesorhorasactividades %}#}
+{#                                        <li><a href="/instructores?action=horasprof&id={{ profesor.id }}"><i class="icon-time"></i> Horas Actividades {% if profesor.cantidad_horas_actividades %}({{ profesor.cantidad_horas_actividades }}h){% endif %}</a></li>#}
+{#                                    {% endif %}#}
+{#                                    <li><a href="/instructores?action=estudioscursa&id={{ profesor.id }}"><i class="icon-pencil"></i> Estudios que cursa</a></li>#}
+{##}
+{#                                    <li><a href="/box_medical?action=valoracionpersona&id={{ profesor.persona.id }}"><i class="icon-eye-open"></i> Valoraci&oacute;n M&eacute;dica</a></li>#}
+{#                                    <!-- Adicionar Perfil de Rol de Pago del Profesor -->#}
+{#                                    {% if  perms.sga.change_profesor or perms.sga.change_rolperfilprofesor %}#}
+{#                                        <li><a href="/instructores?action=rolpagoperfil&id={{ profesor.id }}"><span class="icon-money" style="font-style: italic;"></span> Perfil Rol de Pago</a> </li>#}
+{#                                        <li><a href="/instructores?action=gastospersonales&id={{ profesor.id }}"><span class="icon-shopping-cart" style="font-style: italic;"></span> Gastos Personales (${{ profesor.gastos_personales_sri.total|floatformat:2 }})</a></li>#}
+{#                                        <li><a href="/instructores?action=documentos&id={{ profesor.id }}"><i class="icon-book"></i> Documentos Personal ({{ profesor.cantidad_documentos }})</a></li>#}
+{#                                        <li><a href="/instructores?action=liquidacion&id={{ profesor.id }}"><i class="icon-remove"></i> Liquidaci&oacute;n</a></li>#}
+{#                                    {% endif %}#}
+{#                                    <!-- Imprime autoevaluacion del Profesor -->#}
+{#                                    {% if periodo.proceso_evaluativo.proceso_activo and profesor|args:periodo|call:"mi_autoevaluacion"%}#}
+{#                                        <li><a href="/reportes?action=run&direct=true&n=autoevaluaciondocentes&proceso={{ periodo.proceso_evaluativo.id }}&profesor={{ profesor.id }}&instrumento={{ periodo.proceso_evaluativo.instrumentoprofesor.id }}&rt=pdf"><span class="icon-print"></span> Imprimir Auto Evaluacion</a> </li>#}
+{#                                    {% endif %}#}
+{#                                    {% if periodo.proceso_evaluativo.proceso_activo %}#}
+{#                                        <li><a href="/reportes?action=run&direct=true&n=evaluaciondocentes_alumnos&proceso={{ periodo.proceso_evaluativo.id }}&profesor={{ profesor.id }}&instrumento={{ periodo.proceso_evaluativo.instrumentoalumno.id }}&rt=pdf"><span class="icon-print"></span> Imprimir Evaluacion Estudiantes</a> </li>#}
+{#                                    {% endif %}#}
+{#                                    {% with materias=profesor|args:periodo|call:"cantidad_materias" %}#}
+{#                                        {% if materias %}#}
+{#                                            <li><a href="/reportes?action=run&direct=true&n=listado_clases_abiertas&periodo={{ periodo.id }}&profesor={{ profesor.id }}&rt=pdf"><span class="icon-print"></span> Imprimir Listado Clases Impartidas</a> </li>#}
+{#                                            <!-- Materias del Profesor -->#}
+{#                                            <li><a href='/instructores?action=materias&id={{ profesor.id }}'><span class='icon-book' style="font-style: italic;"></span> Materias - {{ profesor|args:periodo|call:"cantidad_materias" }}</a></li>#}
+{#                                            <!-- Accede al horario y Cronograma del Profesor -->#}
+{#                                            <li><a href="/instructores?action=horario&id={{ profesor.id }}"><span class="icon-calendar" style="font-style: italic;"></span> Horario</a> </li>#}
+{#                                            <li><a href='/pro_cronograma?id={{ profesor.id }}'><span class='icon-share-alt' style="font-style: italic;"></span> Ir al Cronograma </a></li>#}
+{#                                        {% endif %}#}
+{#                                    {% endwith %}#}
+{#                                    {% if persona.usuario.is_superuser or perms.sga.change_profesormateria %}#}
+{#                                        <li><a href='/cu?id={{ profesor.persona.usuario.id }}'><span class='icon-user' style="font-style: italic;"></span> Entrar como este usuario </a></li>#}
+{#                                    {% endif %}#}
+{##}
+{#                                    <li><a href="#" pro='{{ profesor.id }}' class="resetearusuario"><i class="icon-user"></i> Resetear Clave Usuario</a> </li>#}
+{#                                    {% if not profesor.profesormateriaexis %}#}
+{#                                        <li><a href="#" pro='{{ profesor.id }}' class="eliminar"><i class="icon-user"></i> Eliminar</a> </li>#}
+{#                                    {% endif %}#}
+{#                                    <li><a href="/reportes?action=run&direct=true&n=med_fichapersonaldocente&rt=pdf&profesor={{ profesor.id }}"><i class="icon-print"></i> Imprimir Ficha M&eacute;dica</a> </li>#}
+{#                                </ul>#}
+{#                            {% endif %}#}
+{#                        </div>#}
+{#                    </td>#}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if perms.sga.change_profesor %}
+                <a href="/practicasadmin?action=add" class='btn btn-success'><span class="icon-plus icon-white" style="font-style: italic;"></span> Adicionar Instructores</a>
+            {% endif %}
+            <div class="pagination">
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/practicasadmin?action=instructores&page={{ pagenumber }}{% if activos %}&a=1{% endif %}{% if inactivos %}&i=1{% endif %}{% if todos %}&t=1{% endif %}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade static" id="resetear" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle1"> ¿Desea Resetear la Clave al Usuario del Profesor?</h3>
+        </div>
+        <div class="modal-body">
+            <p> El usuario ingresar&aacute; nuevamente al sistema con la clave por defecto {% if clave %}<strong>{{ clave }}</strong>{% endif %}</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-resetear"> Resetear</a>
+        </div>
+    </div>
+{% endblock %}

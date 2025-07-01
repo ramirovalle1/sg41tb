@@ -1,0 +1,262 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/base/jquery-ui.css" type="text/css" media="all">
+    <script type="text/javascript">
+        $(function() {
+            $("form").validationEngine();
+
+            $($("#id_observacion").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-danger'> DETALLE SU REQUERIMIENTO (Por favor detallar su novedad de forma m&aacute;s clara y precisa, no se olvide de actualizar su informaci&oacute;n para contactarlo en caso de ser necesario)</h4>" );
+            $($("#id_comprobante").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-danger'> SUBIR SOPORTE (Aqu&iacute; ud. puede subir los archivos en donde se encuentre la evidencia del caso presentado, por favor no ingresar caracteres especiales, espacios en blanco)</h4>" );
+            $("#id_referenciatransferencia").addClass("input-xlarge");
+
+            {% if error %}
+                smoke.alert("{{ error }}");
+            {% endif %}
+            $($("#id_comprobante").get(0).parentNode.parentNode).hide();
+            $("#id_tipoe").change(function(){
+
+                var idtipo = $("#id_tipoe").val();
+                if($("#id_tipoe").val() != ""){
+                    if (idtipo=={{ ID_TIPO_SOLICITUD }} || idtipo=={{ ESPECIE_JUSTIFICA_FALTA_AU }}  ){
+
+                        $($("#id_comprobante").get(0).parentNode.parentNode).show();
+                    }
+
+                    else{
+                        $($("#id_comprobante").get(0).parentNode.parentNode).hide();
+
+                        }
+
+                }
+            });
+
+         var numerosdec="0123456789";
+
+            function solo_numerosdec(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+         $("#id_celular").blur(function(){
+                var numero = $(this).val();
+                var p = solo_numerosdec(numero);
+
+                if($("#id_celular").val() != ""){
+                    if (p != numero.length){
+                          $($("#id_celular").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Ingrese solo numeros</i></h6>");
+                          $("#id_celular").val("");
+                          $("#id_celular").focus();
+                    }
+                    else{
+                        if (numero.length != 10 ){
+                            $($("#id_celular").get(0).parentNode).find(".help-text").html("<h6 style='color:darkblue' ><i> Numero Celular debe tener 10 digitos</i></h6>");
+                            $("#id_celular").val('');
+                            $("#id_celular").focus();
+                        }
+                        else{
+                            if (numero.substr(0,2) != '09' && numero.substr(0,2) != '08' ){
+                               $($("#id_celular").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Numero Celular debe comenzar en 09 o 08</i></h6>");
+                               $("#id_celular").val("");
+                            }
+                            else{
+                                $($("#id_celular").get(0).parentNode).find(".help-text").html("");
+                            }
+                        }
+                    }
+                }
+                else{
+                    {% if not inscripcion_conduccion %}
+                        $($("#id_celular").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Numero Celular es obligatorio</i></h6>");
+                    {% endif %}
+                    }
+
+            });
+
+            {% if libre  %}
+                $($("#id_materia").get(0).parentNode.parentNode).hide();
+                $($("#id_materia").get(0).parentNode.parentNode).hide();
+                $($("#id_asignatura").get(0).parentNode.parentNode).hide();
+                $($("#id_profesor").get(0).parentNode.parentNode).hide();
+                 $($("#id_correo").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-success'> COMPLETAR LA INFORMACI&Oacute;N </h4>" );
+                $("#id_correo").css({'text-transform': 'lowercase'});
+                $("#id_correo").val('{{ inscripcion.persona.email }}');
+                $("#id_celular").val('{{ inscripcion.persona.telefono }}');
+
+                $("#id_departamento").change(function(){
+                    var html='';
+                    var departamento = $("#id_departamento").val();
+                    $.post("/inscripciones",{"action": "consulta_departamento","depa":departamento },function(data) {
+                        if(data.result=='ok'){
+                            for (var n in data.especies){
+                                 html = html + '<option value='+ data.especies[n].id +'>' + data.especies[n].nombre  + ' Valor ' +  data.especies[n].valor  +' </option>'
+                            }
+                            $($("#id_tipoe").get(0).parentNode.parentNode).show();
+                            $("#id_tipoe").html(html);
+
+                            $("#id_tipoe").change()
+
+                            var htmlp = '';
+
+                        }else{
+                            $($("#id_tipoe").get(0).parentNode.parentNode).hide();
+                            $($("#id_materia").get(0).parentNode.parentNode).hide();
+                            $($("#id_profesor").get(0).parentNode.parentNode).hide();
+                            $($("#id_asignatura").get(0).parentNode.parentNode).hide();
+                            smoke.alert(data.result);
+                            $("#id_tipoe").val('0');
+                        }
+                    },"json");
+                });
+
+                $("#id_tipoe").change(function(){
+
+                    var html='';
+                    var tipo = $("#id_tipoe").val();
+
+                    if (tipo > 0){
+                        showWaiting("Buscando Datos", "Espere unos segundos por favor...");
+                        $.post("/inscripciones",{"action": "consulta","tipo":tipo,"inscrip":{{ inscripcion.id }} },function(data) {
+                                    if(data.informacion !='bad' ){
+                                        smoke.alert(data.informacion);
+                                        $("#formbutton").show();
+                                    }
+                                    else{
+                                        hideWaiting();
+                                        smoke.alert(data.result2);
+                                        $("#id_tipoe").val('0');
+                                    }
+                                   if(data.result=='ok'){
+                                       if (data.op == 'materia'){
+                                            for (var n in data.materias){
+                                                 html = html + '<option value='+ data.materias[n].id +'>' + data.materias[n].asignatura  +' </option>'
+                                            }
+                                            $($("#id_asignatura").get(0).parentNode.parentNode).hide();
+                                            $($("#id_materia").get(0).parentNode.parentNode).show();
+                                            $("#id_materia").html(html);
+
+
+                                               var htmlp = '';
+                                                $.post("/inscripciones",{"action": "consultadocente","materia":$("#id_materia").val(),"tipo":tipo },function(data) {
+                                                if(data.result=='ok'){
+                                                     for (var p in data.profesores){
+                                                        htmlp = htmlp + '<option value='+ data.profesores[p].id +'>' + data.profesores[p].profesor  +' </option>'
+                                                    }
+                                                    $("#formbutton").show();
+                                                    $($("#id_profesor").get(0).parentNode.parentNode).show();
+                                                    $("#id_profesor").html(htmlp);
+
+                                                }else{
+                                                    smoke.alert(data.mensaje);
+                                                    htmlp = '';
+                                                    $("#id_profesor").html(htmlp);
+                                                    $($("#id_profesor").get(0).parentNode.parentNode).hide();
+                                                    $("#formbutton").hide();
+                                                }
+
+                                            },"json");
+
+                                       }else{
+                                            if (data.op == 'asignatura'){
+                                            for (var a in data.asignatura){
+                                                 html = html + '<option value='+ data.asignatura[a].id +'>' + data.asignatura[a].asignatura  +' </option>'
+                                            }
+                                            $($("#id_asignatura").get(0).parentNode.parentNode).show();
+                                            $("#id_asignatura").html(html);
+                                            $($("#id_materia").get(0).parentNode.parentNode).hide();
+                                                $($("#id_profesor").get(0).parentNode.parentNode).hide();
+                                            }else{
+                                                 $($("#id_materia").get(0).parentNode.parentNode).hide();
+                                                $($("#id_asignatura").get(0).parentNode.parentNode).hide();
+                                                $($("#id_profesor").get(0).parentNode.parentNode).hide();
+                                            }
+                                       }
+
+
+
+
+                                   }else{
+
+                                         $($("#id_materia").get(0).parentNode.parentNode).hide();
+                                        $($("#id_profesor").get(0).parentNode.parentNode).hide();
+                                         $($("#id_asignatura").get(0).parentNode.parentNode).hide();
+                                          smoke.alert(data.result);
+                                            $("#id_tipoe").val('0');
+                                   }
+                                    hideWaiting();
+                                },"json");
+                        }
+                });
+
+                $("#id_materia").change(function(){
+                        var materia = $("#id_materia").val();
+                        var tipo = $("#id_tipoe").val();
+                    if (materia > 0){
+                               var htmlp = '';
+                                $.post("/inscripciones",{"action": "consultadocente","materia":$("#id_materia").val(),"tipo":tipo },function(data) {
+                                if(data.result=='ok'){
+                                     for (var p in data.profesores){
+                                        htmlp = htmlp + '<option value='+ data.profesores[p].id +'>' + data.profesores[p].profesor  +' </option>'
+                                    }
+                                    $("#formbutton").show();
+                                    $($("#id_profesor").get(0).parentNode.parentNode).show();
+                                    $("#id_profesor").html(htmlp);
+
+                                }
+                                else{
+                                    smoke.alert(data.mensaje);
+                                    htmlp = '';
+                                    $("#id_profesor").html(htmlp);
+                                    $($("#id_profesor").get(0).parentNode.parentNode).hide();
+                                    $("#formbutton").hide();
+                                    }
+                            },"json");
+
+                       }
+                });
+
+
+
+            {% else %}
+
+                $($("#id_correo").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-success'> COMPLETAR LA INFORMACI&Oacute;N </h4>" );
+                $("#id_correo").css({'text-transform': 'lowercase'});
+                $("#id_correo,#id_celular, #id_oficina,#id_domicilio,#id_tema,#id_tipo").addClass("validate[required]");
+            {% endif %}
+
+        {% if idtipoaplaz %}
+            $("#id_tipoe").val('{{ idtipoaplaz }}');
+            $("#id_tipoe").attr('disabled',true);
+            $("#id_observacion").addClass("validate[required]");
+            $("#id_correo").addClass("validate[required]");
+            $("#id_celular").addClass("validate[required]");
+        {% endif %}
+        $("#formbutton").click(function(){
+            if($("#id_observacion").val()!= '' && $("#id_correo").val()!= '' && $("#id_celular").val()!= '')
+            $("#id_tipoe").attr('disabled',false);
+            $("#formbutton").hide();
+
+        });
+    });
+
+    </script>
+{% endblock %}
+{% block titulo %}NUEVA SOLICITUD{% endblock %}
+
+{% block formaction %}/inscripciones{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='addsolicitud'/>
+    <input type='hidden' name='inscripcion' value="{{ inscripcion.id }}"/>
+
+    <input type='hidden' name='solicitud' value="{{ solicitud.id }}"/>
+    <input type='hidden' name='id' value="{{ soli }}"/>
+{% endblock %}
+{% block formback %}/inscripciones{% endblock %}
+{% block buttonname %}Generar Solicitud{% endblock %}

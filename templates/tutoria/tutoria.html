@@ -1,0 +1,769 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        var tid=0;
+        $("#id_nota").addClass("input-small");
+        $("#id_horasust").addClass("input-small");
+        $($("#id_docente1_id").get(0).parentNode.parentNode).hide();
+        $($("#id_docente2_id").get(0).parentNode.parentNode).hide();
+        $($("#id_docente3_id").get(0).parentNode.parentNode).hide();
+        $($("#id_nota").get(0).parentNode).find(".help-text").html("");
+        $("#id_docente1").attr({"autocomplete":"off"});
+        $("#id_docente2").attr({"autocomplete":"off"});
+        $("#id_docente3").attr({"autocomplete":"off"});
+
+        var numeros="0123456789.";
+
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+        var numerost="0123456789:";
+
+            function tiene_numeros(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numerost.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+
+        $("#id_horasust").blur(function(){
+                var v = $("#id_horasust").val();
+                var p = tiene_numeros(v);
+                $($("#id_horasust").get(0).parentNode).find(".help-text").html("");
+                if(v!=''){
+                    if( v.split(':').length == 3){
+                        if (p != v.length  |  v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | parseInt(v.split(':')[1])> 59 | parseInt(v.split(':')[0]) >= 24 )
+                        {
+                            $($("#id_horainicio").get(0).parentNode).find(".help-text").html("Ingresar solo Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60 y la hora menor a 24");
+
+                            window.setTimeout(function ()
+                            {
+                                $("#id_horasust").focus();
+                            }, 0);
+                        }
+
+                    }
+                    else{
+
+                        $($("#id_horasust").get(0).parentNode).find(".help-text").html(" Ingresar solo Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60 y la hora menor a 24");
+
+                        window.setTimeout(function ()
+                        {
+                            $("#id_horasust").focus();
+                        }, 0);
+
+                    }
+                }
+            });
+
+        buscar_docente1 = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    if(data.results.length > 0)
+                    {
+                        $("#id_docente1").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#id_docente1").attr("myval","");
+                        $("#id_docente1").val("");
+                        $("#id_docente1").attr("alias","");
+                        $("#id_docente1_id").val("");
+
+                    }
+                }
+            }, 'json');
+        };
+
+        $('#id_docente1').typeahead({source: buscar_docente1, updater: function(item) {
+            var results = $("#id_docente1").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_docente1").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_docente1_id").val(d);
+
+                }
+            }
+            return item;
+
+        }});
+        buscar_docente2 = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    if(data.results.length > 0)
+                    {
+                        $("#id_docente2").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#id_docente2").attr("myval","");
+                        $("#id_docente2").val("");
+                        $("#id_docente2").attr("alias","");
+                        $("#id_docente2_id").val("");
+
+                    }
+                }
+            }, 'json');
+        };
+
+        $('#id_docente2').typeahead({source: buscar_docente2, updater: function(item) {
+            var results = $("#id_docente2").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_docente2").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_docente2_id").val(d);
+
+                }
+            }
+            return item;
+
+        }});
+
+        buscar_docente3 = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    if(data.results.length > 0)
+                    {
+                        $("#id_docente3").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#id_docente3").attr("myval","");
+                        $("#id_docente3").val("");
+                        $("#id_docente3").attr("alias","");
+                        $("#id_docente3_id").val("");
+
+
+                    }
+                }
+            }, 'json');
+        };
+
+        $('#id_docente3').typeahead({source: buscar_docente3, updater: function(item) {
+            var results = $("#id_docente3").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_docent3").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_docente3_id").val(d);
+
+                }
+            }
+            return item;
+
+        }});
+        $('#id_docente1').keyup(function(){
+           if ($('#id_docente1').val() == ''){
+               $('#id_docente1_id').val('');
+           }
+        });
+        $('#id_docente2').keyup(function(){
+           if ($('#id_docente2').val() == ''){
+               $('#id_docente2_id').val('');
+           }
+        });
+        $('#id_docente3').keyup(function(){
+           if ($('#id_docente3').val() == ''){
+               $('#id_docente3_id').val('');
+           }
+        });
+        $("#id_nota").blur(function(){
+            var v = $("#id_nota").val();
+            var p = solo_numeros(v);
+            if (p != v.length)
+            {
+              $($("#id_nota").get(0).parentNode).find(".help-text").html("<h6 style='color:red' > Ingrese Solo Numeros </h6>");
+              $("#id_nota").val("");
+              $("#id_nota").focus();
+            }
+            else{
+                if (v > 100 || v <= 0  ){
+                    $($("#id_nota").get(0).parentNode).find(".help-text").html("<h6 style='color:red' > La nota debe ser mayor a 0 y menor o igual a 100 </h6>");
+                    $("#id_nota").val("");
+                    $("#id_nota").focus();
+                }else{
+                    $($("#id_nota").get(0).parentNode).find(".help-text").html("");
+                }
+
+            }
+        });
+
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/tutoria?s="+term+'&id={{ idprofesor.id }}';
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+        $("#nuevo").click(function() {
+            location.href = "/tutoria?action=add&id={{ idprofesor.id }}";
+        });
+
+        $(".activar").click(function() {
+            var id = $(this).attr("id");
+            $.post("/tutoria",{"action": "activacion", "id": id },function(data) {
+                    if(data.result=='ok'){
+                    location.reload();}
+                    else{
+                        smoke.alert('El estudiante tiene activo una tutoria')
+                    }
+            },"json");
+        });
+        {% if not tutoria %}
+            smoke.alert('No existe información de tutorias');
+        {% endif %}
+        {% if info %}
+            smoke.alert('{{ info }}');
+        {% endif %}
+
+        $(".detalletutor").click(function() {
+               var id = $(this).attr("id");
+               $.get("/tutoria", {'action':'detalletutor', 'id': id}, function(data) {
+                    $("#detalle_tutoria .modal-body").html(data);
+                    $("#detalle_tutoria").modal({"backdrop":"static","width":"60%"});
+                    $("#detalle_tutoria").modal("show");
+               }, "html");
+               return false;
+        });
+
+        $("#detalle_tutoria #cerrar").click(function() {
+            $("#detalle_tutoria").modal("hide");
+
+        });
+         {% if error %}
+            smoke.alert('{{ error }}');
+        {% endif %}
+        {% if msj %}
+            smoke.alert('{{ msj }}');
+        {% endif %}
+        {% if soli %}
+            smoke.alert("Estudiante no ha realizado solicitud de asignacion de tutor");
+        {% endif %}
+        $(".agregartesis").click(function(){
+            $("#soportetesis_panel #archtesis_id").val($(this).attr('archtesis'));
+            $("#soportetesis_panel").modal({width: '800px', backdrop: 'static'});
+            $("#soportetesis_panel").modal("show");
+            return false;
+        });
+        $("#soportetesis_panel .btn-cerrar").click(function() {
+            $("#soportetesis_panel").modal("hide");
+            return false;
+        });
+        $(".veracta").click(function(){
+            $("#id_fecha_sustentacion").datepicker({format:"dd-mm-yyyy"});
+            var acta = $(this).attr('acta');
+            $($("#id_nota").get(0).parentNode).find(".help-text").html("");
+            $("#acta_panel #formbutton2").hide();
+            $("#acta_panel  .paneltitle").html("Acta de Sustentaci&oacute;n -> <a href='/media/" + acta + "'> Descargar</a>" );
+            var fechas = ($(this).attr('fechasusing'));
+            $("#id_acta").attr("disabled", true);
+            $("#id_fecha_sustentacion").attr("disabled", true);
+
+            $("#id_nota").attr("disabled", true);
+            $("id_observacion").attr("disabled", true);
+            $("#id_fecha_sustentacion").attr("readonly", true);
+            $("#id_acta").attr("readonly", true);
+            $("#id_nota").attr("readonly", true);
+            $("#id_observacion").attr("readonly", true);
+            $("#acta_panel  #archtesis_id").val($(this).attr('archtesis'));
+            $("#id_fecha_sustentacion").val(fechas);
+
+            $("#id_observacion").val($(this).attr('obs'));
+            $("#id_nota").val($(this).attr('nota'));
+            $("#acta_panel").modal({width: '800px', backdrop: 'static'});
+            $("#addacta").modal("show");
+            return false;
+        });
+        $(".addacta").click(function(){
+            $("#acta_panel  .paneltitle").html("Acta de Sustentaci&oacute;n" );
+            var fechas = ($(this).attr('fechasus'));
+            $($("#id_nota").get(0).parentNode).find(".help-text").html("");
+            $("#acta_panel #formbutton2").show();
+            $("#id_observacion").val('');
+            $("#id_nota").val('');
+            $("#id_acta").attr("disabled", false);
+            $("#id_fecha_sustentacion").attr("disabled", false);
+            $("#id_nota").attr("disabled", false);
+            $("id_observacion").attr("disabled", false);
+            $("#id_fecha_sustentacion").attr("readonly", false);
+            $("#id_acta").attr("readonly", false);
+            $("#id_nota").attr("readonly", false);
+            $("#id_observacion").attr("readonly", false);
+            $("#acta_panel  #archtesis_id").val($(this).attr('archtesis'));
+            $("#id_fecha_sustentacion").val(fechas);
+            $("#id_fecha_sustentacion").datepicker({format:"dd-mm-yyyy"});
+            $("#acta_panel").modal({width: '800px', backdrop: 'static'});
+            $("#addacta").modal("show");
+            return false;
+        });
+
+        $("#acta_panel .btn-cerrar").click(function() {
+            $("#acta_panel").modal("hide");
+{#            location.href='/tutoria';#}
+            return false;
+        });
+
+        $(".addfecha").click(function() {
+            tid = $(this).attr('tid');
+            $("#pregunta  #archtesis_id").val($(this).attr('archtesis'));
+            $("#pregunta  #op").val(1);
+            $("id_docente1").attr("disabled", false);
+            $("#id_docente1").attr("readonly", false);
+            $("id_docente2").attr("disabled", false);
+            $("#id_docente2").attr("readonly", false);
+            $("id_docente3").attr("disabled", false);
+            $("#id_docente3").attr("readonly", false);
+            $("#id_horasust").attr("disabled", false);
+            $("#id_horasust").attr("readonly", false);
+            $("#id_fechasust").attr("disabled", false);
+            $("#id_fechasust").attr("readonly", false   );
+            $("#pregunta #formbutton2").show();
+            $("#id_docente1").val("");
+            $("#id_docente2").val("");
+            $("#id_docente3").val("");
+            $("#id_fechasust").val("");
+            $("#id_horasust").val("");
+            $("#pregunta #id_fechasust").val('{{ hoy|date:"d-m-Y" }}');
+{#            $("#dato").datepicker({format:"dd-mm-yyyy"});#}
+            $($("#pregunta #id_fechasust").get(0).parentNode).find(".help-text").html("");
+            $("#pregunta #id_fechasust").datepicker({format:"dd-mm-yyyy"});
+            $("#pregunta").modal({backdrop: 'static', keyboard: false, width: "40%", height: "20%"});
+            $("#pregunta .btn-editar").hide();
+            $("#pregunta").modal("show");
+            return false;
+
+        });
+        $(".verfecha").click(function() {
+            tid = $(this).attr('tid');
+            $("#pregunta  #archtesis_id").val($(this).attr('archtesis'));
+             if ($(this).attr('acta') == 1){
+                $("#pregunta .btn-editar").hide();
+            }else{
+                 $("#pregunta .btn-editar").show();
+            }
+
+            $("#pregunta #formbutton2").hide();
+            $("#pregunta #id_fechasust").val($(this).attr('fechasus'));
+            $("#pregunta #id_horasust").val($(this).attr('horasus'));
+            $("#id_docente1").val($(this).attr('doc1'));
+            $("#id_docente2").val($(this).attr('doc2'));
+            $("#id_docente3").val($(this).attr('doc3'));
+            $("#id_docente1_id").val($(this).attr('doc1_id'));
+            $("#id_docente2_id").val($(this).attr('doc2_id'));
+            $("#id_docente3_id").val($(this).attr('doc3_id'));
+            $("id_docente1").attr("disabled", true);
+            $("#id_docente1").attr("readonly", true);
+            $("id_docente2").attr("disabled", true);
+            $("#id_docente2").attr("readonly", true);
+            $("id_docente3").attr("disabled", true);
+            $("#id_docente3").attr("readonly", true);
+            $("#id_horasust").attr("disabled", true);
+            $("#id_horasust").attr("readonly", true);
+
+
+            $("#id_fechasust").attr("disabled", true);
+            $("#id_fechasust").attr("readonly", true);
+{#            $("#dato").datepicker({format:"dd-mm-yyyy"});#}
+            $($("#pregunta #id_fechasust").get(0).parentNode).find(".help-text").html("");
+            $("#pregunta #id_fechasust").datepicker({format:"dd-mm-yyyy"});
+            $("#pregunta").modal({backdrop: 'static', keyboard: false, width: "40%", height: "20%"});
+            $("#pregunta").modal("show");
+            return false;
+
+        });
+        $(".btn-cerrar").click(function() {
+            $("#pregunta").modal('hide');
+
+        });
+        $("#pregunta .btn-editar").click(function() {
+            $("#pregunta #formbutton2").show();
+            $("#pregunta .btn-editar").hide();
+            $("#pregunta  #op").val(2);
+            $("id_docente1").attr("disabled", false);
+            $("#id_docente1").attr("readonly", false);
+            $("id_docente2").attr("disabled", false);
+            $("#id_docente2").attr("readonly", false);
+            $("id_docente3").attr("disabled", false);
+            $("#id_docente3").attr("readonly", false);
+            $("#id_fechasust").attr("disabled", false);
+            $("#id_fechasust").attr("readonly", false);
+            $("#id_horasust").attr("disabled", false);
+            $("#id_horasust").attr("readonly", false);
+
+        });
+
+{#        $("#pregunta .btn-agregar").click(function() {#}
+{#            var dato = $("#dato").val();#}
+{#            if (dato){#}
+{#                $("#pregunta").modal("hide");#}
+{#                location.href=('/profe_tutoria?action=addfechasust&fecha='+dato+'&tutoria='+tid);#}
+{#            }#}
+{#        });#}
+
+    });
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+
+        <div class="span10"  style="text-align: center">
+{#            {% if perms.sga.change_egresado%}#}
+{#                <h3 >Registros de Tutorias</h3></br>#}
+{#            {% else %}#}
+                <h3 >{{ idprofesor }}</h3>
+                <h3 >Registros de Tutorias</h3></br>
+{#            {% endif %}#}
+        </div>
+        <div class="span1">
+            {% if not profe%}
+                <a href="/docentes" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+            {% else %}
+                <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+            {% endif %}
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+
+        <div class='span11'>
+        <div class='span9'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search or i %}
+                <a href="/tutoria?id={{ idprofesor.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            {% if not i %}
+                {% if id %}
+                    <a href="/tutoria?id={{ id }}&i=inactivos" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Finalizados </a>
+                {% else %}
+                    <a href="/tutoria?i=inactivos" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Finalizados </a>
+                {% endif %}
+            {% endif %}
+            </form>
+        </div>
+        <div class='span3' style="text-align: right">
+            {% if profe%}
+                <a href="/media/documentos/InstructivoTutorias.pdf" class='btn btn-warning'><i class='icon-search'></i> Descargar Manual</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span11'>
+            {% if perms.sga.delete_profesor %}
+                <div class='span2'>
+                    <table class="table table-condensed table-bordered smaller2 tabla">
+                       <thead>
+                        <tr>
+                            <th title="Ingreso de Registro" id="nuevo" style="cursor: pointer" ><a><i class="icon-share-alt icon-white"></i> Nuevo Registro  </a></th>
+                        </tr>
+                       </thead>
+                    </table>
+                </div>
+            {% endif %}
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;width: 25%">Estudiante</th>
+                        <th style="text-align: center;width: 25%">Grupo - Carrera</th>
+                        <th style="text-align: center;width: 15%">Correo</th>
+                        <th style="text-align: center;width: 5%;">No Tutorias</th>
+                        <th style="text-align: center;width: 7%;">Valor</th>
+                        <th style="text-align: center;width: 8%">Fecha Ingreso</th>
+                        <th style="text-align: center;width: 5%;">Estado</th>
+                        <th style="text-align: center;width: 10%;">Tesis</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tutoria %}
+                        <tr>
+{#                            {% if perms.sga.change_egresado%}#}
+{#                                <td style="text-align: center;"><a {% if perms.sga.change_egresado%} href="/tutoria?action=edit&id={{ t.id }}&idprofe={{ idprofesor.id }}{% endif %}">{{ t.profesor }}</a></td>#}
+{#                            {% endif %}#}
+                            <td>
+                                    <a {% if perms.sga.change_egresado and  t.num_detalletutoria < t.numtutoria and not  t.fecha_sustentacion %}
+                                        href="/tutoria?action=edit&id={{ t.id }}&idprofe={{ idprofesor.id }}&num={{ t.num_detalletutoria }}"
+                                    {% endif %}>
+                                    {{ t.estudiante }}{% if t.existe_modificatuto %} <span class="label label-important tl" title="Registro Modificado">Modificado</span>{% endif %}
+                                </a>
+                                <span class="label label-info tl" style="float: left">{% if t.persona %}Ingresado Por: {{ t.persona.nombre_completo }}{% endif %}</span>
+                                {% if  t.fecha_sustentacion %}
+                                    <span class="label label-warning tl" style="float: left">{% if t.persona %}<h5>Fecha Sustentaci&oacute;n: {{ t.fecha_sustentacion|date:'d-m-Y'  }} {% if t.hora_sustentacion  %}{{ t.hora_sustentacion }}{% endif %}</h5>{% endif %}</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;"> {{ t.estudiante.grupo.nombre }} - {{ t.estudiante.carrera }} </td>
+                            <td style="text-align: center;">{{ t.estudiante.persona.emailinst }} - {{ t.estudiante.persona.email }}</td>
+                            <td style="text-align: center;">{{ t.numtutoria }}/{{ t.num_detalletutoria }}</td>
+                            <td style="text-align: center;">{{ t.valor }}</td>
+                            <td style="text-align: center;">{{ t.fecha|date:'d-m-Y' }}</td>
+                            <td style="text-align: center;">
+                                <a {% if perms.sga.change_egresado and t.num_detalletutoria != t.numtutoria and not t.existe_tutoria %}href="#" id='{{ t.id }}' class="activar" {% endif %}>
+                                    {% if t.estado %}
+                                        <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                                </a>
+                            </td>
+                           <td style="text-align: center">
+                                {% if t.archivotesis %}
+                                    <a href='media/{{ t.archivotesis }}'><i class="icon-download  icon-white"></i> Descargar</a>
+                                    {% if not t.revision_finalizada %}
+                                        <br>
+                                        <a href='' class="agregartesis" archtesis="{{ t.id }}"><i class="icon-upload-alt  icon-white"></i> Actualizar</a>
+                                    {% else %}
+                                        <p style="color: red">Revisi&oacute;n Finalizada</p>
+                                    {% endif %}
+                                {% endif %}
+                           </td>
+                           <td >
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if perms.sga.change_profesor %}
+                                            {% if t.num_detalletutoria == 0  %}
+                                                <li><a  href='/tutoria?action=delete&id={{ t.id }}&idprof={{ idprofesor.id }}'> <i class='icon-remove'></i> Eliminar </a></li>
+                                                {% if t.estado %}
+                                                    <li><a  href='/profe_tutoria?id={{ t.id }}'> <i class='icon-file'></i> Detalle Tutorias </a></li>
+                                                {% endif %}
+                                            {% else %}
+                                                <li><a  href='/profe_tutoria?id={{ t.id }}'> <i class='icon-file'></i> Detalle Tutorias </a></li>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if t.num_detalletutoria == 0 and perms.sga.change_carrera %}
+                                                <li><a  href='/tutoria?action=delete&id={{ t.id }}&idprof={{ idprofesor.id }}'> <i class='icon-remove'></i> Eliminar </a></li>
+                                            {% endif %}
+                                            {% if t.estado %}
+                                                <li><a  href='/profe_tutoria?id={{ t.id }}'> <i class='icon-file'></i> Detalle de Ingreso Tutorias </a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if perms.sga.change_inscripcionflags and t.num_detalletutoria == t.numtutoria  and not t.archivotesis %}
+                                            <li><a  href="/tutoria?action=edittuto&id={{ t.id }}&idprofe={{ idprofesor.id }}&num={{ t.num_detalletutoria }}"> <i class='icon-edit'></i> Editar Tutorias </a></li>
+                                        {% endif %}
+                                        {% if t.existe_modificatuto %}
+                                            <li><a class="detalletutor" id="{{ t.id }}" style="cursor: pointer"><span class="icon-eye-open"></span> Ver Modificaci&oacute;n de Tutorias </a> </li>
+                                        {% endif %}
+{#                                        {% if profe %} se quita xq el admnistrador es el q va a subir la revision#}
+{#                                            {% if not t.archivotesis and profe %}#}
+{#                                            {% if not t.archivotesis and  t.num_detalletutoria >= t.numtutoria %} CONSULTAR SI SE VALIDAS LAS TUTORIAS COMPLETAS#}
+{#                                                <li><a class="agregartesis" archtesis="{{ t.id }}" style="cursor: pointer"><span class="icon-eye-open"></span> Validar Antiplagio </a> </li>#}
+{#                                            {% endif %}#}
+{#                                            {% if t.archivotesis and perms.sga.add_revisiontutoria or profe and  t.archivotesis %}#}
+{#                                                    <li><a href="/tutoria?action=revision&tut={{ t.id }}"><span class="icon-eye-open"></span> Revision de Tesis </a> </li>#}
+{#                                            {% endif %}#}
+{#                                        {% endif %}#}
+{#                                        {% if perms.sga.change_profesor %}#}
+{#                                            {% if  t.revision_finalizada and not  t.fecha_sustentacion %}#}
+{#                                                <li><a href="" class="addfecha" archtesis="{{ t.id }}" tid="{{ t.id }}"><span class="icon-calendar"></span> Agregar  Comit&eacute; Sustentaci&oacute;n</a> </li>#}
+{#                                            {% endif %}#}
+{#                                            {% if  t.fecha_sustentacion %}#}
+{#                                                <li><a href="" class="verfecha"#}
+{#                                                       doc1 = "{% if t.docente1  %}{{ t.docente1  }} {% endif %}"#}
+{#                                                       doc2 = "{% if t.docente2  %} {{ t.docente2  }} {% endif %}"#}
+{#                                                       doc3 =" {% if t.docente3  %} {{ t.docente3  }} {% endif %}"#}
+{#                                                       doc1_id = "{% if t.docente1  %}{{ t.docente1.id  }}{% endif %}"#}
+{#                                                       doc2_id = "{% if t.docente2  %}{{ t.docente2.id  }}{% endif %}"#}
+{#                                                       doc3_id = "{% if t.docente3  %}{{ t.docente3.id  }}{% endif %}"#}
+{#                                                       fechasus = "{% if t.fecha_sustentacion  %}{{ t.fecha_sustentacion|date:'d-m-Y'  }}{% endif %}"#}
+{#                                                       horasus = "{% if t.hora_sustentacion  %}{{ t.hora_sustentacion }}{% endif %}"#}
+{#                                                       acta = "{% if t.tiene_actasustentacion  %}1{% endif %}"#}
+{#                                                       archtesis="{{ t.id }}" tid="{{ t.id }}">#}
+{#                                                    <span class="icon-calendar"></span> Ver Comit&eacute; Sustentaci&oacute;n</a>#}
+{#                                                </li>#}
+{#                                            {% endif %}#}
+{#                                            {% if  t.fecha_sustentacion and not t.tiene_actasustentacion  and perms.sga.add_actasustentacion %}#}
+{#                                                <li><a href="" class="addacta" tid="{{ t.id }}" archtesis="{{ t.id }}" fechasus="{{  t.fecha_sustentacion|date:'d-m-Y' }}"><span class="icon-file"></span> Adicionar Acta Sustentaci&oacute;n </a> </li>#}
+{#                                            {% endif %}#}
+{#                                            {% if  t.tiene_actasustentacion %}#}
+{#                                                <li><a href=""class="veracta" tid="{{ t.id }}" archtesis="{{ t.id }}"#}
+{#                                                       fechasus="{{  t.fecha_sustentacion|date:'d-m-Y' }}"#}
+{#                                                       fechasusing="{{  t.tiene_actasustentacion.fecha_sustentacion|date:'d-m-Y' }}"#}
+{#                                                       obs="{{  t.tiene_actasustentacion.observacion }}"#}
+{#                                                       acta="{{  t.tiene_actasustentacion.acta }}"#}
+{#                                                       nota="{{  t.tiene_actasustentacion.nota }}" >#}
+{#                                                    <span class="icon-calendar"></span> Ver Acta Sustentacion</a>#}
+{#                                                </li>#}
+{#                                            {% endif %}#}
+{#                                        {% endif %}#}
+                                    </ul>
+                                </div>
+                           </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span11">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/tutoria?{% if not profe%}id={{ idprofesor.id }}&{% endif %}page=1{% if i%}&i=inactivos{% endif %}">1</a></li>
+                            <li><a href="/tutoria?{% if not profe%}id={{ idprofesor.id }}&{% endif %}page={{ paging.ellipsis_izquierda }}{% if i%}&i=inactivos{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tutoria?{% if not profe%}id={{ idprofesor.id }}&{% endif %}page={{ pagenumber }}{% if i%}&i=inactivos{% endif %}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/tutoria?{% if not profe%}id={{ idprofesor.id }}&{% endif %}page={{ paging.ellipsis_derecha }}{% if i%}&i=inactivos{% endif %}" class="active">...</a></li>
+                            <li><a href="/tutoria?{% if not profe%}id={{ idprofesor.id }}&{% endif %}page={{ paging.num_pages }}{% if i%}&i=inactivos{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tutoria?{% if not profe%}id={{ idprofesor.id }}&{% endif %}page={{ pagenumber }}{% if i%}&i=inactivos{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="modal fade static " id="detalle_tutoria" style="margin-left: -500"  >
+        <div class="row-fluid modal-header">
+            <h4 id="nomalumn"><i> Modificaciones de Tutoria</i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a style="cursor: pointer" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+            </div>
+        </div>
+    </div>
+
+     {#OCU 04-09-2018 para subir tesis    #}
+    <div class="modal fade static" id="soportetesis_panel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Archivo de Tesis</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/profe_tutoria" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='antiplagio' />
+                <input type='hidden' id='archtesis_id' name='archtesis_id' value='' />
+                {% for field in formtesis %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton2" >Guardar</button>
+                <a href="#" class="btn btn-cerrar">Salir</a>
+            </form>
+        </div>
+    </div>
+    <div class="modal fade static" id="acta_panel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle"> Acta de Sustentaci&oacute;n</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/profe_tutoria" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addacta' />
+                <input type='hidden' id='archtesis_id' name='archtesis_id' value='' />
+                {% for field in actaform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton2" >Guardar</button>
+                <a href="#" class="btn btn-cerrar">Salir</a>
+            </form>
+        </div>
+    </div>
+    <div class="modal fade static" id="pregunta" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle"> Comit&eacute; de Sustentaci&oacute;n</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/profe_tutoria" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addcomite' />
+                <input type='hidden' id='archtesis_id' name='archtesis_id' value='' />
+                <input type='hidden' id='op' name='op' value='' />
+                {% for field in comiteform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton2" >Guardar</button>
+                <a href="#" class="btn btn-info btn-editar">Editar</a>
+                <a href="#" class="btn btn-cerrar">Salir</a>
+            </form>
+        </div>
+    </div>
+{#    <div class="modal fade static" id="pregunta" style="display: none; width: 25%">#}
+{#        <div class="modal-header">#}
+{#            <h3 id="paneltitle1" style="text-align: center"> Ingrese la Fecha de Sustentaci&oacute;n </h3>#}
+{#        </div>#}
+{#        <div class="modal-body " style="text-align: center">#}
+{#            <input id='dato' style="width: 40%;border-bottom: 3px;border-radius: 4px;text-align: center"> </input>#}
+{#            <p class="help-text"> </p>#}
+{#        </div>#}
+{#        <div class="modal-footer" style="text-align: center">#}
+{#            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>#}
+{#            <a href="" class="btn btn-primary btn-agregar"> Guardar</a>#}
+{#        </div>#}
+{#    </div>#}
+{% endblock %}

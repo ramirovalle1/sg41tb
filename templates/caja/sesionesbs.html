@@ -1,0 +1,145 @@
+{% extends "basebs.html" %}
+{% load humanize %}
+
+{% block heading %}
+    <script type="text/javascript" src="/static/js/bootstrap-dropdown.js"></script>
+    <script>
+    excelcaja=function (id) {
+            $("#formpanel").modal("hide");
+            showWaiting('Generando Excel', 'espere unos segundos....');
+            {#$("#espera").modal({ backdrop: 'static'});#}
+            {#$("#espera").modal("show");#}
+
+
+
+
+            $.post("/caja", {"action":"generarexcel",  'sesion':id}, function(data) {
+                if (data.result=='ok'){
+                    {#$("#espera").modal("hide");#}
+                    location.href=data.url;
+                    swal.fire("Notificación",'Reporte Generado con Éxito','success');
+
+                }else{
+                    swal.fire("Error", data.result, "error");
+                    $("#login-modal7").remove();//ocultamos el modal
+                    $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                    $('.modal-backdrop').remove();
+                    location.href = '/caja';
+                }
+                hideWaiting()
+                 {#$("#espera").modal("hide");#}
+            }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                    console.log(errorThrown);
+                    console.log('getJSON request failed! ' + textStatus+ ' eroro jqk'+jqXHR.responseText);
+                    swal("Error", "ERROR DE CONEXION", "error");
+                    $("#login-modal7").remove();//ocultamos el modal
+                    $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                    $('.modal-backdrop').remove();
+                    location.href = '/caja?acc={{ acc }}';
+            });
+         }
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span2">
+            {% if not abierta %}
+                <a href="{% if abierta %}#{% else %}/caja?action=addsesion{% endif %}" class="btn btn-success {% if abierta %}disabled{% endif %}"><i class="icon-plus"></i> Nueva Sesi&oacute;n de Caja</a>
+            {% endif %}
+        </div>
+        <div class="span9">
+            <h3>Registro de Sesiones de Cobranza en Caja {% if caja %} - {{ caja }}{% endif %}</h3>
+            <h4>Punto de Venta: {{ caja.puntoventa }}</h4>
+            <br/>
+        </div>
+        <div class="span1">
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span12">
+            <table class='table table-bordered table-striped'>
+                <thead>
+                    <th>Fecha Inicio</th>
+                    <th>Hora Inicio</th>
+                    <th>Fecha Fin</th>
+                    <th>Hora Fin</th>
+                    <th>Fondo</th>
+                    <th>Factura Comienza</th>
+                    <th>Factura Termina</th>
+                    <th>Abierta</th>
+                    <th> </th>
+                </thead>
+                <tbody>
+                    {% for sesion in sesiones %}
+                        <tr>
+                            <td>{{ sesion.fecha|date:'d-m-Y' }}</td>
+                            <td>{{ sesion.hora }}</td>
+                            <td>{{ sesion.cierre_sesion.fecha|date:'d-m-Y' }}</td>
+                            <td>{{ sesion.cierre_sesion.hora }}</td>
+                            <td>${{ sesion.fondo|floatformat:2|intcomma }}</td>
+                            <td>{{ sesion.facturaempieza }}</td>
+                            <td>{% if sesion.facturatermina %}{{ sesion.facturatermina }} {% endif %}</td>
+                            <td>
+                                {% if sesion.abierta %}
+                                    <img src='/static/images/16/true.png' alt='Si'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='No'/>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if sesion.abierta %}
+                                            <li><a href="/caja?action=closesesion&id={{ sesion.id }}"><i class="icon-remove"></i> Cerrar Sesi&oacute;n</a></li>
+                                        {% else %}
+                                            <li><a class="dropdown-item"  onclick="excelcaja('{{ sesion.id }}')"><i class="icon-reorder"></i> Excel Ingresos de Caja</a></li>
+
+                                            <li><a href="/reportes?action=run&direct=true&n=cierre_sesion_caja&rt=pdf&sesion={{ sesion.id }}"><i class="icon-print"></i> Imprimir Cierre Caja</a> </li>
+                                            <li><a href="/reportes?action=run&direct=true&n=listado_ingresos_caja&rt=pdf&sesion={{ sesion.id }}"><i class="icon-print"></i> Imprimir Ingresos de Caja</a> </li>
+                                        {% endif %}
+
+                                        <!-- Imprimir Ficha -->
+
+
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not sesiones %}
+                        <tr>
+                            <td colspan="7">
+                                NO EXISTEN SESIONES
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span3">
+            {% if not abierta %}
+            <a href="{% if abierta %}#{% else %}/caja?action=addsesion{% endif %}" class="btn btn-success {% if abierta %}disabled{% endif %}"><i class="icon-plus"></i> Nueva Sesi&oacute;n de Caja</a>
+            {% endif %}
+
+        </div>
+        <div class="span9">
+            <div class="pagination">
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/caja?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

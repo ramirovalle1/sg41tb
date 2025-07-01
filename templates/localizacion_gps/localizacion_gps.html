@@ -1,0 +1,50 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+  $(function() {
+
+        function showLocation(pos) {
+          var latitude = pos.coords.latitude;
+          var longitude = pos.coords.longitude;
+          if (pos.coords.latitude!='' && pos.coords.longitude!=''){
+               $.post("/localizacion_gps",{"action": "consult", "latitu": pos.coords.latitude,"longi":pos.coords.longitude },function(data) {
+                    if (data.result=='ok') {
+                       smoke.alert(data.direccion)
+                    }
+                    else{smoke.alert("No se encuentra la ubicacion")}
+
+                },"json");
+
+           }
+            else{
+               smoke.alert("No se encuentra activo el GPS")
+           }
+        }
+
+        function errorHandler(err) {
+          if(err.code == 1) {
+            alert("Error: Acceso Denegado encienda el gps!");
+          }else if( err.code == 2) {
+            alert("Error: la posición no está disponible!");
+          }
+        }
+        getLocation();
+        function getLocation(){
+
+           if(navigator.geolocation){
+              // timeout at 60000 milliseconds (60 seconds)
+              var options = {timeout:60000};
+              navigator.geolocation.getCurrentPosition(showLocation,
+                                                       errorHandler,
+                                                       options);
+           }else{
+              alert("Lo sentimos, navegador no soporta geolocalización!");
+           }
+        }
+  });
+</script>
+{% endblock %}
+{% block canvas %}
+
+{% endblock %}

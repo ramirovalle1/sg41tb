@@ -1,0 +1,301 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+<script type="text/javascript" >
+
+$(function() {
+    $("form").validationEngine();
+    $("#id_nombre").addClass("validate[required]");
+    $("#id_tipo").addClass("validate[required]");
+    $("#id_sede").addClass("validate[required]");
+    $("#id_capacidad").addClass("input-large");
+    $("#id_tipo").addClass("input-large");
+    $("#id_sede").addClass("input-large");
+    $("#id_ip").addClass("input-large");
+
+
+    $("#search").click(function() {
+        var term = $("#searchfield").val().toUpperCase();
+        location.href = "/sedemantenimiento?s="+term;
+    });
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+
+
+    {#------------------------------------------------------ ELIMINAR ----------------------------------------------------------------#}
+
+
+
+    {#------------------------------------------------------ ADD ----------------------------------------------------------------#}
+    $('.add').click(function(){
+        $("#id_sede").val('');
+        $("#id_persona").val('');
+
+        $("#agregar_sede #paneltitle2").html('Nuevo Registro');
+        $("#agregar_sede").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_sede").modal("show");
+    });
+
+    $("#agregar_sede .btn-cerrar").click(function(){
+       $("#agregar_sede").modal("hide");
+        return false;
+    });
+
+    $("#formbutton").click(function(){
+        $(".formError").removeClass('oculta');
+        $(".formError").addClass('aparece');
+
+    });
+    $('.modificar_bodega').click(function(){
+        $("#id_persona").val($(this).attr('responsable'));
+        $("#id_sede").val($(this).attr('bodega'));
+        if (($(this).attr('activa')) == "True"){
+            $("#id_activa").attr('checked',true);
+        }else{
+            $("#id_activa").attr('checked',false);
+        }
+        $("#agregar_sede #idresp").val($(this).attr('sede_id'));
+        $("#agregar_sede #paneltitle2").html('Editar Datos ');
+        $("#agregar_sede").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_sede").modal("show");
+    });
+    $(".eliminar_aula").click(function(){
+        var id = $(this).attr("aula_id");
+        smoke.confirm('Esta seguro de eliminar el aula ', function(e){
+
+        if (e){
+            $.post("/sedemantenimiento",{"action":"eliminar_aula","idaula":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Registro Eliminado");
+               }else{
+                    alert(data.result);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+    var numeros="0123456789.";
+
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+    $("#id_capacidad").blur(function(){
+        $($("#id_capacidad").get(0).parentNode).find(".help-text").html("");
+        var num = $("#id_capacidad").val();
+        if(num){
+            if (solo_numeros(num) != num.length){
+                $($("#id_capacidad").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+                $("#id_capacidad").val('');
+                $("#id_capacidad").focus();
+            }
+        }
+
+    });
+
+    $("#id_ip").blur(function(){
+        $($("#id_ip").get(0).parentNode).find(".help-text").html("");
+        var num = $("#id_ip").val();
+        if(num){
+            if (solo_numeros(num) != num.length){
+                $($("#id_ip").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+                $("#id_ip").val('');
+                $("#id_ip").focus();
+            }
+        }
+
+    });
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+
+
+});
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span7"  >
+            <h3 >Listado de Responsables de Bodegas</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/sedemantenimiento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/sedemantenimiento" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span2'>
+            <a href="#" class="btn btn-success add"><i class="icon-plus icon-white"></i> Nuevo Registro</a>
+        </div>
+    </div><br/>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Nombre</th>
+                        <th style="text-align: center;">Bodega</th>
+                        <th style="text-align: center;">F. Asignaci&oacute;n</th>
+                        <th style="text-align: center;">Usuario Asignaci&oacute;n</th>
+                        <th style="text-align: center;">Activa</th>
+                        <th style="text-align: center;">F. Inactivaci&oacute;n</th>
+                        <th style="text-align: center;">Usuario Inactivaci&oacute;n</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for b in bodega %}
+                        <tr>
+                            <td> {{ b.medico.nombre_completo }}</td>
+                            <td> {{ b.bodega.nombre }}</td>
+                            <td> {{ b.fechaasignacion|date:'d-m-Y' }}</td>
+                            <td> {{ b.usuarioasignacion }}</td>
+                            <td style="text-align: center">
+                                {% if b.activa  %}
+                                   <a href="/sedemantenimiento?action=cambiaestado&id={{ b.id }}"><img src='/static/images/16/true.png' alt='Si' border='0'/></a>
+                                {% else %}
+                                    <a href="/sedemantenimiento?action=cambiaestado&id={{ b.id }}"><img src='/static/images/16/false.png' alt='Si' border='0'/></a>
+                                {% endif %}
+                            </td>
+                            <td> {% if b.fechainactivacion %}{{ b.fechainactivacion|date:'d-m-Y' }}{% endif %}</td>
+                            <td> {% if b.usuarioinactivacion  %}{{ b.usuarioinactivacion }}{% endif %}</td>
+                            <td>
+                                <div class="btn-group">
+                                   <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                   </a>
+                                   <ul class="dropdown-menu pull-right">
+                                        <li><a style="cursor: pointer" sede_id="{{ b.id }}"bodega="{{ b.sede.nombre }}"responsable="{{ b.medico.id }}"activa="{{ b.activa }}"class="modificar_bodega"><i class="icon-edit"></i>  Editar </a></li>
+{#                                        {% if not a.existeaula %}#}
+{#                                            <li><a style="cursor: pointer" aula_id="{{ a.id }}" class="eliminar_aula"><i class="icon-remove"></i>  Eliminar </a></li>#}
+{#                                        {% endif %}#}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not bodega %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/sedemantenimiento?page=1">1</a></li>
+                            <li><a href="/sedemantenimiento?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/sedemantenimiento?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/sedemantenimiento?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/sedemantenimiento?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/sedemantenimiento?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+    <div class="modal fade static" id="agregar_sede">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/sedemantenimiento" method="POST"  >
+                <input type='hidden' name='action' value='add' />
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='idresp' id='idresp'/>
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+
+{% endblock %}

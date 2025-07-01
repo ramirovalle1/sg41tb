@@ -1,0 +1,364 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            var id=0
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+
+{#            $(".btn-desactivar").click(function() {#}
+{#                var ins = $(this).attr("ins");#}
+{#                location.href = '/estudiantesxdesertar?action=desactivar&id='+ins;#}
+{#            });#}
+
+
+            $(".reintegro").click(function() {
+                id = $(this).attr("rid");
+                var nom = $(this).attr("nom");
+                $("#reintegrar").modal({width: '500px', backdrop: 'static'});
+                $("#id_observaciones").attr("disabled",false);
+                $("#id_observaciones").val("");
+                $("#id_observaciones").attr({rows:10 , style:'width:90%;text-transform: uppercase'});
+                $("#reintegrar").modal("show");
+                 $("#reintegrar").find("#estudiante").html(nom);
+
+            });
+            $(".verreintegro").click(function() {
+                var obs = $(this).attr("obs");
+                var nom = $(this).attr("nom");
+                $("#reintegrar").modal({width: '500px', backdrop: 'static'});
+                $("#id_observaciones").attr({rows:10 , style:'width:90%;text-transform: uppercase'});
+                $("#id_observaciones").val(obs);
+                $("#id_observaciones").attr("disabled",true);
+                $("#reintegrar").find("#estudiante").html(nom);
+                $("#reintegrar .adicionar").hide();
+                $("#reintegrar").modal("show");
+
+            });
+
+            $("#reintegrar .cerrar").click(function() {
+                $("#reintegrar").modal("hide");
+                 return false;
+
+            });
+
+            $("#reintegrar .adicionar").click(function() {
+                $("#reintegrar").modal("hide");
+                $.post("/estudiantesxdesertar", {action: 'reintegro', 'id': id, 'obs':$("#id_observaciones").val() }, function(data) {
+                    if (data.result=='ok') {
+                       smoke.alert('ingreso exitoso');
+                       setInterval(function(){
+                            location.reload()
+                       }, 1000);
+                    }
+                    else{
+                       smoke.alert('Error vuelva a intentarlo');
+                    }
+
+                }, "json");
+
+            });
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/estudiantesxdesertar?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $("#cerrar2").click(function() {
+
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#asignaturas").modal("hide");
+            });
+
+            $(".observacion").click(function() {
+                $('#observacion').modal({backdrop: 'static'});
+                    // Render parameters
+                $("#observacion").find("#paneltitle").html("Observacion");
+                $("#observacion").find("#panelbody").html("");
+{#                $(".btn-ejecutarambito").show();#}
+{#                $(".btn-ejecutarindicador").hide();#}
+
+                $("#observacion").modal("show");
+{#                $("#cerrar").attr("ins",ins);#}
+{#                location.href = '/becas_matricula?action=motivoanula&id='+ins;#}
+{#                $("#motivodesactivacion").modal("show");#}
+            });
+
+             $(".asignaturas").click(function() {
+
+                var id = $(this).attr("ins");
+                    $.get("/estudiantesxdesertar", {'action':'asignatura', 'asig': id}, function(data) {
+                            $("#asignaturas .modal-body").html(data);
+                            $("#asignaturas").modal({"backdrop":"static"});
+                            $("#asignaturas").modal("show");
+                       }, "html");
+                return false;
+             });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                Listado de Posibles Desertores {% if  reintegrados%} (Reintegrados)  {% endif %}  {% if nreintegrados %} (No Reintegrados) {% endif %}
+
+            </h3>
+
+
+            <br>
+        </div>
+        <div class='atright'>
+            {% if grupo %}
+                <a href="/estudiantesxdesertar" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% else %}
+                <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="row-fluid">
+
+            <div class='span12'>
+            <div class='span3'>
+                <form class="form-search"> <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                </form>
+            </div>
+            <div class='span3' style="text-align: left">
+            {% if search or nreintegrados or reintegrados%}
+                <a href="/estudiantesxdesertar" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </div>
+                <div class='span2' style="text-align: right">
+                    <a href="/estudiantesxdesertar?action=registrollamadas" class='btn btn-warning'><i class="icon-list icon-white"></i> Registro de llamadas</a>
+                </div>
+                <div class='span2' style="text-align: right">
+                    <a href="/estudiantesxdesertar?r=1" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> Reintegrados</a>
+                </div>
+                <div class='span2' >
+                    <a href="/estudiantesxdesertar?nr=1" id='search' class='btn btn-danger'><i class="icon-search icon-white"></i> No Reintegrados</a>
+                </div>
+            </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th style="width: 400px">Nombre</th>
+                <th>Matricula</th>
+                <th style="text-align: center">Fecha</th>
+                <th style="text-align: center">Materias Reprobadas</th>
+                <th style="text-align: center">Reintegro</th>
+                <th></th>
+
+            </tr>
+            </thead>
+            <tbody>
+            {% for estudiantexdesertar in estudiantesxdesertar %}
+
+                    <tr>
+                        <td>
+
+                                <a href='/estudiantesxdesertar?action=observaciones&id={{ estudiantexdesertar.id }}'>
+                                    {{ estudiantexdesertar.inscripcion.persona }}</a>
+
+                        </td >
+
+                        <td>
+
+                            {{ estudiantexdesertar.matricula }}
+                        </td>
+
+                        <td style="font-size: 11px;text-align: center" nowrap>{{ estudiantexdesertar.fecha|date:"d-m-Y"  }}</td>
+
+                        <td style="text-align: center"> {{ estudiantexdesertar.materiareprobada }}</td>
+                         <td style="text-align: center">
+                                {% if estudiantexdesertar.reintegro %}
+                                    <img src='/static/images/16/true.png' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' border='0'/>
+                                {% endif %}
+                            </td>
+
+                        <td>
+
+                            <div class="btn-group">
+
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+
+                                      <li><a href="/estudiantesxdesertar?action=observaciones&id={{ estudiantexdesertar.id }}"><i class="icon-adjust icon-white"></i> Observaciones </a></li>
+                                      <li><a href="#" ins='{{ estudiantexdesertar.id }}' class="asignaturas">
+                                                         <i class="icon-folder-open"></i> Asignatura</a> </li>
+                                      {% if not estudiantexdesertar.reintegro  %}
+                                            {% if not persona.pertenece_soporte %}
+                                                <li><a href="#"  class ='reintegro' rid="{{ estudiantexdesertar.id }}" nom='{{ estudiantexdesertar.inscripcion.persona.nombre_completo  }}'><i class="icon-adjust icon-white"></i> Reintegrar </a></li>
+                                            {% endif %}
+                                      {% else %}
+                                          <li><a href="#"  class ='verreintegro' rid="{{ estudiantexdesertar.id }}" obs="{{ estudiantexdesertar.observacion }}" nom='{{ estudiantexdesertar.inscripcion.persona.nombre_completo  }}'><i class="icon-adjust icon-white"></i> Ver Reintegro </a></li>
+                                      {% endif %}
+{#                                        <li><a href="/estudiantesxdesertar?action=asignaturas={{ inscripcion.id }}"><i class="icon-folder-open"></i> Asignaturas</a></li>#}
+                                    </ul>
+
+                            </div>
+                        </td>
+                    </tr>
+
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+   <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% if paging.num_pages > 20 %}
+                    <div class='pagination'>
+                        <ul>
+                            {% if paging.primera_pagina %}
+                                <li><a href="/estudiantesxdesertar?page=1{% if reintegrados %}&r={{ reintegrados }}{% endif %}{% if nreintegrados %}&nr={{ nreintegrados }}{% endif %}">1</a></li>
+                                <li><a href="/estudiantesxdesertar?page={{ paging.ellipsis_izquierda }}{% if reintegrados %}&r={{ reintegrados }}{% endif %}{% if nreintegrados %}&nr={{ nreintegrados }}{% endif %}" class="active">...</a></li>
+                            {% endif %}
+                            {% for pagenumber in paging.paginas %}
+                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/estudiantesxdesertar?page={{ pagenumber }}{% if reintegrados %}&r={{ reintegrados }}{% endif %}{% if nreintegrados %}&nr={{ nreintegrados }}{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                            {% endfor %}
+                            {% if paging.ultima_pagina %}
+                                <li><a href="/estudiantesxdesertar?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}{% if reintegrados %}&r={{ reintegrados }}{% endif %}{% if nreintegrados %}&nr={{ nreintegrados }}{% endif %}" class="active">...</a></li>
+                                <li><a href="/estudiantesxdesertar?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}{% if reintegrados %}&r={{ reintegrados }}{% endif %}{% if nreintegrados %}&nr={{ nreintegrados }}{% endif %}">{{ paging.num_pages }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% else %}
+
+                    <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/estudiantesxdesertar?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if reintegrados %}&r={{ reintegrados }}{% endif %}{% if nreintegrados %}&nr={{ nreintegrados }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="desactivacion" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> ¿Est&aacute; seguro de inactivar a este alumno?</h3>
+        </div>
+        <div class="modal-body">
+            <p> Este usuario no podr&aacute; ingresar al sistema ...</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-desactivar"> Desactivar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="motivodesactivacion" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> Motivo de Desactivacion</h3>
+        </div>
+        <div class="modal-body">
+{#            {% if inscripcion.tiene_inactivacion %}#}
+{#                  <p> dkajdkjsadkjsafhkjdsfhksjdf}</p>#}
+            {{ inscripcion }}
+{#            {% endif %}#}
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+
+        </div>
+    </div>
+
+      <div class="modal fade static" id="observacion" style="display: none;">
+        <div class="modal-header">
+            <!-- <a class="close" data-dismiss="modal">×</a> -->
+            <h3 id="paneltitle">Adicionar</h3>
+        </div>
+        <div class="modal-body">
+            <input type="text" id="nuevodatoinput" style="width: 100%; text-transform: uppercase;"/>
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+            <a href="/estudiantesxdesertar?action=estudio&id={{ estudiantexdesertar.inscripcion.id }}" class="btn btn-primary btn-ejecutarambito">Guardar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="resetear" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle1"> ¿Desea Resetear la Clave al Usuario?</h3>
+        </div>
+        <div class="modal-body">
+            <p> El usuario ingresar&aacute; nuevamente al sistema con la clave por defecto {% if clave %}<b>{{ clave }}</b>{% endif %}</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-resetear"> Resetear</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="asignaturas"   >
+        <div class="row-fluid modal-header">
+            <h4 ><i> DETALLES DE MATERIAS REPROBADAS</i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a href="#" id="cerrar2" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="reintegrar"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>Reintegrar Estudiante </i></h4>
+            <h5  id='estudiante'><i> </i></h5>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <div id="formulario5"  action="" >
+            <input type='hidden' id='opthoras' />
+            {% for field in form %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;font-size: 16px"  for="id_{{ field.name }}"></label>
+                    <div class="co trols">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <a  class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a  class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+{% endblock %}
+

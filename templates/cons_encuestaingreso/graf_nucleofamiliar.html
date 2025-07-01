@@ -1,0 +1,445 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+<style>
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color:  #184679; }
+
+.btn-primary {
+  color: #fff;
+  background-color: #184679;
+  border-color: #184679;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover, .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color:#184679;
+    color: #fff;
+    border-color: #184679;
+}
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover,.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #184679;
+}
+</style>
+<script src="../../static/sganuevo/src/plugins/apexcharts/apexcharts.min.js"></script>
+<script src="../../static/sganuevo/src/plugins/sweetalert2/sweetalert2.all.js"></script>
+<script src="../../static/sganuevo/src/plugins/sweetalert2/sweet-alert.init.js"></script>
+<script type="text/javascript">
+    $(function () {
+    {#    DASHBOARD DE NUCLEO FAMILIAR    #}
+
+        $( document ).ready(function() {
+            var tiposnucleos = [];
+            var listcarrera = [];
+            var listnxc = [];
+
+            tiposnucleos.push([{% for nf in nucleosfamiliares %}"{{ nf.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]); {# TIPOS DE NUCLEOS FAMILIARES #}
+
+            {% for ls in lista_carreras_nucleofam %}
+                listcarrera.push('{{ ls.carreranombre }}');
+                var nucleos = [];
+                {% for lsdata in ls.data %}
+                    nucleos.push(parseInt('{{ lsdata.cantidad }}'));
+                {% endfor %}
+                listnxc.push(nucleos);
+            {% endfor %}
+
+            var listado_nucleoxcarrera = [{"carreras": listcarrera, "lista": listnxc, "tiposnucleos": tiposnucleos}];
+
+            var seriesData = [];
+            for (var i = 0; i < listado_nucleoxcarrera[0].tiposnucleos[0].length; i++) {
+                seriesData.push({
+                    name: listado_nucleoxcarrera[0].tiposnucleos[0][i],
+                    data: listnxc.map(function(nucleos) { return nucleos[i]; })
+                });
+            }
+            {#console.log(seriesData)#}
+
+            var optionsxcarrera = {
+                series: seriesData,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                    {#dataLabels: {#}
+                    {#    position: 'top', // top, center, bottom#}
+                    {# },#}
+                },
+                dataLabels: {
+                    enabled: false,
+                    {#formatter: function (val) {#}
+                    {#    return val + "%";#}
+                    {# },#}
+                    {#offsetY: -20,#}
+                    {#style: {#}
+                    {#    fontSize: '12px',#}
+                    {#    colors: ["#304758"]#}
+                    {# }#}
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_nucleoxcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+            var chartxcarrera  = new ApexCharts(document.querySelector("#chart_div_nucleofamiliarxcarrera"), optionsxcarrera);
+            chartxcarrera.render();
+
+        {# --------------------POR COORDINACION------------------------    #}
+            var listcoordinacion=[]
+            var listnxcord =[]
+        
+            {% for ls in lista_coordinaciones_nucleofam %}
+                listcoordinacion.push('{{ ls.coordnombre }}');
+                var nucleosc = [];
+                {% for lsdata in ls.data %}
+                    nucleosc.push(parseInt('{{ lsdata.cantidad }}'));
+                {% endfor %}
+                listnxcord.push(nucleosc);
+            {% endfor %}
+            
+            var listado_nucleoxcoordinacion = [{"coordinacion": listcoordinacion, "lista": listnxcord, "tiposnucleos": tiposnucleos}];
+            var seriesData2 = [];
+            for (var lc = 0; lc < listado_nucleoxcoordinacion[0].tiposnucleos[0].length; lc++) {
+                seriesData2.push({
+                    name: listado_nucleoxcoordinacion[0].tiposnucleos[0][lc],
+                    data: listnxcord.map(function(nucleosc) { return nucleosc[lc]; })
+                });
+            }
+            var optionsxcoordinacion = {
+                series:seriesData2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                    {#dataLabels: {#}
+                    {#    position: 'top', // top, center, bottom#}
+                    {# },#}
+                },
+                dataLabels: {
+                    enabled: false,
+                    {# formatter: function (val) {#}
+                    {#    return val + "%";#}
+                    {# },#}
+                    {#offsetY: -20,#}
+                    {#style: {#}
+                    {#    fontSize: '12px',#}
+                    {#    colors: ["#304758"]#}
+                    {# }#}
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_nucleoxcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+
+            var chartxcoordinacion  = new ApexCharts(document.querySelector("#chart_div_nucleofamiliarxcoordinacion"), optionsxcoordinacion);
+            chartxcoordinacion.render();
+
+            {# --------------------FILTRAR------------------------    #}
+            $("#btnbuscarxcarrera").click(function() {
+                buscarnucleoxcarrera();
+            });
+            function buscarnucleoxcarrera(){
+                var filt_nucleoxcarrera=[];
+                var listcarrera2=[];
+                var lista1 = [];
+
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarnucleoxcarrera",
+                    idanio: $("#cmbaniocarr").val(),
+                    idcarrera: $("#cmbnucleocarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarreraxn.forEach(function(item) {
+                                listcarrera2.push(item.carreranombre);
+                                var nucleos2 = [];
+                                item.info.forEach(function(infoItem) {
+                                    nucleos2.push(parseInt(infoItem.cantidad));
+                                });
+                                lista1.push(nucleos2);
+                            });
+                            filt_nucleoxcarrera.push({"carreras": listcarrera2,  "lista": lista1, "tiposnucleo2": tiposnucleos});
+                            var seriesData3 = [];
+                            for (var fi = 0; fi < filt_nucleoxcarrera[0].tiposnucleo2[0].length; fi++) {
+                                seriesData3.push({
+                                    {#name: filt_nucleoxcarrera[0].tiposnucleos[0][i],#}
+                                    data: lista1.map(function (nucleos2) {return nucleos2[fi];})
+                                });
+                            }
+                            chartxcarrera.updateOptions({
+                                series: seriesData3,
+                                xaxis: {
+                                    categories: filt_nucleoxcarrera[0].carreras
+                                }
+                            });
+
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinacion").click(function (){
+                buscarnucleoxcoordinacion()
+            })
+            function buscarnucleoxcoordinacion(){
+                var filt_nucleoxcoordinacion=[];
+                var listcoordinacion2=[];
+                var lista2 = [];
+
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarnucleoxcoordinacion",
+                    idanio: $("#cmbaniocord").val(),
+                    idcoordinacion: $("#cmbidcoordinacion").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxn.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var nucleos3 = [];
+                                item.info.forEach(function(infoItem) {
+                                    nucleos3.push(parseInt(infoItem.cantidad));
+                                });
+                                lista2.push(nucleos3);
+                            });
+                            filt_nucleoxcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": lista2, "tiposnucleo2": tiposnucleos});
+                            var seriesData4 = [];
+                            for (var fi = 0; fi < filt_nucleoxcoordinacion[0].tiposnucleo2[0].length; fi++) {
+                                seriesData4.push({
+                                    data: lista2.map(function (nucleos3) {return nucleos3[fi];})
+                                });
+                            }
+                            chartxcoordinacion.updateOptions({
+                                series: seriesData4,
+                                xaxis: {
+                                    categories: filt_nucleoxcoordinacion[0].coordinaciones
+                                }
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+        {# -----------------------NUCLEO FAMILIAR POR COORDIANACION RESUMEN ------------------------#}
+            var listadoxresumen =[]
+            var categoriasnucleo=[]
+            var cantidadresumen=[]
+            {% for xlista_nucleo_resumen in lista_nucleo_resumen  %}
+                    cantidadresumen.push(parseInt('{{ xlista_nucleo_resumen.cantidad  }}'));
+                    categoriasnucleo.push('{{ xlista_nucleo_resumen.nucleonombre  }}');
+
+            {% endfor %}
+             listadoxresumen.push({"nucleos":categoriasnucleo,"cantidad":cantidadresumen });
+             var optionsresumenxcoord = {
+                series:listadoxresumen[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 600,
+                },
+                labels: listadoxresumen[0].nucleos,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        },
+                        legend: {
+                          position: 'bottom'
+                        }
+                    }
+                }]
+            };
+
+            var chart = new ApexCharts(document.querySelector("#chart_resumen"), optionsresumenxcoord);
+            chart.render();
+
+        });
+
+    });
+</script>
+
+{% endblock %}
+
+{% block canvas %}
+<div class="main-container">
+    <div class="xs-pd-20-10 pd-ltr-20">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-10 col-sm-12">
+                    <div class="title">
+                        <h4>Estad&iacute;sticas de Encuesta de Ingreso a ITB - N&uacute;cleos Familiares</h4>
+                    </div>
+                </div>
+                 <div class="col-lg-2 col-md-2 col-sm-2">
+                    <div class="title">
+                        <a href="/cons_encuestaingreso" style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+                 </div>
+            </div>
+        </div>
+
+        {# NUCLEO FAMILIAR POR CARRERA        #}
+        <div class="row clearfix" >
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">N&uacute;cleos Familiares de Estudiantes por Carrera</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarr" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbnucleocarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listadocarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarrera" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_nucleofamiliarxcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">N&uacute;cleos Familiares de Estudiantes Resumen</h4>
+                    <div id="chart_resumen" ></div>
+                </div>
+            </div>
+        </div>
+        {# NUCLEO FAMILIAR POR COORDINACION        #}
+        <div class="row clearfix" >
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">N&uacute;cleos Familiares de Estudiantes por Coordinaci&oacute;n</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocord" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinacion" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_nucleofamiliarxcoordinacion" ></div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"});
+    $("#id_asignatura, #id_horas, #id_creditos, #id_inicio, #id_fin").addClass("validate[required]");
+
+    $("#id_asignatura").change(function() {
+        $.get("/asignaturas", {'action': 'info', 'aid': $(this).val()}, function(data) {
+            if (data.result=='ok') {
+                $("#id_identificacion").val(data.codigo);
+                $("#id_creditos").val(data.creditos);
+                $("#id_horas").val(data.horas);
+            }else{
+                $("#id_identificacion").val("");
+                $("#id_creditos").val("");
+                $("#id_horas").val("");
+            }
+        }, "json");
+    });
+    {% if externo %}
+        $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"});
+        $("#id_grupo,#id_horas,#id_numper").addClass("input-small");
+        $("#id_horas,#id_grupo,#id_inicio,#id_fin").addClass("validate[required]");
+    {% endif %}
+    {% if materialibre %}
+        $($("#id_rectora").get(0).parentNode.parentNode).find("label").html("Materia General");
+    {% endif %}
+    {% if error %}
+        smoke.alert('{{ error }}');
+    {% endif %}
+{% endblock %}
+{% block titulo %}Adicionar Materia a Nivel Curricular{% endblock %}
+{% block formaction %}/niveles{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='{{ action }}'/>
+    <input type='hidden' name='idnivel' value='{{ nivel.id }}'/>
+{% endblock %}
+{% block formback %}/niveles?action=materias&id={{ nivel.id }}{% endblock %}
+{% block buttonname %}Adicionar Materia{% endblock %}

@@ -1,0 +1,293 @@
+{% extends 'basebs.html' %}
+{% load sga_extras%}
+{% block heading %}
+    <link type='text/css' rel='stylesheet' href="/static/css/datepicker.css"/>
+    <script src="/static/js/bootstrap-datepicker.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        $(function(){
+            {% if info %}
+                smoke.alert('{{ info }}');
+            {% endif %}
+            var idsol = 0;
+            $(".aprobarsol").click(function(){
+                idsol = $(this).attr("id");
+                $("#paneltitleaprob").html("APROBACION DE SOLICITUD "+$(this).attr("nombre"));
+                $("#aprobapanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#aprobapanel").modal("show");
+            });
+            $(".btn-cerrarpanel").click(function(){
+                $("#observacion").val("");
+                $("#aprobado").attr('checked',false);
+                $("#aprobapanel").modal("hide");
+            });
+            $(".btn-guardarempr").click(function(){
+                $("#etiquetap").html("").removeClass("alert alert-danger");
+                var aprobado = false;
+                var mensaje = 'desaprobar';
+                if ($("#aprobado").is(':checked')) {
+                    aprobado = true;
+                    mensaje = 'aprobar';
+                }
+
+                if ($.trim($("#observacion").val()) != '' && idsol != 0) {
+                    $("#aprobapanel").modal("hide");
+                    smoke.confirm("Esta seguro de "+mensaje+" la solicitud?", function(e){
+                        if (e){
+                            showWaiting("Ingresando informacion", "espere un momento por favor...");
+                            $.post("/solicitud_practicasadm", {"action":'aprobarsolici', "idsoli": idsol, "aprobado": aprobado, "observacion": $("#observacion").val() }, function(data) {
+                                hideWaiting();
+                                if (data.result=='ok') {
+                                    smoke.alert("Solicitud "+data.mens);
+                                    setInterval(function(){
+                                        $.unblockUI();
+                                        location.href='/solicitudpracticas?action=solicitud';
+                                    }, 1800);
+                                }else{
+                                    $("#aprobapanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                                    $("#aprobapanel").modal("show");
+                                    $("#etiquetap").html("Error al Guardar, intentelo nuevamente").addClass("alert alert-danger");
+                                }
+
+                            }, "json");
+                        }else{
+                            $("#aprobapanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                            $("#aprobapanel").modal("show");
+                        }
+                            }, {
+                            ok: "Si",
+                            cancel: "No",
+                            classname: "custom-class",
+                            reverseButtons: true
+                    });
+                }else{
+                    $("#etiquetap").html("Debe ingresar la observacion").addClass("alert alert-danger");
+                }
+
+            });
+            $(".enviarcorreo").click(function(){
+                idsol = $(this).attr("id");
+                $("#paneltitlecorr").html("ENVIAR CORREO A ESTUDIANTE "+$(this).attr("nombre"));
+                $("#contenidocorr").val('');
+                $("#correopanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#correopanel").modal("show");
+            });
+            $(".btn-cerrarpanelcorr").click(function(){
+                $("#correopanel").modal("hide");
+            });
+            $(".btn-envcorr").click(function(){
+                $("#etiquetapcor").html("").removeClass("alert alert-danger");
+
+                if ($.trim($("#contenidocorr").val()) != '' && idsol != 0) {
+                    $("#correopanel").modal("hide");
+                    smoke.confirm("Esta seguro de enviar el correo?", function(e){
+                        if (e){
+                            showWaiting("Ingresando informacion", "espere un momento por favor...");
+                            $.post("/solicitud_practicasadm", {"action":'enviarcorreo', "idsoli": idsol, "contenidocorr": $("#contenidocorr").val() }, function(data) {
+                                hideWaiting();
+                                if (data.result=='ok') {
+                                    smoke.alert("El correo se envio exitosamente");
+
+
+                                }else{
+                                    $("#correopanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                                    $("#correopanel").modal("show");
+                                    $("#etiquetapcor").html("Error al Guardar, intentelo nuevamente").addClass("alert alert-danger");
+                                }
+
+                            }, "json");
+                        }else{
+                            $("#correopanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                            $("#correopanel").modal("show");
+                        }
+                            }, {
+                            ok: "Si",
+                            cancel: "No",
+                            classname: "custom-class",
+                            reverseButtons: true
+                    });
+                }else{
+                    $("#etiquetapcor").html("Debe ingresar la observacion").addClass("alert alert-danger");
+                }
+
+            });
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="row-fluid">
+        <div class="span2"></div>
+        <div class="span7">
+            <header style="text-align: center">
+                <h2>LISTA DE SOLICITUDES DE PRACTICAS
+                </h2>
+            </header>
+        </div>
+        <div class="span1">
+            <a href="/" class="btn btn-danger" style="float: right"><i class="icon-arrow-left"></i>Atras</a>
+        </div>
+    </div><hr>
+    <div class="row-fluid">
+        <div class="span2"></div>
+        <div class="span8">
+            <table class="table table-condensed table-bordered">
+                <thead>
+                    <tr>
+                        <th>Estudiante</th>
+                        <th>Nivel</th>
+                        <th>Perido</th>
+                        <th>Observ. Aprob</th>
+                        <th>Fecha Apro.</th>
+                        <th>Aprobada</th>
+                        <th>Fecha Final.</th>
+                        <th>Finalizada</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in  solicitudpractica %}
+                        <tr >
+                             <td >
+                                <b> {{ s.matricula.inscripcion.persona }} </b>
+                            </td>
+                             <td >
+                                <b> {{ s.matricula.nivel.nivelmalla.nombre }} </b>
+                            </td>
+                            <td >
+                                {{ s.matricula.nivel.periodo.periodo_repr }}
+                            </td>
+                            <td >
+                                {% if s.observacion %}
+                                    {{ s.observacion }}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if s.fecaprobada %}
+                                    <i>{{ s.fecaprobada }}</i>
+                                {% else %}
+                                    <a class="label label-info">En proceso</a>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center;">
+                                <a>
+                                {% if s.aprobada %}
+                                    <img src='/static/images/16/true.png' alt='' border="0"/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='' border="0"/>
+                                {% endif %}
+                                </a>
+                            </td>
+                            <td style="text-align: center">
+                                {% if s.fecfinaliza %}
+                                    <i>{{ s.fecfinaliza }}</i>
+                                {% else %}
+                                    <a class="label label-info">En proceso</a>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                <a>
+                                {% if s.finalizada %}
+                                    <img src='/static/images/16/true.png' alt='' border="0"/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='' border="0"/>
+                                {% endif %}
+                                </a>
+                            </td>
+                            <td style="text-align: center">
+
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a style="cursor: pointer" class="enviarcorreo" id="{{ s.id }}" nombre="{{ s.matricula.inscripcion.persona.nombre_completo }}"><i class="icon-circle-arrow-right"></i> Enviar Correo </a></li>
+                                        <li><a href="/solicitud_practicasadm?action=solicitud&idsol={{ s.id }}" ><i class="icon-eye-open"></i> Ver Solicitud </a></li>
+                                        <li><a style="cursor:pointer" class="aprobarsol" id="{{ s.id }}"  nombre="{{ s.matricula.inscripcion.persona.nombre_completo }}"><i class="icon-check"></i> Aprobar Solicitud </a></li>
+                                    </ul>
+                                </div>
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                    {% if not solicitudpractica %}
+                        <tr>
+                            <td colspan="7">
+                                NO EXISTEN SOLICITUDES
+                            </td>
+                        </tr>
+                    {% endif %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+{% block moreblock %}
+    <div class="modal fade static" id="aprobapanel" style="width: 20px;">
+            <div class="modal-header">
+                <h4 id="paneltitleaprob">APROBACION DE SOLICITUD</h4>
+            </div>
+            <div class="modal-body">
+                <div id="panelbody">
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <p id="etiquetap"></p>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <b>Aprobado?:</b>
+                            <input type="checkbox" style="width: 25%;height: 2em" class="input input-xxlarge convenioemcla" id="aprobado" alt="0" name="aprobado"/>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <b>Observación:</b><br>
+                            <textarea type='text'   id="observacion" name="observacion" placeholder="Escriba una observación"
+                                      style="width:90%;text-transform: uppercase" rows="4" cols="50" ></textarea>
+                        </div>
+                    </div>
+
+                    <br/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a style="cursor: pointer" class="btn btn-success btn-guardarempr"> <b> Guardar</b></a>
+                <a style="cursor: pointer" class="btn btn-info btn-cerrarpanel">Salir</a>
+
+            </div>
+    </div>
+    <div class="modal fade static" id="correopanel" style="width: 20px;">
+            <div class="modal-header">
+                <h4 id="paneltitlecorr">ENVIAR CORREO A ESTUDIANTE</h4>
+            </div>
+            <div class="modal-body">
+                <div id="panelbody">
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <p id="etiquetapcor"></p>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <b>Contenido:</b><br>
+                            <textarea type='text'   id="contenidocorr" name="contenidocorr" placeholder="Escriba el contenido del correo"
+                                      style="width:90%;text-transform: uppercase" rows="4" cols="50" ></textarea>
+                        </div>
+                    </div>
+
+                    <br/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a style="cursor: pointer" class="btn btn-success btn-envcorr"> <b> Enviar</b></a>
+                <a style="cursor: pointer" class="btn btn-info btn-cerrarpanelcorr">Salir</a>
+
+            </div>
+    </div>
+
+
+{% endblock %}

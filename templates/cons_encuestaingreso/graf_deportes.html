@@ -1,0 +1,843 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+<style>
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color:  #184679; }
+
+.btn-primary {
+  color: #fff;
+  background-color: #184679;
+  border-color: #184679;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover, .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color:#184679;
+    color: #fff;
+    border-color: #184679;
+}
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover,.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #184679;
+}
+</style>
+<script src="../../static/sganuevo/src/plugins/apexcharts/apexcharts.min.js"></script>
+<script src="../../static/sganuevo/src/plugins/sweetalert2/sweetalert2.all.js"></script>
+<script src="../../static/sganuevo/src/plugins/sweetalert2/sweet-alert.init.js"></script>
+<script type="text/javascript">
+    $(function () {
+    {#        colors: ['#F44336', '#E91E63', '#9C27B0', '#008FFB', '#F86624', '#F9CE1D', '#2B908F', '#662E9B', '#7D02EB', '#546E7A', '#16deee'],#}
+        $( document ).ready(function() {
+            {# ------------------- DEPORTES POR CARRERA ----------------   #}
+            var tiposdeportes = [];
+            var listcarrxdeportes = [];
+            var listdeportesxcarr = [];
+            var totaldeportes=0;
+            tiposdeportes.push([{% for dep in deportes %}"{{ dep.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]); {# TIPOS DE deporte #}
+            {% for list in lista_carreras_deportes %}
+                listcarrxdeportes.push('{{ list.carreranombre }}');
+                var deporte = [];
+                {% for lsdata in list.data %}
+                    var cantidaddeporte = parseInt('{{ lsdata.cantidad }}')
+                    deporte.push(cantidaddeporte);
+                    totaldeportes+= cantidaddeporte
+                {% endfor %}
+                listdeportesxcarr.push(deporte);
+            {% endfor %}
+            console.log(listdeportesxcarr)
+
+            var listado_deportexcarrera = [{"carreras": listcarrxdeportes, "lista": listdeportesxcarr, "tiposdeportes": tiposdeportes}];
+
+            var seriesData = [];
+            for (var i = 0; i < listado_deportexcarrera[0].tiposdeportes[0].length; i++) {
+                seriesData.push({
+                    name: listado_deportexcarrera[0].tiposdeportes[0][i],
+                    data: listdeportesxcarr.map(function(deporte) { return deporte[i]; })
+                });
+            }
+            var optionsxcarreradeporte = {
+                series: seriesData,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                colors: ['#008F7A','#F44336', '#E91E63', '#9C27B0', '#008FFB', '#F86624', '#F9CE1D', '#2B908F', '#662E9B', '#7D02EB', '#546E7A', '#16deee','#51AEAC','#67615C','#FF0A5C','#FF0A96','#0F019B'],
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totaldeportes *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {  
+                    y: {
+                        formatter: function (val) {
+                          return  val 
+                        }
+                      }
+                }, 
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_deportexcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+            var chartxcarreradeporte  = new ApexCharts(document.querySelector("#chart_div_deportexcarrera"), optionsxcarreradeporte);
+            chartxcarreradeporte.render();
+
+        {# -------------------- DEPORTES POR COORDINACION ------------------------ #}
+            var listcoordinacion=[]
+            var listdeportexcoord =[]
+            var totaldeportes2=0
+            {% for ls in lista_coordinaciones_deportes %}
+                listcoordinacion.push('{{ ls.coordnombre }}');
+                var deporte2 = [];
+                {% for lsdata in ls.data %}
+                    var cantidaddeporte2 =parseInt('{{ lsdata.cantidad }}')
+                    deporte2.push(cantidaddeporte2);
+                    totaldeportes2 += cantidaddeporte2
+                {% endfor %}
+                listdeportexcoord.push(deporte2);
+            {% endfor %}
+
+            var listado_deportexcoordinacion = [{"coordinacion": listcoordinacion, "lista": listdeportexcoord, "tiposdeportes": tiposdeportes}];
+            var seriesData2 = [];
+            for (var lc = 0; lc < listado_deportexcoordinacion[0].tiposdeportes[0].length; lc++) {
+                seriesData2.push({
+                    name: listado_deportexcoordinacion[0].tiposdeportes[0][lc],
+                    data: listdeportexcoord.map(function(deporte2) { return deporte2[lc]; })
+                });
+            }
+            var optionsxcoordinaciondeporte = {
+                series:seriesData2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                }, 
+                colors: ['#008F7A','#F44336', '#E91E63', '#9C27B0', '#008FFB', '#F86624', '#F9CE1D', '#2B908F', '#662E9B', '#7D02EB', '#546E7A', '#16deee','#51AEAC','#67615C','#FF0A5C','#FF0A96','#0F019B'],
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totaldeportes2 *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_deportexcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+
+            var chartxcoordinaciondeporte  = new ApexCharts(document.querySelector("#chart_div_deportexcoordinacion"), optionsxcoordinaciondeporte);
+            chartxcoordinaciondeporte.render();
+
+            {# --------------------FILTRAR------------------------    #}
+            $("#btnbuscarxcarreradeporte").click(function() {
+                btnbuscarxcarreradeporte();
+            });
+            function btnbuscarxcarreradeporte(){
+                var filt_departamentoxcarrera=[];
+                var listcarrxdeportes2=[];
+                var lista1 = [];
+                var totalfiltcarr= 0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscardeportexcarrera",
+                    idanio: $("#cmbaniocarrera_deporte").val(),
+                    idcarrera: $("#cmbdepcarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarrxdeporte.forEach(function(item) {
+                                listcarrxdeportes2.push(item.carreranombre);
+                                var dep = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidad1 =parseInt(infoItem.cantidad)
+                                    dep.push(cantidad1);
+                                    totalfiltcarr +=cantidad1;
+                                });
+                                lista1.push(dep);
+                            });
+                            filt_departamentoxcarrera.push({"carreras": listcarrxdeportes2,  "lista": lista1, "tiposdeportes":tiposdeportes});
+                            var seriesData3 = [];
+                            for (var fi = 0; fi < filt_departamentoxcarrera[0].tiposdeportes[0].length; fi++) {
+                                seriesData3.push({
+                                    {#name: filt_nucleoxcarrera[0].tiposnucleos[0][i],#}
+                                    data: lista1.map(function (dep) {return dep[fi];})
+                                });
+                            }
+                            chartxcarreradeporte.updateOptions({
+                                series: seriesData3,
+                                xaxis: {
+                                    categories: filt_departamentoxcarrera[0].carreras
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcarr *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinaciondeporte").click(function (){
+                btnbuscarxcoordinaciondeporte()
+            })
+            function btnbuscarxcoordinaciondeporte(){
+                var filt_deportexcoordinacion=[];
+                var listcoordinacion2=[];
+                var lista2 = [];
+                var totalfiltcord =0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscardeportexcoordinacion",
+                    idanio: $("#cmbaniocoord_deporte").val(),
+                    idcoordinacion: $("#cmbidcoordinacion").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxdeporte.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var deportec = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadcord= parseInt((infoItem.cantidad))
+                                    deportec.push(cantidadcord);
+                                    totalfiltcord += cantidadcord
+                                });
+                                lista2.push(deportec);
+                            });
+                            filt_deportexcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": lista2, "tiposdeportes": tiposdeportes});
+                            var seriesData4 = [];
+                            for (var fi = 0; fi < filt_deportexcoordinacion[0].tiposdeportes[0].length; fi++) {
+                                seriesData4.push({
+                                    data: lista2.map(function (deportec) {return deportec[fi];})
+                                });
+                            }
+                            chartxcoordinaciondeporte.updateOptions({
+                                series: seriesData4,
+                                xaxis: {
+                                    categories: filt_deportexcoordinacion[0].coordinaciones
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcord *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+        
+            {# ----------------------- DEPORTES RESUMEN ------------------------#}
+            var listadoxresumendeporte =[]
+            var nombresdeporte=[]
+            var cantidadresumendeporte=[]
+            {% for xlista_deportes_resumen in lista_deportes_resumen  %}
+                    cantidadresumendeporte.push(parseInt('{{ xlista_deportes_resumen.cantidad  }}'));
+                    nombresdeporte.push('{{ xlista_deportes_resumen.deportenombre  }}');
+            {% endfor %}
+
+            listadoxresumendeporte.push({"nombresdeporte":nombresdeporte,"cantidad":cantidadresumendeporte});
+
+             var optionsresumenxdeporte = {
+                series:listadoxresumendeporte[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                colors: ['#008F7A','#F44336', '#E91E63', '#9C27B0', '#008FFB', '#F86624', '#F9CE1D', '#2B908F', '#662E9B', '#7D02EB', '#546E7A', '#16deee','#51AEAC','#67615C','#FF0A5C','#FF0A96','#0F019B'],
+                labels: listadoxresumendeporte[0].nombresdeporte,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        },
+                    }
+                }],
+                legend: {
+                    position: 'bottom'
+                }
+            };
+            var chart = new ApexCharts(document.querySelector("#chart_resumen"), optionsresumenxdeporte);
+            chart.render();
+
+            {# ------------------- MANIFESTACION ARTISTICAS POR CARRERA ----------------   #}
+            var tiposmanifestaciones = [];
+            var listcarrxmanifestacion = [];
+            var listmanixcarr = [];
+            var totalmanifestacion=0;
+
+            tiposmanifestaciones.push([{% for m in manifestaciones %}"{{ m.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]);
+            {% for li in lista_carreras_manifestaciones %}
+                listcarrxmanifestacion.push('{{ li.carreranombre }}');
+                var manifestacion = [];
+                {% for lsdatai in li.data %}
+                    var cantidadmanifestacion = parseInt('{{ lsdatai.cantidad }}')
+                    manifestacion.push(cantidadmanifestacion);
+                    totalmanifestacion+= cantidadmanifestacion
+                {% endfor %}
+                listmanixcarr.push(manifestacion);
+            {% endfor %}
+            var listado_tiposmanifestacionesxcarrera = [{"carreras": listcarrxmanifestacion, "lista": listmanixcarr, "tiposmanifestaciones": tiposmanifestaciones}];
+
+            var seriesDataman = [];
+            for (var ip = 0; ip < listado_tiposmanifestacionesxcarrera[0].tiposmanifestaciones[0].length; ip++) {
+                seriesDataman.push({
+                    name: listado_tiposmanifestacionesxcarrera[0].tiposmanifestaciones[0][ip],
+                    data: listmanixcarr.map(function(manifestacion) { return manifestacion[ip]; })
+                });
+            }
+            var optionsmanifestacionxcarrera = {
+                series: seriesDataman,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalmanifestacion *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_tiposmanifestacionesxcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+            var chartxcarreramanifestacion  = new ApexCharts(document.querySelector("#chart_div_manifestacionxcarrera"), optionsmanifestacionxcarrera);
+            chartxcarreramanifestacion.render();
+            
+            {# ------------------- MANIFESTACIONES ARTISTICAS POR COORDINACION -------------------  #}
+            var listcoordinacionmanifestacion=[]
+            var listmanifestxcoord =[]
+            var totalmanifestacion2=0
+            {% for ls in lista_coordinaciones_manifestaciones %}
+                listcoordinacionmanifestacion.push('{{ ls.coordnombre }}');
+                var mant = [];
+                {% for lsdata in ls.data %}
+                     var cantidadmanifestacion2 = parseInt('{{ lsdata.cantidad }}')
+                    mant.push(cantidadmanifestacion2);
+                    totalmanifestacion2 += cantidadmanifestacion2
+                {% endfor %}
+                listmanifestxcoord.push(mant);
+            {% endfor %}
+
+            var listado_mantenimientoxcoordinacion = [{"coordinacion": listcoordinacionmanifestacion, "lista": listmanifestxcoord, "tiposmanifestaciones": tiposmanifestaciones}];
+            var seriesDataman2 = [];
+            for (var lp = 0; lp < listado_mantenimientoxcoordinacion[0].tiposmanifestaciones[0].length; lp++) {
+                seriesDataman2.push({
+                    name: listado_mantenimientoxcoordinacion[0].tiposmanifestaciones[0][lp],
+                    data: listmanifestxcoord.map(function(mant) { return mant[lp]; })
+                });
+            }
+            var optionsxcoordinacionmantenimiento = {
+                series:seriesDataman2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalmanifestacion2 *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_mantenimientoxcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+
+            var chartxcoordinacionmanifestacion  = new ApexCharts(document.querySelector("#chart_div_manifestacionxcoordinacion"), optionsxcoordinacionmantenimiento);
+            chartxcoordinacionmanifestacion.render();
+
+            {# --------------------FILTRAR------------------------    #}
+            $("#btnbuscarxcarreramanifestacion").click(function() {
+                buscarmanifestacionxcarrera();
+            });
+            function buscarmanifestacionxcarrera(){
+                var filt_manifestacionxcarrera=[];
+                var listcarrxmanifestacion2=[];
+                var listamanifest1 = [];
+                var totalfiltcarr1= 0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarmanifestacionxcarrera",
+                    idanio: $("#cmbaniocarrera_manifestacion").val(),
+                    idcarrera: $("#cmbmancarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarrxmanifestacion.forEach(function(item) {
+                                listcarrxmanifestacion2.push(item.carreranombre);
+                                var manifest = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidad1 =parseInt(infoItem.cantidad)
+                                    manifest.push(cantidad1);
+                                    totalfiltcarr1 +=cantidad1;
+                                });
+                                listamanifest1.push(manifest);
+                            });
+                            filt_manifestacionxcarrera.push({"carreras": listcarrxmanifestacion2,  "lista": listamanifest1, "tiposmanifestaciones":tiposmanifestaciones});
+                            var seriesDataman3 = [];
+                            for (var fi = 0; fi < filt_manifestacionxcarrera[0].tiposmanifestaciones[0].length; fi++) {
+                                seriesDataman3.push({
+                                    data: listamanifest1.map(function (manifest) {return manifest[fi];})
+                                });
+                            }
+                            chartxcarreramanifestacion.updateOptions({
+                                series: seriesDataman3,
+                                xaxis: {
+                                    categories: filt_manifestacionxcarrera[0].carreras
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcarr1 *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinacionmanifestacion").click(function (){
+                btnbuscarxcoordinacionmanifestacion()
+            })
+            function btnbuscarxcoordinacionmanifestacion(){
+                var filt_manifestxcoordinacion=[];
+                var listcoordinacion2=[];
+                var listamanifest2 = [];
+                var totalfiltcord =0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarxcoordinacionmanifestacion",
+                    idanio: $("#cmbaniocoord_manifestacion").val(),
+                    idcoordinacion: $("#cmbidcoordinacion_manifestacion").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxmanifestacion.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var manifest = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadcord= parseInt((infoItem.cantidad))
+                                    manifest.push(cantidadcord);
+                                    totalfiltcord += cantidadcord
+                                });
+                                listamanifest2.push(manifest);
+                            });
+                            filt_manifestxcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": listamanifest2, "tiposmanifestaciones": tiposmanifestaciones});
+                            var seriesDatamanc = [];
+                            for (var fi = 0; fi < filt_manifestxcoordinacion[0].tiposmanifestaciones[0].length; fi++) {
+                                seriesDatamanc.push({
+                                    data: listamanifest2.map(function (manifest) {return manifest[fi];})
+                                });
+                            }
+                            chartxcoordinacionmanifestacion.updateOptions({
+                                series: seriesDatamanc,
+                                xaxis: {
+                                    categories: filt_manifestxcoordinacion[0].coordinaciones
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totalfiltcord *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+            {# ------------ MANIFESTACION RESUMEN ------------  #}
+            var listadoxresumenmanifestacion =[]
+            var nombresmanifestacion=[]
+            var cantidadresumenmanifestacion=[]
+            {% for xlista_manifestaciones_resumen in lista_manifestaciones_resumen  %}
+                cantidadresumenmanifestacion.push(parseInt('{{ xlista_manifestaciones_resumen.cantidad  }}'));
+                nombresmanifestacion.push('{{ xlista_manifestaciones_resumen.manifestacionnombre  }}');
+            {% endfor %}
+
+            listadoxresumenmanifestacion.push({"nombresmanifestacion":nombresmanifestacion,"cantidad":cantidadresumenmanifestacion});
+
+             var optionsresumenxmanifestacion = {
+                series:listadoxresumenmanifestacion[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                labels: listadoxresumenmanifestacion[0].nombresmanifestacion,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        },
+                    }
+                }],
+                legend: {
+                    position: 'bottom'
+                }
+            };
+            var chart2 = new ApexCharts(document.querySelector("#chart_resumen2"), optionsresumenxmanifestacion);
+            chart2.render();
+                        
+        });
+    });
+</script>
+
+{% endblock %}
+
+{% block canvas %}
+<div class="main-container">
+    <div class="xs-pd-20-10 pd-ltr-20">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-10 col-sm-12">
+                    <div class="title">
+                        <h4> Estad&iacute;sticas de Ingreso a ITB - Deportes y manifestaciones art&iacute;sticas de los estudiantes</h4>
+                    </div>
+                </div>
+                 <div class="col-lg-2 col-md-2 col-sm-2">
+                    <div class="title">
+                        <a href="/cons_encuestaingreso" style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+                 </div>
+            </div>
+        </div>
+        {# ----------  DEPORTES POR CARRERA  -------------  #}
+        <div class="row clearfix" >
+            <div class="col-md-8 mb-5" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue"> Deportes de Estudiantes por Carrera (opci&oacute;n m&uacute;ltiple por estudiante - m&aacute;ximo 3 deportes)</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarrera_deporte" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbdepcarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listcarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarreradeporte" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_deportexcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-5" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">  Deportes de Estudiantes Resumen (opci&oacute;n m&uacute;ltiple por estudiante - m&aacute;ximo 3 deportes)</h4>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div  id="chart_resumen"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {# ----------  DEPORTES POR COORDINACION ------------- #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue"> Deportes de Estudiantes por Coordinaci&oacute;n (opci&oacute;n m&uacute;ltiple por estudiante - m&aacute;ximo 3 deportes) </h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label> Año : </label>
+                                <select id="cmbaniocoord_deporte" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }} </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label> Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinaciondeporte" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_deportexcoordinacion" ></div>
+                </div>
+            </div>
+        </div>
+        {# ---------- MANIFESTACIONES ARTISTICAS POR CARRERA --------------- #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-5" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue"> Manifestaciones Art&iacute;sticas por Carrera </h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarrera_manifestacion" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label> Carreras :</label>
+                                <select id="cmbmancarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listcarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarreramanifestacion" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_manifestacionxcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-5" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">  Manifestaciones Art&iacute;sticas  Resumen</h4>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div  id="chart_resumen2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {# ---------- MANIFESTACIONES ARTISTICAS POR COORDINACION --------------- #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Manifestaciones Art&iacute;sticas por Coordinaci&oacute;n </h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label> Año : </label>
+                                <select id="cmbaniocoord_manifestacion" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }} </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label> Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion_manifestacion" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinacionmanifestacion" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_manifestacionxcoordinacion" ></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

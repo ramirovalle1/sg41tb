@@ -1,0 +1,2042 @@
+{% extends "basebs.html" %}
+{% load humanize %}
+{% load sga_extras %}
+{% block heading %}
+    <link type="text/css" rel="stylesheet" href="/static/css/jquery.flexbox.css"/>
+    <script type='text/javascript' src='/static/js/jquery.flexbox.js'></script>
+    <script type="text/javascript">
+        $(function() {
+
+            var rubroval = 0;
+            var rubrodcto = 0;
+            var numeros="0123456789.";
+
+            function tiene_numeros(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+            $("#id_porcentaje").blur(function(){
+                var v = $("#id_porcentaje").val();
+                var p = tiene_numeros(v);
+                if (p != v.length)
+                {
+                  $($("#id_porcentaje").get(0).parentNode).find(".help-text").html("Ingresar solo Numeros");
+                  $("#id_porcentaje").val("");
+                  $("#id_porcentaje").focus();
+                }
+                else{
+                    $($("#id_porcentaje").get(0).parentNode).find(".help-text").html("");
+                }
+            });
+
+            $("#id_porcentaje").blur(function() {
+                var v = $("#id_porcentaje").val();
+                var p = (parseFloat(v*parseFloat(rubroval))/100).toFixed(2);
+                var dctodobe=(rubroval-p);
+                $("#id_descuento").val(p);
+                $($("#id_valorrubro").get(0).parentNode.parentNode).show();
+                $("#id_valorrubro").attr("disabled",true);
+                $("#id_valorrubro").val(dctodobe);
+            });
+
+            $("#id_porcentaje,#id_descuento").addClass("input-small");
+            $("#id_descuento").attr("disabled",true);
+
+            var pwid=0;
+            $(".btn-cerrar").click(function() {
+                $("#rubrospanel").modal('hide');
+            });
+            $("#id_fecha").datepicker({format:"dd-mm-yyyy"});
+            $("#id_fecha").addClass("input-small");
+            $("#id_codigo").addClass("input-medium");
+            $("#id_valorrubro").addClass("input-small");
+            $($("#id_valorrubro").get(0).parentNode.parentNode).hide();
+
+            {% if err %}
+                smoke.alert('{{ err }}');
+            {% endif %}
+
+            {% if info %}
+                smoke.alert('{{ info }}');
+            {% endif %}
+
+            {% if errorreferido %}
+                smoke.alert('{{ errorreferido }}');
+            {% endif %}
+
+            {% if errorsolicitud %}
+                smoke.alert('{{ errorsolicitud }}');
+                $("#ingresarpago").hide()
+            {% endif %}
+
+            var secuenciaid=0;
+            var inscripid=0;
+
+            buscar_alumno = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#searchinput").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $(".btn-generar_wester").click(function() {
+                var iid = $(this).attr("iid");
+                smoke.confirm("Generar Registro de Wester", function(e){
+                if (e){
+                       $.post("/finanzas", {"action":'generar_wester',id: iid}, function(data) {
+                        if (data.result=='ok'){
+                            location.href=data.url;
+                        }else{
+                        smoke.alert("Error Intente Nuevamente");
+                        }
+                    }, "json");
+                    return false;
+
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+
+            });
+
+            $('#searchinput').typeahead({source: buscar_alumno, updater: function(item) {
+                var results = $("#searchinput").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        //$("#searchinput").attr("myval",datos.id);
+                        location.href = "/finanzas?action=rubros&id="+datos.id;
+                    }
+                }
+
+                return item;
+            }});
+            buscar_rubro = function(query, process) {
+                    $.get("/reportes", {'action':'data', 'model': 'RubroOtro',
+                        'p': 1, 'q': query, 's': 10}, function(data) {
+                        if (data.results) {
+                            $("#rubro").get(0).results = data.results;
+                            listing = [];
+                            for (var i in data.results) {
+                                var dato = data.results[i];
+                                listing.push(dato.name);
+                            }
+                            process(listing);
+                        }
+                        else{
+                             $("#rubro").attr("myval","");
+                        }
+                    }, 'json');
+                };
+
+            $('#rubro').typeahead({source: buscar_rubro, updater: function(item) {
+                var results = $("#rubro").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#rubro").attr("myval",datos.id);
+                    }
+                }
+                return item;
+            }});
+
+            $("#buscar").click(function() {
+                if ($("#buscar2").val() != ''){
+                    var term = $("#buscar2").val().toUpperCase();
+                    location.href = "/finanzas?action=rubros&id="+ {{ inscripcion.id }}+"&desc="+term;
+                }else{
+                    smoke.alert("Ingrese una identficacion");
+                }
+
+            });
+
+            $('#buscar2').keyup(function(e) {
+                    if(e.keyCode == 13) {
+                        $("#buscar").trigger("click");
+                    }
+                });
+
+            {% if puede_pagar %}
+                $(".selectorrubro").change(function() {
+                    {% if VALIDAR_PAGO_RUBRO %}
+                        var seleccionados = $(".selectorrubro:checked");
+                        var arreglo = [];
+                        var rid = $(this).attr("rid");
+                        var idname = "#"+$(this).attr("id");
+                        var num = $(this).attr("num");
+                        seleccionados.each(function() {
+                            arreglo.push($(this).attr('rid'));
+                        });
+                        $.post("/finanzas",{action: 'validarfecha','check':$(this).is(':checked') ,'idrub':rid,'data': JSON.stringify(arreglo), id: {{ inscripcion.id }}}, function(data) {
+                            var seleccionados = $(".selectorrubro:checked");
+                            var suma = 0;
+                            if (data.result=='ok') {
+                                seleccionados.each(function() {
+                                    suma += parseFloat($(this).attr('deuda'));
+                                });
+                                $("#porpagar").html("$"+suma.toFixed(2));
+                            }
+                            else {
+                                if($(idname).is(':checked'))
+                                {
+                                    $(idname).attr('checked',false);
+                                    if(data.result=='bad1'){
+                                        Swal.fire('info', data.mens, 'error')
+                                    }else{
+                                        Swal.fire('info', 'Debe escoger rubro con fecha de vencimiento menor', 'warning')
+                                    }
+                                }
+                                else{
+                                    var validacion=false;
+                                    seleccionados.each(function() {
+                                        if(parseInt($(this).attr("num")) > num )
+                                        {
+                                            if($(this).attr("tipo") != "CONGRESO" )
+                                            {
+                                                if($(this).attr("tipo") != "ESPECIE" )
+                                                {
+                                                    $("#"+$(this).attr("id")).attr('checked',false);
+                                                    validacion = true;
+                                                }
+                                            }
+                                        }
+                                    });
+                                    $(".selectorrubro:checked").each(function() {
+
+                                        suma += parseFloat($(this).attr('deuda'));
+
+                                    });
+                                    $("#porpagar").html("$"+suma.toFixed(2));
+                                    if(validacion)
+                                    {
+                                        smoke.alert("Se desmarcaron rubros con fecha de vencimiento mayor");
+                                    }
+                                }
+                            }
+                        }, "json");
+                    {% else %}
+                        var seleccionados = $(".selectorrubro:checked");
+                        var suma = 0;
+                        seleccionados.each(function() {
+                            suma += parseFloat($(this).attr('deuda'));
+                        });
+                        $("#porpagar").html("$"+suma.toFixed(2));
+                    {% endif %}
+
+                });
+
+                $("#ingresarpago").click(function() {
+                    var seleccionados = $(".selectorrubro:checked");
+                    var ids = '';
+                    seleccionados.each(function() {
+                        if (ids.length>0) {
+                            ids += ",";
+                        }
+                        ids += $(this).attr('rid');
+                    });
+                    if (ids.length>0) {
+                        location.href = "/finanzas?action=pagar&ids="+ids{% if solicitud %}+"&solicitud={{ solicitud.id }}"{% endif %}{% if pagowestercaja %}+"&pagowestercaja={{ pagowestercaja.id }}"{% endif %};
+                    } else {
+                        smoke.alert("Debe seleccionar al menos un rubro de cobro");
+                    }
+                });
+            {% endif %}
+
+            cobrarMatricula = function() {
+                var mid = $(this).attr("mid"); // Matricula ID
+                var valor = $("#rubrospanel").find("#vr"+mid).val();
+                var fecha = $("#rubrospanel").find("#fe"+mid).val();
+                $("#rubrospanel").modal("hide");
+                showWaiting("Registrando Cobro", "Espere unos segundos por favor...");
+                $.post("/finanzas",{action: 'addmatricula', 'fe': fecha, valor: valor, mid: mid, id: {{ inscripcion.id }}}, function(data) {
+                    hideWaiting();
+                    if (data.result=='ok') {
+                        location.href = '/finanzas?action=rubros&id={{ inscripcion.id }}';
+                    } else {
+                        alert("Error");
+                    }
+                }, "json");
+            };
+
+            cobrarMateria = function() {
+                var mid = $(this).attr("mid"); // Materia ID
+                var valor = $("#rubrospanel").find("#vr"+mid).val();
+                var fecha = $("#rubrospanel").find("#fe"+mid).val();
+                $("#rubrospanel").modal("hide");
+                showWaiting("Registrando Cobro", "Espere unos segundos por favor...");
+                $.post("/finanzas",{action: 'addmateria', 'fe': fecha, 'valor': valor, 'mid': mid, 'id': {{ inscripcion.id }}}, function(data) {
+                    hideWaiting();
+                    if (data.result=='ok') {
+                        location.href = '/finanzas?action=rubros&id={{ inscripcion.id }}';
+                    } else {
+                        alert("Error");
+                    }
+                }, "json");
+            };
+
+            cobrarOtro = function() {
+
+                var tid = $(this).attr("tid"); // Tipo otro ID
+                var valor = $("#rubrospanel").find("#vr"+tid).val();
+                var ta = $("#rubrospanel").find("#ta"+tid).val();
+
+                var fecha = $("#rubrospanel").find("#fe"+tid).val();
+
+                if (valor != 0 && ta != ''){
+
+                    $("#rubrospanel").modal("hide");
+                    showWaiting("Registrando Cobro", "Espere unos segundos por favor...");
+                    $.post("/finanzas",{action: 'addotro', 'fe': fecha, 'ta': ta, 'valor': valor, tid: tid, id: {{ inscripcion.id }}}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            location.href = '/finanzas?action=rubros&id={{ inscripcion.id }}';
+                        } else {
+                            alert("Error");
+                        }
+                    }, "json");
+                }
+                else{
+                    if (valor == 0){
+                        $("#rubrospanel").find("#panelalert").html("Error el Valor debe ser mayor a cero ");}
+                    else{
+                        $("#rubrospanel").find("#panelalert").html("Error el Concepto se encuentra vacio ");
+                    }
+                }
+            };
+
+
+            $(".btn-matricula").click(function() {
+                var iid = $(this).attr("iid");
+                //showWaiting("Buscando Matriculas por Cobrar","Espere unos segundos por favor...");
+                $.get("/finanzas", {action:'segmatriculas', id: iid}, function(data) {
+                    //hideWaiting();
+                    $("#rubrospanel").find("#paneltitle").html("Matriculas por cobrar");
+                    $("#rubrospanel").find("#panelbody").html("Seleccione una matricula para proceder a su cobro");
+                    $("#rubrospanel").find("#panelcanvas").html(data);
+                    $("#rubrospanel").modal("show");
+                    $("#rubrospanel").find('.btn-cobrar').click(cobrarMatricula);
+                    $("#rubrospanel").find(".fechainput").datepicker({format:"dd-mm-yyyy"});
+                },"html");
+            });
+             $("#verpedagogia").click(function () {
+                $("#modalpedagogia").modal({width: '800px', backdrop: 'static'});
+                $("#modalpedagogia .cuerpo").html('<iframe width="100%" height="500px" src="{{ pagoped.documento }}" ></iframe>');
+               $("#modalpedagogia").modal("show");
+               return false;
+            });
+
+            $(".autorizar").click(function () {
+                $("#autorizarwesterpanel").modal({width: '600px', backdrop: 'static'});
+               $("#autorizarwesterpanel").modal("show");
+                $("#id_codigo").val($(this).attr('codigo'));
+                pwid  = $(this).attr("pwid");
+               return false;
+            });
+
+            $("#autorizarwesterpanel .btn-salirwester").click(function () {
+               $("#autorizarwesterpanel").modal("hide");
+               return false;
+            });
+
+            $(".btn-grabarwester").click(function() {
+                    $.post("/finanzas", {action:'fechawester', id: pwid , 'fecha' :$("#id_fecha").val() }, function(data) {
+                         if (data.result=="ok") {
+                            location.reload();
+                        }else{
+                             smoke.alert("Ocurrio un error " + data.error )
+                         }
+
+                    }, "json");
+                });
+
+            $("#modalpedagogia .salir").click(function () {
+               $("#modalpedagogia").modal("hide");
+               return false;
+            });
+
+            $(".btn-materias").click(function() {
+                var iid = $(this).attr("iid");
+                $.get("/finanzas", {action:'segmaterias', id: iid}, function(data) {
+                    //hideWaiting();
+                    $("#rubrospanel").find("#paneltitle").html("Materias por cobrar");
+                    $("#rubrospanel").find("#panelbody").html("Seleccione una materia para proceder a su cobro");
+                    $("#rubrospanel").find("#panelcanvas").html(data);
+                    $("#rubrospanel").modal("show");
+                    $("#rubrospanel").find('.btn-cobrar').click(cobrarMateria);
+                    $("#rubrospanel").find(".fechainput").datepicker({format:"dd-mm-yyyy"});
+                },"html");
+            });
+
+
+            var letrasnum="ABCDEFGHIJKLMNÑOPQRSTUVWXYZ abcdefghijklmnñopqrstuvwxyz0123456789.-#";
+            function solo_letrasnum(texto){
+                var tex = 0;
+                for(i=0; i<texto.length; i++){
+                    if (letrasnum.indexOf(texto.charAt(i),0)!=-1){
+                      tex = tex + 1;
+                    }
+                }
+                return tex;
+            }
+            validotro = function(){
+                $(".otror").keyup(function(e){
+                    var rubid= $(this).attr("rubid");
+                    console.log(rubid);
+                    var conp = $("#ta"+rubid).val();
+                    if(e.key.length != solo_letrasnum(e.key)){
+                        var valid = conp.replace(e.key, "");
+                        $("#ta"+rubid).val(valid);
+                        $($("#ta"+rubid).get(0).parentNode).find("#alerta").html("Ha ingresado caracteres no válidos");
+                    }
+                    else{
+                        $($("#ta"+rubid).get(0).parentNode).find("#alerta").html("");
+                    }
+                });
+            };
+            $(".btn-otros").click(function() {
+                var iid = $(this).attr("iid");
+                $.get("/finanzas", {action:'segotros', id: iid}, function(data) {
+                    //hideWaiting();
+                    $("#rubrospanel").find("#paneltitle").html("Otros conceptos de Cobro");
+                    $("#rubrospanel").find("#panelbody").html("Seleccione un concepto para proceder a su cobro");
+                    $("#rubrospanel").find("#panelcanvas").html(data);
+                    $("#rubrospanel").modal("show");
+                    $("#rubrospanel").find('.btn-cobrar').click(cobrarOtro);
+                    $("#rubrospanel").find(".fechainput").datepicker({format:"dd-mm-yyyy"});
+                    $("#rubrospanel").find("#panelcanvas").keyup(validotro);
+                },"html");
+            });
+            $("#searchbox").flexbox('/reportes?action=data&model=Inscripcion',{'width':400, 'showArrow': false,
+                onSelect: function() {
+                    location.href = "/finanzas?action=rubros&id="+$("#searchbox_hidden").val();
+                }
+
+            });
+
+            convierteAInputFecha = function() {
+                var rid = $(this).attr("rid");
+                var fecha = $(this).html();
+                $(this.parentNode).html("<input type='text' class='inputfecha' id='if"+rid+"' value='"+fecha+"' rid='"+rid+"'>").find(".inputfecha").datepicker({format:"dd-mm-yyyy"}).on('changeDate', function(ev){
+                    $.post("/finanzas", {action: 'actualizafecha', rid: $(this).attr("rid"), fecha: this.value}, function(data) {
+                        if (data.result=="ok") {
+                            var fecha = data.fecha;
+                            var vencido = data.vencido;
+                            var rid = data.rid;
+                            $($("#if"+rid).get(0).parentNode).html("<a href='#' class='updatefecha' rid='"+rid+"'>"+fecha+"</a>"+
+                                    ((vencido)?"<br/><span class='label label-important'>VENCIDO</span>":"")).find(".updatefecha").click(convierteAInputFecha);
+                        }
+                    }, "json");
+                });
+                return false;
+
+            };
+
+            $(".updatefecha").click(convierteAInputFecha);
+
+
+
+            $("#selectespecieid").change(function(){
+                {% if not VALIDA_DEUDA_EXAM_ASIST %}
+                    $("#solicitudespecieregpanel #generaespecienot").hide();
+                    if(parseInt($("#selectespecieid").val()) == parseInt('{{ ID_TIPO_ESPECIE_REG_NOTA }}')){
+                        $("#solicitudespecieregpanel").modal({backdrop: 'static', keyboard: false, width: "35%", maxHeight: ($(window).height()*3)/4 });
+                        $("#solicitudespecieregpanel").modal("show");
+                    }
+                    else{
+                        $("#materiaasignregid").val(0)
+                    }
+                {% endif %}
+            });
+
+            $("#materiaasignadanotaespec").change(function(){
+                if(parseInt($("#materiaasignadanotaespec").val()) != 0){
+                    $("input[name=materiaasignregid]").val($("#materiaasignadanotaespec").val());
+                    $("#solicitudespecieregpanel #generaespecienot").show();
+                }else{
+                    $("#solicitudespecieregpanel #generaespecienot").hide();
+                }
+            });
+
+            $("#solicitudespecieregpanel #generaespecienot").click(function(){
+                $("#solicitudespecieregpanel #generaespecienot").hide();
+                $("#formbuttonespecieval").click();
+            });
+            $("#solicitudespecieregpanel .btn-cerrar").click(function(){
+                $("#solicitudespecieregpanel").modal("hide");
+                $("#selectespecieid").val(0);
+                $("input[name=materiaasignregid]").val(0)
+            });
+
+            $(".eliminarrecibocaja").click(function(){
+                var id = $(this).attr("rid");
+                secuenciaid=id
+                var motivo = $(this).attr("motivo");
+                smoke.confirm('Esta seguro de anular recibo de caja "'+motivo+'"', function(e){
+                if (e){
+                    $("#motivoanulacionpanel #id_motivoanulacion").val("");
+                    $("#motivoanulacionpanel").modal('show');
+                }else{
+                }
+                }, {
+                ok: "Si",
+                cancel: "No",
+                classname: "custom-class",
+                reverseButtons: true
+                });
+            });
+
+            $("#motivoanulacionpanel .btn-grabar").click(function(){
+                var motivo = $("#id_motivoanulacion").val();
+                $("#motivoanulacionpanel").modal('hide');
+                $.post("/finanzas",{"action": "eliminar_recibocaja","rid":secuenciaid,"motivo":motivo},function(data) {
+                    if(data.result=='ok'){
+                        smoke.alert("Registro Anulado");
+                    }else{
+                        alert(data.result);
+                    }
+                    location.reload()
+                },"json");
+            });
+
+            $("#motivoanulacionpanel .btn-salir").click(function(){
+                $("#motivoanulacionpanel #id_motivoanulacion").val("");
+                $("#motivoanulacionpanel").modal('hide');
+                return false;
+            });
+
+            {# desde aqui           #}
+            $(".cambiovalorrecibocaja").click(function(){
+                $("#id_valorinicial").addClass("input-small");
+                $("#id_saldo").addClass("input-small");
+                $("#cambiosvaloresrecibospanel #id_motivocambio").val("");
+                $("#cambiosvaloresrecibospanel #id_valorinicial").val("");
+                $("#cambiosvaloresrecibospanel #id_saldo").val("");
+                var id = $(this).attr("rid");
+                secuenciaid=id
+                var motivo = $(this).attr("motivo");
+                smoke.confirm('Esta seguro de realizar cambio en los valores de recibo de caja "'+motivo+'"', function(e){
+                if (e){
+                    $("#cambiosvaloresrecibospanel").modal('show');
+                }else{
+                }
+                }, {
+                ok: "Si",
+                cancel: "No",
+                classname: "custom-class",
+                reverseButtons: true
+                });
+            });
+
+            $("#cambiosvaloresrecibospanel .btn-grabar").click(function(){
+                var motivocambio = $("#id_motivocambio").val();
+                var valorinicial = $("#id_valorinicial").val();
+                var saldo = $("#id_saldo").val();
+                $("#cambiosvaloresrecibospanel").modal('hide');
+                $.post("/finanzas",{"action": "cambiovalores_recibocaja","rid":secuenciaid,"valorinicial":valorinicial,"saldo":saldo,"motivocambio":motivocambio},function(data) {
+                    if(data.result=='ok'){
+                        smoke.alert("Cambio Realizado");
+                    }else{
+                        alert(data.result);
+                    }
+                    location.reload()
+                },"json");
+            });
+
+            $("#cambiosvaloresrecibospanel .btn-salir").click(function(){
+                $("#cambiosvaloresrecibospanel #id_motivocambio").val("");
+                $("#cambiosvaloresrecibospanel #id_valorinicial").val("");
+                $("#cambiosvaloresrecibospanel #id_saldo").val("");
+                $("#cambiosvaloresrecibospanel").modal('hide');
+                return false;
+            });
+
+            {# desde aqui cambio valor rubro   #}
+            $(".cambiovalorrubro").click(function(){
+                $("#id_valor").addClass("input-small");
+                $("#cambiosvaloresrubrospanel #id_valor").val("");
+                var id = $(this).attr("rid");
+                secuenciaid=id
+                var motivo = $(this).attr("motivo");
+                smoke.confirm('Esta seguro de realizar cambio en el valor del rubro "'+motivo+'"', function(e){
+                if (e){
+                    $("#cambiosvaloresrubrospanel").modal('show');
+                }else{
+                }
+                }, {
+                ok: "Si",
+                cancel: "No",
+                classname: "custom-class",
+                reverseButtons: true
+                });
+            });
+
+            $("#cambiosvaloresrubrospanel .btn-grabar").click(function(){
+                var valor = $("#id_valor").val();
+                $("#cambiosvaloresrubrospanel").modal('hide');
+                $.post("/finanzas",{"action": "cambiovalorrubro","rid":secuenciaid,"valor":valor},function(data) {
+                    if(data.result=='ok'){
+                        smoke.alert("Cambio Realizado");
+                    }else{
+                        alert(data.result);
+                    }
+                    location.reload()
+                },"json");
+            });
+
+            $("#cambiosvaloresrubrospanel .btn-salir").click(function(){
+                $("#cambiosvaloresrubrospanel #id_valor").val("");
+                $("#cambiosvaloresrubrospanel").modal('hide');
+                return false;
+            });
+
+            {# OCastillo 03-03-2023 desde aqui descuento en rubros para DOBE #}
+            $(".descuentodobe").click(function(){
+                $("#descuentoDOBEpanel #paneltitle").html('Aplicar descuento en rubro '+($(this).attr('motivo'))+' por el valor de:  '+($(this).attr('valor'))+' ');
+                $("#descuentoDOBEpanel #id_porcentaje").val("");
+                $("#descuentoDOBEpanel #id_descuento").val("");
+                var id = $(this).attr("rid");
+                rubroval = $(this).attr("valor");
+                secuenciaid=id;
+                var motivo = $(this).attr("motivo");
+                smoke.confirm('Esta seguro de realizar cambio en el valor del rubro "'+motivo+'"', function(e){
+                if (e){
+                    $("#descuentoDOBEpanel").modal('show');
+
+                }else{
+                }
+                }, {
+                ok: "Si",
+                cancel: "No",
+                classname: "custom-class",
+                reverseButtons: true
+                });
+            });
+
+            $("#descuentoDOBEpanel .btn-grabar").click(function(){
+                var porcentaje = $("#id_porcentaje").val();
+                var descuento = $("#id_descuento").val();
+                $("#descuentoDOBEpanel").modal('hide');
+                $.post("/finanzas",{"action": "aplicadescuentodobe","rid":secuenciaid,"porcentaje":porcentaje,"descuento":descuento},function(data) {
+                    if(data.result=='ok'){
+                        smoke.alert("Cambio Realizado");
+                    }else{
+                        alert(data.result);
+                    }
+                    location.reload()
+                },"json");
+            });
+
+            $("#descuentoDOBEpanel .btn-salir").click(function(){
+                $("#id_porcentaje").val("");
+                $("#id_descuento").val("");
+                $("#id_valorrubro").val("");
+                $($("#id_valorrubro").get(0).parentNode.parentNode).hide();
+                $("#descuentoDOBEpanel #paneltitle").html('');
+                $("#descuentoDOBEpanel").modal('hide');
+                return false;
+            });
+
+
+{#        //////////////////////////////////////////////////////////////////////////////////////#}
+{#        ////////////////////////////////TRICOLOGIA//////////////////////////////////////////#}
+            $("#checktrico").click(function(){
+                if($("#checktrico").is(':checked'))
+                {
+                    $("#searchinputtrico").show();
+                    $("#searchinput").hide();
+                    $("#labeleti").html('Buscar Paciente');
+                }
+                else{
+                    $("#searchinputtrico").hide();
+                    $("#searchinput").show();
+                    $("#labeleti").html('Buscar Estudiantes');
+                }
+            });
+
+            buscar_paciente = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'FichaMedica',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#searchinputtrico").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#searchinputtrico').typeahead({source: buscar_paciente, updater: function(item) {
+                var results = $("#searchinputtrico").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        //$("#searchinput").attr("myval",datos.id);
+                        location.href = "/finanzas?action=tricorubros&id="+datos.id;
+                    }
+                }
+
+                return item;
+            }});
+
+
+            $('.edit_desc').click(function(){
+                $("#edit_descuento #idinscripcion").val($(this).attr('iid'));
+                $("#edit_descuento #paneltitle").html('Editar porcentaje de descuento en la cuotas para la promoción "'+($(this).attr('promo'))+'"');
+                $("#edit_descuento").modal({"backdrop":"static","width":"500px"});
+                $("#edit_descuento").modal("show");
+            });
+
+            $("#edit_descuento .btn-cerrar").click(function(){
+                $("#edit_descuento").modal("hide");
+                return false;
+            });
+
+            $('.edit_promocion').click(function(){
+                var id = $(this).attr("iid");
+                inscripid=id
+                $("#edit_promocion #paneltitle").html('Editar promoción "'+($(this).attr('promo'))+'"');
+                $("#edit_promocion").modal({"backdrop":"static","width":"600px"});
+                $("#edit_promocion").modal("show");
+            });
+
+            $("#edit_promocion .btn-success").click(function(){
+                var motivo = $("#id_motivo").val();
+                var promocion = $("#id_promocion").val();
+
+                $("#edit_promocion").modal('hide');
+                $.post("/finanzas",{"action": "edit_promocion","id":inscripid,"motivo":motivo,"promocion":promocion},function(data) {
+                    if(data.result=='ok'){
+                        smoke.alert("Registro Guardado");
+                        $("#id_motivo").val("");
+                        $("#id_promocion").val("");
+                    }else{
+                        alert(data.result);
+                    }
+                    location.reload()
+                },"json");
+            });
+
+            $("#edit_promocion .btn-cerrar").click(function(){
+                $("#id_motivo").val("");
+                $("#id_promocion").val("");
+                $("#edit_promocion").modal("hide");
+                return false;
+            });
+
+            $("#formbutton_jornada").click(function(){
+                $(".formError").removeClass('oculta');
+                $(".formError").addClass('aparece');
+            });
+
+            todosperm = ['numerocheq','bancochequeperm','fechacobroperm','emiteperm',
+            'referenciaperm', 'bancotarjetaperm', 'tipoperm', 'poseedorperm', 'procesadorpagoperm',
+            'referenciatransferenciaperm', 'cuentabancoperm'];
+
+            ajustarperm = { '{{ pago_efectivo_id }}': [],
+            '{{ pago_tarjeta_id }}': ['referenciaperm', 'bancotarjetaperm', 'tipoperm', 'poseedorperm', 'procesadorpagoperm'],
+            '{{ pago_cheque_id }}': ['numerocheq','bancochequeperm','fechacobroperm','emiteperm'],
+            '{{ pago_transferencia_id }}': ['referenciatransferenciaperm', 'cuentabancoperm'],
+            '{{ pago_deposito_id }}': ['referenciatransferenciaperm', 'cuentabancoperm']};
+
+            ajustar_forma_pagopermiso = function() {
+                for (var i in todosperm) {
+                    var eid = todosperm[i];
+                    $($("#id_"+eid).get(0).parentNode.parentNode).hide();
+                }
+                var activar = ajustarperm[$("#id_formadepagoperm").val()];
+                for (var i in activar) {
+                    var eid = activar[i];
+                    $($("#id_"+eid).get(0).parentNode.parentNode).show();
+                }
+            };
+
+            $("#id_fechacobroperm").datepicker({format:"yyyy-mm-dd"});
+
+            $("#id_formadepagoperm").change(ajustar_forma_pagopermiso);
+            $("#id_valorperm").addClass('input-small');
+            $("#id_valorperm").attr('readonly',true);
+
+            var cuota_cab_id = 0;
+            var idinscr = 0;
+            cobrar_cab = function(id, inscripcion, descripcion, valor, inscripcionid){
+                cuota_cab_id = id;
+                $("#id_tipoperm").val('');
+                $("#id_bancotarjetaperm").val('');
+                $("#id_referenciaperm").val('');
+                $("#id_numerocheq").val('');
+                $("#id_bancochequeperm").val('');
+                $("#id_fechacobroperm").val('');
+                $("#id_emiteperm").val('');
+                $("#id_referenciatransferenciaperm").val('');
+                $("#id_cuentabancoperm").val('');
+                $("#id_poseedorperm").val('');
+                $("#id_procesadorpagoperm").val('');
+
+                $("#recibo_panel .help-text").html("");
+                $("#recibo_panel #id_valor").val("");
+                idinscr = inscripcionid;
+                $("#id_valorperm").val(valor);
+                $("#id_formadepagoperm").get(0).item(2).disabled = false;
+                $("#id_formadepagoperm").val({{ pago_efectivo_id }});
+
+                ajustar_forma_pagopermiso();
+
+                $("#reciboCAB_panel #paneltitle1").html("RECIBO "+descripcion+': '+inscripcion);
+                $("#reciboCAB_panel").modal({width: '600px', backdrop: 'static'});
+                $("#reciboCAB_panel").modal("show");
+            }
+
+            $("#reciboCAB_panel .btn-cerrar").click(function() {
+                $("#reciboCAB_panel").modal("hide");
+                return false;
+            });
+
+            $("#reciboCAB_panel .btn-buscar").click(function() {
+                $("#reciboCAB_panel .help-text").html("");
+                var validate = true;
+                var nocheque = true;
+                if ('{{ pago_tarjeta_id }}' == $("#id_formadepagoperm").val()){
+
+                    if($("#id_tipoperm").val()=='' || $("#id_bancotarjetaperm").val()=='' || $("#id_referenciaperm").val()=='')
+                    {
+                        validate = false;
+                    }
+                    $("#id_numerocheq").val('');
+                    $("#id_bancochequeperm").val('');
+                    $("#id_fechacobroperm").val('');
+                    $("#id_emiteperm").val('');
+                    $("#id_referenciatransferenciaperm").val('');
+                    $("#id_cuentabancoperm").val('');
+                    nocheque = true;
+                }
+                else{
+                    if ('{{ pago_cheque_id }}' == $("#id_formadepagoperm").val()){
+
+                        if($("#id_numerocheq").val()=='' || $("#id_bancochequeperm").val()=='' || $("#id_fechacobroperm").val()==''|| $("#id_emiteperm").val()=='')
+                        {
+                            validate = false;
+                        }
+                        $("#id_tipoperm").val('');
+                        $("#id_bancotarjetaperm").val('');
+                        $("#id_referenciaperm").val('');
+                        $("#id_referenciatransferenciaperm").val('');
+                        $("#id_cuentabancoperm").val('');
+                        $("#id_poseedorperm").val('');
+                        $("#id_procesadorpagoperm").val('');
+                        nocheque = false;
+                    }
+                    else{
+                        if ('{{ pago_transferencia_id }}' == $("#id_formadepagoperm").val()){
+
+                            if($("#id_referenciatransferenciaperm").val()=='' || $("#id_cuentabancoperm").val()=='')
+                            {
+                                validate = false;
+                            }
+                            $("#id_tipoperm").val('');
+                            $("#id_bancotarjetaperm").val('');
+                            $("#id_referenciaperm").val('');
+                            $("#id_numerocheq").val('');
+                            $("#id_bancochequeperm").val('');
+                            $("#id_fechacobroperm").val('');
+                            $("#id_emiteperm").val('');
+                            $("#id_poseedorperm").val('');
+                            $("#id_procesadorpagoperm").val('');
+                            nocheque = true;
+                        }
+                        else{
+                            if ('{{ pago_deposito_id }}' == $("#id_formadepagoperm").val()){
+
+                                if($("#id_referenciatransferenciaperm").val()=='' || $("#id_cuentabancoperm").val()=='')
+                                {
+                                    validate = false;
+                                }
+                                $("#id_tipoperm").val('');
+                                $("#id_bancotarjetaperm").val('');
+                                $("#id_referenciaperm").val('');
+                                $("#id_numerocheq").val('');
+                                $("#id_bancochequeperm").val('');
+                                $("#id_fechacobroperm").val('');
+                                $("#id_emiteperm").val('');
+                                $("#id_poseedorperm").val('');
+                                $("#id_procesadorpagoperm").val('');
+                                nocheque = true;
+                            }
+                            nocheque = true;
+                        }
+                    }
+                }
+                if (validate){
+                    if (nocheque) {
+                        $("#id_fechacobroperm").val('')
+                    }
+                    $("#reciboCAB_panel .btn-buscar").hide();
+                    $("#reciboCAB_panel").modal("hide");
+
+                    $.post("/finanzas",{"action": "addrecibo_cab","id":idinscr, 'idcuota':cuota_cab_id, "tipoperm":$("#id_tipoperm").val(),"bancotarjetaperm":$("#id_bancotarjetaperm").val()
+                                        ,"referenciaperm":$("#id_referenciaperm").val(),"numerocheq":$("#id_numerocheq").val(),"bancochequeperm":$("#id_bancochequeperm").val()
+                                        ,"fechacobroperm":$("#id_fechacobroperm").val(),"emiteperm":$("#id_emiteperm").val(),"formadepagoperm":$("#id_formadepagoperm").val()
+                                        ,"referenciatransferenciaperm":$("#id_referenciatransferenciaperm").val(),"cuentabancoperm":$("#id_cuentabancoperm").val()
+                                        ,"poseedorperm":$("#id_poseedorperm").val(),"procesadorpagoperm":$("#id_procesadorpagoperm").val()},function(data) {
+                           if(data.result=='ok'){
+                               location.reload();
+                               window.open('/reportes?action=run&direct=true&n=comprobante_CAB&rt=pdf&cuota_cab='+data.id);
+                           }else{
+                               alert("Ocurrio un Error... Intentelo mas Tarde");
+                           }
+                    },"json");
+                }
+                else{
+                    $("#reciboCAB_panel .help-text").html("<h4 class='alert alert-danger'>Faltan datos por llenar</h4>");
+                }
+            });
+
+            $(".vermotivo").click(function(){
+                var obs = $(this).attr('motivo');
+                smoke.alert(obs);
+            });
+
+            id_rubro = null
+            addNC = (event, rubroId, rubroNombre, ncId) => {
+                id_rubro = rubroId
+                cargar_combo_nc(rubroId, ncId)
+                $("#addNCModal .titulo").html("RUBRO: "+rubroNombre);
+                $("#addNCModal").modal({width: '500px', backdrop: 'static'});
+                $("#addNCModal").modal("show");
+                event.preventDefault()
+            }
+
+            cargar_combo_nc = (id, ncId) => {
+                $.post("/finanzas", {"action": "obtener_nc", "id":id}, function(data) {
+                   if(data.result == 'ok'){
+                       html = '<option value="0">---</option>'
+                       data.ncList.forEach((nc) => {
+                           if (nc.id == ncId) {
+                               html += '<option value="' + nc.id + '" selected>' + nc.value + '</option>'
+                           } else {
+                               html += '<option value="' + nc.id + '">' + nc.value + '</option>'
+                           }
+                       })
+                       $('#slc_nca').html(html)
+                   }
+                },"json");
+
+                if (ncId != '0') {
+                    $('#slc_nca').prop('disabled', true)
+                    $('.addNCModalFooter').hide()
+                } else {
+                    $('#slc_nca').prop('disabled', false)
+                    $('.addNCModalFooter').show()
+                }
+            }
+
+            closeModal = (event, nombreModal) => {
+                $("#"+nombreModal).modal('hide')
+                event.preventDefault()
+            }
+
+            saveNC = (event) => {
+                if ($('#slc_nca').val() == '0') {
+                    Swal.fire('Datos incompletos', 'Seleccione una NCA', 'warning')
+                } else {
+                    $.post("/finanzas", {"action": "add_nc", "id":id_rubro, 'nc':$('#slc_nca').val()}, function(data) {
+                       if(data.result == 'ok'){
+                           Swal.fire('Realizado', 'NCA adicionada al rubro seleccionado.', 'info').then(() => {
+                               $("#addNCModal").modal("hide");
+                               location.reload()
+                           })
+                       } else {
+                           Swal.fire('Error', data.mensaje, 'error')
+                       }
+                    },"json");
+                }
+                event.preventDefault()
+            }
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    {% if error2 %}
+        <div class='row-fluid'>
+            <div class='span6'>
+                <div class="alert alert-danger">
+                    <a class="close" data-dismiss="alert">×</a>
+                    Ingrese el C&oacute;digo de la Tarjeta
+                </div>
+            </div>
+        </div>
+    {%  endif %}
+
+    <div class='row-fluid'>
+
+        <div class='span11'>
+            {% if not centroexterno %}
+                <h3>Listado de Rubros del Alumno: {{ inscripcion }}
+                    {% if inscripcion.matricula %}
+                        {% if inscripcion.matricula.nivel.nivelmalla and inscripcion.matricula.nivel.grupo %}
+                            ({{ inscripcion.matricula.nivel.nivelmalla }} - {{ inscripcion.matricula.nivel.grupo.nombre }})
+                        {% endif %}
+                    {% else %}
+                        ({{ inscripcion.grupo.nombre }})
+                    {% endif %}
+                </h3>
+                {% if inscripcion.promocion %}
+                    <h4 style="color: red">
+                         {% if perms.sga.change_promocion %}
+                            <br>Promoci&oacute;n: <a style="cursor: pointer; color: red" promo="{{ inscripcion.promocion }}" iid="{{ inscripcion.id }}" class='btn edit_promocion'>{{ inscripcion.promocion }}%</a>
+                         {% else %}
+                            Promoci&oacute;n {{ inscripcion.promocion }}
+                         {% endif %}
+                         {% if inscripcion.promocion.val_inscripcion %} <br>
+                             Inscripci&oacute;n: {{  inscripcion.promocion.val_inscripcion  }}%{% endif %}
+                         {% if perms.sga.change_promocion %}
+                            <br>Cuotas: <a style="cursor: pointer; color: red" promo="{{ inscripcion.promocion.descripcion }}" iid="{{ inscripcion.id }}" class='btn edit_desc'>{{ inscripcion.descuentoporcent }}%</a>
+                         {% else %}
+                            <br>Cuotas: {{ inscripcion.descuentoporcent }}%
+                         {% endif %}
+                        {% if inscripcion.promocion.todos_niveles %}<br>Todos los Niveles{% endif %}</h4>
+                {% endif %}
+
+                {% if inscripcion.becamunicipio %}
+                    <h4 style="color: red">Estudiante con Beca Municipio </h4>
+                {% endif %}
+                {% if inscripcion.tiene_cupon %}
+                    <h4 style="color: red">Cup&oacute;n de Descuento: {{ inscripcion.tiene_cupon.descripcion }}
+                {% endif %}
+                {% if inscripcion.descuentoconvenio %}
+                    <h4 style="color: red">{{ inscripcion.descuentoconvenio }}
+                {% endif %}
+            {% else %}
+                <h3>Listado de Rubros del Alumno: {{ inscripcion }} </h3>
+            {% endif %}
+            {% if inscripcion.matricula.becado %}
+                <span class="badge badge-success larger">
+                    {% if inscripcion.matricula.tipobeneficio.id == tipo_ayuda_financiera %}
+                         ESTUDIANTE CON AYUDA FINANCIERA
+                    {% else %}
+                        ESTUDIANTE CON BECA
+                    {% endif %}
+                    [Porciento: {{ inscripcion.matricula.porcientobeca }}%]
+                </span>
+            {% endif %}
+{#            {% if inscripcion.beca_senescyt.tienebeca %}#}
+            {% if inscripcion.matricula.tipobeneficio.id == tipo_beca_senescyt %}
+                <span class="badge badge-success larger">ASIGNADA POR EL SENESCYT </span>
+            {% endif %}
+            {% if inscripcion.tiene_nota_credito_inst %}
+                <span class="badge badge-info larger">
+                    Este estudiante tiene {{ inscripcion.cantidad_notas_credito_inst }} Nota de Cr&eacute;dito a favor
+                </span>
+            {% endif %}
+        </div>
+        <div class='atright'>
+            {% if ret %}
+                <a href="/inscripciones?s={{ inscripcion.persona.cedula }}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            {% else %}
+                <a href="{% if nivel %}/matriculas?action=matricula&id={{ nivel }}{% else %}/finanzas{% endif %}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            {% endif %}
+        </div>
+    </div>
+    <br/>
+
+    <div class='row-fluid'>
+        <div class="span7">
+        {% if solicitud %}
+            <h3 style="color: red">Fecha de Dep&oacute;sito/Transferencia {{  solicitud.datosaprobacion.fechadeposito|date:'d-m-Y' }}</h3>
+        {% endif %}
+
+        {% if pagowestercaja %}
+            <h3 style="color: red">Fecha de Pago Western {{  pagowestercaja.fechapago|date:'d-m-Y' }} <a style="font-size: 20px"  href="/finanzas?action=rubros&id={{ inscripcion.id }}"> Limpiar</a> </h3>
+        {% endif %}
+            {% if perms.sga.change_rubro %}
+                {% if not inscripcion.suspension %}
+                    {% if not centroexterno %}
+                    <a href="#" iid="{{ inscripcion.id }}" class="btn btn-success btn-matricula"><i class="icon-plus icon-white"></i> Cobrar Matricula</a>
+                    <a href="#" iid="{{ inscripcion.id }}" class="btn btn-success btn-materias"><i class="icon-plus icon-white"></i> Cobrar Materia</a>
+                    {% endif %}
+                    <a href="#" iid="{{ inscripcion.id }}" class="btn btn-success btn-otros"><i class="icon-plus icon-white"></i> Otro Rubro</a>
+                {% else %}
+                    <a class="btn btn-danger"> ALUMNO SUSPENDIDO </a>
+                {% endif %}
+                <a href="#" iid="{{ inscripcion.id }}" class="btn btn-success btn-generar_wester"><i class="icon-plus icon-white"></i> Generar Western</a>
+            {% endif %}
+             {% if  detdescuento %}
+               <h3 style="color: blue"> Este estudiante tiene un descuento gestionado</h3>
+            {% endif %}
+        </div>
+        <div class="span5 atright">
+            {% if DEFAULT_PASSWORD == 'ib' %}
+                <b>Cobrar Tricologia</b> <input style="width: 2%;height: 2em" class="form-check-input" name="inlineRadioOptions" type="checkbox" id='checktrico'/><br/><br/>
+            {% endif %}
+            <b id="labeleti">Buscar Estudiantes</b><!-- <div id='searchbox'></div> -->
+            <input type="text" id="searchinputtrico" style='display: none' class="input-xxlarge" placeholder="Ingrese número de documento o Nombres" data-provide="typeahead"/>
+            <input type="text" id="searchinput" class="input-xxlarge" data-provide="typeahead"/>
+        </div>
+        {% if CONSUMIDOR_FINAL %}
+            {% if not INSCRIPCION_CONDUCCION %}
+
+            <div class='span5'>
+                <form class="form-search">
+                <input class='searchinput input-large search-query' type='text' id='buscar2' value='{{ desc }}' placeholder='Cedula'/>
+                <a href="#" id='buscar' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if desc %}
+                    <a href="/finanzas?action=rubros&id={{ inscripcion.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+                </form>
+            </div>
+            {% endif %}
+        {% endif %}
+        {% if plagio %}
+            <h2 ><b><a style="color: #0000ff;font-weight: bold"> Estudiante est&aacute; marcado con Fraude de Tarjetas</a></b><br>
+                 <b><a style="color: #0000ff;font-weight: bold"> El pago no podr&aacute; ser por medio de tarjeta</a></b>
+            </h2>
+            <br><br>
+        {% endif %}
+    </div>
+
+    {%  if tiene_deuda_externa %}
+        <div class="alert alert-error">
+            <span class="bigger">ESTE ESTUDIANTE TIENE DEUDA EN INGLES</span>
+        </div>
+    {% endif %}
+    <br/>
+
+     {# OCU 01-dic-2016 alerta de permiso vehicular#}
+    {%  if inscripcion.tiene_permisovehicular %}
+        <div class="alert alert-error">
+            <span style="font-size: 20px;color:orangered; font-weight: bold  ">ESTUDIANTE YA CANCELO PERMISO VEHICULAR {{inscripcion.tiene_permisovehicular.fecha|date:'d-m-Y'  }}  </span>
+        </div>
+    {% endif %}
+    <br/>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>[x]</th>
+                    <th>Nombre</th>
+                    {% if pagowester  %}
+                        <th>Cuenta</th>
+                    {% endif %}
+                    <th>Tipo</th>
+                    <th>Nivel</th>
+                    <th>Fecha</th>
+                    <th>Vence</th>
+                    <th>Valor</th>
+                    <th>Dcto.</th>
+                    <th>Abono</th>
+                    <th>Saldo</th>
+                    <th>Cancelado</th>
+                    <th>Pagos</th>
+
+                    <th> </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for rubro in rubros %}
+                    <tr>
+                        <td width='20px'>
+                            {% if not rubro.cancelado and perms.sga.change_pago %}
+                                {% if not inscripcion.existe_rubro_plagio %}
+                                    {% if not inscripcion.suspension %}
+                                        {% if tiene_nota_debito %}
+                                            {% if rubro.es_notadebito %}
+                                                <input type="checkbox" class="selectorrubro" tipo="{{ rubro.tipo }}" num="{{ forloop.counter }}" id="check{{ forloop.counter }}" rid="{{ rubro.id }}" deuda='{{ rubro.adeudado }}'/>
+                                            {% endif %}
+                                        {% else %}
+                                            <input type="checkbox" class="selectorrubro" tipo="{{ rubro.tipo }}" num="{{ forloop.counter }}" id="check{{ forloop.counter }}" rid="{{ rubro.id }}" deuda='{{ rubro.adeudado }}'/>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    {% if rubro.fraude_pendiente and perms.sga.change_pago %}
+                                        <input type="checkbox" class="selectorrubro" tipo="{{ rubro.tipo }}" num="{{ forloop.counter }}" id="check{{ forloop.counter }}" rid="{{ rubro.id }}" deuda='{{ rubro.adeudado }}'/>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if perms.sga.add_factura %}
+                            {% if rubro.generado_desde_NCA_sin_nc %}
+                                <a href="#" onclick="addNC(event, '{{ rubro.id }}', '{{ rubro.nombre }}', {% if rubro.nc %}{{ rubro.nc }}{% else %}0{% endif %})" class=""><span class="badge badge-info" style="font-size: 10px">NC</span></a>
+                            {% endif %}
+                            {% endif %}
+                            <a {% if not inscripcion.suspension %}href='/finanzas?action=pagos&id={{ rubro.id }}' {% endif %}>{{ rubro.nombre }}{% if rubro.tiene_descuento %}<br/><span class="label label-info">Descuento ${{ rubro.tiene_descuento }} </span>{% endif %}
+{#                               {% if rubro.tienelog %}<br/><span class="label label-info" style="font-size:12pt">{{ rubro.tienelog.motivo }} /usuario: {{ rubro.tienelog.usuario  }} </span>{% endif %}#}
+                               {% if rubro.tienelog %}<br/>
+                                    <span class="label label-info t1" title="Rubro Modificado ">
+                                        Usuario: {{ rubro.tienelog.usuario  }}
+                                    </span>
+                                    <a class="vermotivo"  motivo="{{ rubro.tienelog.motivo }}"style="color: green;"> Ver Motivo</a>
+                               {% endif %}
+                            </a>
+                            {% if rubro.seguimiento %} <br><span class="label label-warning">Gestionado por: {{ rubro.seguimiento.seguimiento.usuario }} </span>{% endif %}
+                            {% if rubro.tienesolicitud %}<span class="label label-success tl" title="Tiene Solicitud">TS</span>{% endif %}
+                            {% if rubro.pago_nota_credito_inst %}
+                                {% for pnc in rubro.pagos_nc %}
+                                    <br/><span class="label label-info">Pago con NC #{{ pnc.notacredito.numero }} - valor: ${{ pnc.valor|floatformat:2|intcomma }} ({{ pnc.fecha|date:'d-m-Y' }})</span>
+                                {% endfor %}
+                            {% endif %}
+                            {% if rubro.donacion_aplicada %}
+                                {% for donacion in rubro.donaciones %}
+                                <br/><span class="label label-info">Donaci&oacute;n #{{ donacion.donacion.id }} - valor: ${{ donacion.valor|floatformat:2|intcomma }} ({{ donacion.fecha|date:'d-m-Y' }})</span>
+                                {% endfor %}
+                            {% endif %}
+                            {% if rubro.tiene_dctodobe %}
+                                <br/><span class="label label-success">Dcto. DOBE:  {{ rubro.tiene_dctodobe.usuario }} </span>
+                            {% endif %}
+                        </td>
+                        {% if pagowester  %}
+                            <td>{{ rubro.id }}</td>
+                         {% endif  %}
+                        <td>{{ rubro.tipo }}</td>
+                        <td>{% if rubro.nivel %}{{ rubro.nivel }}{% endif %}</td>
+                        <td>{{ rubro.fecha|date:"d-m-Y"  }}</td>
+                        <td>
+{#                            {% if not rubro.cancelado %}#}
+{#                                {% if perms.sga.add_rubro %}#}
+{#                                    <a href="#" {% if not inscripcion.suspension %} class='updatefecha' {% endif %} rid='{{ rubro.id }}'>{{ rubro.fechavence|date:"d-m-Y" }}</a>#}
+{#                                {% else %}#}
+                            {{ rubro.fechavence|date:"d-m-Y" }}
+{#                                {% endif %}#}
+                         {% if rubro|args:fechasol|call:"vencido_fecha" %}
+                                 <br/><span class="label label-important">VENCIDO ({{ rubro|args:fechasol|call:"dias_vencidos_fecha"}} dias)</span>
+                        {% endif %}
+
+                        </td>
+                        <td>${{ rubro.valor|floatformat:2 }}</td>
+                        <td>{% if rubro.tiene_dctodobe.descuento %} ${{ rubro.tiene_dctodobe.descuento|floatformat:2 }}{% else %}$0.00 {% endif %}</td>
+                        <td> ${{ rubro.verifica_total_pagado|floatformat:2 }}</td>
+                        <td><b>${{ rubro.verifica_adeudado|floatformat:2 }}</b></td>
+                        <td>
+                            {% if rubro.cancelado %}
+                            <span class="label label-success">Si</span>
+                            {% else %}
+                            <span class='label label-important'>No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a {% if not inscripcion.suspension %} href="/finanzas?action=pagos&id={{ rubro.id }}" {% endif %} class="btn btn-mini btn-info">{{ rubro.pago_set.all.count }} Pagos</a>
+                        </td>
+                        <td>
+                            {% if not inscripcion.suspension and rubro.editable %}
+                                {% if not rubro.cancelado and not rubro.es_especie %}
+                                    <div class="btn-group">
+                                        <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                            Acciones
+                                            <span class="caret"></span>
+                                        </a>
+                                        <ul class="dropdown-menu pull-right">
+                                                <!-- Editar y Eliminar en caso q tenga el permiso de Cambiar Rubro y q no tenga pagos -->
+                                            {% if 'CONGRESO' in rubro.inscripcion.carrera.nombre and perms.sga.delete_kitcongreso and rubro.puede_eliminarse%}
+
+                                                <li><a href="/finanzas?action=editrubro&id={{ rubro.id }}"><i class="icon-edit icon-white"></i> Editar</a></li>
+                                            {% endif %}
+
+                                            {% if rubro.tiene_descuento and not rubro.cancelado and perms.sga.change_detalledescuento %}
+                                               <li><a href="/finanzas?action=deletedescuento&id={{ rubro.id }}" ><i class="icon-remove icon-white"></i> Eliminar Descuento</a></li>
+
+                                            {% endif %}
+
+                                            {% if rubro.puede_eliminarse and perms.sga.change_rubro and not rubro.seguimiento %}
+                                                {% if  not rubro.tiene_diferido_rubro or  usuario.is_superuser %}
+                                                    <li><a href="/finanzas?action=editrubro&id={{ rubro.id }}"><i class="icon-edit icon-white"></i> Editar</a></li>
+                                                {% endif %}
+                                                {#OCastillo 13-05-2022 si hay especie de modalidad o complexivo pagada no se puede eliminar el rubro de 50 #}
+                                                {% if not rubro.rubrosderecho %}
+                                                    <li><a href="/finanzas?action=delrubro&id={{ rubro.id }}"><i class="icon-remove icon-white"></i> Eliminar</a></li>
+                                                {% endif %}
+                                            {% else %}
+                                                <!-- Eliminar la Especie Valorada en caso q tenga el permiso de Cambiar Pago y q no tenga pagos -->
+                                                {% if rubro.puede_eliminarse and rubro.es_especie and perms.sga.change_pago %}
+                                                    <li><a href="/finanzas?action=delrubro&id={{ rubro.id }}"><i class="icon-remove icon-white"></i> Eliminar</a></li>
+                                                {% endif %}
+                                            {% endif %}
+                                            {% if not rubro.cancelado and perms.sga.change_rubrootro %}
+{#                                                {% if  not rubro.tiene_diferido_rubro or  usuario.is_superuser %}#}
+                                                    <li><a href="/finanzas?action=editfecha&id={{ rubro.id }}"><i class="icon-edit icon-white"></i> Cambiar Fecha</a></li>
+{#                                                {% endif %}#}
+                                            {% endif %}
+                                            <!-- Recargar cuando la Cuota este vencida (para los cajeros) -->
+                                            {% if rubro.vencido and perms.sga.change_rubro  and not rubro.seguimiento %}
+                                                <li><a href="/finanzas?action=recargo&id={{ rubro.id }}"><i class="icon-money icon-white"></i> Recargo</a></li>
+                                            {% endif %}
+                                            {% if rubro.adeudado and perms.sga.change_rubro and not rubro.puede_eliminarse and not rubro.seguimiento %}
+                                                <li><a href="/finanzas?action=liquida&id={{ rubro.id }}"><i class="icon-money icon-white"></i> Liquidar</a></li>
+                                            {% endif %}
+                                            {# OCastillo 28-feb-2023 accion para jefe DOBE  #}
+                                            {% if rubro.adeudado and perms.sga.add_descuentodobe and rubro.puede_eliminarse and not rubro.tiene_descuento and not rubro.tiene_dctodobe %}
+                                                <li><a style="cursor: pointer" motivo="{{ rubro.nombre }}" valor="{{ rubro.valor }}" rid="{{ rubro.id }}"  class="descuentodobe"><i class="icon-money"></i> Aplica Descuento</a></li>
+                                            {% endif %}
+
+                                        </ul>
+
+                                    </div>
+                                {% else %}
+                                    {% if rubro.verifica_adeudado < 0 and  perms.sga.change_rubro  %}
+                                        <div class="btn-group">
+                                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                                Acciones
+                                                <span class="caret"></span>
+                                            </a>
+                                            <ul class="dropdown-menu pull-right">
+                                                <li><a style="cursor: pointer" motivo="{{ rubro.nombre }}" rid="{{ rubro.id }}" class="cambiovalorrubro"><i class="icon-money"></i> Cambio Valor</a></li>
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                                <!-- Boton Imprimir Especie Valorada en caso q haya sido cancelada -->
+                                {% if rubro.es_especie %}
+                                    {% if not rubro.puede_eliminarse %}
+                                        {% if rubro.fechavence == hoy and perms.sga.change_pago %}
+                                            <a href="/reportes?action=run&direct=true&rid={{ rubro.reporte_especie }}&rt=pdf&rubro={{ rubro.id }}"  class="btn btn-primary btn-mini"><i class="icon-print"></i> Print</a>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if  perms.sga.change_pago  or perms.sga.delete_rubroespecievalorada  %}
+                                            {% if not rubro.tienesolicitud %}
+                                                <a href="/finanzas?action=delrubro&id={{ rubro.id }}" class="btn btn-danger btn-mini"><i class="icon-remove icon-white"></i> Eliminar</a>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                                {% if rubro.es_notadebito and not rubro.puede_eliminarse %}
+                                    <a href="/reportes?action=run&direct=true&n=nota_debito&rt=pdf&notadebito={{ rubro.notadebito.id }}" class="btn btn-primary btn-mini"><i class="icon-print"></i> Print</a>
+                                {% endif %}
+                            {% endif %}
+                         </td>
+                    </tr>
+
+                {% endfor %}
+
+                {% if not rubros %}
+                    <tr>
+                        <td colspan="12">NO EXISTEN RUBROS</td>
+                    </tr>
+                {% endif %}
+                </tbody>
+                <tfoot>
+
+                    <tr>
+                        <td colspan="6">
+                            {% if puede_pagar %}
+                                {% if FACTURACION_ELECTRONICA %}
+                                    {% if lugarrecaudacion != '' and lugarrecaudacion|args:client_address|call:"iprecaudexist" or not VALIDA_IP_CAJA %}
+                                        <button href="#" id="ingresarpago" class="btn btn-warning btn-huge"><i class="icon-plus icon-white"></i> INGRESAR PAGO</button>
+                                        <span id='porpagar' class="label label-inverse bigger">$0.00</span>
+                                    {% else %}
+                                        <a class="alert alert-danger">NO SE PERMITE INGRESAR PAGO DESDE ESTE EQUIPO.</a>
+                                    {% endif %}
+                                {% else %}
+                                    <button href="#" id="ingresarpago" class="btn btn-warning btn-huge"><i class="icon-plus icon-white"></i> INGRESAR PAGO</button>
+                                    <span id='porpagar' class="label label-inverse bigger">$0.00</span>
+                                {% endif %}
+                                 {%  if detdescuento %}
+                                     <a href="/finanzas?action=aplicardescuento&id={{ detdescuento.id }}" class="btn btn-info btn-huge"><i class="icon-plus icon-white"></i> INGRESAR PAGO DESCUENTO</a>
+                                    <span id='porpagar' class="label label-inverse bigger"> {{ detdescuento.valorpago }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>${{ inscripcion.total_rubros|floatformat:2 }}</td>
+                        <td>${{ verifica_total_pagado|floatformat:2 }}</td>
+                        <td><b>${{ verifica_adeudado|floatformat:2 }}</b></td>
+                        <td colspan="3"> </td>
+
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span8">
+            <table class="table table-condensed table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th colspan="6">RECIBOS DE CAJA A FAVOR DEL ESTUDIANTE</th>
+                    </tr>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Numero</th>
+                        <th>Valor Inicial</th>
+                        <th>Saldo</th>
+                        <th>Motivo</th>
+                        <th style="width: 8%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rc in reciboscaja %}
+                        <tr {% if not rc.saldo %}class='error'{% endif %}>
+                            <td>{{ rc.fecha|date:'d-m-Y' }}</td>
+                            <td>{{ rc.id }}<br>{% if not rc.activo %}<span class='label label-important'>Anulado</span>{% endif %}</td>
+                            <td>${{ rc.valorinicial|floatformat:2 }}</td>
+                            <td><b>${{ rc.saldo|floatformat:2 }}</b></td>
+                            <td>{{ rc.motivo }}</td>
+
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if rc.saldo and rc.activo %}
+                                            <li><a href="/reportes?action=run&direct=true&n=recibo_caja&recibocaja={{ rc.id }}&rt=pdf"><i class="icon-print"></i> Imprimir</a></li>
+                                        {% endif %}
+                                        {% if perms.sga.delete_recibocajainstitucion %}
+                                            {% if rc.activo %}
+                                                {% if rc.valorinicial == rc.saldo %}
+                                                    <li><a style="cursor: pointer" motivo="{{ rc.motivo }}" rid="{{ rc.id }}" class="eliminarrecibocaja"><i class="icon-remove"></i> Anular</a></li>
+                                               {% endif %}
+                                                {% if not rc.motivocambio %}
+                                                    <li><a style="cursor: pointer" motivo="{{ rc.motivo }}" rid="{{ rc.id }}" class="cambiovalorrecibocaja"><i class="icon-money"></i> Cambio Valor</a></li>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+
+{#                            <td style="text-align: center">#}
+{#                                {% if rc.saldo %}#}
+{#                                <a href="/reportes?action=run&direct=true&n=recibo_caja&recibocaja={{ rc.id }}&rt=pdf" class="btn btn-mini btn-info"><i class="icon-print"></i> Imprimir</a>#}
+{#                                {% endif %}#}
+{#                            </td>#}
+                        </tr>
+                    {% endfor %}
+                    {% if not reciboscaja %}
+                        <tr>
+                            <td colspan="6">NO EXISTEN RECIBOS DE CAJA</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+                <tfoot>
+
+                    <tr>
+                        <td colspan="6">
+                            {% if perms.sga.change_pago and puede_pagar %}
+                                <a href="/finanzas?action=addrecibocaja&id={{ inscripcion.id }}" class="btn btn-mini btn-primary"><i class="icon-plus"></i> Adicionar Recibo Caja Institucional</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        <br/>
+        </div>
+        {% if perms.sga.add_rubroespecievalorada and inscripcion.graduado or  perms.sga.add_rubroespecievalorada  and  inscripcion.persona.usuario.is_active %}
+        <div class='span4'>
+            <form action="/finanzas" method="POST">
+                <input type="hidden" name="action" value="addespecie"/>
+                <input type="hidden" name="inscripcion" value="{{ inscripcion.id }}"/>
+                <input type="hidden" name="materiaasignregid" value="0"/>
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th colspan="2">ESPECIES VALORADAS</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>Especie</td>
+                    <td><select name='especie' id="selectespecieid">
+                        <option value="0">-----</option>
+                        {% for especie in especies %}
+                            <option value="{{ especie.id }}">{{ especie }}</option>
+                        {% endfor %}
+                    </select></td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <button type="submit" id="formbuttonespecieval" class="btn btn-success">Adicionar Tr&aacute;mite</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+
+            </form>
+
+        </div>
+        {% endif %}
+
+
+
+    </div>
+
+    <div class="row-fluid">
+        <div class="span8">
+            <table class="table table-condensed table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th colspan="6">NOTAS DE CREDITO A FAVOR DEL ESTUDIANTE</th>
+                    </tr>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Numero</th>
+                        <th>Valor</th>
+                        <th>Saldo</th>
+                        <th>Motivo</th>
+                        <th>Proviene</th>
+                        <th style="width: 8%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for nc in notascredito %}
+                        <tr>
+                            <td>{{ nc.fecha|date:'d-m-Y' }}</td>
+                            <td>{{ nc.numero }}</td>
+                            <td>${{ nc.valor|floatformat:2 }}</td>
+                            <td>${{ nc.saldo|floatformat:2 }}</td>
+                            <td>{{ nc.motivo }}</td>
+                            <td>{{ nc.inscripcion.persona }}</td>
+                            <td style="text-align: center">
+                                <a href="/reportes?action=run&direct=true&n=nc_sri_comprobante&nc={{ nc.id }}&rt=pdf" class="btn btn-mini btn-info"><i class="icon-print"></i> Imprimir</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not notascredito %}
+                        <tr>
+                            <td colspan="6">NO EXISTEN NOTAS DE CREDITO</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+
+            </table>
+            <br/>
+        </div>
+     {% if perms.sga.change_pago and puede_pagar %}
+        <div class='span4'>
+            <form action="/finanzas" method="POST">
+                <input type="hidden" name="action" value="rubroadd"/>
+                <input type="hidden" name="inscripcion" value="{{ inscripcion.id }}"/>
+                <table class="table table-bordered">
+                    <thead>
+                    <tr>
+                        <th colspan="2">TRANSPORTE</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>Rubro Adicional</td>
+                        <td><select name='rubroad'>
+                            <option value="0">-----</option>
+                            {% for r in rubrosadiconales %}
+                                <option value="{{ r.id }}">{{ r }}</option>
+                            {% endfor %}
+                        </select></td>
+                    </tr>
+                    <tr>
+                       <td>
+                           C&oacute;digo:
+                       </td>
+                        <td> <input class='searchinput input-large search-query' type='text' id='searchfield' name='codigo'/></td>
+
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <button type="submit" class="btn btn-success">Adicionar Rubro</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </form>
+
+        </div>
+        {% endif %}
+
+    </div>
+    <div class="row-fluid">
+        <div class="span8">
+            <table class="table table-condensed table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th colspan="5">ARCHIVOS SUBIDOS POR EL ESTUDIANTE</th>
+                    </tr>
+                    <tr>
+                        <th>C&oacute;digo</th>
+                        <th>Archivo</th>
+                        <th>Fecha Pago</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pw in pagowester %}
+                        <tr>
+                            <td>{{ pw.codigo }}</td>
+                            <td><a href="{% if pw.archivo %}{{ pw.archivo.url }} {% endif %}">Ver</a> </td>
+                            <td>{% if pw.fechapago %}{{ pw.fechapago|date:'d-m-Y' }} {% endif %} </td>
+                            <td><a href="#" class="autorizar" pwid="{{ pw.id }}" codigo="{{ pw.codigo }}" >Ingresar Fecha</a> </td>
+                            {% if pw.fechapago %}
+                                <td><a href="/finanzas?action=rubros&id={{ inscripcion.id }}&pagowestercaja={{ pw.id  }}" >Cargar Pago</a> </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                    {% if not pagowester %}
+                        <tr>
+                            <td colspan="3">NO EXISTEN ARCHIVOS SUBIDOS</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+
+            </table>
+            <br/>
+        </div>
+        {% if  otrosrubros %}
+        <div class="span4">
+            <table class="table table-condensed table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th colspan="6">RUBROS DE INGLES</th>
+                    </tr>
+                    <tr>
+                        <th>Rubro</th>
+                        <th>Fecha Vence</th>
+                        <th>Saldo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for otr in otrosrubros %}
+                        <tr>
+                        <td>{{ otr.0 }}</td>
+                        <td>{{ otr.1 }}</td>
+                        <td>{{ otr.2 }}</td>
+                        </tr>
+                    {% endfor %}
+
+                </tbody>
+            </table>
+             <br/>
+        </div>
+    {% endif %}
+    </div>
+    <div class="row-fluid">
+        <div class="span8">
+            <table class="table table-condensed table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th colspan="5">REGISTROS PENDIENTES DE FACTURAR</th>
+                    </tr>
+                    <tr>
+                        <th>C&oacute;digo</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rw in registrowester %}
+                        <tr>
+                            <td>{{ rw.codigo }}</td>
+
+                            <td><a href="/finanzas?action=facturawester&codigo={{ rw.codigo }}" class="btn btn-mini btn-info"><i class="icon-money"></i> Facturar</a></td>
+                        </tr>
+                    {% endfor %}
+                    {% if not registrowester %}
+                        <tr>
+                            <td colspan="5">NO EXISTEN ARCHIVOS SUBIDOS</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+
+            </table>
+            <br/>
+        </div>
+
+    </div>
+    {% if pagoped %}
+        <div class="row-fluid">
+            <div class="span8">
+                <table class="table table-condensed table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th colspan="3">ARCHIVOS SUBIDOS EN PEDAGOGIA </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                            <tr>
+                                <td>{{ pagoped.grupo.nombre }}</td>
+                                <td><a href="#" id="verpedagogia" class="btn btn-warning"><i class="icon-search icon-white"></i> Ver</a></td>
+                                {% if puede_pagar %}
+                                    <td><a href="/finanzas?action=facturaped&id={{ pagoped.id }}" class="btn btn-mini btn-info"><i class="icon-money"></i> Facturar</a></td>
+                                {% endif %}
+                            </tr>
+                    </tbody>
+
+                </table>
+                <br/>
+            </div>
+
+        </div>
+    {% endif %}
+
+    <div class="row-fluid">
+        <div class="span8">
+            <table class="table table-condensed table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th colspan="9">CUOTAS CAJA DE AHORRO BOLIVARIANA (CAB)</th>
+                    </tr>
+                    <tr>
+                        <th>Cuota</th>
+                        <th>Nivel</th>
+                        <th style="text-align: center">Vence</th>
+                        <th style="text-align: center">Valor</th>
+                        <th style="text-align: center">Cancelado</th>
+                        <th style="text-align: center">Fecha Pago</th>
+                        <th style="text-align: center">Valor Beneficio</th>
+                        <th style="text-align: center">Fecha Beneficio</th>
+                        <th style="text-align: center; width: 50px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in cuotas_cab %}
+                        <tr>
+                            <td>{{ c.descripcion }}</td>
+                            <td>{{ c.nivel.nivelmalla }}</td>
+                            <td style="text-align: center">{{ c.fechavence|date:'d-m-Y' }}</td>
+                            <td style="text-align: right">${{ c.valor }}</td>
+                            <td style="text-align: center">
+                                {% if c.cancelado %}
+                                    <span class="label label-success">Si</span>
+                                {% else %}
+                                    <span class='label label-important'>No</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">{% if c.fechapago %}{{ c.fechapago|date:'d-m-Y' }}{% endif %}</td>
+                            <td style="text-align: center">{% if c.valor_benef %}${{ c.valor_benef }}{% endif %}</td>
+                            <td style="text-align: center">{% if c.fecha_benef %}{{ c.fecha_benef|date:'d-m-Y' }}{% endif %}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if c.cancelado  %}
+                                            <li><a href="/reportes?action=run&direct=true&n=comprobante_CAB&rt=pdf&cuota_cab={{ c.id }}" target="_blank"><i class="icon-print"></i>Reimprimir Comprobante</a></li>
+                                        {% endif %}
+                                        {% if not c.cancelado and caja and sesion %}
+                                            <li><a href="#" onclick="cobrar_cab('{{ c.id }}','{{ c.inscripcioncab.inscripcion.persona }}','{{ c.descripcion }}','{{ c.valor }}','{{ c.inscripcioncab.inscripcion.id }}')"><i class="icon-money"></i> Cobrar</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not cuotas_cab %}
+                        <tr>
+                            <td colspan="5">NO EXISTEN CUOTAS POR CANCELAR PARA LA CAJA DE AHORRO</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+
+            </table>
+            <br/>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="rubrospanel" style="display: none;">
+        <div class="modal-header">
+            <!-- <a class="close" data-dismiss="modal">×</a> -->
+            <h3 id="paneltitle">Titulo</h3>
+        </div>
+        <div class="modal-body">
+            <p id="panelbody">One fine body…</p>
+            <div id="panelalert">
+
+            </div>
+            <table id="panelcanvas" class="table table-bordered table-striped table-condensed">
+
+            </table>
+            <div id="panelalert">
+
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="modalpedagogia" style="display: none;">
+    <div class="modal-header">
+        <h3 class="paneltitle">Registro de Pagos</h3>
+    </div>
+    <div class="modal-body panelbody">
+        <div class="row-fluid cuerpo">
+
+         </div>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn btn-cerrar salir">Salir</a>
+    </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+        <div class="modal-header" style="background-color: red">
+                <h3 class="paneltitle" style="text-align: center">ESPERE UNOS SEGUNDOS</h3>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="solicitudespecieregpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">SOLICITUD DE ASENTAMIENTO DE NOTAS</h3>
+        </div>
+        <div class="modal-body">
+            <b>Seleccionar Materia</b>
+            <select id='materiaasignadanotaespec' style="width: 98%;" />
+                <option value='0'>-----</option>
+                {% for a in materias %}
+                    <option value="{{ a.id }}" >{{ a.materia.asignatura }}</option>
+                {% endfor %}
+            </select>
+            <p class="help-text" id="mensajematasi"></p>
+        </div>
+        <div class="modal-footer">
+            <a id="generaespecienot" style="cursor: pointer" class="btn btn-success"><i class="icon-share-alt"></i> Adicionar Especie </a>
+            <a style="cursor: pointer" class="btn btn-danger btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="edit_descuento">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/finanzas" method="POST"  >
+                <input type='hidden' name='action' value='edit_descuento' />
+                <input type='hidden' name='id' id='idinscripcion' />
+                <label for="desc">Porcentaje de Descuento:</label>
+                <input type="text" name="descuento" id="desc"><br><br><br>
+
+                <button type="submit" class="btn btn-success" id="formbutton_jornada">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="edit_promocion" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Editar Promocion </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="forobs" class='form-horizontal' action="" method="POST">
+                {% for field in cambiopromocionform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <a  class="btn btn-success" id="formbutton_promoci">Guardar</a>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="motivoanulacionpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Motivo Anulacion Recibo </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="forobs" class='form-horizontal' action="" method="POST">
+                {% for field in motivoanulacionform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-success btn-grabar "> Aceptar</a>
+            <a href="#" class="btn btn-danger btn-salir"> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="autorizarwesterpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Fecha Pago Western </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="forobs" class='form-horizontal' action="" method="POST">
+                {% for field in autorizarwesterform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-success btn-grabarwester"> Aceptar</a>
+            <a href="#" class="btn btn-danger btn-salirwester"> Cerrar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="eliminardescuento">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/finanzas" method="GET"  >
+                <input type='hidden' name='action' value='eliminardescuento' />
+                <input type='hidden' name='eliminardescuento' id='eliminardescuento' value="0"/>
+                <input type='hidden' name='iddescuento' id='iddescuento'/>
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="cambiosvaloresrecibospanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Cambio en Valores de Recibo </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="forobs" class='form-horizontal' action="" method="POST">
+                {% for field in cambiovaloresrecibos %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-success btn-grabar "> Aceptar</a>
+            <a href="#" class="btn btn-danger btn-salir"> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="cambiosvaloresrubrospanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Cambio en Valores de Rubros </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="forobs" class='form-horizontal' action="" method="POST">
+                {% for field in cambiovaloresrubros %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-success btn-grabar "> Aceptar</a>
+            <a href="#" class="btn btn-danger btn-salir"> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="reciboCAB_panel">
+        <div class="modal-header">
+            <h4 id='paneltitle1'></h4>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario" class='well form-horizontal' action="/finanzas" method="POST">
+                <input type="hidden" name="action" value="addpago"/>
+                <input type='hidden' name='rubroid' id="rubroid" value=""/>
+                {% for field in form1 %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+{#                            <p class="help-text">{{ field.help_text }} </p>#}
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <p class="help-text"></p>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-buscar btn-success">Pagar</button>
+            <button class="btn btn-cerrar btn-warning">Salir</button>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="descuentoDOBEpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Descuento en Rubro
+            </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <div class="row-fluid">
+                <form id="forobs" class='form-horizontal' action="" method="POST">
+                    {% for field in formdobe %}
+                        <fieldset class="control-group nomargins">
+                            <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                            <div class="controls">
+                                {{ field }}
+                                <p class="help-text">{{ field.help_text }} </p>
+                            </div>
+                        </fieldset>
+                    {% endfor %}
+                </form>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-success btn-grabar "> Aceptar</a>
+            <a href="#" class="btn btn-danger btn-salir"> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="addNCModal" style="display: none; position: relative">
+        <a href="#" onclick="closeModal(event, 'addNCModal')" style="position: absolute; right: 1em; top:.5em;">X</a>
+        <div class="modal-header">
+            <h4 class="titulo mr-5">Descuento en Rubro</h4>
+        </div>
+        <div class="modal-body panelbody">
+            <div class="row-fluid">
+                <form>
+                    <label for="slc_nca">Notas de Crédito por Anulación</label>
+                    <select id="slc_nca"></select>
+                </form>
+            </div>
+        </div>
+        <div class="modal-footer addNCModalFooter">
+            <a href="#" class="btn btn-success" onclick="saveNC(event)"> Aceptar</a>
+        </div>
+    </div>
+
+
+{% endblock %}

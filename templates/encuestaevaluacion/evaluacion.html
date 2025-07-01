@@ -1,0 +1,321 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+
+<script type="text/javascript" >
+
+$(function() {
+
+    $('.agregareje').click(function(){
+        $.get("/evaluaciondocenteman", {'action':'verrejes'}, function(data) {
+
+                    $("#ejesver .modal-body").html(data);
+                    $("#ejesver").modal({"backdrop":"static","width":'70%'});
+                    $('#ejesver').show();
+                }, "html");
+
+                return false;
+      });
+    $('.agregarrespuesta').click(function(){
+        $.get("/evaluaciondocenteman", {'action':'verrespuestas'}, function(data) {
+
+                    $("#ventformacion .modal-body").html(data);
+                    $("#ventformacion").modal({"backdrop":"static","width":'55%'});
+                    $('#ventformacion').show();
+                }, "html");
+
+                return false;
+      });
+    $('.agregarpreguntas').click(function(){
+        $.get("/evaluaciondocenteman", {'action':'verpreguntas'}, function(data) {
+
+                    $("#verpreguntas .modal-body").html(data);
+                    $("#verpreguntas").modal({"backdrop":"static","width":'55%'});
+                    $('#verpreguntas').show();
+                }, "html");
+
+                return false;
+      });
+     $('.agregarejerespuesta').click(function(){
+        $.get("/evaluaciondocenteman", {'action':'verejerespuesta'}, function(data) {
+
+                    $("#verejerespuesta .modal-body").html(data);
+                    $("#verejerespuesta").modal({"backdrop":"static","width":'55%'});
+                    $('#verejerespuesta').show();
+                }, "html");
+
+                return false;
+      });
+    $('.agregarareas').click(function(){
+        $.get("/evaluaciondocenteman", {'action':'verareas'}, function(data) {
+
+                    $("#verareasevaluacion .modal-body").html(data);
+                    $("#verareasevaluacion").modal({"backdrop":"static","width":'55%'});
+                    $('#verareasevaluacion').modal('show');
+                }, "html");
+
+                return false;
+      });
+        $("#salirrespu").click(function() {
+               location.reload()
+            });
+     $("#salireje").click(function() {
+                location.reload()
+            });
+     $("#salirpregu").click(function() {
+               location.reload()
+            });
+     $("#salirejepre").click(function() {
+                location.reload()
+            });
+    $("#salirarea").click(function() {
+                location.reload()
+            });
+
+
+
+
+
+});
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+
+        <div class="span10"  >
+            <h3 >Preguntas de Evaluacion </h3></br>
+        </div>
+        <div class="span2">
+{#            <a href="/evaluaciondocente?acc={{ acc }}" class='btn btn-black'><i class="icon-copy ion-arrow-left-a"></i> Atras</a>#}
+
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span1'>
+             <a class="btn btn-success agregareje" ><i class="icon-plus icon-white"></i>Ejes</a>
+        </div>
+        <div class='span1'>
+             <a class="btn btn-success agregarrespuesta"   href='#' ><i class="icon-plus icon-white"></i>Respuestas</a>
+        </div>
+        <div class='span2 '>
+             <a class="btn btn-success agregarejerespuesta"   ><i class="icon-plus icon-white"></i>Ejes y Respuestas</a>
+        </div>
+        <div class='span1'>
+             <a class="btn btn-success agregarpreguntas"  ><i class="icon-plus icon-white"></i>Preguntas</a>
+        </div>
+        <div class='span1'>
+             <a class="btn btn-success agregarareas"  ><i class="icon-plus icon-white"></i>Areas</a>
+        </div>
+    </div><br/>
+              <div class='row-fluid'>
+
+                    <div class='span12'>
+                        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th ></th>
+                                    <th style="text-align: center;" colspan="6"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for d in eje %}
+
+                                <tr>
+                                    <td ><b>{{ d.descripcion }}</b></td>
+                                    {% for r in d.respuestas  %}
+                                            <td> <b>{{ r.respuesta.nombre }}</b></td>
+
+                                    {% endfor %}
+                                </tr>
+                                {% if d.areas %}
+                                    {% for a in d.areas %}
+                                        <tr>
+                                            <td colspan="7" style="font-weight: bold">{{ a.descripcion }}</td>
+                                        </tr>
+                                         {% for p  in d|args:a|call:'preguntasarea' %}
+                                        <tr>
+
+                                            <td> {{ p.nombre }}</td>
+                                            <td colspan="6"></td>
+                                        </tr>
+                                    {% endfor %}
+                                   {% endfor %}
+                                {% else %}
+                                     {% for p  in d.preguntas %}
+                                        <tr>
+
+                                            <td> {{ p.nombre }}</td>
+                                            <td colspan="6"></td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endif %}
+
+
+
+
+
+                            {% endfor %}
+                            {% if not eje %}
+                                <tr>
+                                    <td colspan="10">
+                                        NO EXISTE REGISTRO
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/evaluaciondocenteman?page=1">1</a></li>
+                            <li><a href="/evaluaciondocenteman?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/evaluaciondocenteman?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/evaluaciondocenteman?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/evaluaciondocenteman?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/evaluaciondocenteman?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+<section>
+    <div class="modal fade static" id="ventformacion">
+        <div class="modal-content" style="width: 1000px;left: -100px">
+            <div class="modal-header">
+                <h4 class="modal-title" id="myLargeModalLabel">Respuestas</h4>
+
+            </div>
+
+
+            <div class="modal-body" style="width:1000px;min-height: 550px;max-height: 550px;overflow: auto">
+
+            </div>
+
+            <div class="modal-footer">
+            <button type="button" id="salirrespu" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+            </div>
+
+        </div>
+    </div>
+{#</div>#}
+</section>
+<section>
+    <div class="modal fade static" id="ejesver">
+
+        <div class="modal-header " style="word-wrap: break-word" >
+            <h4  id='paneltitle2' > </h4>
+            <h5></h5>
+        </div>
+            <div class="modal-body" >
+
+            </div>
+                <div class="modal-footer">
+                <button type="button" id="salireje" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+                </div>
+
+            </div>
+{#        </div>#}
+
+</section>
+<section>
+        <div  class="modal fade " id="verpreguntas" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="width: 1000px;left: -100px">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="myLargeModalLabel">Preguntas de Evaluacion</h4>
+
+                    </div>
+
+
+                    <div class="modal-body" style="width:1000px;min-height: 550px;max-height: 550px;overflow: auto">
+
+                    </div>
+
+                    <div class="modal-footer">
+                <button type="button" id="salirpregu" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+</section>
+<section>
+<div class="modal fade static" id="verejerespuesta">
+
+                <div class="modal-content" style="width: 1000px;left: -100px">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="myLargeModalLabel">Ejes y Respuestas de Evaluacion</h4>
+
+                    </div>
+
+
+                    <div class="modal-body" style="width:1000px;min-height: 550px;max-height: 550px;overflow: auto">
+
+                    </div>
+
+                    <div class="modal-footer">
+                <button type="button" id="salirejepre" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+                    </div>
+
+                </div>
+            </div>
+
+</section>
+<section>
+<div class="modal fade static" id="verareasevaluacion">
+
+    <div class="modal-content" style="width: 1000px;left: -100px">
+        <div class="modal-header">
+            <h4 class="modal-title" id="myLargeModalLabel">Areas de Evaluación</h4>
+
+        </div>
+
+
+        <div class="modal-body" style="width:1000px;min-height: 550px;max-height: 550px;overflow: auto">
+
+        </div>
+
+        <div class="modal-footer">
+    <button type="button" id="salirarea" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+        </div>
+
+    </div>
+</div>
+{#    </div>#}
+</section>
+
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript">
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=verinscr&s="+term+"&id={{ tituloexamenparcial.id }}";
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $('#examen').change(function() {
+                location.href = "/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=verinscr&id="+$('#examen').val();
+            });
+
+            $(".cerrarmoddetae").click(function(){
+                location.href = "/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=verinscr&id={{ tituloexamenparcial.id }}";
+            });
+            $(".verexamendet").click(function(){
+                $.get("/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}", {'action':'verexam', 'idexa': $(this).attr('idexa')}, function(data) {
+                    $("#verexamenmod .modal-body").html(data);
+                    $("#verexamenmod").modal({"backdrop":"static","width":'70%'});
+                    $('#verexamenmod').show();
+                }, "html");
+            });
+            {% if idexa %}
+                $.get("/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}", {'action':'verexam', 'idexa': '{{ idexa }}'}, function(data) {
+                    $("#verexamenmod .modal-body").html(data);
+                    $("#verexamenmod").modal({"backdrop":"static","width":'70%'});
+                    $('#verexamenmod').show();
+                }, "html");
+            {% endif %}
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span10" style="text-align: center">
+                <h3> EXAMEN {% if tituloexamenparcial.supletorio %} RECUPERACION {% else %}PARCIAL{% endif %} </h3>
+        </div>
+        <div class='span1'>
+            <a href="/{% if adminprofeex %}adminprofeexamen?idprofe={{ tituloexamenparcial.profesormateria.profesor.id }}{% else %}proexamenparcial{% endif %}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br/>
+    <div class='row-fluid'>
+        <div class="span11" style="text-align: center">
+            <b>EXAMEN</b>:
+            <select id='examen' class="input-xxlarge bigger" style="width: 90%"/>
+                {% for t in titulosexamenes %}
+                    <option value="{{ t.id }}" {% if tituloexamenparcial.id == t.id %}selected="selected"{% endif %}>{{ t.tituloexamen }} - {{ t.profesormateria.materia.asignatura }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div><br/>
+    <div class='row-fluid'>
+        <div class='span6'>
+            <form class= "form-search"> <input class='searchinput input-xlarge search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search and asign  %}
+                <a href="/preguntaasignatura?asign={{ asign.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div><br/>
+    <div class="row-fluid" >
+        <div class="span11" style="">
+            <table class='table' cellpadding="0" cellspacing="0" id="tablepregunto">
+                <thead>
+                <tr>
+                    <th ><h4>Estudiante</h4></th>
+                    <th style="text-align: center"><h4>C&eacute;dula / Pasaporte</h4></th>
+                    <th style="text-align: center"><h4>N. Examen</h4></th>
+                    <th style="text-align: center"><h4>N. Recuperaci&oacute;n</h4></th>
+                    <th style="text-align: center"><h4>N. Final</h4></th>
+                    <th style="text-align: center"></th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for m in materiaasignadas %}
+                        {% with normaexa=m.matricula|args:tituloexamenparcial.id|call:"examennormalact" supleexa=m.matricula|args:tituloexamenparcial.id|call:"examensupletact" %}
+                            <tr >
+                                <td >
+                                    {{ m.matricula.inscripcion.persona.nombre_completo }}
+                                        {% if not tituloexamenparcial.supletorio %}
+                                            {% if normaexa %}
+                                                {% if normaexa.finalizado %}
+                                                    <span class="label label-info" title="Examen Parcial">N. Finalizado</span>
+                                                {% else %}
+                                                    <span class="label label-warning" title="Examen Parcial">N. Realizando</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% else %}
+                                            {% if supleexa %}
+                                                {% if supleexa.finalizado %}
+                                                    <span class="label label-info"  title="Examen Recuperaci&oacute;n">S. Finalizado</span>
+                                                {% else %}
+                                                    <span class="label label-warning"  title="Examen Recuperaci&oacute;n">S. Realizando</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+
+                                </td>
+                                <td style="text-align: center">
+                                    {%  if m.matricula.inscripcion.persona.pasaporte  %}
+                                        {{ m.matricula.inscripcion.persona.pasaporte }}
+                                    {% else %}
+                                        {{ m.matricula.inscripcion.persona.cedula }}
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center"> {% if normaexa %}{{ normaexa.puntaje }} {% else %} 0 {% endif %}    </td>
+                                <td style="text-align: center"> {% if supleexa %}{{ supleexa.puntaje }} {% else %} 0 {% endif %}    </td>
+                                <td style="text-align: center"> <h4>{{ m.notafinal }}</h4> </td>
+                                <td>
+                                    {% if tituloexamenparcial.supletorio %}
+                                        {% if m.notafinal >= NOTA_PARA_APROBAR and normaexa  and not supleexa %}
+                                            <span class="label label-success"  >APROBADO</span>
+                                        {% else %}
+                                            {% if m.notafinal < NOTA_PARA_SUPLET and not supleexa %}
+                                                {% if normaexa and normaexa.finalizado %}
+                                                    <span class="label label-important"  >REPROBADO</span>
+                                                {% else %}
+                                                    <span class="label label-info"  >FALTA EXAMEN</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <div class="btn-group">
+                                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                                        Acciones
+                                                        <span class="caret"></span>
+                                                    </a>
+
+                                                    <ul class="dropdown-menu pull-right">
+                                                        {% with  vereexam=m.matricula|args:tituloexamenparcial.id|call:"examentodsuple" %}
+                                                            {% if vereexam %}
+                                                                <li><a style="cursor: pointer" idexa="{{ vereexam.id }}" class="verexamendet" action="supletorio"><i class="icon-eye-open"></i> Ver Examenes</a></li>
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    </ul>
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        {% if m.notafinal < PUNTAJE_MIN_EXAMEN %}
+                                            <span class="label label-important"  >No puede dar examen</span>
+                                        {% else %}
+                                            <div class="btn-group">
+                                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                                    Acciones
+                                                    <span class="caret"></span>
+                                                </a>
+
+                                                <ul class="dropdown-menu pull-right">
+                                                    {% with vereexam=m.matricula|args:tituloexamenparcial.id|call:"examentodnormal" %}
+                                                        {% if vereexam %}
+                                                            <li><a style="cursor: pointer" idexa="{{ vereexam.id }}" class="verexamendet" action="normal"><i class="icon-eye-open"></i> Ver Examenes</a></li>
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                </ul>
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endwith %}
+                    {% endfor %}
+                    {% if not materiaasignadas %}
+                        <tr>
+                            <td colspan="4"> NO EXISTEN ESTUDIANTES </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span11" style="">
+            {% if paging.num_pages > 10 %}
+                <div class='pagination'>
+                    <ul >
+                        {% if paging.primera_pagina %}
+                            <li><a href="/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=verinscr&id={{ tituloexamenparcial.id }}&page=1">1</a></li>
+                            <li><a href="/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=verinscr&id={{ tituloexamenparcial.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=verinscr&id={{ tituloexamenparcial.id }}&page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=verinscr&id={{ tituloexamenparcial.id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=verinscr&id={{ tituloexamenparcial.id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/{% if adminprofeex %}adminprofeexamen{% else %}proexamenparcial{% endif %}?action=verinscr&id={{ tituloexamenparcial.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="verexamenmod">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4 id='paneltitle1'>Examen: {{ tituloexamenparcial.tituloexamen }}</h4><br/>
+            <h4 id='paneltitle2'></h4><br/>
+        </div>
+        <div class="modal-body" style="word-wrap: break-word" >
+
+        </div>
+        <div class="modal-footer" >
+            <a  class="btn btn-cerrar cerrarmoddetae" style="float: right;cursor: pointer"> Cerrar</a>
+        </div>
+
+    </div>
+
+{% endblock %}

@@ -1,0 +1,347 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+
+        google.load("visualization", "1", {packages:["corechart"]});
+        google.setOnLoadCallback(drawChart1);
+        google.setOnLoadCallback(drawChart2);
+        google.setOnLoadCallback(drawChart3);
+        google.setOnLoadCallback(drawChart4);
+
+        function drawChart1() {
+            var elements = [];
+            elements.push(['Carrera', 'Total Estudiantes']);
+             {% for c in carrera %}
+                 elements.push(["{{ c.0 }}",{{ c.1 }}]);
+            {% endfor %}
+            var data = google.visualization.arrayToDataTable(elements);
+
+            var options = {
+              title: 'Estudiantes Recuperados por Carrera',
+              'align': 'top',
+              is3D: true
+            };
+
+            var chart = new google.visualization.PieChart(document.getElementById('piechart_3d'));
+            chart.draw(data, options);
+        }
+        function drawChart2() {
+            var elements = [];
+            elements.push(['Carrera', 'Total Estudiantes']);
+             {% for c in carrera_por_recuperar_nivel %}
+                 elements.push(["{{ c.0 }}",{{ c.1 }}]);
+            {% endfor %}
+            var data = google.visualization.arrayToDataTable(elements);
+
+            var options = {
+              title: 'Valores a Recuperar en el Nivel Actual por Carrera',
+              'align': 'top',
+              is3D: true
+            };
+
+            var chart = new google.visualization.PieChart(document.getElementById('grafico_por_recuperar_nivel'));
+            chart.draw(data, options);
+        }
+        function drawChart3() {
+            var elements = [];
+            elements.push(['Carrera', 'Total Estudiantes']);
+             {% for c in carrera_recuperado %}
+                 elements.push(["{{ c.0 }}",{{ c.1 }}]);
+            {% endfor %}
+            var data = google.visualization.arrayToDataTable(elements);
+
+            var options = {
+              title: 'Valores Recuperados al Final del Nivel por Carrera',
+              'align': 'top',
+              is3D: true
+            };
+
+            var chart = new google.visualization.PieChart(document.getElementById('grafico_recuperado'));
+            chart.draw(data, options);
+        }
+        function drawChart4() {
+            var elements = [];
+            elements.push(['Carrera', 'Total Estudiantes']);
+             {% for c in carrera_por_recuperar %}
+                 elements.push(["{{ c.0 }}",{{ c.1 }}]);
+            {% endfor %}
+            var data = google.visualization.arrayToDataTable(elements);
+
+            var options = {
+              title: 'Proyección de Valores a Recuperar al Final  de la Carrera',
+              'align': 'top',
+              is3D: true
+            };
+
+            var chart = new google.visualization.PieChart(document.getElementById('grafico_por_recuperar'));
+            chart.draw(data, options);
+        }
+
+        $(function(){
+             $("#id_desde").datepicker({format:"dd-mm-yyyy"});
+          $("#id_hasta").datepicker({format:"dd-mm-yyyy"});
+            $("#ver_detalle").click(function(){
+                $("#titulo_absento").show();
+                $("#detalle_abesnto").show();
+                $("#ver_detalle").hide();
+            });
+            $("#ocultar_detalle").click(function(){
+                $("#titulo_absento").hide();
+                $("#detalle_abesnto").hide();
+                 $("#ver_detalle").show();
+            });
+            $("#ver_grafico").click(function(){
+                $(".graficos").show();
+
+            });
+            $("#ocultar_grafico").click(function(){
+                $(".graficos").hide();
+
+            });
+
+             $(".proyeccion").click(function(){
+                    $("#modalproyeccion").modal({width: '300px', backdrop: 'static'});
+                    $("#modalproyeccion").modal("show");
+            });
+
+            $("#modalproyeccion .btn-buscar").click(function() {
+                $("#modalproyeccion").modal("hide");
+                var desde= $("#modalproyeccion #id_desde").val();
+                var hasta= $("#modalproyeccion #id_hasta").val();
+{#                alert(1);#}
+                location.href = '/absentismo?action=verproyeccion&desde='+desde+"&hasta="+hasta
+                });
+
+             $("#modalproyeccion .btn-cerrar").click(function() {
+                $("#modalproyeccion").modal("hide");
+                return false;
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+{##}
+    <div class="row-fluid">
+        <div class="span9">
+
+        </div>
+        <div class="span3">
+            <a href="/absentismo" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            <a class='btn btn-warning proyeccion'><i class="icon-table icon-white"></i> Cambiar Fechas</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span11">
+              <h3 style="text-align: center">PROYECCI&Oacute;N DE ABSENTOS      </h3>
+            <h3 style="text-align: center">RESUMEN</h3>
+            <h5 style="text-align: center"><a id='ver_detalle' style="cursor: pointer">Click Para Ver Detalle</a></h5>
+            <h5 style="text-align: center"><a id='ver_grafico' style="cursor: pointer">Click Para Ver Gr&aacute;fico</a></h5>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span6">
+            <table  class='table table-bordered table-striped' >
+                 <thead>
+                    <tr>
+                        <th>Inicio</th>
+                        <th>Fin</th>
+                        <th>Total de Alumnos</th>
+                        <th>Valor Por Recuperar(Nivel Actual) </th>
+                        <th>Valor Recuperado </th>
+                        <th>Proyecci&oacute;n Fin Carrera</th>
+                    </tr>
+                    </thead>
+                <tbody>
+                    <tr>
+                         <td> {{ desde|date:'d-m-Y' }} </td>
+                         <td> {{ hasta|date:'d-m-Y' }}    </td>
+                         <td style="text-align: right"> {{ total }}    </td>
+                         <td style="text-align: right"> ${{  por_recuperar_nivel }} </td>
+                         <td style="text-align: right"> ${{  recuperado }}  </td>
+                         <td style="text-align: right"> ${{  por_recuperar }}  </td>
+                    </tr>
+                </tbody>
+
+            </table>
+        </div>
+
+    </div>
+{#    <div class="span4"  style="display: none" id='graficos'>#}
+
+    <div class="row-fluid graficos" >
+     <h5 style="text-align: center"><a id='ocultar_grafico' style="cursor: pointer;color: red">Click Para Ocultar Gr&aacute;fico</a></h5>
+    <div class="span12">
+        <div class="span1"></div>
+        <div class="span4">
+            <div id="piechart_3d" style="width:700px; height: 300px;"></div>
+        </div>
+        <div class="span4">
+            <div id="grafico_por_recuperar_nivel" style="width: 700px; height:300px;"></div>
+        </div>
+         <div class="span3"></div>
+    </div>
+    </div>
+    <div class="row-fluid graficos" >
+    <div class="span12">
+        <div class="span1"></div>
+        <div class="span4">
+            <div id="grafico_recuperado" style="width: 700px; height: 300px;"></div>
+        </div>
+        <div class="span4">
+            <div id="grafico_por_recuperar"style="width: 700px; height:300px;"></div>
+        </div>
+        <div class="span3"></div>
+    </div>
+    </div>
+
+
+    <div class="row-fluid" style="display: none" id='titulo_absento'>
+        <div class="span11">
+            <h3 style="text-align: center">DETALLE</h3>
+            <h5 style="text-align: center"><a id='ocultar_detalle' style="cursor: pointer;color: red">Click Para Ocultar Detalle</a></h5>
+        </div>
+    </div>
+    <div class="row-fluid"  style="display: none"  id='detalle_abesnto'  >
+        <div class="span12">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Alumno</th>
+                        <th>Carrera</th>
+                        <th>Nivel Recuperado</th>
+                        <th>Valor Por Recuperar(Nivel Actual) </th>
+                        <th>Valor Recuperado </th>
+                        <th>Ultimo Nivel</th>
+                        <th>Proyecci&oacute;n Fin Carrera</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in inscripcion %}
+                        <tr>
+                               <td>{{ i.0 }} {% if  i.1  %}<br><span class="label label-info"> {{ i.1 }} </span> {% endif %} </td>
+                               <td>{{ i.2 }}</td>
+                               <td>{{ i.3 }}</td>
+                               <td style="text-align: right">${{ i.4 }}</td>
+                               <td style="text-align: right">${{ i.5 }}</td>
+                               <td>{{ i.6 }}</td>
+                               <td style="text-align: right">${{ i.7 }}</td>
+
+                        </tr>
+                    {% endfor %}
+                     {% if not inscripcion %}
+                        <tr>
+                            <td colspan="8">NO EXISTEN REGISTROS</td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td colspan="3" style="text-align: center;font-weight: bold"> TOTALES </td>
+                        <td style="text-align: right">{{  por_recuperar_nivel }} </td>
+                        <td style="text-align: right">{{  recuperado }}  </td>
+                        <td  style="text-align: center;font-weight: bold"> PROYECTADO </td>
+                        <td style="text-align: right"> {{  por_recuperar }}  </td>
+
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/absentismo?page=1{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">1</a></li>
+                            <li><a href="/absentismo?page={{ paging.ellipsis_izquierda }}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/absentismo?page={{ pagenumber }}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/absentismo?page={{ paging.ellipsis_derecha }}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/absentismo?page={{ paging.num_pages }}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/absentismo?page={{ pagenumber }}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="modal fade static " id="detalle_absent" style="margin-left: -500"  >
+    <div class="row-fluid modal-header">
+        <h4 id="nomalumn"><i> Detalles del Alumno</i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a style="cursor: pointer" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+
+
+    <div class="modal fade static" id="addpanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle" >Ingrese Observacion</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <h4>
+                <div style="width:100%;padding-left: 13%">
+                    <b>Observaci&oacute;n:</b> <textarea type='text' id='observacion' style="width:60%;text-transform: uppercase" rows="4" cols="50" > </textarea><br/><br/>
+                    <b>Reintegr&oacute;:</b> <input type="checkbox" name="reintegro" id="reintegro"  /><br/><br/>
+                    <b>Finalizado:</b> <input type="checkbox" name="finaliza" id="finaliza"  disabled checked/>
+                    <input type="hidden" id="idabsent"/>
+                </div>
+            </h4>
+            <div style="padding-left: 13%"> <p id='mensaj' ></p></div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-info ingresar"> Ingresar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modalproyeccion"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Seleccione las Fechas a Consultar </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in frmproyeccion %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Consultar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+{##}
+
+
+{% endblock %}

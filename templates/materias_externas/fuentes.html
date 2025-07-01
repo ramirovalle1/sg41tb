@@ -1,0 +1,88 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        arr = jQuery.makeArray();
+        $(function() {
+            $("#mclose").click(function(){
+                $("#progresbar").modal('hide');
+                $(".modal-footer").show();
+            });
+            $(".buscar").click(function() {
+                $("#progresbar").modal('show')
+                $(".modal-footer").hide();
+                $(".modal-body").html("Buscando actualizaciones, este proceso puede demorar, espere la confirmaci&oacuten que el mismo termin&oacute correctamente.");
+                id = $(this).attr('id');
+                $.post("/materias_externas",{"action": "obtenermaterias", "entidad": id },function(data) {
+                    if (data.err==0){
+                        $(".modal-body").html("Terminada exitosamente.");
+                    } else {
+                        $(".modal-body").html("Ocurrieron errores en la importaci&oacuten.");
+                    }
+                    $(".modal-footer").show();
+                },"json");
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="modal fade" id="progresbar" data-backdrop="static">
+        <div class="modal-header">
+            <h3>Procesando datos</h3>
+        </div>
+        <div class="modal-body">
+            <p>Por favor espere que termine la actualizaci&oacuten.</p>
+            <div class="progresbarresult">
+
+            </div>
+        </div>
+        <div class="modal-footer" hidden="">
+            <a href="#" class="btn" id="mclose">Salir</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Importacion de materias externas</h3>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><span class="icon-arrow-left" style="font-style: italic;"></span> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped'>
+            <thead>
+            <tr>
+                <th></th>
+                <th>Entidad Externa</th>
+                <th>URL</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for fuentesexterna in fuentesexternas %}
+                <tr id="head{{ fuentesexterna.id }}">
+                    <td style="text-align: center">
+
+                    </td>
+                    <td style="width: 40%">
+                        {{ fuentesexterna.nombre }}
+                    </td>
+                    <td style="width: 40%">
+                        {{ fuentesexterna.url }}
+                    </td>
+                    <td style="text-align: center">
+                        <a href="#" class='btn btn-mini btn-success buscar' id="{{ fuentesexterna.id }}"><span class="icon-search icon-white" style="font-style: italic;"></span>Buscar Materias</a>
+                    </td>
+                </tr>
+                <tr id="body{{ fuentesexterna.id }}">
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+{% endblock %}

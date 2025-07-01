@@ -1,0 +1,76 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+
+        indice = 0;
+        $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+
+        datosOK=false;
+
+        $("#generar_valores").modal({width: '25%', backdrop: 'static'});
+        $("#generar_valores").modal("show");
+
+        $("#generar_valores .btn-adicionar").click(function() {
+            $("#generar_valores").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+            var desde = $("#id_inicio").val();
+            var hasta = $("#id_fin").val();
+
+            $.post("/resumencartera", {"action":"generarexcel","desde":desde,"hasta":hasta}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 2500);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json");
+        });
+
+        $("#generar_valores .btn-cerrar").click(function() {
+            $("#generar_valores").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="generar_valores" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Resumen por Rango de Fechas</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario" class='form-horizontal' action="" method="POST" style="text-align:  left;">
+                {% for field in generarform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}

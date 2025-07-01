@@ -1,0 +1,204 @@
+    {% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            clases = [{% for clase in clases %}
+                {"id":"{{ clase.id }}", "asignatura": "{{ clase.materia.nombre_horario }}", "lecciones":{{ clase.cantidad_lecciones }} ,  "tienelecciones": {% if clase.tiene_lecciones %}true{% else %}false{% endif %}, "profesor": "{{ clase.profesor }}", "turno": "{{ clase.turno.id }}", "dia":"{{ clase.dia }}", "aula": "{{ clase.aula }}" , "profesormateria": "{{ clase.profesormateria.profesor.persona.nombre_completo_inverso }}" , "segmento": "{{ clase.profesormateria.segmento.descripcion }}" , "desde": "{{ clase.profesormateria.desde|date:'d-m-Y' }}" , "hasta": "{{ clase.profesormateria.hasta|date:'d-m-Y' }}", "virtual": "{{ clase.virtual }}" , "turnopr": "{{ clase.turno.practica }}" }{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            findClases = function(d, t) {
+                var l = [];
+                for (i in clases) {
+                    var am = clases[i];
+                    if (am.dia==d && am.turno==t) {
+                        l.push(am);
+                    }
+                }
+                return l;
+            }
+            {% if horasclase %}
+                smoke.alert('{{ horasclase  }}');
+            {% endif %}
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var dia = $this.attr('dia');
+                var turno = $this.attr('turno');
+                var clase = findClases(dia, turno);
+                for (i in clase) {
+                    var c = clase[i];
+                    if (c.virtual =='True'){
+                         vir = " <b style='color: red'>(CLASE VIRTUAL) </b>";
+                    }else{
+                         vir = ""
+                    }
+                    $(this).prepend("<tr><td><b>"+c.asignatura+"</b>" +
+                            "<br/>Aula: "+c.aula+ vir+
+                            {% if nivel.cerrado %}
+                                {% if  perms.sga.add_aula %}
+                                    ((c.turnopr=='True')?"<br/><a href='/horarios?action=editaula&id="+c.id+"' class='btn btn-info btn-mini'><i class='icon-edit icon-white'></i>Editar Aula</a>" :"")+
+                                {% endif %}
+                            {% endif %}
+                            "<br/>Docente Segmento: "+c.profesormateria+"<br/>"+
+                            "<span class='larger label label-success'>"+((c.segmento)?c.segmento+"<br/>":"") +"</span><br/>"+
+                            "<span class='larger label label-success'>"+((c.segmento)?c.segmento+"<br/>":"") +"</span><br/>"+
+                            "<span class='larger label label-info'>"+"Desde: "+c.desde+ " Hasta: "+c.hasta+ "</span><br/>"+
+
+                        {% if not nivel.cerrado %}
+                            "<div class='btn-toolbar'>"+
+                            "<div class='btn-group'>"+
+                            {% if  perms.sga.add_clase %}
+                                "<a href='/horarios?action=editclase&id="+c.id+"' class='btn btn-info btn-mini'><i class='icon-edit icon-white'></i></a>" +
+                            {% endif %}
+                            {% if not persona.pertenece_soporte %}
+                                "<a href='/horarios?action=down&id="+c.id+"' class='btn btn-mini'><i class='icon-arrow-down'></i></a>"+
+                                "<a href='/horarios?action=right&id="+c.id+"' class='btn btn-mini'><i class='icon-arrow-right'></i></a>"+
+                                "</div>" +
+                                "<div class='btn-group'>"+
+                                ((!c.tienelecciones ||  {% if persona.usuario.is_superuser or  perms.sga.delete_clase %} true {% else %} false {% endif %} )?"<a href='/horarios?action=delclase&id="+c.id+"' class='btn btn-danger btn-mini'><i class='icon-remove icon-white'></i>"+c.lecciones+"</a>":"") +
+                                "</div>" +
+                                "</div>"+
+                            {% endif %}
+                        {% endif %}
+                            "</td></tr>");
+                }
+
+            });
+
+            {% if not nivel.sesion.lunes %}
+                $(".col1").hide();
+            {% endif %}
+            {% if not nivel.sesion.martes %}
+                $(".col2").hide();
+            {% endif %}
+            {% if not nivel.sesion.miercoles %}
+                $(".col3").hide();
+            {% endif %}
+            {% if not nivel.sesion.jueves %}
+                $(".col4").hide();
+            {% endif %}
+            {% if not nivel.sesion.viernes %}
+                $(".col5").hide();
+            {% endif %}
+            {% if not nivel.sesion.sabado %}
+                $(".col6").hide();
+            {% endif %}
+            {% if not nivel.sesion.domingo %}
+                $(".col7").hide();
+            {% endif %}
+
+            {% if not activo %}
+                $(".adicionarclase").hide();
+            {% endif %}
+
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>{% if nivel.cerrado %}<span class='label label-important'>CERRADO</span>{% endif %} Horario de Nivel Acad&eacute;mico: {{ nivel }}</h3>
+            <!-- <h3>Nivel: {{ nivel.grupo.nombre }} ({{ nivel.inicio|date:'d-m-Y' }}  al  {{ nivel.fin|date:'d-m-Y' }})</h3> -->
+            <h5>Per&iacute;odo: {{ periodo }}</h5>
+            <h5>Fechas: {{ nivel.inicio|date:"d-m-Y" }} - {{ nivel.fin|date:"d-m-Y" }}</h5>
+            <h5>Matricula hasta el: {{ nivel.fechatopematricula|date:"d-m-Y" }} {% if nivel.matricula_cerrada %}<span class="label label-important">MATRICULA CERRADA</span>{% endif %}</h5>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="{% if ret %}/niveles?action=materias&id={{ nivel.id }}{% else %}/horarios{% endif %}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    {% if activo %}
+    <div class="row-fluid margeninferior">
+        <div class="span12">
+            <a href="/niveles?action=materias&id={{ nivel.id }}" class="btn"><i class="icon-table"></i> Cronograma</a>
+            <a href="/matriculas?action=matricula&id={{ nivel.id }}" class="btn"><i class="icon-group"></i> Matr&iacute;cula - {{ nivel.matricula_set.count }}</a>
+            {% if cronogramapagos %}
+                <a href="/niveles?action=pagos&id={{ nivel.id }}" class="btn"><i class="icon-money"></i> Pagos</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    <div class='row-fluid'>
+        
+        <div class='span12'>
+            {% if not activo %}
+            <div class="alert alert-error">
+                <b>Aun no ha especificado todos los profesores para las materias de este horario.</b>
+                <br/>Para poder ingresar el Horario debe completar el Cronograma con los Profesores
+                <br/>Puede regresar al Cronograma y actualizarlos <a href="/niveles?action=materias&id={{ nivel.id }}">Cronograma</a>
+            </div>
+            {% endif %}
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th> </th>
+                {% for dia in semana %}
+                    <th class="col{{ forloop.counter }}">{{ dia }}</th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for turno in turnos %}
+                <tr>
+                    <td>
+                        Turno {{ turno.turno }}
+                        {% if turno.practica %}
+                             <span class="label label-important">Pr&aacute;ctica</span><br/>
+                        {% else %}
+                             <span class="label label-info">Teor&iacute;a</span><br/>
+                        {% endif %}
+                        {{ turno.comienza }} a {{ turno.termina }}<br/>
+                        <span class="label label-success">HORAS TURNO   {{ turno.horas|floatformat:'0' }} Horas </span>
+                    </td>
+                    {% for dia in semana %}
+                        <td  class="col{{ forloop.counter }}">
+                            <table class='cell table table-bordered' dia='{{ forloop.counter }}' turno='{{ turno.id }}'>
+                                <tr><td>
+                                    {% if not nivel.cerrado and  perms.sga.change_clase %}
+                                    <a href="/horarios?action=addclase&nivel={{ nivel.id }}&dia={{ forloop.counter }}&turno={{ turno.id }}" class='btn btn-success btn-mini adicionarclase'><i class="icon-plus icon-white"></i></a>
+                                    {% endif %}
+                                </td></tr>
+                            </table>
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+            <tr></tr>
+            <!-- <tr>
+                <td class='rightborder'> Totales </td>
+                {% for resumen in resumenes %}
+                    <td class='rightborder smaller'><b>{{ resumen.horas }}</b> Horas, <b>{{ resumen.creditos }}</b> Creditos</td>
+                {% endfor %}
+            </tr> -->
+            </tbody>
+        </table>
+        {% if materiasfaltantes %}
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Materias aun por a&ntilde;adir</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for materia in materiasfaltantes %}
+                    <tr>
+                        <td>{% if  perms.sga.change_clase %}<a href="/horarios?action=addclase&nivel={{ nivel.id }}&materia={{ materia.id }}" class="btn btn-mini btn-success adicionarclase"><i class="icon-arrow-up"></i> A&ntilde;adir</a> {% endif %}{{ materia }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+        </div>
+    </div>
+    {% if activo %}
+        <div class="row-fluid">
+            <div class="span12">
+                <a href="/niveles?action=materias&id={{ nivel.id }}" class="btn"><i class="icon-table"></i> Cronograma</a>
+                <a href="/matriculas?action=matricula&id={{ nivel.id }}" class="btn"><i class="icon-group"></i> Matr&iacute;cula - {{ nivel.matricula_set.count }}</a>
+                {% if cronogramapagos %}
+                    <a href="/niveles?action=pagos&id={{ nivel.id }}" class="btn"><i class="icon-money"></i> Pagos</a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

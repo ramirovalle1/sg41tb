@@ -1,0 +1,1593 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+
+
+            //Estructura de Variables, IDs y Clases
+            $("#id_persona, #id_formatrabajo, #id_ingresomensual").addClass("validate[required]");
+            $("#id_persona, #id_formatrabajo").addClass("input-block-level");
+            $("#id_ingresomensual").addClass("input-small");
+
+            actualizaCheckboxes = function(accion){
+                $.blockUI({message: null});
+                $.post("/alu_socioecon", {action: accion, "fichaid": {{ ficha.id }} }, function(data){
+                    $.unblockUI();
+                    if (data.result=='ok'){
+                        location.reload();
+                    }
+
+                }, "json" );
+
+                return false;
+            }
+            actualizanumhijos = function(accion,num){
+
+                     $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: accion,"numh":num, "fichaid": {{ ficha.id }} }, function(data){
+                    $.unblockUI();
+                    if (data.result=='ok'){
+                        location.reload();
+                    }else{
+{#                        alert(data.result);#}
+                        alert("Si no tiene hijos dejar en 0 de lo contrario poner cantidad");
+                    }
+
+                }, "json" );
+
+                return false;
+
+            };
+
+            actualizamiembrosfmla = function(accion,miembros){
+                $.blockUI({message: null});
+                $.post("/alu_socioecon", {action: accion,"nummiembros":miembros, "fichaid": {{ ficha.id }} }, function(data){
+                $.unblockUI();
+                if (data.result=='ok'){
+                    location.reload();
+                }
+                }, "json" );
+                return false;
+            };
+
+             var numeros=" 0123456789";
+
+            function solo_numeros(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+            $("#num_hijos").blur(function(){
+
+            var v = $("#num_hijos").val();
+            var p = solo_numeros(v);
+            if (p != v.length)
+            {
+{#              $("#dato").html("Ingresar solo Numeros");#}
+              $($("#num_hijos").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+              $("#num_hijos").val("");
+              $("#num_hijos").focus();
+            }
+            else{
+
+                $($("#num_hijos").get(0).parentNode).find(".help-text").html("");
+                actualizanumhijos('actualizanumhijos', $("#num_hijos").val());
+            }
+
+
+        });
+
+            $("#num_miembros").blur(function(){
+            var v = $("#num_miembros").val();
+            var p = solo_numeros(v);
+            if (p != v.length)
+
+            {
+
+              $($("#num_miembros").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+              $("#num_miembros").val("");
+              $("#num_miembros").focus();
+            }
+            else{
+                if (v==0){
+                  $($("#num_miembros").get(0).parentNode).find(".help-text").html("<h6 style='color:blue' >Miembros debe ser mayor a 0</h6>");
+                  $("#num_miembros").val("");
+                  $("#num_miembros").focus();
+                }
+                else{
+                    $($("#num_miembros").get(0).parentNode).find(".help-text").html("");
+                    actualizamiembrosfmla('actualizamiembrosfmla', $("#num_miembros").val());
+                }
+            }
+            });
+
+            //Sustento del Hogar
+            $("#sustentospanel .btn-ejecutar").click(function(){
+                var persona = $("#id_persona").val();
+                var ft = $("#id_formatrabajo").val();
+                var parent = $("#id_parentezco").val();
+                var im = $("#id_ingresomensual").val();
+                if (persona && ft && parent  && im > 0 ){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'addsustentohogar', "fichaid": {{ ficha.id }} , 'persona': persona, 'parentezco': parent, 'ft': ft, 'im': im }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+
+                    $("#sustentospanel").modal("hide");
+                }else{
+                    alert("Faltan datos por llenar");
+                }
+                return false;
+            });
+
+            $("#sustentospanel .btn-cerrar").click(function(){
+                $("#sustentospanel").modal("hide");
+                return false;
+            });
+
+
+            $("#btnsustento").click(function(){
+                $("#id_persona").val('');
+                $("#id_persona").attr("placeholder", "Escribir Nombres y Apellidos completos de la persona");
+                $("#id_formatrabajo").val('');
+                $("#id_parentezco").val('');
+                $("#id_ingresomensual").val('0.00');
+                $("#sustentospanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#sustentospanel").modal("show");
+                return false;
+            });
+
+    {#  ----------   CHECKBOXES  ----------------     #}
+            // Estructura Familiar y Datos Economicos
+            $("#escabezafamilia").click(function(){ actualizaCheckboxes('changeescabezafamilia'); return false; });
+            $("#p_msoltera").click(function(){ actualizaCheckboxes('changep_msoltera'); return false; });
+
+            $("#esdependiente").click(function(){ actualizaCheckboxes('changeesdependiente'); return false; });
+
+            //Actividad Economica del Hogar
+            $("#alguienafiliado").click(function(){ actualizaCheckboxes('changealguienafiliado'); return false; });
+            $("#alguienseguro").click(function(){ actualizaCheckboxes('changealguienseguro'); return false; });
+
+            //Habitos de consumo
+            $("#compravestcc").click(function(){ actualizaCheckboxes('changecompravestcc'); return false; });
+            $("#usainternetseism").click(function(){ actualizaCheckboxes('changeusainternetseism'); return false; });
+            $("#usacorreonotrab").click(function(){ actualizaCheckboxes('changeusacorreonotrab'); return false; });
+            $("#registroredsocial").click(function(){ actualizaCheckboxes('changeregistroredsocial'); return false; });
+            $("#leidolibrotresm").click(function(){ actualizaCheckboxes('changeleidolibrotresm'); return false; });
+
+            //Posesion de Bienes
+            $("#tienetelefconv").click(function(){ actualizaCheckboxes('changetienetelefconv'); return false; });
+            $("#tienecocinahorno").click(function(){ actualizaCheckboxes('changetienecocinahorno'); return false; });
+            $("#tienerefrig").click(function(){ actualizaCheckboxes('changetienerefrig'); return false; });
+            $("#tienelavadora").click(function(){ actualizaCheckboxes('changetienelavadora'); return false; });
+            $("#tienemusica").click(function(){ actualizaCheckboxes('changetienemusica'); return false; });
+
+            //Acceso a la Tecnologia
+            $("#tieneinternet").click(function(){ actualizaCheckboxes('changetieneinternet'); return false; });
+            $("#tienedesktop").click(function(){ actualizaCheckboxes('changetienedesktop'); return false; });
+            $("#tienelaptop").click(function(){ actualizaCheckboxes('changetienelaptop'); return false; });
+
+    {# ------------- OPCIONES Y SELECTS -------------- #}
+
+        //Tipo de Hogar
+            $("#tipohogarpanel .btn-ejecutar").click(function(){
+                var th = $("#id_tipohogar").val();
+                if (th){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'tipohogar', "fichaid": {{ ficha.id }} , 'th': th }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+
+                    $("#tipohogarpanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un tipo de hogar");
+                }
+                return false;
+            });
+
+            $("#tipohogarpanel .btn-cerrar").click(function(){
+                $("#tipohogarpanel").modal("hide");
+                return false;
+            });
+
+            $("#tipohogaradd").click(function(){
+                $("#id_tipohogar").val('');
+                $("#tipohogarpanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#tipohogarpanel").modal("show");
+                return false;
+            });
+
+            $("#tipohogaredit").click(function(){
+                $("#id_tipohogar").val({{ ficha.tipohogar.id }});
+                $("#tipohogarpanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#tipohogarpanel").modal("show");
+                return false;
+            });
+
+            //Dedicacion Estudiante
+            $("#dedicacionestudiantepanel .btn-ejecutar").click(function(){
+                var dd = $("#id_ocupacion").val();
+                if (dd){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'dedicacion', "fichaid": {{ ficha.id }} , 'dd': dd }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+
+                    $("#dedicacionestudiantepanel").modal("hide");
+                }else{
+                    alert("Por favor escoja dedicacion");
+                }
+                return false;
+            });
+
+            $("#dedicacionestudiantepanel .btn-cerrar").click(function(){
+                $("#dedicacionestudiantepanel").modal("hide");
+                return false;
+            });
+
+            $("#dedicacionestudianteadd").click(function(){
+                $("#id_ocupacion").val('');
+                $("#dedicacionestudiantepanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#dedicacionestudiantepanel").modal("show");
+                return false;
+            });
+
+
+            $("#dedicacionestudianteedit").click(function(){
+                $("#id_ocupacion").val({{ ficha.ocupacionestudiante.id }});
+                $("#dedicacionestudiantepanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#dedicacionestudiantepanel").modal("show");
+                return false;
+            });
+
+
+            //Ingresos de Estudiante si trabaja
+            $("#ingresosestudiantepanel .btn-ejecutar").click(function(){
+                var ie = $("#id_ingresos").val();
+                if (ie){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'ingresos', "fichaid": {{ ficha.id }} , 'ie': ie }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+
+                    $("#ingresosestudiantepanel").modal("hide");
+                }else{
+                    alert("Por favor escoja opcion");
+                }
+                return false;
+            });
+
+            $("#ingresosestudiantepanel .btn-cerrar").click(function(){
+                $("#ingresosestudiantepanel").modal("hide");
+                return false;
+            });
+
+            $("#ingresosestudianteadd").click(function(){
+                $("#id_ingresos").val('');
+                $("#ingresosestudiantepanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#ingresosestudiantepanel").modal("show");
+                return false;
+            });
+
+
+            $("#ingresosestudianteedit").click(function(){
+                $("#id_ingresos").val({{ ficha.ingresoestudiante.id }});
+                $("#ingresosestudiantepanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#ingresosestudiantepanel").modal("show");
+                return false;
+            });
+
+
+        //Familar de Estudiante recibe bono de desarrollo humano
+            $("#bonofmlaestudiantepanel .btn-ejecutar").click(function(){
+                var be = $("#id_bono").val();
+                if (be){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'bonodh', "fichaid": {{ ficha.id }} , 'be': be }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+
+                    $("#bonofmlaestudiantepanel").modal("hide");
+                }else{
+                    alert("Por favor escoja opcion");
+                }
+                return false;
+            });
+
+            $("#bonofmlaestudiantepanel .btn-cerrar").click(function(){
+                $("#bonofmlaestudiantepanel").modal("hide");
+                return false;
+            });
+
+            $("#bonofmlaestudianteadd").click(function(){
+                $("#id_bono").val('');
+                $("#bonofmlaestudiantepanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#bonofmlaestudiantepanel").modal("show");
+                return false;
+            });
+
+            $("#bonofmlaestudianteedit").click(function(){
+                $("#id_bono").val({{ ficha.bonofmlaestudiante.id }});
+                $("#bonofmlaestudiantepanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#bonofmlaestudiantepanel").modal("show");
+                return false;
+            });
+
+
+
+        //Quien cubre los Gastos en el Hogar
+            $("#id_otroscubregasto").attr("disabled", true).addClass("input-block-level");
+
+            $("#id_personacubregasto").change(function(){
+            {# Chequear que si escoge OTROS active la casilla de Especifique OTROS  #}
+                if ($(this).val()=={{ personacubregasto_OTROS_ID }}){
+                    $("#id_otroscubregasto").attr("disabled", false);
+                }else{
+                    $("#id_otroscubregasto").val('');
+                    $("#id_otroscubregasto").attr("disabled", true);
+                }
+            });
+
+            $("#personacubregastopanel .btn-ejecutar").click(function(){
+                var pcg = $("#id_personacubregasto").val();
+                var otrosgastos = $("#id_otroscubregasto").val();
+                if (pcg){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'personacubregasto', "fichaid": {{ ficha.id }} , 'pcg': pcg, 'otrosg': otrosgastos }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+
+                    $("#personacubregastopanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#personacubregastopanel .btn-cerrar").click(function(){
+                $("#personacubregastopanel").modal("hide");
+                return false;
+            });
+
+            $("#personacubregastoadd").click(function(){
+                $("#id_personacubregasto").val('');
+                $("#personacubregastopanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#personacubregastopanel").modal("show");
+                return false;
+            });
+
+            $("#personacubregastoedit").click(function(){
+                $("#id_personacubregasto").val({{ ficha.personacubregasto.id }});
+                $("#id_otroscubregasto").val('{{ ficha.otroscubregasto }}');
+                $("#personacubregastopanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#personacubregastopanel").modal("show");
+                return false;
+            });
+
+        //Nivel de Educacion del Jefe de Hogar
+            $("#niveljefehogarpanel .btn-ejecutar").click(function(){
+                var niveledu = $("#id_niveljefehogar").val();
+                if (niveledu){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'niveljefehogar', "fichaid": {{ ficha.id }} , 'niveledu': niveledu }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+
+                    $("#niveljefehogarpanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#niveljefehogarpanel .btn-cerrar").click(function(){
+                $("#niveljefehogarpanel").modal("hide");
+                return false;
+            });
+
+            $("#niveljefehogaradd").click(function(){
+                $("#id_niveljefehogar").val('');
+                $("#niveljefehogarpanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#niveljefehogarpanel").modal("show");
+                return false;
+            });
+
+            $("#niveljefehogaredit").click(function(){
+                $("#id_niveljefehogar").val({{ ficha.niveljefehogar.id }});
+                $("#niveljefehogarpanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#niveljefehogarpanel").modal("show");
+                return false;
+            });
+
+        //Ocupacion del Jefe de Hogar
+            $("#ocupacionjefehogarpanel .btn-ejecutar").click(function(){
+                var ocupacion = $("#id_ocupacionjefehogar").val();
+                if (ocupacion){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'ocupacionjefehogar', "fichaid": {{ ficha.id }} , 'ocupacion': ocupacion }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+
+                    $("#ocupacionjefehogarpanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#ocupacionjefehogarpanel .btn-cerrar").click(function(){
+                $("#ocupacionjefehogarpanel").modal("hide");
+                return false;
+            });
+
+            $("#ocupacionjefehogaradd").click(function(){
+                $("#id_ocupacionjefehogar").val('');
+                $("#ocupacionjefehogarpanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#ocupacionjefehogarpanel").modal("show");
+                return false;
+            });
+
+            $("#ocupacionjefehogaredit").click(function(){
+                $("#id_ocupacionjefehogar").val({{ ficha.ocupacionjefehogar.id }});
+                $("#ocupacionjefehogarpanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#ocupacionjefehogarpanel").modal("show");
+                return false;
+            });
+
+        //Tipo de Vivienda
+            $("#tipoviviendapanel .btn-ejecutar").click(function(){
+                var tipovivienda = $("#id_tipovivienda").val();
+                if (tipovivienda){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'tipovivienda', "fichaid": {{ ficha.id }} , 'tipovivienda': tipovivienda }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+
+                    $("#tipoviviendapanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#tipoviviendapanel .btn-cerrar").click(function(){
+                $("#tipoviviendapanel").modal("hide");
+                return false;
+            });
+
+            $("#tipoviviendaadd").click(function(){
+                $("#id_tipovivienda").val('');
+                $("#tipoviviendapanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#tipoviviendapanel").modal("show");
+                return false;
+            });
+
+            $("#tipoviviendaedit").click(function(){
+                $("#id_tipovivienda").val({{ ficha.tipovivienda.id }});
+                $("#tipoviviendapanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#tipoviviendapanel").modal("show");
+                return false;
+            });
+
+        //Material Predominante en las Paredes
+            $("#materialparedpanel .btn-ejecutar").click(function(){
+                var materialpared = $("#id_materialpared").val();
+                if (materialpared){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'materialpared', "fichaid": {{ ficha.id }} , 'materialpared': materialpared }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+
+                    $("#materialparedpanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#materialparedpanel .btn-cerrar").click(function(){
+                $("#materialparedpanel").modal("hide");
+                return false;
+            });
+
+            $("#materialparedadd").click(function(){
+                $("#id_materialpared").val('');
+                $("#materialparedpanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#materialparedpanel").modal("show");
+                return false;
+            });
+
+            $("#materialparededit").click(function(){
+                $("#id_materialpared").val({{ ficha.materialpared.id }});
+                $("#materialparedpanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#materialparedpanel").modal("show");
+                return false;
+            });
+
+        //Material Predominante en el Piso
+            $("#materialpisopanel .btn-ejecutar").click(function(){
+                var materialpiso = $("#id_materialpiso").val();
+                if (materialpiso){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'materialpiso', "fichaid": {{ ficha.id }} , 'materialpiso': materialpiso }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+                    $("#materialpisopanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#materialpisopanel .btn-cerrar").click(function(){
+                $("#materialpisopanel").modal("hide");
+                return false;
+            });
+
+            $("#materialpisoadd").click(function(){
+                $("#id_materialpiso").val('');
+                $("#materialpisopanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#materialpisopanel").modal("show");
+                return false;
+            });
+
+            $("#materialpisoedit").click(function(){
+                $("#id_materialpiso").val({{ ficha.materialpiso.id }});
+                $("#materialpisopanel").modal({'backdrop': 'static', 'width': '600'});
+                $("#materialpisopanel").modal("show");
+                return false;
+            });
+
+        //Cuartos de Baño con ducha
+            $("#cantbannoduchapanel .btn-ejecutar").click(function(){
+                var cantduchas = $("#id_cantbannoducha").val();
+                if (cantduchas){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'cantbannoducha', "fichaid": {{ ficha.id }} , 'cantduchas': cantduchas }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+                    $("#cantbannoduchapanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#cantbannoduchapanel .btn-cerrar").click(function(){
+                $("#cantbannoduchapanel").modal("hide");
+                return false;
+            });
+
+            $("#cantbannoduchaadd").click(function(){
+                $("#id_cantbannoducha").val('');
+                $("#cantbannoduchapanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#cantbannoduchapanel").modal("show");
+                return false;
+            });
+
+            $("#cantbannoduchaedit").click(function(){
+                $("#id_cantbannoducha").val({{ ficha.cantbannoducha.id }});
+                $("#cantbannoduchapanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#cantbannoduchapanel").modal("show");
+                return false;
+            });
+
+        //Tipo de Servicio Higienico con que cuenta hogar
+            $("#tiposervhigpanel .btn-ejecutar").click(function(){
+                var tiposervh = $("#id_tiposervhig").val();
+                if (tiposervh){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'tiposervhig', "fichaid": {{ ficha.id }} , 'tiposervh': tiposervh }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+                    $("#tiposervhigpanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#tiposervhigpanel .btn-cerrar").click(function(){
+                $("#tiposervhigpanel").modal("hide");
+                return false;
+            });
+
+            $("#tiposervhigadd").click(function(){
+                $("#id_tiposervhig").val('');
+                $("#tiposervhigpanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#tiposervhigpanel").modal("show");
+                return false;
+            });
+
+            $("#tiposervhigedit").click(function(){
+                $("#id_tiposervhig").val({{ ficha.tiposervhig.id }});
+                $("#tiposervhigpanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#tiposervhigpanel").modal("show");
+                return false;
+            });
+
+        //Cantidad de TV a color que tiene el hogar
+            $("#canttvcolorpanel .btn-ejecutar").click(function(){
+                var canttv = $("#id_canttvcolor").val();
+                if (canttv){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'canttvcolor', "fichaid": {{ ficha.id }} , 'canttv': canttv }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+                    $("#canttvcolorpanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#canttvcolorpanel .btn-cerrar").click(function(){
+                $("#canttvcolorpanel").modal("hide");
+                return false;
+            });
+
+            $("#canttvcoloradd").click(function(){
+                $("#id_canttvcolor").val('');
+                $("#canttvcolorpanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#canttvcolorpanel").modal("show");
+                return false;
+            });
+
+            $("#canttvcoloredit").click(function(){
+                $("#id_canttvcolor").val({{ ficha.canttvcolor.id }});
+                $("#canttvcolorpanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#canttvcolorpanel").modal("show");
+                return false;
+            });
+
+        //Cantidad de Vehiculos uso exclusivo del hogar
+            $("#cantvehiculospanel .btn-ejecutar").click(function(){
+                var cantveh = $("#id_cantvehiculos").val();
+                if (cantveh){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'cantvehiculos', "fichaid": {{ ficha.id }} , 'cantveh': cantveh }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+                    $("#cantvehiculospanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#cantvehiculospanel .btn-cerrar").click(function(){
+                $("#cantvehiculospanel").modal("hide");
+                return false;
+            });
+
+            $("#cantvehiculosadd").click(function(){
+                $("#id_cantvehiculos").val('');
+                $("#cantvehiculospanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#cantvehiculospanel").modal("show");
+                return false;
+            });
+
+            $("#cantvehiculosedit").click(function(){
+                $("#id_cantvehiculos").val({{ ficha.cantvehiculos.id }});
+                $("#cantvehiculospanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#cantvehiculospanel").modal("show");
+                return false;
+            });
+
+        //Cantidad de Celures activados del hogar
+            $("#cantcelularespanel .btn-ejecutar").click(function(){
+                var cantcel = $("#id_cantcelulares").val();
+                if (cantcel){
+                    $.blockUI({message: null});
+                    $.post("/alu_socioecon", {action: 'cantcelulares', "fichaid": {{ ficha.id }} , 'cantcel': cantcel }, function(data){
+                        $.unblockUI();
+                        if (data.result=='ok'){
+                            location.reload();
+                        }
+                    }, "json" );
+                    $("#cantcelularespanel").modal("hide");
+                }else{
+                    alert("Por favor escoja un elemento de la lista");
+                }
+                return false;
+            });
+
+            $("#cantcelularespanel .btn-cerrar").click(function(){
+                $("#cantcelularespanel").modal("hide");
+                return false;
+            });
+
+            $("#cantcelularesadd").click(function(){
+                $("#id_cantcelulares").val('');
+                $("#cantcelularespanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#cantcelularespanel").modal("show");
+                return false;
+            });
+
+            $("#cantcelularesedit").click(function(){
+                $("#id_cantcelulares").val({{ ficha.cantvehiculos.id }});
+                $("#cantcelularespanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#cantcelularespanel").modal("show");
+                return false;
+            });
+
+
+
+        }); // Fin de la function principal
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11' style="text-align: center">
+            <h3>Encuesta de Estratificaci&oacute;n del Nivel Socioecon&oacute;mico </h3>
+            <h5>(Texto tomado del Instituto Nacional de Estad&iacute;sticas y Censos (INEC)) </h5>
+{#            <span class="label label-info">{{ ficha.grupoeconomico }} </span> <span class="label label-inverse">{{ ficha.puntajetotal|floatformat:1 }}</span>#}
+            <h4 style="text-align: left">Estudiante: {{ inscripcion.persona.nombre_completo }}</h4>
+            <h4 style="text-align: left">Carrera: {{ inscripcion.carrera }} - {{ inscripcion.grupo.nombre }}</h4>
+            <br/>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span6">
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <!-- Sustentos del Hogar -->
+                        <th class="info" colspan="3">
+                            SUSTENTOS DEL HOGAR
+                        </th>
+                        <th style="text-align: right" colspan="2">
+                            <a href="#" id='btnsustento' class="btn btn-mini btn-success"><i class="icon-plus"></i> A&ntilde;adir Sustento</a>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th>Nombre y Apellidos de quienes sustentan el hogar </th>
+                        <th>Parentezco </th>
+                        <th style="text-align: center">Forma de Trabajo</th>
+                        <th style="text-align: center">Ingreso Mensual</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in ficha.sustentahogar.all %}
+                        <tr>
+                            <td> {{ s.persona }} </td>
+                            <td> {{ s.parentezco }} </td>
+                            <td style="text-align: center"> {{ s.formatrabajo }} </td>
+                            <td style="text-align: right"> ${{ s.ingresomensual|floatformat:2 }} </td>
+                            <td style="text-align: center" title="Eliminar Sustento">
+                                <a href="/alu_socioecon?action=delsustento&id={{ s.id }}" style="color: red" title="Eliminar sustento del hogar"> x </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    {% if not ficha.sustentahogar.all %}
+                       <tr>
+                            <td colspan="5"><i> No hay informaci&oacute;n de sustento del hogar</i></td>
+                       </tr>
+                    {% endif %}
+                        <tr>
+                            <td colspan="3" style="text-align: right"><i><b>Total de Ingreso Familiar</b></i></td>
+                            <td style="text-align: right"><b>${{ ficha.total_ingresos_sustentahogar|floatformat:2 }}</b></td>
+                            <td></td>
+                        </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="span2">
+            <table class="table table-bordered table-condensed">
+                <thead>
+                    <tr>
+                        <th colspan="3" style="text-align: center" class="alert alert-info"><b>LEYENDA</b></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="alert alert-block">
+                        <td style="text-align: center" ><img src="/static/images/16/true.png"/></td>
+                        <td style="text-align: center" class="bigger"><b>SI</b></td>
+                    </tr>
+                    <tr class="alert alert-block">
+                        <td style="text-align: center"><img src="/static/images/16/false.png"/></td>
+                        <td style="text-align: center" class="bigger"><b>NO</b></td>
+                    </tr>
+                    <tr class="alert alert-block">
+                        <td style="text-align: center"><a href="#" class="btn btn-mini btn-success"><i class="icon-plus"></i></a></td>
+                        <td style="text-align: center"><b>OPCIONES</b></td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+        <div class="span4" style="text-align: center">
+            {% if INSTITUTO.0 == INSTITUTO.1 %}
+                <img src="/static/images/LogoITB.jpg"/>
+            {% endif %}
+            {% if INSTITUTO.0 == INSTITUTO.2 %}
+                <img src="/static/images/LogoITF.jpg"/>
+            {% endif %}
+            {% if INSTITUTO.0 == INSTITUTO.3 %}
+                <img src="#"/>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span6'>
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <!-- Estructura Familiar -->
+                        <th class="info" colspan="2">
+                            ESTRUCTURA FAMILIAR Y DATOS ECON&Oacute;MICOS
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Tipo De Hogar: </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.tipohogar %}
+                                <a href="#" id='tipohogaredit'>{{ ficha.tipohogar }} </a>
+                            {% else %}
+                                <a href="#" id='tipohogaradd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}</td>
+                    </tr>
+                    <tr>
+                        <td>¿El estudiante es cabeza de familia? </td>
+                        <td style="text-align: center"><a href="#" id='escabezafamilia'> {% if ficha.escabezafamilia %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %}</a></td>
+                    </tr>
+                    <tr>
+                        <td>¿El estudiante es madre/padre soltera/o? </td>
+                        <td style="text-align: center"><a href="#" id='p_msoltera'> {% if ficha.p_msoltera %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %}</a></td>
+                    </tr>
+                    <tr>
+                        <td>N&uacute;mero de hijos (menores de edad)</td>
+                        <td style="text-align: center"><input style="width: 30px;text-align: center" id="num_hijos" value="{% if ficha.num_hijos %}{{ ficha.num_hijos  }}{% else %} 0 {% endif %}" ><p class="help-text">{{ field.help_text }} </p> </td>
+
+                    </tr>
+                    <tr>
+                        <td>¿El estudiante depende econ&oacute;micamente de sus padres u otras personas? </td>
+                        <td style="text-align: center"><a href="#" id='esdependiente'> {% if ficha.esdependiente %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Qui&eacute;n cubre los gastos del estudiante? </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.personacubregasto %}
+                                <a href="#" id='personacubregastoedit' title="{% if ficha.otroscubregasto %}{{ ficha.otroscubregasto }}{% endif %}">{{ ficha.personacubregasto }}</a>
+                            {% else %}
+                                <a href="#" id='personacubregastoadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td>Actividades del Estudiante: </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.ocupacionestudiante %}
+                                <a href="#" id='dedicacionestudianteedit'>{{ ficha.ocupacionestudiante }} </a>
+                            {% else %}
+                                <a href="#" id='dedicacionestudianteadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Si estudiante trabaja: ¿C&oacute;mo utiliza sus ingresos? </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.ingresoestudiante %}
+                                <a href="#" id='ingresosestudianteedit'>{{ ficha.ingresoestudiante }} </a>
+                            {% else %}
+                                <a href="#" id='ingresosestudianteadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}</td>
+                    </tr>
+
+                    <tr>
+                        <td>En el n&uacute;cleo familiar ¿Alguien recibe el bono de desarrollo humano? </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.bonofmlaestudiante %}
+                                <a href="#" id='bonofmlaestudianteedit'>{{ ficha.bonofmlaestudiante }} </a>
+                            {% else %}
+                                <a href="#" id='bonofmlaestudianteadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}</td>
+                    </tr>
+
+                    <tr>
+                        <td>N&uacute;mero de integrantes familia</td>
+                        <td style="text-align: center"><input style="width: 30px;text-align: center" id="num_miembros" value="{% if ficha.cantidadmiembros %}{{ ficha.cantidadmiembros  }}{% endif %}" ><p class="help-text">{{ field.help_text }} </p> </td>
+                    </tr>
+
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class='span6'>
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <!-- Nivel de Educacion y Actividad Economica del Hogar -->
+                        <th class="info" colspan="2">
+                            NIVEL DE EDUCACI&Oacute;N Y ACTIVIDAD ECON&Oacute;MICA DEL HOGAR
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>¿Cu&aacute;l es el nivel de estudios del Jefe del Hogar? </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.niveljefehogar %}
+                                <a href="#" id='niveljefehogaredit'>{{ ficha.niveljefehogar }}</a>
+                            {% else %}
+                                <a href="#" id='niveljefehogaradd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>¿Alguien en el hogar est&aacute; afiliado al IESS y/o seguro ISSPOL o ISSFA? </td>
+                        <td style="text-align: center"><a href="#" id='alguienafiliado'>{% if ficha.alguienafiliado %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Alguien en el hogar tiene seguro de salud privada, con o sin hospitalizaci&oacute;n y/o seguro de vida? </td>
+                        <td style="text-align: center"><a href="#" id='alguienseguro'>{% if ficha.alguienseguro %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Cu&aacute;l es la ocupaci&oacute;n del Jefe del Hogar? </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.ocupacionjefehogar %}
+                                <a href="#" id='ocupacionjefehogaredit'>{{ ficha.ocupacionjefehogar }}</a>
+                            {% else %}
+                                <a href="#" id='ocupacionjefehogaradd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <div class="row-fluid">
+        <div class="span6">
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <!-- Caracteristicas de la Vivienda -->
+                        <th class="info" colspan="2">
+                            CARACTER&Iacute;STICAS DE LA VIVIENDA
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>¿Cu&aacute;l es el tipo de vivienda?  </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.tipovivienda %}
+                                <a href="#" id='tipoviviendaedit'>{{ ficha.tipovivienda }}</a>
+                            {% else %}
+                                <a href="#" id='tipoviviendaadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Material Predominante en las paredes </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.materialpared %}
+                                <a href="#" id='materialparededit'>{{ ficha.materialpared }}</a>
+                            {% else %}
+                                <a href="#" id='materialparedadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Material Predominante en el piso </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.materialpiso %}
+                                <a href="#" id='materialpisoedit'>{{ ficha.materialpiso }}</a>
+                            {% else %}
+                                <a href="#" id='materialpisoadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>¿Cu&aacute;ntos cuartos de ba&ntilde;o con ducha tiene el hogar? </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.cantbannoducha %}
+                                <a href="#" id='cantbannoduchaedit'>{{ ficha.cantbannoducha }}</a>
+                            {% else %}
+                                <a href="#" id='cantbannoduchaadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>El tipo de servicio higi&eacute;nico con que cuenta el hogar es: </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.tiposervhig %}
+                                <a href="#" id='tiposervhigedit'>{{ ficha.tiposervhig }}</a>
+                            {% else %}
+                                <a href="#" id='tiposervhigadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="span6">
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <!-- Habitos de Consumo -->
+                        <th class="info" colspan="2">
+                            H&Aacute;BITOS DE CONSUMO
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>¿Alguien en el hogar compra vestimenta en centros comerciales?  </td>
+                        <td style="text-align: center"><a href="#" id='compravestcc'>{% if ficha.compravestcc %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿En el hogar alguien ha usado el internet en los &uacute;ltimos 6 meses? </td>
+                        <td style="text-align: center"><a href="#" id='usainternetseism'>{% if ficha.usainternetseism %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿En el hogar alguien utiliza correo electr&oacute;nico que no es del trabajo? </td>
+                        <td style="text-align: center"><a href="#" id='usacorreonotrab'>{% if ficha.usacorreonotrab %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿En el hogar alguien est&aacute; registrado en una red social? </td>
+                        <td style="text-align: center"><a href="#" id='registroredsocial'>{% if ficha.registroredsocial %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Alguien del hogar ha leido algun libro completo en los &uacute;ltimos 3 meses? (exceptuar libros de estudio)</td>
+                        <td style="text-align: center"><a href="#" id='leidolibrotresm'>{% if ficha.leidolibrotresm %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span6">
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <!-- Posesion de Bienes -->
+                        <th class="info" colspan="2">
+                            POSESI&Oacute;N DE BIENES
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>¿Tiene el hogar servicio de telef&oacute;no convencional?  </td>
+                        <td style="text-align: center"><a href="#" id='tienetelefconv'>{% if ficha.tienetelefconv %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Tiene el hogar cocina con horno? </td>
+                        <td style="text-align: center"><a href="#" id='tienecocinahorno'>{% if ficha.tienecocinahorno %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Tiene el hogar una refrigeradora? </td>
+                        <td style="text-align: center"><a href="#" id='tienerefrig'>{% if ficha.tienerefrig %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Tiene el hogar una lavadora? </td>
+                        <td style="text-align: center"><a href="#" id='tienelavadora'>{% if ficha.tienelavadora %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Tiene el hogar un equipo de sonido? </td>
+                        <td style="text-align: center"><a href="#" id='tienemusica'>{% if ficha.tienemusica %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Cu&aacute;ntos TV a color tienen en el hogar? </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.canttvcolor %}
+                                <a href="#" id='canttvcoloredit'>{{ ficha.canttvcolor }}</a>
+                            {% else %}
+                                <a href="#" id='canttvcoloradd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>¿Cu&aacute;ntos Veh&iacute;culos de uso exclusivo tiene el hogar? </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.cantvehiculos %}
+                                <a href="#" id='cantvehiculosedit'>{{ ficha.cantvehiculos }}</a>
+                            {% else %}
+                                <a href="#" id='cantvehiculosadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="span6">
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <!-- Acceso a la Tecnologia -->
+                        <th class="info" colspan="2">
+                            ACCESO A TECNOLOG&Iacute;A
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>¿Tiene el hogar servicio de internet?  </td>
+                        <td style="text-align: center"><a href="#" id='tieneinternet'>{% if ficha.tieneinternet %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Tiene computadora de escritorio? </td>
+                        <td style="text-align: center"><a href="#" id='tienedesktop'>{% if ficha.tienedesktop %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Tiene computadora port&aacute;til? </td>
+                        <td style="text-align: center"><a href="#" id='tienelaptop'>{% if ficha.tienelaptop %}<img src="/static/images/16/true.png"/>{% else %}<img src="/static/images/16/false.png"/>{% endif %} </a></td>
+                    </tr>
+                    <tr>
+                        <td>¿Cu&aacute;ntos celulares activados tienen en el hogar? </td>
+                        <td class="smaller" style="text-align: center">
+                            {% if ficha.cantcelulares %}
+                                <a href="#" id='cantcelularesedit'>{{ ficha.cantcelulares }}</a>
+                            {% else %}
+                                <a href="#" id='cantcelularesadd' class="btn btn-mini btn-success"><i class="icon-plus"></i> </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+{#            <a href="/reportes?action=run&direct=true&n=fichasocioeconomica&rt=pdf&persona={{ inscripcion.persona.id }}" class="btn btn-success"><i class="icon-print"></i> Imprimir Ficha SocioEcon&oacute;mica</a>#}
+        </div>
+    </div>
+{% endblock %}
+
+{% block moreblock %}
+{#  SUSTENTO HOGAR PANEL  #}
+    <div class="modal fade static" id="sustentospanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Adicionar Sustento del Hogar</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formsustento" class='form-horizontal' action="" method="POST">
+                {% for field in form_sustento %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+{#  TIPOS DE HOGAR PANEL  #}
+    <div class="modal fade static" id="tipohogarpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Escoger Tipo de Hogar</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formtipohogar" class='form-horizontal' action="" method="POST">
+                {% for field in form_tipohogar %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  QUIEN CUBRE GASTOS HOGAR PANEL  #}
+    <div class="modal fade static" id="personacubregastopanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">¿Qui&eacute;n cubre los gastos del estudiante?</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formpersonacubregasto" class='form-horizontal' action="" method="POST">
+                {% for field in form_personacubregasto %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  NIVEL EDUCACION JEFE HOGAR - PANEL  #}
+    <div class="modal fade static" id="niveljefehogarpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">¿Cu&aacute; es el nivel de estudios del Jefe de Hogar?</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formniveljefehogar" class='form-horizontal' action="" method="POST">
+                {% for field in form_niveljefehogar %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  OCUPACION JEFE HOGAR - PANEL  #}
+    <div class="modal fade static" id="ocupacionjefehogarpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">¿Cu&aacute; es la Ocupaci&oacute;n del Jefe de Hogar?</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formocupacionjefehogar" class='form-horizontal' action="" method="POST">
+                {% for field in form_ocupacionjefehogar %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  TIPO DE VIVIENDA - PANEL  #}
+    <div class="modal fade static" id="tipoviviendapanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">¿Cu&aacute; es el Tipo de Vivienda?</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formtipovivienda" class='form-horizontal' action="" method="POST">
+                {% for field in form_tipovivienda %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  MATERIAL PREDOMINANTE PAREDES - PANEL  #}
+    <div class="modal fade static" id="materialparedpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Material Predominante en las Paredes del Hogar</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formmaterialpared" class='form-horizontal' action="" method="POST">
+                {% for field in form_materialpared %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  MATERIAL PREDOMINANTE PISO - PANEL  #}
+    <div class="modal fade static" id="materialpisopanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Material Predominante en en el Piso del Hogar</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formmaterialpiso" class='form-horizontal' action="" method="POST">
+                {% for field in form_materialpiso %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  CUARTOS DE BAÑO DEL HOGAR - PANEL  #}
+    <div class="modal fade static" id="cantbannoduchapanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">¿Cu&aacute;ntos cuartos de ba&ntilde;o con ducha tiene el hogar? </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formcantbannoducha" class='form-horizontal' action="" method="POST">
+                {% for field in form_cantbannoducha %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  TIPO DE SERVICIO HIGIENICO - PANEL  #}
+    <div class="modal fade static" id="tiposervhigpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Tipo de Servicio Higi&eacute;nico con que cuenta el Hogar </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formtiposervhig" class='form-horizontal' action="" method="POST">
+                {% for field in form_tiposervhig %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  CANTIDAD DE TELEVISORES COLOR - PANEL  #}
+    <div class="modal fade static" id="canttvcolorpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">¿Cu&aacute;ntos TV a color tiene el hogar? </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formcanttvcolor" class='form-horizontal' action="" method="POST">
+                {% for field in form_canttvcolor %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  CANTIDAD DE VEHICULOS EXCLUSIVOS - PANEL  #}
+    <div class="modal fade static" id="cantvehiculospanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> ¿Cu&aacute;ntos Veh&iacute;culos de uso exclusivo tiene el hogar? </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formcantvehiculos" class='form-horizontal' action="" method="POST">
+                {% for field in form_cantvehiculos %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  CANTIDAD DE CELULARES - PANEL  #}
+    <div class="modal fade static" id="cantcelularespanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">¿Cu&aacute;ntos celulares activados tiene el hogar? </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formcantcelulares" class='form-horizontal' action="" method="POST">
+                {% for field in form_cantcelulares %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    {#  DEDICACION ESTUDIANTE PANEL  #}
+    <div class="modal fade static" id="dedicacionestudiantepanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Escoger Dedicacion Estudiante</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formdedicacion" class='form-horizontal' action="" method="POST">
+                {% for field in form_ocupacionestudiante %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+
+    {#  INGRESOS ESTUDIANTE PANEL  #}
+    <div class="modal fade static" id="ingresosestudiantepanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Escoger una Opcion</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formingresosest" class='form-horizontal' action="" method="POST">
+                {% for field in form_ingresosestudiante %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+
+    {#  BONO FAMILIA ESTUDIANTE PANEL  #}
+    <div class="modal fade static" id="bonofmlaestudiantepanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Escoger una Opcion</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formbonofmlaest" class='form-horizontal' action="" method="POST">
+                {% for field in form_bonofmlaestudiante %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-success"> Adicionar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+{% endblock %}

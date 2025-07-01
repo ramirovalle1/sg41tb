@@ -1,0 +1,144 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/preciobox?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+           $(".eliminar").click(function(){
+                 var id = $(this).attr("pid");
+                 smoke.confirm('Se eliminara el registro', function(e){
+                    if (e){
+                        location.href = '/preciobox?action=eliminar&id='+id;
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: "CANCELAR",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+
+        <div class="span11"  >
+            <h3 >Precios de Consulta</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/preciobox" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span2' style="width: 9%">
+            <table class="table table-condensed table-bordered smaller2 tabla">
+               <thead>
+                <tr>
+                    <th title="Ingreso de Registro" ><a href="/preciobox?action=add"><i class="icon-share-alt icon-white"></i> Nuevo Registro</a></th>
+                </tr>
+               </thead>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+
+        <div class='span6'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Tipo Consulta</th>
+                        <th style="text-align: center;">Tipo Persona</th>
+                        <th style="text-align: center;">Convenio</th>
+                        <th style="text-align: center;">Precio</th>
+                        <th style="text-align: center;"></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for p in precio %}
+                        <tr>
+                            <td style="text-align: center;" ><a href="/preciobox?action=edit&id={{ p.id }}">{{ p.tipovisita }}</a></td>
+                            <td style="text-align: center;" >{{ p.tipopersona }}</td>
+                            <td style="text-align: center;" >{% if p.convenio %}{{ p.convenio }}{% endif %}</td>
+                            <td style="text-align: center;" >{{ p.precio }}</td>
+
+
+                        <td style="text-align: center"><a title="Eliminar" class="btn btn-danger eliminar" pid={{ p.id }}><i class="icon-remove"></i> </td>
+
+
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class="span6">
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/preciobox?page=1">1</a></li>
+                            <li><a href="/preciobox?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/preciobox?page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/preciobox?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/preciobox?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/preciobox?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+{% endblock %}

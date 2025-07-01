@@ -1,0 +1,245 @@
+{% extends "layout/basebs.html" %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        $(function() {
+            $(".action_change_estado").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const value = $(this).data('value');
+                let question = `¿Está seguro de inactivar el plan analítico de la asignatura <span class="badge bg-info">${name}</span>?`;
+                if (value === 'activate')
+                {
+                    const question = `¿Está seguro de activar el plan analítico de la asignatura <span class="badge bg-info">${name}</span>?`;
+                }
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id, 'value': value}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            });
+
+            $(".action_delete").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const question = `Al eliminar el registro no podra volver a recuperar los datos. <br>¿Está seguro de eliminar el registro <span class="text-info">${name}</span>?`;
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            });
+
+            $("#addSilabo").click(function () {
+                $.get("{{ request.path }}", {'action':'addSilabo', 'id': '{{ materia.asignatura.id }}'}, function(data) {
+                    if (data.result == 'ok') {
+                        showModal('Plan Analíticos', data.html)
+                    }else{
+                        alert(data.mensaje);
+                    }
+                }, 'json');
+                {#$("#waitpanel").modal("show");#}
+            });
+
+            $(".cerrar_modal", $("#waitpanel")).click(function () {
+                $("#waitpanel").modal("hide");
+            });
+
+            $(".modal-body").on("click", ".rel_plananalitico", function(event) {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const value = $(this).data('value');
+                let question = `¿Está seguro crear el Sílabo de la asignatura <span class="badge bg-info">${name}</span>?`;
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id, 'value': value, 'idm': '{{ materia.id }}'}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            })
+        });
+        function showModal(title, componente) {
+            $("#waitpanel").find("#paneltitle").html(title);
+            $("#waitpanel .modal-body").html(componente);
+            $("#waitpanel").find(".btn_action").hide();
+            $("#waitpanel").modal({backdrop: 'static', width: '710px'}).modal('show');
+        }
+    </script>
+{% endblock %}
+{% block atras %}{{ request.path }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid ">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                    <h6>Facultad: {{ materia.nivel.carrera.coordinacion }} Carrera: {{ materia.nivel.carrera }} <br>
+                        Materia: {{ materia.asignatura }} | Nivel: {{ materia.nivel.nivelmalla }} | Paralelo: {{ materia.nivel.paralelo }}<br>
+                        Cronograma:
+                        {% if tiene_cronograma_academico %}
+                            {% with cronograma=materia.mi_cronograma_academico %}
+                                {% with fechacronograma=cronograma.inicio_fin_crononograma %}
+                                    {{ cronograma }} ({{ fechacronograma.inicio|date:'d-m-Y' }}  hasta  {{ fechacronograma.fin|date:'d-m-Y' }})
+                                {% endwith %}
+                            {% endwith %}
+                        {% else %}
+                            <strong class="text-danger"> No tiene un cronograma asignado para la elaboración del sílabo.</strong>
+                        {% endif %}
+                    </h6>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12 col-lg-12 col-md-12 col-sm-12">
+                {% with tiene_plan_analitico=materia.tiene_plan_analitico %}
+                    {% if tiene_cronograma_academico and tiene_plan_analitico and tiene_modelo_evaluativo and not materia.tiene_silabo and not materia.cerrado %}
+                        <a class="btn waves-effect waves-light btn-rounded btn-outline-success" id="addSilabo" href="javascript:;"><i class="fa fa-plus"></i> Adionar Sílabo</a>
+                    {% else %}
+                        {% if not tiene_cronograma_academico %}
+                            <div class="alert alert-warning">Actualmente no se ha registrado un cronograma académico para esta materia. Por favor, contacte al departamento correspondiente para solicitar su ingreso.</div>
+                        {% endif %}
+                        {% if not tiene_plan_analitico %}
+                            <div class="alert alert-danger">Actualmente no se ha creado un plan analítico para esta materia. Por favor, contacte al departamento correspondiente para solicitar su ingreso.</div>
+                        {% endif %}
+                        {% if not tiene_modelo_evaluativo %}
+                            <div class="alert alert-danger">Actualmente, no se ha asignado un modelo evaluativo para esta materia. Por favor, contacte al departamento correspondiente para solicitar la asignación.</div>
+                        {% endif %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+
+        <div class='row bm-4'>
+            <div class="col-12 col-lg-12 col-md-12 col-sm-12">
+                <table class='table table-bordered table-striped table-responsive text-nowrap customize-table mb-0 align-middle' cellpadding="0" cellspacing="0" style="word-wrap: break-word; white-space: normal;">
+                    <thead>
+                    <tr>
+                        <th class="text-left">Asignatura</th>
+                        <th class="text-center" width="10%">Estado Plan Analítico</th>
+                        <th class="text-center" width="10%">Estado Sílabo</th>
+                        {#                        <th class="text-center" width="20%">Observación <br>del Director</th>#}
+{#                        <th class="text-center" width="10%">Sílabo Firmado</th>#}
+                        <th class="text-center" width="5%">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody style="word-wrap: break-word; white-space: normal;">
+                    {% for silabo in silabos %}
+                        <tr>
+                            <td>{{ silabo.materia.asignatura }}
+                                <span></span>
+                                <div>
+                                    <span class="badge font-medium bg-light-secondary text-secondary">Fecha de creación: {{ silabo.plananalitico.fecha_creacion|date:'d-m-Y H:i A' }}</span>
+                                    |
+                                    <span class="badge font-medium bg-light-warning text-warning">Fecha de modificación: {{ silabo.plananalitico.fecha_creacion|date:'d-m-Y H:i A' }}</span>
+                                    <br/>
+                                    <span class="badge bg-info"> Contenido planificado comprenden el {{ silabo.porcentaje_planificacion_silabo }}%</span>|<span
+                                        class="badge bg-success">Versión: {{ silabo.versionsilabo }}</span>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                {% if silabo.plananalitico.activo %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% with get_estado=silabo.get_estado %}
+                                    <span class="badge bg-{{ get_estado.bg }}">{{ get_estado.estado }}</span>
+                                {% endwith %}
+                            </td>
+                            <td class="text-center">
+                                <div class="dropdown">
+                                    <a href="#" class="btn dropdown-toggle" id="dropdownMenuPA_{{ pa.id }}" data-bs-toggle="dropdown">Acciones <span class="caret"></span></a>
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuPA_{{ silabo.id }}" data-popper-placement="left-start">
+                                        <li><a class="dropdown-item" href="{{ request.path }}?action=planificacionsilabo&id={{ silabo.id }}"><i class="fa fa-list me-2"></i>Planificación</a></li>
+                                        <li><a class="dropdown-item" href="{{ request.path }}?action=planrecursoclasevirtual&id={{ silabo.id }}"><i class="fa fa-list me-2"></i>Planificación de recursos</a></li>
+                                        {% if silabo.estado == 1 %}
+                                            <li><a class="dropdown-item action_delete" data-id="{{ silabo.id }}" data-action="delSilabo" data-name="{{ silabo.materia.asignatura.nombre }}" href="javascript:void(0);"><i class="fa fa-trash me-2"></i>Eliminar</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">No existe registros</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="waitpanel" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger-light">
+                    <h4 class="modal-title" id="paneltitle">Plan Analítico</h4>
+                </div>
+                <div class="modal-body with-padding"> </div>
+                <div class="modal-footer">
+                    <a href="javascript:void(0);" class="btn btn-primary btn_action">Guardar</a>
+                    <a href="javascript:void(0);" class="btn btn-danger cerrar_modal">Cerrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

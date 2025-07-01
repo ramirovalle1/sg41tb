@@ -1,0 +1,412 @@
+{#{% extends "formbs.html" %}#}
+{% extends "inscripciones/formbs_inscripcion.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email #id_email1 #id_email2{ text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+{#    <script >#}
+
+    $("#id_nacimiento, #id_fecha").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+    $("#id_cedula").mask("9999999999");
+    $("#id_nombres,#id_apellido1,#id_provinciaresid, #id_cantonresid,#id_sexo, #id_nacimiento, #id_nacionalidad, #id_anuncio,#id_estcolegio").addClass("validate[required]");
+    $("#id_email,#id_email1,#id_email2").css({'text-transform': 'lowercase'});
+
+
+    $($("#id_ciudad").get(0).parentNode.parentNode).hide();
+    $($("#id_nombres").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-success'>DATOS PERSONALES</h4>");
+{#    $($("#id_grupo").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-info'>DATOS REGISTRO</h4>");#}
+
+    $("#id_nombres, #id_apellido1, #id_apellido2, #id_madre, #id_padre").addClass("input-block-level");
+    $("#id_direccion, #id_direccion2, #id_sector, #id_ciudad").addClass("input-block-level");
+    $("#id_cedula, #id_pasaporte, #id_nacionalidad, #id_identificador,#id_tipo_licencia").addClass("input-large");
+    $("#id_provincia, #id_canton,#id_provinciaresid, #id_cantonresid, #id_parroquia, #id_email, #id_telefono, #id_telefono_conv").addClass("input-xxlarge");
+    $("#id_sexo, #id_nacimiento,  #id_num_direccion, #id_sangre").addClass("input-medium");
+    {#OCU 30-sep-2016 campo colegio disabilitado#}
+
+
+
+
+
+
+
+
+
+
+    {# AJUSTE DE FORMULARIO EN DEPENDENCIA SI ES EXTRANJERO O NACIONAL   #}
+    ajustaFormulario = function () {
+        if ($("#id_extranjero").is(':checked')) {
+            $("#id_cedula").removeClass("validate[required]");
+            $("#id_pasaporte").addClass("validate[required]");
+            $("#id_cedula").attr("disabled", true);
+            $("#id_pasaporte").attr("disabled", false);
+            $($("#id_extranjero").get(0).parentNode).find(".help-text").html("<span style='color: red'><i> Si la persona extranjera no tiene c&eacute;dula de identidad, NO es obligatorio escribirla. Ingresar n&uacute;mero de Pasaporte.</i></span>");
+            $("#id_titulodoc").each(function() {
+                $($(this).get(0).parentNode.parentNode).show();
+            });
+
+            $("#id_titulobachiller").each(function() {
+                $($(this).get(0).parentNode.parentNode).hide();
+            });
+
+        }else{
+            $("#id_cedula").addClass("validate[required]");
+            $("#id_pasaporte").removeClass("validate[required]");
+            $("#id_cedula").attr("disabled", false);
+            $("#id_pasaporte").attr("disabled", true);
+            $($("#id_extranjero").get(0).parentNode).find(".help-text").html("");
+            $("#id_titulodoc").each(function() {
+                $($(this).get(0).parentNode.parentNode).hide();
+            });
+
+            $("#id_titulobachiller").each(function() {
+                $($(this).get(0).parentNode.parentNode).hide();
+            });
+        }
+    }
+
+    $("#id_extranjero").change(ajustaFormulario);
+    ajustaFormulario();
+
+    chequeaCedula = function(){
+        numero = $("#id_cedula").val();
+        var suma = 0;
+        var residuo = 0;
+        var pri = false;
+        var pub = false;
+        var nat = false;
+        var numeroProvincias = 24;
+        var modulo = 11;
+
+        prov = numero.substr(0,2);
+        if (parseInt(prov)>numeroProvincias || parseInt(prov)<=0){
+            alert('El código de la provincia (dos primeros dígitos) es inválido');
+            $("#id_cedula").val("");
+        }
+
+        /* Aqui almacenamos los digitos de la cedula en variables. */
+        d1 = numero.substr(0,1);
+        d2 = numero.substr(1,1);
+        d3 = numero.substr(2,1);
+        d4 = numero.substr(3,1);
+        d5 = numero.substr(4,1);
+        d6 = numero.substr(5,1);
+        d7 = numero.substr(6,1);
+        d8 = numero.substr(7,1);
+        d9 = numero.substr(8,1);
+        d10 = numero.substr(9,1);
+
+        /* El tercer digito es: */
+        /* 9 para sociedades privadas y extranjeros */
+        /* 6 para sociedades publicas */
+        /* menor que 6 (0,1,2,3,4,5) para personas naturales */
+
+        if (d3==7 || d3==8){
+            alert('El tercer dígito ingresado es inválido');
+            $("#id_cedula").val("");
+        }
+
+        /* Solo para personas naturales (modulo 10) */
+        {#  OCU 07-feb-2017 para que valide cedulas de extranjeros con tercer digito = 6 #}
+        {#  if (d3 <6){#}
+        if (d3 <=6){
+            nat = true;
+            p1 = d1 * 2; if (p1 >= 10) p1 -= 9;
+            p2 = d2 * 1; if (p2 >= 10) p2 -= 9;
+            p3 = d3 * 2; if (p3 >= 10) p3 -= 9;
+            p4 = d4 * 1; if (p4 >= 10) p4 -= 9;
+            p5 = d5 * 2; if (p5 >= 10) p5 -= 9;
+            p6 = d6 * 1; if (p6 >= 10) p6 -= 9;
+            p7 = d7 * 2; if (p7 >= 10) p7 -= 9;
+            p8 = d8 * 1; if (p8 >= 10) p8 -= 9;
+            p9 = d9 * 2; if (p9 >= 10) p9 -= 9;
+            modulo = 10;
+        }
+
+        /* Solo para sociedades publicas (modulo 11) */
+        /* Aqui el digito verficador esta en la posicion 9, en las otras 2 en la pos. 10 */
+        else if(d3 == 6){
+            pub = true;
+            p1 = d1 * 3;
+            p2 = d2 * 2;
+            p3 = d3 * 7;
+            p4 = d4 * 6;
+            p5 = d5 * 5;
+            p6 = d6 * 4;
+            p7 = d7 * 3;
+            p8 = d8 * 2;
+            p9 = 0;
+        }
+
+        /* Solo para entidades privadas (modulo 11) */
+        else if(d3 == 9) {
+            pri = true;
+            p1 = d1 * 4;
+            p2 = d2 * 3;
+            p3 = d3 * 2;
+            p4 = d4 * 7;
+            p5 = d5 * 6;
+            p6 = d6 * 5;
+            p7 = d7 * 4;
+            p8 = d8 * 3;
+            p9 = d9 * 2;
+        }
+
+        suma = p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+        residuo = suma % modulo;
+
+        /* Si residuo=0, dig.ver.=0, caso contrario 10 - residuo*/
+        digitoVerificador = residuo==0 ? 0: modulo - residuo;
+
+        /* ahora comparamos el elemento de la posicion 10 con el dig. ver.*/
+        if (pub==true){
+            if (digitoVerificador != d9){
+                alert('El ruc de la empresa del sector público es incorrecto.');
+                $("#id_cedula").val("");
+            }
+            /* El ruc de las empresas del sector publico terminan con 0001*/
+            if ( numero.substr(9,4) != '0001' ){
+                alert('El ruc de la empresa del sector público debe terminar con 0001');
+                $("#id_cedula").val("");
+            }
+        }
+
+        else if(pri == true){
+            if (digitoVerificador != d10){
+                alert('El ruc de la empresa del sector privado es incorrecto.');
+                $("#id_cedula").val("");
+            }
+            if ( numero.substr(10,3) != '001' ){
+                alert('El ruc de la empresa del sector privado debe terminar con 001');
+                $("#id_cedula").val("");
+            }
+        }
+
+        else if(nat == true){
+            if (digitoVerificador != d10){
+                alert('El número de cédula de la persona natural es incorrecto.');
+                $("#id_cedula").val("");
+            }
+            if (numero.length >10 && numero.substr(10,3) != '001' ){
+                alert('El ruc de la persona natural debe terminar con 001');
+                $("#id_cedula").val("");
+            }
+        }
+        return true;
+    };
+
+    $("#id_cedula").blur(function(){
+        if ($(this).val() != ''){
+            chequeaCedula();
+        }
+    });
+
+    $("#id_nacimiento").blur(function(){
+        $.post("/inscripciones", {action: 'buscarfechanac', nacimiento: $("#id_nacimiento").val()}, function(data) {
+                if (data.result=='bad') {
+                    $($("#id_nacimiento").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Estudiante tiene " +  data.anios + " a&ntilde;os" + "</i></span>"  );
+                    smoke.alert("Error en edad, no cumple la edad requerida");
+                    $("#formbutton").attr("disabled",true);
+                }
+                else{
+{#                    $($("#id_nacimiento").get(0).parentNode).find(".help-text").html(""  );#}
+                    $($("#id_nacimiento").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Estudiante tiene " +  data.anios + " a&ntilde;os" + "</i></span>"  );
+                    $("#formbutton").attr("disabled",false);
+                }
+        }, "json");
+    });
+
+    $("#id_nacionalidad option:first").remove()
+
+    $('#id_email').blur(function(){
+           var v = $("#id_email").val();
+            var p = tiene_arroba(v);
+            if(p != 1 )
+            {
+               $($("#id_email").get(0).parentNode).find(".help-text").html("El formato del correo es incorrecto ejemplo (email@dominio.com). ");
+               $("#id_email").focus();
+                emailcorr = 1;
+            }
+            else{
+                if(v.split('@')[1].length > 0)
+                {
+
+                    if(v.split(' ').length > 1)
+                    {
+                      $($("#id_email").get(0).parentNode).find(".help-text").html("El email no debe contener espacios, ingresar correctamente. ");
+                      $("#id_email").focus();
+                      emailcorr = 1;
+                    }
+                    else
+                    {
+                        var punto = tiene_punto(v.split('@')[1]);
+                        if(punto != 1 )
+                        {
+                            $($("#id_email").get(0).parentNode).find(".help-text").html("El formato del correo es incorrecto ejemplo (email@dominio.com). ");
+                            $("#id_email").focus();
+                            emailcorr = 1;
+                        }
+                        else{
+                            $($("#id_email").get(0).parentNode).find(".help-text").html("");
+                            emailcorr = 0;
+                        }
+                    }
+
+                }
+                else{
+                    $($("#id_email").get(0).parentNode).find(".help-text").html("El formato del correo es incorrecto ejemplo (email@dominio.com).. ");
+                    $("#id_email").focus();
+                    emailcorr = 1;
+                }
+
+            }
+        });
+
+    $('#id_email1').blur(function(){
+           var v = $("#id_email1").val();
+            var p = tiene_arroba(v);
+            if(p != 1 )
+            {
+               $($("#id_email1").get(0).parentNode).find(".help-text").html("El formato del correo es incorrecto ejemplo (email@dominio.com). ");
+               $("#id_email1").focus();
+                emailcorr = 1;
+            }
+            else{
+                if(v.split('@')[1].length > 0)
+                {
+
+                    if(v.split(' ').length > 1)
+                    {
+                      $($("#id_email1").get(0).parentNode).find(".help-text").html("El email no debe contener espacios, ingresar correctamente. ");
+                      $("#id_email1").focus();
+                      emailcorr = 1;
+                    }
+                    else
+                    {
+                        var punto = tiene_punto(v.split('@')[1]);
+                        if(punto != 1 )
+                        {
+                            $($("#id_email1").get(0).parentNode).find(".help-text").html("El formato del correo es incorrecto ejemplo (email@dominio.com). ");
+                            $("#id_email1").focus();
+                            emailcorr = 1;
+                        }
+                        else{
+                            $($("#id_email1").get(0).parentNode).find(".help-text").html("");
+                            emailcorr = 0;
+                        }
+                    }
+
+                }
+                else{
+                    $($("#id_email1").get(0).parentNode).find(".help-text").html("El formato del correo es incorrecto ejemplo (email@dominio.com).. ");
+                    $("#id_email1").focus();
+                    emailcorr = 1;
+                }
+
+            }
+        });
+
+    $('#id_email2').blur(function(){
+           var v = $("#id_email2").val();
+            var p = tiene_arroba(v);
+            if(p != 1 )
+            {
+               $($("#id_email2").get(0).parentNode).find(".help-text").html("El formato del correo es incorrecto ejemplo (email@dominio.com). ");
+               $("#id_email2").focus();
+                emailcorr = 1;
+            }
+            else{
+                if(v.split('@')[1].length > 0)
+                {
+
+                    if(v.split(' ').length > 1)
+                    {
+                      $($("#id_email2").get(0).parentNode).find(".help-text").html("El email no debe contener espacios, ingresar correctamente. ");
+                      $("#id_email2").focus();
+                      emailcorr = 1;
+                    }
+                    else
+                    {
+                        var punto = tiene_punto(v.split('@')[1]);
+                        if(punto != 1 )
+                        {
+                            $($("#id_email2").get(0).parentNode).find(".help-text").html("El formato del correo es incorrecto ejemplo (email@dominio.com).");
+                            $("#id_email2").focus();
+                            emailcorr = 1;
+                        }
+                        else{
+                            $($("#id_email2").get(0).parentNode).find(".help-text").html("");
+                            emailcorr = 0;
+                        }
+                    }
+
+                }
+                else{
+                    $($("#id_email2").get(0).parentNode).find(".help-text").html("El formato del correo es incorrecto ejemplo (email@dominio.com).. ");
+                    $("#id_email2").focus();
+                    emailcorr = 1;
+                }
+
+            }
+        });
+
+
+
+        var numeros="@";
+
+            function tiene_arroba(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                      num = num + 1;
+                  }
+               }
+               return num;
+        }
+
+        var puntoss=".";
+
+        function tiene_punto(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (puntoss.indexOf(texto.charAt(i),0)!=-1){
+                  num = num + 1;
+              }
+           }
+           return num;
+        }
+    var numerosdec="0123456789";
+
+    function solo_numerosdec(texto){
+       var num = 0;
+       for(i=0; i<texto.length; i++){
+          if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+              num = num +1;
+          }
+       }
+       return num;
+    }
+
+    {# OCU 05-sep-2017 validacion checked discapacidad #}
+
+
+{% endblock %}
+{% block titulo %}
+   Editar Inscripci&oacute;n del Alumno
+{% endblock %}
+
+
+
+
+{% block formaction %}/inscripciones{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='edit'/>
+    <input type='hidden' name='id' value="{{ inscripcion.id }}"/>
+    {% if graduado %}<input type='hidden' name='graduado' value="{{ graduado }}"/>{% endif %}
+<div class="row-fluid">
+    <div style="color: red; font-size: 12px; font-weight: bolder"> Los campos con * son OBLIGATORIOS</div>
+</div>
+{% endblock %}
+{% block formback %}/inscripciones{% endblock %}

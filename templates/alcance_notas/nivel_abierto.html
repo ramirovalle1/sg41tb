@@ -1,0 +1,376 @@
+<table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Estudiante</th>
+            <th style="text-align: center; width: 100px">Nota1<br>{{ cod1.alias }} </th>
+            <th style="text-align: center; width: 100px">Nota2 <br>{{ cod2.alias }}</th>
+            <th style="text-align: center; width: 100px">Nota3<br>{{ cod3.alias }}</th>
+            <th style="text-align: center; width: 100px">Nota4<br>{{ cod4.alias }}</th>
+            <th style="text-align: center; width: 100px">Examen</th>
+            <th style="text-align: center; width: 100px">Recup./Mej.</th>
+            <th style="text-align: center; width: 100px">Nota Final</th>
+            <th style="text-align: center; width: 100px">Asistencia</th>
+            <th style="text-align: center">Estado</th>
+{#            <th style="text-align: center">Observaci&oacute;n</th>#}
+            <th style="width: 50px"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for mat in asignados %}
+            <tr>
+                {% if not mat.matricula.esta_retirado %}
+                    <td style="width:15%">
+                        {{ mat.matricula.inscripcion.persona.nombre_completo_inverso }}
+                        {% if mat.tiene_evaluacionalcance.eliminado  %}
+                            <br><span class='label label-success'>Eliminado por Secretaria</span>
+                        {% endif %}
+                        {% if mat.matricula.inscripcion.tiene_deuda_temp %}
+                            <br><span class='label label-important'>Deuda: ${{ mat.matricula.inscripcion.adeuda_a_la_fecha|floatformat:2 }}</span>
+                        {% endif %}
+                        {% if mat.obtener_rubroespecie_asentamientonotas %}
+                            {% if mat.obtener_rubroespecie_asentamientonotas.vencida <= DIAS_ESPECIE or mat.obtener_rubroespecie_asentamientonotas.habilita %}
+                                <br>
+                                <span class="label label-warning tl" title="Para asentar notas, la especie deber primero ser autorizada por coordinación académica.">
+                                    Especie:  {{ mat.obtener_rubroespecie_asentamientonotas.serie }} Tipo: {{ mat.obtener_rubroespecie_asentamientonotas.tipoespecie.nombre }}<br>
+                                    Caduca en: {{ mat.obtener_rubroespecie_asentamientonotas.dias_disponibles }} dias
+                                </span>
+                                {% if mat.obtener_rubroespecie_asentamientonotas.autorizado %}
+                                    <br><span class="label label-success">
+                                        Autorizado por {{ mat.obtener_rubroespecie_asentamientonotas.usrautoriza }}
+                                    </span>
+                                {% else %}
+                                    <br><span class="label label-inverse">
+                                        Especie pendiente de ser autorizada
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    {% if mat.tiene_evaluacionalcance.observaciones and mat.tiene_evaluacionalcance.motivo and mat.ver_asentamiento %}
+                        <td style="text-align: center">
+                            <b>{{ mat.evaluacion.n1 }}</b><br>
+                            <input
+                                    id='n1{{ mat.id }}'
+                                    val='{{ mat.id }}'
+                                    type="text"
+                                    class="nota1 input-mini bigger"
+                                    style="color:green; text-align: center; background: yellow; font-weight: bold;"
+                                    value="{{ mat.obtener_evaluacion_alcance.n1 }}"
+                                    onchange="cambiarNotaNivelAbierto('{{ mat.obtener_evaluacion_alcance.n1 }}', 'n1', '{{ mat.id }}', '{{ porcnota1 }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"/>
+                        </td>
+                        <td style="text-align: center">
+                            <b>{{ mat.evaluacion.n2 }}</b><br>
+                            <input
+                                    id='n2{{ mat.id }}'
+                                    val='{{ mat.id }}'
+                                    type="text"
+                                    class="nota2 input-mini bigger"
+                                    style="color:green; text-align: center; background: yellow; font-weight: bold;"
+                                    value="{{ mat.obtener_evaluacion_alcance.n2 }}" maid='{{ mat.id }}' name='{{ mat.id }}'
+                                    onchange="cambiarNotaNivelAbierto('{{ mat.obtener_evaluacion_alcance.n2 }}', 'n2', '{{ mat.id }}', '{{ porcnota2 }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"/>
+                        </td>
+                        <td style="text-align: center">
+                            <b>{{ mat.evaluacion.n3 }}</b><br>
+                            <input
+                                    id='n3{{ mat.id }}'
+                                    val='{{ mat.id }}'
+                                    type="text"
+                                    class="nota3 input-mini bigger"
+                                    style="color:green; text-align: center; background: yellow; font-weight: bold;"
+                                    value="{{ mat.obtener_evaluacion_alcance.n3 }}" maid='{{ mat.id }}' name='{{ mat.id }}'
+                                    onchange="cambiarNotaNivelAbierto('{{ mat.obtener_evaluacion_alcance.n3 }}', 'n3', '{{ mat.id }}', '{{ porcnota3 }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"/>
+                        </td>
+                        <td style="text-align: center">
+                            <b>{{ mat.evaluacion.n4 }}</b><br>
+                            <input
+                                    id='n4{{ mat.id }}'
+                                    val='{{ mat.id }}'
+                                    type="text"
+                                    class="nota4 input-mini bigger"
+                                    style="color:green; text-align: center; background: yellow; font-weight: bold;"
+                                    value="{{ mat.obtener_evaluacion_alcance.n4 }}"
+                                    onchange="cambiarNotaNivelAbierto('{{ mat.obtener_evaluacion_alcance.n4 }}', 'n4', '{{ mat.id }}', '{{ porcnota4 }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"/>
+                        </td>
+                        <td style="text-align: center">
+                            <b>{{ mat.evaluacion.examen }}</b><br>
+                            <input
+                                    id='examen{{ mat.id }}'
+                                    val='{{ mat.id }}'
+                                    type="text"
+                                    class="notaexamen input-mini bigger"
+                                    style="color:green; text-align: center; background: yellow; font-weight: bold;"
+                                    value="{{ mat.obtener_evaluacion_alcance.examen }}"
+                                    onchange="cambiarNotaNivelAbierto('{{ mat.obtener_evaluacion_alcance.examen }}', 'examen', '{{ mat.id }}', '{{ porcnota5 }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"/>
+                        </td>
+                        <td style="text-align: center">
+                            <b>{{ mat.evaluacion.recuperacion }}</b><br>
+                            <input
+                                    id='recuperacion{{ mat.id }}'
+                                    val='{{ mat.id }}'
+                                    type="text"
+                                    class="notarecupera input-mini bigger"
+                                    style="color:green; text-align: center; background: yellow; font-weight: bold;"
+                                    value="{{ mat.obtener_evaluacion_alcance.recuperacion }}" maid='{{ mat.id }}'
+                                    onchange="cambiarNotaNivelAbierto('{{ mat.obtener_evaluacion_alcance.recuperacion }}', 'recuperacion', '{{ mat.id }}', 100, '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')"/>
+                        </td>
+                        <td style="text-align: center">
+                            {{mat.notafinal|floatformat}}<br>
+                            <input
+                                    id='final{{ mat.id }}'
+                                    type="text"
+                                    class="input-mini bigger"
+                                    style="font-weight: bold; text-align: center"
+                                    value="{{ mat.obtener_evaluacion_alcance.notafinal }}"
+                                    disabled/>
+                        </td>
+                    {% else %}
+                        <td style="text-align: center">
+                            {{ mat.evaluacion.n1 }}
+                        </td>
+                        <td style="text-align: center">
+                            {{ mat.evaluacion.n2 }}
+                        </td>
+                        <td style="text-align: center">
+                            {{ mat.evaluacion.n3 }}
+                        </td>
+                        <td style="text-align: center">
+                            {{ mat.evaluacion.n4}}
+                        </td>
+                        <td style="text-align: center">
+                            {{ mat.evaluacion.examen }}
+                        </td>
+                        <td style="text-align: center">
+                            {{ mat.evaluacion.recuperacion }}
+                        </td>
+                        <td style="text-align: center">
+                            {{mat.notafinal|floatformat}}
+                        </td>
+                    {% endif %}
+                    <td style="text-align: center">
+                        <strong {% if mat.porciento_asistencia >= asistencia_aprobar %} style="color:#006400;" {% else %} style="color:#dc143c;" {% endif %}>
+                            {{ mat.porciento_asistencia|floatformat:'2' }}%
+                        </strong>
+                    </td>
+                    <td style="text-align: center">
+                        <b {% if mat.evaluacion.estado.id == reprobado %}style="color: #dc143c"{% else %}style="color:#006400"{% endif %}>{{ mat.evaluacion.estado.nombre }}</b><br>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+                                {% if mat.obtener_rubroespecie_asentamientonotas %}
+                                    {% if mat.tiene_evaluacionalcance.motivo %}
+                                        <li><a href="#" onclick="verMotivoNivelAbierto(event, '{{ mat.tiene_evaluacionalcance.motivo }}')"><i class="icon-eye-open"></i> Ver Motivo</a></li>
+                                        <li>
+                                            <a href="#" onclick="addAlcanceNotasNivelAbierto(event, '{{ mat.id }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')">
+                                                <i class="icon-save"></i> Guardar alcance de notas
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        {% if mat.obtener_rubroespecie_asentamientonotas.autorizado  %}
+                                            <li title="Para asentar notas parciales, examen o recuperación, primero debe colocar un motivo, adjuntando un archivo de soporte.">
+                                                <a href="#" id='{{ mat.id }}' onclick="addMotivoNivelAbierto(event, '{{ mat.id }}', '{{ mat.obtener_rubroespecie_asentamientonotas.id }}')">
+                                                    <i class="icon-plus"></i> Adicionar motivo
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    {% if profesor %}
+                                        <li><a href="#" onclick="solicitarAsentamientoAbierto(event, '{{ mat.id }}')"><i class="icon-list"></i> Solicitar asentamiento de notas</a></li>
+                                    {% endif %}
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+
+        {% if not materia %}
+            <tr>
+                <td colspan="6" align='center'>NO EXISTEN REGISTROS</td>
+            </tr>
+        {% endif %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan='16'>
+                {%  if materia.verifica_evaluacionalcance %}
+                    <a id="rep" href="/reportes?action=run&direct=true&n=alcance_notas&rt=pdf&materia={{ materia.id }}" class="btn btn-success"><i class="icon-print"></i> Acta de Alcance</a>
+                {% endif %}
+            </td>
+        </tr>
+    </tfoot>
+</table>
+
+<script type="text/javascript">
+    idMatAsignada = null
+    idRubroEspecie = null
+
+    solicitarAsentamientoAbierto = function(event, idMateriaAsignada) {
+        $.post("/alcance_notas", {'action':'puede_generar_especie', 'materia_asignada':idMateriaAsignada}, function(data) {
+             if (data.result=="ok") {
+                 swal.fire({
+                    title: 'Generar solicitud de asentamiento de notas',
+                    text: 'Va a generar una solicitud a su coordinación solicitando permiso para asentamiento de calificaciones por alcance de notas. Desea Continuar?',
+                    type: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5'
+                }).then(function (isConfirm) {
+                    if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                        $.post("/alcance_notas", {'action':'genera_especie_asentamiento_sinvalor', 'materia_asignada':idMateriaAsignada}, function(data) {
+                             if (data.result=="ok") {
+                                swal.fire("Solicitud enviada!", "Debe esperar que un asistente de su coordinacion apruebe el trámite en bandeja.", "info").then(function(e) {
+                                    location.reload()
+                                })
+
+                             } else {
+                                swal.fire("Error", data.mensaje, 'warning')
+                             }
+                        }, "json");
+                    }
+                });
+             } else {
+                swal.fire("No se puede generar solicitud", data.mensaje, 'warning')
+             }
+        }, "json");
+        event.preventDefault();
+    }
+
+    addMotivoNivelAbierto = function(event, id, idRubroEspecieValorada) {
+        idMatAsignada = id
+        idRubroEspecie = idRubroEspecieValorada
+        $('#slcMotivoNivelAbierto').val(0)
+        swal.fire({
+            title: 'Motivo Alcance Notas',
+            html: '<div><div style="text-align:left; display:flex; gap:1em">' +
+                    '<label style="width:100px;">Ingrese Motivo:</label>' +
+                    '<select id="slcMotivoNivelAbierto">' +
+                    '   <option value="0">---</option>'+
+                    '   {% for x in motivos_alcance %}' +
+                    '       <option value="{{ x.id }}">{{ x.motivo }}</option>'+
+                    '   {% endfor %}'+
+                    '</select>'+
+                  '</div>'+
+                  '<div style="text-align:left; display:flex; gap:1em">' +
+                    '<label style="width:100px;">Observacion:</label>'+
+                    '<textarea id="txtObservacion"></textarea>'+
+                  '</div></div>',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonClass: 'btn btn-success margin-5',
+            cancelButtonClass: 'btn btn-danger margin-5'
+        }).then(function (isConfirm) {
+            if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                if ($('#slcMotivoNivelAbierto').val()!='0' && $('#txtObservacion').val()!='') {
+                    $.post("/alcance_notas", {
+                                                'action':'add_motivo_nivel_abierto',
+                                                'matasignada':id,
+                                                'tipomotivo':$('#slcMotivoNivelAbierto').val(),
+                                                'observacion':$('#txtObservacion').val(),
+                                                'rubro_especie': idRubroEspecieValorada
+                                             }, function(data) {
+                        console.log(data)
+                        if (data.result=="ok") {
+                            swal.fire('Motivo ingresado correctamente', '', 'info').then(function() {
+                                location.reload()
+                            })
+                        } else {
+                            swal.fire("Error!", data.mensaje, "warning")
+                        }
+                    }, "json");
+                } else {
+                    swal.fire('Faltan datos', 'Motivo y observacion son campos obligatorios', 'info')
+                }
+
+            }
+        });
+        event.preventDefault();
+    }
+
+    verMotivoNivelAbierto = function(event, motivo) {
+        swal.fire("Motivo", motivo, 'info')
+        event.preventDefault();
+    }
+
+    const min_recupera = {{ min_recupera }};
+    const max_recupera = {{ max_recupera }};
+    const min_exa = {{ min_exa }};
+    const max_exa = {{ max_exa }};
+    const MIN_EXAMEN_RECUPERACION = {{ min_exarecupera }};
+
+    cambiarNotaNivelAbierto = function(notaActual, atributoEvaluacionAlcance, idMateriaAsignada, notaValorMaximo, rubroEspecie) {
+        let notaNueva = $("#"+atributoEvaluacionAlcance+idMateriaAsignada).val()
+        console.log(idMateriaAsignada)
+        console.log(notaNueva)
+        console.log(notaActual)
+        console.log(atributoEvaluacionAlcance)
+        console.log(notaValorMaximo)
+        if (parseInt(notaNueva) > parseInt(notaValorMaximo)) {
+             $("#"+atributoEvaluacionAlcance+idMateriaAsignada).val(notaActual)
+             swal.fire("Notificación!", "Esta nota no puede tener un valor mayor de <strong style='color:green'>"+notaValorMaximo+" puntos</strong>", "error")
+        }else{
+              actualizarNotasNivelAbierto(parseInt(notaNueva), idMateriaAsignada, atributoEvaluacionAlcance, rubroEspecie)
+        }
+    }
+
+    var notaFinal = 0
+    actualizarNotasNivelAbierto = function (nota, asignada, posicion, rubroEspecie) {
+         $.post("/alcance_notas", {'action':'actualiza_notas', 'matasignada':asignada, 'nota':nota, 'posicion':posicion, 'rubro_especie':rubroEspecie}, function(data) {
+             if (data.result=="ok") {
+                 $("#final" + asignada).val(data.nota_final)
+                 if (parseInt(data.nota_final) < MIN_EXAMEN_RECUPERACION) {
+                     $("#final" + asignada).css("background", "lightcoral");
+                 } else {
+                     $("#final" + asignada).css("background", "lightgreen")
+                 }
+             } else {
+                self.val(0);
+                location.reload();
+             }
+        }, "json");
+    };
+
+    addAlcanceNotasNivelAbierto = function(event, id, idRubroEspecieValorada) {
+        swal.fire({
+            title: 'Las notas ingresadas serán actualizadas. Desea continuar?',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Si!',
+            cancelButtonText: 'No',
+            confirmButtonClass: 'btn btn-success margin-5',
+            cancelButtonClass: 'btn btn-danger margin-5'
+        }).then(function (isConfirm) {
+            if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                $.post("/alcance_notas", {'action':'verificaCambiosAlcanceNivelAbierto', 'materia_asignada':id, 'rubro_especie':idRubroEspecieValorada}, function(data) {
+                    console.log(data)
+                    if (data.result=="ok") {
+                        $.post("/alcance_notas", {'action':'addAlcanceNivelAbierto', 'materia_asignada':id, 'rubro_especie':idRubroEspecieValorada}, function(data) {
+                            console.log(data)
+                            if (data.result=="ok") {
+                                swal.fire("Notas actualizadas", "Notas actualizadas. El trámite en bandeja se finalizó de forma atumática.", "info").then(function(){
+                                    location.reload()
+                                })
+                            } else {
+                                swal.fire("Alerta!", data.mensaje, "warning")
+                            }
+                        }, "json");
+                    } else {
+                        swal.fire("Alerta!", data.mensaje, "warning")
+                    }
+                }, "json");
+            }
+        });
+        event.preventDefault();
+    }
+
+</script>

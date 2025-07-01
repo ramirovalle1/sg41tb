@@ -1,0 +1,123 @@
+{% load sga_extras %}
+<script type="text/javascript">
+    $(document).ready(function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
+</script>
+<div>
+    {% if eMateria.cerrado %}
+
+        <div class="alert alert-danger fs-5">
+            <i class="fa fa-info-circle me-2"></i> Asignatura fue cerrada el {{ eMateria.fechacierre|date:'d-m-Y' }} a las {{ eMateria.fechacierre|time:'H:i:s' }}
+        </div>
+
+        {% if eRepositorioActaCalificacion.estado == 0 %}
+            {% if eReporte %}
+                <div class="text-end d-flex justify-content-md-end justify-content-center mt-3 mt-md-0">
+                    <button class="btn btn-primary actionGenerateActa" data-rid="{{ eReporte.id }}" data-rt="pdf" data-name="{{ eMateria.nombre_completo }}" data-materia="{{ eMateria.id }}">
+                        <i class="ti ti-wand text-white me-1 fs-5"></i> Generar Acta
+                    </button>
+                </div>
+            {% else %}
+                <div class="alert alert-warning fs-5">
+                    <i class="fa fa-info-circle me-2"></i> No puede generar acta de calificaciones, por favor ponerse en contacto con TICs (Cod: R-001).
+                </div>
+            {% endif %}
+        {% elif eRepositorioActaCalificacion.estado == 1 %}
+            {% if not tiene_firmada_acta and not puede_firmar %}
+                <div class="alert alert-warning fs-5">
+                    <i class="fa fa-info-circle me-2"></i> No puede firmar acta de calificaciones, por favor ponerse en contacto con soporte. ((Cod: S-001))
+                </div>
+            {% else %}
+                {% if not tiene_firmada_acta and puede_firmar %}
+                    <div class="text-end d-flex justify-content-md-end justify-content-center mt-3 mt-md-0">
+                        <a href="{{ eRepositorioActaCalificacion.archivo_inicial.archivo.url }}" target="_blank" class="btn btn-outline-success me-2">
+                            <i class="ti ti-download me-1 fs-5"></i> Acta de calificaciones
+                        </a>
+                        <button class="btn btn-outline-primary" onclick="handleOpenModalFirmaEC('Firmar acta de calificaciones', 'loadFormFirma', {{ eMateria.id }})">
+                            <i class="ti ti-rocket me-1 fs-5"></i> Firmar Acta
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="text-end d-flex justify-content-md-end justify-content-center mt-3 mt-md-0">
+                        <a href="{{ eRepositorioActaCalificacion.archivo_inicial.archivo.url }}" target="_blank" class="btn btn-outline-success me-2">
+                            <i class="ti ti-download me-1 fs-5"></i> Acta Original
+                        </a>
+                        <a href="{{ eFirmaActaCalificacion.archivo.archivo.url }}" target="_blank" class="btn btn-outline-primary me-2">
+                            <i class="ti ti-download me-1 fs-5"></i> Acta Firmada
+                        </a>
+                        <button class="btn btn-outline-info me-2 actionOpenModal" data-action="loadSeguimientoFirma" data-id="{{ eMateria.id }}" data-title="Seguimiento de firma de la materia {{ eMateria.nombre_completo }}" data-modal="modalSeguimientoActa">
+                            <i class="ti ti-wand me-1 fs-5"></i> Seguimiento de firma
+                        </button>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% else %}
+            <div class="text-end d-flex justify-content-md-end justify-content-center mt-3 mt-md-0">
+                <a href="{{ eRepositorioActaCalificacion.archivo_inicial.archivo.url }}" target="_blank" class="btn btn-outline-success me-2">
+                    <i class="ti ti-download me-1 fs-5"></i> Acta Original
+                </a>
+                <a href="{{ eRepositorioActaCalificacion.archivo_final.archivo.url }}" target="_blank" class="btn btn-outline-primary me-2">
+                    <i class="ti ti-download me-1 fs-5"></i> Acta Firmada
+                </a>
+            </div>
+        {% endif %}
+    {%else %}
+        <div class="mb-3">
+            <button class="btn btn-large btn-danger actionCloseMateria" data-name="{{ eMateria.nombre_completo }}" data-id="{{ eMateria.id }}">Cerrar materia </button>
+        </div>
+        <div class="table-responsive">
+            <table class='table table-striped table-bordered '>
+                <thead class="">
+                <tr>
+                    <th class="align-middle text-center fs-1" style="width: 40% !important;">Estudiantes</th>
+                    {% include "pro_calificaciones/generico/encabezado_base.html" %}
+                    {% include "pro_calificaciones/generico/encabezado_extra.html" %}
+
+                </tr>
+                </thead>
+                <tbody>
+                {% for eMateriaAsignada in eMateria.asignados_a_esta_materia %}
+                    {% if not eMateriaAsignada.matricula.esta_retirado %}
+                        {% with regnota=eMateriaAsignada.tiene_especie_regnota espnota=eMateriaAsignada.ver_especienotas tienedeuda=False tienedeudatmp=eMateriaAsignada.matricula.inscripcion.tiene_deuda_temp suspension=eMateriaAsignada.matricula.inscripcion.suspension notaparcial=eMateriaAsignada.evaluacion.nota_parcial notafinal=eMateriaAsignada.evaluacion.nota_final_nueva evaluacion=eMateriaAsignada.evaluacion tieneespecie=eMateriaAsignada.tiene_especie%}
+                            <tr id='row_idma_{{ eMateriaAsignada.id }}'>
+                                <td class="fs-2" title="{% if eMateriaAsignada.matricula.inscripcion.persona.email %}{{ eMateriaAsignada.matricula.inscripcion.persona.email }}{% else %}No tiene Email{% endif %}">
+                                    <p class="m-0 p-0">{{ eMateriaAsignada.matricula.inscripcion.persona.nombre_completo_minus }} ({{ eMateriaAsignada.matricula.inscripcion.persona.documento }})</p>
+                                    {% if eMateriaAsignada.matricula.inscripcion.persona.datos_incompletos and DATOS_ESTRICTO %}
+                                        <span class='badge bg-info fs-1'>Datos Incompletos</span>
+                                    {% endif %}
+                                    {% if MODULO_FINANZAS_ACTIVO %}
+                                        {% if tienedeudatmp %}
+                                            <span class='badge bg-danger fs-1'>Deuda: ${{ eMateriaAsignada.matricula.inscripcion.adeuda_a_la_fecha|floatformat:2 }}</span>
+                                        {% endif %}
+                                    {% endif %}
+
+                                    {% if suspension %}
+                                        <span class="badge bg-danger fs-1 tl" title="Suspensión">(S)</span>
+                                    {% endif %}
+                                    {% if tieneespecie %}
+                                        <span class="badge bg-warning " title="tiene Especie">{{ tieneespecie }}</span>
+                                    {% endif %}
+                                    {% if espnota %}
+                                        <span class="badge bg-warning " title="tiene Especie">{{ espnota }}</span>
+                                    {% endif %}
+                                </td>
+                                <!-- GENERICA -->
+                                {% include "pro_calificaciones/generico/filanotas_base.html" %}
+                                {% include "pro_calificaciones/generico/filanotas_extra.html" %}
+                            </tr>
+                        {% endwith %}
+                    {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3">
+            <button class="btn btn-large btn-danger actionCloseMateria" data-name="{{ eMateria.nombre_completo }}" data-id="{{ eMateria.id }}">Cerrar materia </button>
+        </div>
+
+    {% endif %}
+</div>

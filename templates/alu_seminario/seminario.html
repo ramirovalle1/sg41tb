@@ -1,0 +1,439 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $("#id_otro").addClass("input-small");
+            $("#id_abreviatura").addClass("input-small");
+            $("#id_otro").attr('disabled',true);
+            $("#search").click(function() {
+                    var term = $("#searchfield").val().toUpperCase();
+                    location.href = "/alu_seminario?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+            var mensaje = '';
+            $(".btn-info").click(function(){
+                var id = $(this).attr("sid");
+                var precio = $(this).attr("cost");
+                var libre = $(this).attr("libre");
+                if (libre == 'False'){
+                    $.post("/alu_seminario",{"action": "consulta_pago", "id": id,"matricula":'{{ matricula.id }}' },function(data) {
+{#                    $.post("/alu_seminario",{"action": "consulta_pago_congreso", "id": id,"matricula":'{{ matricula.id }}' },function(data) {#}
+                    if (data.result=='ok') {
+{#                        mensaje = 'Esta seguro de matricularse en este taller..? Costo $0.0';#}
+                        {% if tienetaller %}
+                            mensaje = 'Esta seguro de matricularse en este taller...? Costo $' +precio ;
+                        {% else %}
+                            mensaje = 'Esta seguro de matricularse en este taller de forma gratuita? ';
+                        {% endif %}
+
+                    }
+{#                    else#}
+{#                        mensaje = 'Esta seguro de matricularse en este taller...? Costo $' +precio ;#}
+{#                    }#}
+                    if (data.result=='inscrip') {
+                        smoke.alert("Ya esta matriculado en un taller")
+                    }else{
+                      smoke.confirm(mensaje, function(e){
+                      if (e){
+                            location.href = '/alu_seminario?action=matricularse&id='+id + "&matricula="+{{ matricula.id }};
+                        }else{
+                        }
+                        }, {
+                        ok: "CONTINUAR",
+                        cancel: 'CANCELAR',
+                        classname: "custom-class",
+                        reverseButtons: true
+                });
+                    }
+                },"json");
+                } else{
+                    $.post("/alu_seminario",{"action": "consulta_pago", "id": id,"matricula":'{{ matricula.id }}' },function(data) {
+                        if (data.result=='ok') {
+                            smoke.confirm( 'Esta seguro de matricularse en este Taller?', function(e){
+                        if (e){
+                                location.href = '/alu_seminario?action=matricularse&id='+id + "&matricula="+{{ matricula.id }};
+                            }else{
+                            }
+                            }, {
+                            ok: "CONTINUAR",
+                            cancel: 'CANCELAR',
+                            classname: "custom-class",
+                            reverseButtons: true
+                            });
+                        }else{
+                            if (data.result=='bad2') {
+                                smoke.alert('Ya tiene seleccionado un Taller');
+                            }else{
+                                smoke.alert('para escoger un curso debe cancelar la inscripcion');
+                            }
+
+                            mensaje = 'Esta seguro de matricularse en este Taller...? Costo $' +precio ;
+                        }
+
+
+                },"json");
+            }
+            });
+
+
+            $(".generar_certificado").click(function(){
+                $("#idmatricula").val($(this).attr('idmatricula'));
+                $("#titulo_panel").modal("show");
+                $("#titulo_panel #paneltitle").html('Agregar Titulo');
+            });
+
+           $("#titulo_panel .btn-cerrar").click(function() {
+                $("#titulo_panel").modal("hide");
+                return false;
+            });
+
+            $("#formbutton").click(function(){
+                $(".formError").removeClass('oculta');
+                $(".formError").addClass('aparece');
+            });
+
+            $(".modifica_titulo").click(function(){
+                $("#idmatricula").val($(this).attr('idmatricula'));
+                $("#titulo_panel").modal({"backdrop":"static","width":"30%"});
+                $("#titulo_panel").modal("show");
+                $("#titulo_panel #id_otro").attr('disabled',true);
+                {%  if  not titulo_cert%}
+                    $("#titulo_panel #paneltitle").html('Agregar Titulo')
+                {% else %}
+                    $("#titulo_panel #paneltitle").html('Modificar Titulo')
+                {% endif %}
+            });
+
+            $("#id_otro_check").click(function(){
+                if ($("#id_otro_check").is(':checked')) {
+                    $("#id_sin_titulo").attr('checked',false);
+                    $("#id_abreviatura").attr('disabled',true);
+                    $("#id_otro").attr('disabled',false);
+                }else{
+                    $("#id_abreviatura").attr('disabled',false);
+                    $("#id_otro").attr('disabled',true);
+                }
+            });
+            $("#id_sin_titulo").click(function(){
+                if ($("#id_sin_titulo").is(':checked')) {
+                    $("#id_otro_check").attr('checked',false);
+                    $("#id_abreviatura").attr('disabled',true);
+                    $("#id_otro").attr('disabled',true);
+                }else{
+                    $("#id_abreviatura").attr('disabled',false);
+                    $("#id_otro").attr('disabled',true);
+                }
+            });
+
+            $(".add_ponencia").click(function(){
+                smoke.alert('Para agregar un Aporte Científico debe tener cancelada la matrícula del Congreso')
+            });
+
+        });
+    </script>
+    <style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            {% if taller %}<h3>Mis Talleres </h3>{% endif %}
+            {% if not taller and not ponencia %}<h3>Listado de  Talleres Disponibles</h3>{% endif %}
+            {% if ponencia %}<h3>Listado de Aportes Científicos </h3>{% endif %}
+
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span10'>
+            <h5><a class="btn btn-link modifica_titulo" idmatricula='{{ matricula.id }}'>{%  if titulo_cert%}{{ titulo_cert }} {% else %} Agregar Título {% endif %} </a>{{ matricula.inscripcion.persona.nombre_completo_inverso }}</h5>
+            <h5>Carrera: {{ matricula.nivel.carrera }}</h5>
+            <h5>Nivel: {{ matricula.nivel.nivelmalla }} - {{ matricula.nivel.paralelo }} ({{ matricula.nivel.sesion }}) </h5>
+            <h5>PER&Iacute;ODO: {{ matricula.nivel.periodo }} </h5><br>
+        </div>
+        <div class='span2'>
+            {% if esta_matriculado %}
+{#                ------------------------------------------------------CERTIFICADO PARTICIPACION-------------------------------------------------------#}
+{#            <a {%  if tiene_titulo_cert %} href='/reportes?action=run&direct=true&n=certificado_congreso_participacion&rt=pdf&matricula={{ matricula.id }}' {% else %} class='btn btn-success generar_certificado' {% endif %} idmatricula='{{ matricula.id }}'><i class="icon-print icon-white"></i> Certificado de Participacion</a>#}
+            {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span7'>
+            <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if not tienetaller %}
+                {% if search %}
+                    <a href="/alu_seminario" id='allresults' class='btn btn-warning'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class='span5'>
+            <a href="/alu_seminario" id='allresults' class='btn btn-warning'><i class="icon-list icon-white"></i> Talleres Disponibles</a>
+            {% if tienetaller %}
+                <a href="/alu_seminario?taller={{ matricula.id }}" id='allresults' class='btn btn-info'><i class="icon-list icon-white"></i> Mis Talleres</a>
+            {% endif %}
+            <a href="/alu_seminario?ensayo={{ matricula.id }}" id='allresults' class='btn btn-info'><i class="icon-list icon-white"></i> Aporte Científico</a>
+        </div>
+        <div class='span12'></div>
+        <div class='span10'>
+            {% if ponencia%}
+                <a {% if matri_pagada %} href="/alu_seminario?ensayo={{ matricula.id }}&action=add_ponencia" class='btn btn-success'{% else %} class='btn btn-success add_ponencia' {% endif %}><i class="icon-plus icon-white"></i> Añadir Aporte Científico</a>
+            {% endif %}
+        <div class='span12'></div>
+        </div>
+
+    </div>
+{#    -----------------------------------------------------PONENCIAS-------------------------------------------------------------#}
+    {% if ponencia %}
+        <div class='row-fluid'>
+            <div class='span12'>
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                    <thead>
+                       <tr>
+                            <th style="text-align: center">Codigo</th>
+                            <th style="text-align: center">T&iacute;tulo Ponencia</th>
+                            <th style="text-align: center">Hora</th>
+                            <th style="text-align: center">Revisado</th>
+                            <th style="text-align: center">Comisi&oacute;n</th>
+                            <th style="text-align: center">Moderador</th>
+                            <th style="text-align: center">Modalidad</th>
+                            <th style="text-align: center">Tipo</th>
+                            <th style="text-align: center">Estado</th>
+{#                            <th style="text-align: center">Ubicaci&oacute;n</th>#}
+                            <th style="width: 50px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in ponencias %}
+                            <tr>
+                                <td style="text-align: center">{{ p.codigo }}</td>
+                                <td>{{ p.nombre }}</td>
+                                <td style="width: 85px; text-align: center">{{ p.horainicio|time:"H\hi" }}-{{ p.horafin|time:"H\hi"}}</td>
+                                <td style="text-align: center">{{ p.revisadopor }}</td>
+                                <td>{% if p.comision %} {{ p.comision }} {% endif %}</td>
+                                <td>{% if p.comision.moderador %}{{ p.comision.moderador }} {% endif %}</td>
+                                <td style="text-align: center"> {% if p.modalidad %}{{ p.modalidad }} {% endif %}</td>
+                                {% if p.tipo.id == 2 %}
+                                     <td style="text-align: center; color: navy">Ensayo Cientifico</td>
+                                {% else %}
+                                     {% if p.tipo.id == 1 %}
+                                        <td style="text-align: center; color: maroon">Ponencia</td>
+                                    {% endif %}
+                               {% endif %}
+                                <td style="text-align: center">
+                                    {% if p.activo %}
+                                        <a><img src='/static/images/16/true.png' border='0'/></a>
+                                    {% else %}
+                                        <a><img src='/static/images/16/false.png' border='0'/></a>
+                                    {% endif %}
+                                </td>
+{#                                <td style="text-align: center">{% if p.comision.ubicacion %}{{ p.comision.ubicacion }}<a href="{{ p.comision.imgubicacion }}" rel="shadowbox, width=700;height=400;float=left  " title="{{ p.comision.ubicacion }}"><br><i class="icon-map-marker"></i> Ver Ubicacion</a>{% endif %}</td>#}
+
+                                <td>
+                                    <div class="btn-group">
+                                        <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                            Acciones
+                                        </a>
+                                        <ul class="dropdown-menu pull-right">
+                                            {% with idponencia=p|args:matricula|call:"esta_matriculado_id" %}
+                                                {% if p.tipo.id == 1 %}
+{#                ------------------------------------------------------CERTIFICADO PONENCIAS-------------------------------------------------------#}
+{#                                                    <li><a {%  if tiene_titulo_cert %} href='/reportes?action=run&direct=true&n=certificado_congreso_ponencia&rt=pdf&inscripcionponencia={{ idponencia.id }}' {% else %}class='generar_certificado' {% endif %} idmatricula='{{ matricula.id }}'><i class="icon-print icon-white"></i> Generar Certificado</a></li>#}
+                                                {% else %}
+{#                                                    <li><a {%  if tiene_titulo_cert %} href='/reportes?action=run&direct=true&n=certificado_congreso_ensayo&rt=pdf&inscripcionensayo={{ idponencia.id }}' {% else %}class='generar_certificado' {% endif %} idmatricula='{{ matricula.id }}'><i class="icon-print icon-white"></i> Generar Certificado</a></li>#}
+                                               {% endif %}
+                                            {% endwith %}
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                     {% if not ponencias %}
+                        <tr>
+                            <td colspan="11">
+                                NO HAY REGISTROS
+                            </td>
+                        </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    {%  else %}
+{#        -------------------------------------------------------TALLERES----------------------------------------------------------#}
+        <div class='row-fluid'>
+            <div class='span12'>
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                    <thead>
+                       <tr>
+                        <th >C&oacute;digo</th>
+                        <th >Nombre</th>
+                        <th>Objetivo</th>
+                        <th style="text-align: center">Expositor</th>
+                        <th style="width: 7%; text-align: center">Inicio</th>
+                        <th style="text-align: center">Fin</th>
+                        <th style="text-align: center">Hora</th>
+                        <th style="text-align: center">Precio</th>
+                        {% if taller %}<th>Aprobado</th>{%  endif %}
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+
+                    {% for s in talleres %}
+    {#                    {% if s.esta_disponible %}#}
+                            <tr>
+                                <td style="text-align: center">{{ s.id }}</td>
+                                <td style="">{{ s.taller }}</td>
+                                <td style="">{{ s.objetivo  }}</td>
+                                <td style="">{{ s.expositor }}  {% if s.procedencia %} </br> ({{ s.procedencia }}){% endif %}</td>
+                                <td style="text-align: center">{{ s.inicio|date:'d-m-Y' }}</td>
+                                <td style="text-align: center">{{ s.fin|date:'d-m-Y'}}</td>
+                                <td style="text-align: center">{{ s.horainicio|time:"H:i" }}-{{ s.horafin|time:"H:i"}}</td>
+                                {%  if miscursos %}
+                                <td style="text-align: center">
+                                    {%  if s.esta_aprobado %}
+                                        <img src='/static/images/16/true.png'  alt='Si' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                                <td style="width: 5%; text-align: center">{% if not s.libre  %}${{ s.precio }}{% endif %}</td>
+                                {% if taller %}
+                                    <td style="text-align: center">
+                                        {% if s.esta_aprobado %}
+                                            <img src='/static/images/16/true.png'  alt='Si' border='0'/>
+                                        {% else %}
+                                            <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                        {% endif %}
+                                    </td>
+                                {% endif %}
+                                <td style="text-align: center">
+                                    {% if taller %}
+                                        <div class="btn-group">
+                                            <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                                Acciones
+                                            </a>
+                                            <ul class="dropdown-menu pull-right">
+                                            {% with iseminario=s|args:matricula|call:"esta_matriculado_id" %}
+{#                ------------------------------------------------------CERTIFICADO TALLERES-------------------------------------------------------#}
+                                                <li><a {%  if tiene_titulo_cert %}href='/reportes?action=run&direct=true&n=certificado_congreso_taller_participacion&rt=pdf&inscripcionseminario={{ iseminario.id }}' {% else %} class='generar_certificado' {% endif %} idmatricula='{{ matricula.id }}'><i class="icon-print icon-white"></i> Generar Certificado Taller Cursado</a></li>
+                                                {% if s.esta_aprobado %}
+{#                                                    <li><a {%  if tiene_titulo_cert %}href='/reportes?action=run&direct=true&n=certificado_congreso_taller_aprobado&rt=pdf&inscripcionseminario={{ iseminario.id }}' {% else %} class='generar_certificado' {% endif %} idmatricula='{{ matricula.id }}'><i class="icon-print icon-white"></i> Generar Certificado Taller Aprobado</a></li>#}
+                                                {% endif %}
+                                            {% endwith %}
+                                            </ul>
+                                        </div>
+                                    {% else %}
+                                        {% if not s|args:matricula|call:'esta_matriculado' and  s.esta_disponible %}
+{#                                        {% if not s|args:matricula|call:'esta_matriculado' and  s.esta_disponible and matricula.inscripcion.carrera == s.carrera %}#}
+                                            <a class="btn btn-info" style="text-align:center" cost='{{ s.precio }}'  sid='{{ s.id }}' libre='{{ s.libre }}' {% if not tienetaller %} title='Primer taller al cual se matricule es gratis' {% endif %}>Matricularse</a>
+                                        {% else %}
+                                            {% if s|args:matricula|call:'esta_matriculado' %}
+                                                {% if s|args:matricula|call:'es_gratis' %}
+                                                    <a class="btn btn-warning" style="text-align:center">Matriculado Sin Costo</a>
+                                                {% else %}
+                                                    <a class="btn btn-success" style="text-align:center">Matriculado</a>
+                                                {% endif %}
+                                            {% else %}
+                                                {% if not s.esta_disponible %}
+                                                    <a class="btn btn-warning">No Disponible</a>
+                                                {% endif %}
+                                            {% endif %}
+                                        {%  endif %}
+                                    {%  endif %}
+                                </td>
+                            </tr>
+{#                        {% endif %}#}
+                    {% endfor %}
+                    </tbody>
+                     {% if not talleres %}
+                        <tr>
+                            <td colspan="11">
+                                NO HAY REGISTROS
+                            </td>
+                        </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    {%  endif %}
+
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% if paging.num_pages > 20 %}
+                    <div class='pagination'>
+                        <ul>
+                            {% if paging.primera_pagina %}
+                                <li><a href="/alu_seminario?page=1">1</a></li>
+                                <li><a href="/alu_seminario?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                            {% endif %}
+                            {% for pagenumber in paging.paginas %}
+                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/alu_seminario?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                            {% endfor %}
+                            {% if paging.ultima_pagina %}
+                                <li><a href="/alu_seminario?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                                <li><a href="/alu_seminario?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% else %}
+
+                    <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/alu_seminario?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade static" id="titulo_panel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4 id="paneltitle"></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario"  style="overflow-y: auto"  class='well form-horizontal' action="/alu_seminario" method="POST">
+                <input type='hidden' name='action' value='add_titulo' />
+                <input type='hidden'  name='idmatricula' id='idmatricula' />
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

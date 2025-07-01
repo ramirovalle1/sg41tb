@@ -1,0 +1,489 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <script type="text/javascript">
+        $(function(){
+            var userid = 0;
+            var usercruceid = 0;
+            var edita = 0;
+            $("#id_fecha").datepicker({format:"yyyy-mm-dd",language: "es"});
+            $("#id_asistente").addClass("validate[required]");
+            $("#cantidad").addClass("input-small");
+            $("form").validationEngine();
+
+            $('.nuevosoli').click(function(){
+                edita = 0;
+                $($("#id_asistente").get(0).parentNode).find(".help-text").html('');
+                $("#id_asistente").val('');
+                $("#idsolici").val('');
+                $("#id_fecha").val('{{ hoy|date:'Y-m-d' }}');
+                $("#id_estado").attr('checked',false);
+                $("#nuevoasigpanel #paneltitle2").html('Nuevo Asistente de Asuntos Estudiantiles  ');
+                $("#nuevoasigpanel").modal({"backdrop":"static","width":"40%"});
+                $("#nuevoasigpanel").modal("show");
+            });
+
+            $('.edit').click(function(){
+                edita = $(this).attr('id');
+                $("#editar").val(edita);
+                $("#id_asistente").attr("myval",$(this).attr('idperso'));
+                $("#id_asistente").val($(this).attr('nombre'));
+                $("#idsolici").val($(this).attr('idperso'));
+                $("#id_fecha").val($(this).attr('fecha'));
+
+                if($(this).attr('estad')){
+                    $("#id_estado").attr('checked',true);
+                }
+                else{
+                    $("#id_estado").attr('checked',false);
+                }
+
+                $($("#id_asistente").get(0).parentNode).find(".help-text").html('');
+                $("#nuevoasigpanel #paneltitle2").html('Editar Asistente de Asuntos Estudiantiles  ');
+                $("#nuevoasigpanel").modal({"backdrop":"static","width":"40%"});
+                $("#nuevoasigpanel").modal("show");
+            });
+
+            $("#nuevoasigpanel .btn-cerrar").click(function(){
+                $("#nuevoasigpanel").modal("hide");
+            });
+
+            buscar_asistente = function(query, process) {
+{#                $.get("/reportes", {'action':'datafilt', 'model': 'Persona:id__in={{ gruposexcluidos }}',#}
+                $.get("/reportes", {'action':'datafilt', 'model': 'Persona',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_asistente").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#id_asistente').typeahead({source: buscar_asistente, updater: function(item) {
+                var results = $("#id_asistente").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_asistente").attr("myval",datos.id);
+                        $("#idsolici").val(datos.id);
+                        $.post("/absentismo", {"action":'asistente_existe', "editar":edita,"idasis":datos.id }, function(data) {
+                            if (data.result=='ok') {
+                              $($("#id_asistente").get(0).parentNode).find(".help-text").html('Ya existe esta persona como asistente');
+                                $("#id_asistente").val("");
+                                $("#idsolici").val("");
+                            }
+                            else
+                            {
+                                $($("#id_asistente").get(0).parentNode).find(".help-text").html("");
+                            }
+                        }, "json");
+                    }
+                }
+                return item;
+            }});
+
+            $('.reasignar').click(function(){
+               $("#trasladopanel #mensaj").html("").removeClass('alert alert-danger');
+               $("#trasladopanel #paneltitle").html('REASIGNAR INSCRIPCIONES DE  '+$(this).attr('nom'));
+               $("#trasladopanel #cantidad").val(0);
+               userid= $(this).attr('userid');
+               $("#trasladopanel").modal({"backdrop":"static","width":'60%','hight':'260px'});
+               $('#trasladopanel').show();
+               return false
+            });
+            $("#trasladopanel .btn-cerrar").click(function(){
+                $("#trasladopanel").modal("hide");
+                $('#asistrecibe').val('');
+
+                $("#cantidad").val("");
+                return false;
+            });
+
+            $("#trasladopanel .generar").click(function(){
+                $('#trasladopanel').hide();
+                $("#espera").modal({backdrop: 'static'});
+                $("#espera").modal("show");
+                var asistrecibe = $("#asistrecibe").val();
+                if(asistrecibe != 0  || asistrecibe != "" )
+                {
+                    if (  parseInt($('#cantidad').val()) > 0)
+                    {
+                        if(asistrecibe != userid)
+                        {
+                            $("#mensaj").html("").removeClass('alert alert-danger');
+                            $.post("/absentismo", {action: 'reasignar', 'asistrecibe': asistrecibe, 'usuario': userid, 'cantidad': $('#cantidad').val()}, function(data) {
+                                if (data.result=='ok') {
+{#                                   $("#trasladopanel").modal("hide");#}
+
+                                    smoke.alert("REASIGNACION REALIZADA");
+                                    $("#espera").modal("hide");
+                                    location.href= "/absentismo?action=asistentes";
+                                    return false;
+                                }
+                                else
+                                {
+                                    $("#trasladopanel").modal("hide");
+                                    $("#espera").modal("hide");
+                                    smoke.alert("ERROR EN REASIGNACION VUELVA A INTENTARLO - " + data.mensaje);
+                                    return false;
+                                }
+                            }, "json");
+
+                        }
+                        else
+                        {
+                           $("#mensaj").html("<h5>EL ASISTENTE DEBE SER DIFERENTE</h5>").addClass('alert alert-danger').css({'width':'35%'});
+                        }
+                    }else{
+                       $("#mensaj").html("<h5>LA CANTIDAD DEBE SER MAYOR A 0 </h5>").addClass('alert alert-danger').css({'width':'25%'});
+                        $("#cantidad").focus();
+                    }
+                }
+
+                else
+                {
+                     $("#mensaj").html("<h5>DEBE SELECCIONAR UN ASISTENTE </h5>").addClass('alert alert-danger').css({'width':'30%'});
+
+                    $("#cantidad").focus();
+                }
+            });
+
+            $('.cruzar').click(function(){
+               $("#crucepanel #mensaj").html("").removeClass('alert alert-danger');
+               $("#crucepanel #paneltitle").html('CRUCE DE CARTETA DE   '+$(this).attr('nom'));
+               idcruceasis= $(this).attr('id');
+               usercruceid= $(this).attr('userid');
+               $("#crucepanel").modal({"backdrop":"static","width":'50%','hight':'250px'});
+               $('#trasladopanel').show();
+               return false
+            });
+            $("#crucepanel .btn-cerrar").click(function(){
+                $("#crucepanel").modal("hide");
+                $('#asistcruce').val('');
+                return false;
+            });
+
+            $("#crucepanel .generar").click(function(){
+                var asistcruce = $("#asistcruce").val();
+                if(asistcruce != 0  || asistcruce != "" )
+                {
+                        if(asistcruce != usercruceid)
+                        {
+                            $("#mensaj").html("").removeClass('alert alert-danger');
+                            $.post("/asistente_estudiantiles", {action: 'cruzar', 'asistcruce': asistcruce, 'usuario': usercruceid }, function(data) {
+                                if (data.result=='ok') {
+                                   $("#crucepanel").modal("hide");
+                                    smoke.alert("CRUCE REALIZADO CON EXITO");
+                                    location.href= "/asistente_estudiantiles";
+                                    return false;
+                                }
+                                else
+                                {
+                                    $("#crucepanel").modal("hide");
+                                    smoke.alert("ERROR EN CRUCE DE CARTERA VUELVA A INTENTARLO - " + data.mensaje);
+                                    return false;
+                                }
+                            }, "json");
+
+                        }
+                        else
+                        {
+                           $("#mensaj").html("<h5>EL ASISTENTE DEBE SER DIFERENTE</h5>").addClass('alert alert-danger').css({'width':'35%'});
+                        }
+                }
+
+                else
+                {
+                     $("#mensaj").html("<h5>DEBE SELECCIONAR UN ASISTENTE </h5>").addClass('alert alert-danger').css({'width':'30%'});
+
+                    $("#cantidad").focus();
+                }
+            });
+
+
+            $('.estado').click(function(){
+                var id = $(this).attr('id');
+                var mensaje = '';
+                if($(this).attr('estad')){
+                    mensaje = 'Esta seguro de desactivar el asistente'
+                }
+                else{
+                    mensaje = 'Esta seguro de activar el asistente'
+                }
+                smoke.confirm(mensaje,function(e)
+                    {
+                        if(e)
+                        {
+                            $.post("/asistente_estudiantiles", {"action":'activar', "idasistasunt":id}, function(data) {
+                               if (data.result=='ok') {
+                                  location.href = 'asistente_estudiantiles';
+
+                               }else{
+                                    smoke.alert('Error. Intente de nuevo');
+                               }
+                            }, "json");
+                        }
+                        else
+                        {
+
+                        }
+                    },
+                    {
+                       ok:"SI",
+                       cancel:"NO",
+                       classname: "custom-class",
+                       reverseButtons: true
+                    }
+
+                );
+            });
+
+            $("#formbutton").click(function(){
+                if ($("#idsolici").val()== '')
+                {
+                    $("#id_asistente").val('');
+                }
+                $(".formError").removeClass('oculta');
+                $(".formError").addClass('aparece');
+            });
+
+            $(".elimina").click(function(){
+                var idasi=$(this).attr('idasist');
+                smoke.confirm('Esta seguro de Eliminar el Registro',function(e)
+                    {
+                        if(e)
+                        {
+                            location.href = 'absentismo?action=eliminar&id='+idasi;
+                        }
+                    },
+                    {
+                        ok:'SI',
+                        cancel:'NO',
+                        reverseButtons:true
+                    }
+
+                );
+            });
+
+        });
+    </script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' style="margin-top: 50px">
+        <div class='atright'>
+            <div class='span2'></div>
+            <div class='span7'> <h2>Asistentes Asuntos Estudiantiles</h2></div>
+            <div class='span1' style="text-align: right">
+                <a href="/absentismo" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            </div>
+        </div>
+    </div>
+
+    <div class='row-fluid' style="margin-top: 50px">
+        <div class='atright'>
+            <div class='span2'></div>
+            {% if not persona.pertenece_soporte %}
+                <div class='span6'>
+                    <button class="btn btn-success nuevosoli"><i class="icon-plus icon-white"></i> Nuevo Asistente</button>
+                </div>
+            {% endif %}
+
+            <div class='span2' style="text-align: right">
+                {% if not inactivos %}
+                    <a href="/absentismo?action=asistentes&i" id='allresults' class='btn btn-danger'><i class="icon-refresh icon-white"></i> Ver Inactivos</a>
+                {% else %}
+                    <a href="/absentismo?action=asistentes" id='allresults' class='btn btn-success'><i class="icon-refresh icon-white"></i> Ver Activos</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row-fluid" style="margin-top: 45px">
+        <div class="span2"></div>
+        <div class="span8">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Asistente</th>
+                        <th style="text-align: center">Fecha</th>
+                        <th style="text-align: center">Asignados</th>
+                        <th style="text-align: center">Gestionados</th>
+                        <th style="text-align: center">Activo</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asis in asistentes %}
+                        <tr>
+                            <td>
+                                {% if not persona.pertenece_soporte %}
+                                    <a style="cursor: pointer" class="edit" id='{{ asis.id }}' idperso='{{ asis.persona.id }}' nombre='{{ asis.persona }}'
+                                       fecha='{{ asis.fecha|date:'Y-m-d' }}' {% if asis.estado %} estad='true'{% endif %}>
+                                    {{ asis.persona }}
+                                    </a>
+                                {% else %}
+                                    {{ asis.asistente }}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">{{ asis.fecha|date:'d-m-Y' }}</td>
+                            <td style="text-align: center">{{ asis.asignados }}</td>
+                            <td style="text-align: center">{{ asis.gestionados }}</td>
+                            <td style="text-align: center">
+                                {% if not persona.pertenece_soporte %}
+                                    {% if asis.estado %}
+                                        <a style="cursor: pointer" class="estado" id='{{ asis.id }}' estad='true'><img src='/static/images/16/true.png' border='0'/></a>
+                                    {% else %}
+                                        <a style="cursor: pointer" class="estado" id='{{ asis.id }}' ><img src='/static/images/16/false.png' border='0'/></a>
+                                    {% endif %}
+                                {% else %}
+                                    {% if asis.estado %}
+                                        <img src='/static/images/16/true.png' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' border='0'/>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if not persona.pertenece_soporte %}
+                                            <li><a style="cursor: pointer" class="reasignar" asisid='{{ asis.id }}' nom='{{ asis.persona.nombre_completo_simple }}' userid='{{ asis.persona.usuario.id }}' ><i class="icon-upload"></i> Reasignar </a></li>
+                                            <li><a style="cursor: pointer" class="cruzar" asisid='{{ asis.id }}' nom='{{ asis.persona.nombre_completo_simple }}' userid='{{ asis.persona.usuario.id }}' ><i class="icon-upload"></i> Cruce de Cartera </a></li>
+                                            {% if not asis.existe_asisten %}
+                                                 <li><a style="cursor: pointer" idasist='{{ asis.id }}' class="elimina"><i class="icon-remove"></i>Desactivar Asistente</a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                    </ul>
+
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not asistentes %}
+                        <tr>
+                            <td colspan="4">NO EXISTEN REGISTRO</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class="span8" style="text-align: right">
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/asistente_estudiantiles?page=1">1</a></li>
+                            <li><a href="/asistente_estudiantiles?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/asistente_estudiantiles?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/asistente_estudiantiles?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/asistente_estudiantiles?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/asistente_estudiantiles?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="nuevoasigpanel">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ><i>  </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/absentismo" method="POST"  >
+                <input type='hidden' name='action' value='add_asistente'/>
+                <input type='hidden'  name='idsolici' id='idsolici' />
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="trasladopanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle" ></h3>
+        </div>
+        <div class="modal-body panelbody">
+            Nuevo Asistente:
+            <select id='asistrecibe' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for a in asistentes %}
+                    <option value="{{ a.persona.usuario.id }}" >{{ a }}</option>
+                {% endfor %}
+            </select> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            Cantidad: <input type='text' id='cantidad' value="0"  />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <div style="padding-left: 13%"> <p id='mensaj' ></p></div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-info generar"> GENERAR</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="crucepanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle" ></h3>
+        </div>
+        <div class="modal-body panelbody">
+            Nuevo Asistente:
+            <select id='asistcruce' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for a in asis %}
+                    <option value="{{ a.persona.usuario.id }}" >{{ a.persona.usuario.username }}</option>
+                {% endfor %}
+            </select> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                       <div style="padding-left: 13%"> <p id='mensaj' ></p></div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-info generar"> GENERAR</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+     <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UNOS SEGUNDOS</h3>
+        </div>
+    </div>
+{% endblock %}

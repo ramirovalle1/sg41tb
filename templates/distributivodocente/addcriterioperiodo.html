@@ -1,0 +1,72 @@
+{% extends "layout/formbs.html" %}
+{% block before_saving %}
+    lista_items1 = [];
+    obtenerCriterios();
+    if (lista_items1.length == 0){
+        NotificationLayout.danger("Es obligatorio selecionar almenos un criterio");
+        return false;
+    }
+    actionFormSubmission();
+{% endblock %}
+{% block form_more_javascript %}
+    <script type="text/javascript">
+        $(function() {
+            $("#checkTodo").change(function(event) {
+                const isChecked = $(this).is(':checked');
+                $(".checkItem").prop('checked', isChecked);
+            });
+
+            $(".checkItem").change(function(event) {
+                if ($('input[name=checkItem]:checked').length > 0){
+                    $("#checkTodo").prop('checked', true);
+                }else {
+                    $("#checkTodo").prop('checked', false);
+                }
+            });
+        });
+
+        function obtenerCriterios() {
+            lista_items1 = [];
+            $('input[name=checkItem]:checked').each(function () {
+                const id = $(this).val();
+                lista_items1.push({'id': id})
+            })
+        }
+    </script>
+{% endblock %}
+{% block frm_title %}{{ title }}{% endblock %}
+{% block form_destination %}{{ request.path }}?action=criterioperiodo{% endblock %}
+{% block form_action_cancel %}{{ request.path }}?action=criterioperiodo{% endblock %}
+{% block atras %}{{ request.path }}?action=criterioperiodo{% endblock %}
+{% block form_extra %}
+    <input type='hidden' name='action' value='addcriterioperiodo'/>
+    <input type='hidden' name='id' value='{{ item }}'/>
+{% endblock %}
+{% block form_suffix %}
+    <div class='row'>
+        <div class='col-12 col-md-12 col-sm-12' style="height: 350px; ">
+            <table class='table table-bordered text-nowrap customize-table mb-0 align-middle' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th class="text-left" width="75%">Criterios de docencia</th>
+                    <th class="text-center" width="20%">Dedicación</th>
+                    <th class="text-center" width="5%"><input class="form-check-input" type="checkbox" value="" id="checkTodo"></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for criterio in criterios %}
+                    <tr>
+                        <td>{{ criterio.nombre }}</td>
+                        <td class="text-center">{{ criterio.dedicacion }}</td>
+                        <td class="text-center"><input class="form-check-input checkItem" name="checkItem" type="checkbox" value="{{ criterio.id }}"></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center">No existe registros</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,499 @@
+{% extends "basebschat.html" %}
+
+
+{% block heading %}
+
+<link rel="stylesheet" type="text/css" href="../../static/vendors/styles/core.css">
+<link rel="stylesheet" type="text/css" href="../../static/vendors/styles/icon-font.min.css">
+<link rel="stylesheet" type="text/css" href="../../static/vendors/styles/style2.css">
+<link rel="stylesheet" type="text/css" href="../../static/vendors/sweetalert/sweetalert2.css">
+
+<!-- js -->
+<script src="../../static/vendors/scripts/core.js"></script>
+<script src="../../static/vendors/scripts/script.min.js"></script>
+<script src="../../static/vendors/scripts/process.js"></script>
+<script src="../../static/vendors/scripts/layout-settings.js"></script>
+<script src="../../static/vendors/sweetalert/sweetalert2.all.js"></script>
+<script src="../../static/vendors/sweetalert/sweet-alert.init.js"></script>
+
+
+
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/8.4.1/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/8.4.1/firebase-analytics.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/8.4.1/firebase-auth.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/8.4.1/firebase-firestore.js"></script>
+
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+
+     $(function() {
+
+        var conextado=0;
+        var idusuario=0;
+        var idusuarioenvio='{{ persona.id }}';
+        var nummensaje=0;
+
+
+      const firebaseConfig = {
+              apiKey: "AIzaSyBPl4B7VkQM1MJkaXe1c0SiIiUZnrbSS-E",
+              authDomain: "chatitbaok.firebaseapp.com",
+              projectId: "chatitbaok",
+              storageBucket: "chatitbaok.appspot.com",
+              messagingSenderId: "979742280545",
+              appId: "1:979742280545:web:44a509f5d62c1697511320",
+              measurementId: "G-W9JZZ6MHQ2"
+      };
+
+         // Initialize Firebase
+         firebase.initializeApp(firebaseConfig);
+         const auth= firebase.auth();
+         const fs = firebase.firestore();
+
+
+         var idfotosopor = document.getElementById('idfotosoporte');
+         var idfooterenvio = document.getElementById('idchatfooter');
+         idfotosopor.style.display = 'none';
+         idfooterenvio.style.display = 'none';
+
+
+         auth.signInWithEmailAndPassword('{{ persona.emailinst }}','{{ persona.usuario.username }}')
+              .then( userCredential =>{
+
+                 fs.collection("estudiantes").where("id", "==", parseInt('{{ persona.id }}'))
+                  .get()
+                  .then(function(querySnapshot) {
+                      querySnapshot.forEach(function(doc) {
+                        var obdata = fs.collection("estudiantes").doc(doc.id);
+                        return obdata.update({
+                            estado: "true"
+                        })
+                        .then(function() {
+                              swal("! Registro Chat", "Inicio de sesión exitosamente", "success");
+                        })
+                        .catch(function(error) {
+                            // The document probably doesn't exist.
+                            swal("Error", error, "error");
+                        });
+                      });
+                })
+
+
+
+          }, function (reason) {
+
+
+
+             auth.createUserWithEmailAndPassword('{{ persona.emailinst }}','{{ persona.usuario.username }}')
+              .then(userCredential =>{
+                  swal("! Registro Chat", "Se creo el inicio de sesión exitosamente", "success");
+                    fs.collection("estudiantes").doc().set({
+                        id:{{ persona.id }},
+                        nombre:'{{ persona.nombre_completo_inverso }}',
+                        usuario:'{{ persona.usuario.username }}',
+                        uid:userCredential.user.uid,
+                        estado:"true"
+                    });
+              },function (reson) {
+                  swal("Error", 'Problema al conectarse', "error");
+              })
+          })
+
+
+
+         veresoporte= function(data) {
+              if (data.length){
+                data.forEach(doc => {
+                    const versoporte=doc.data();
+                    $("#lblnombresoporte").html(versoporte.nombre);
+                    idfotosopor.style.display = 'block';
+                    idfooterenvio.style.display = 'block';
+                });
+
+            }
+         }
+
+         const postmessage_holder= document.querySelector('#message_holder');
+         setuppostmessage_holder= function(data) {
+              if (data.length){
+                let html='';
+                data.forEach(doc => {
+                    const mens=doc.data();
+                     if ((parseInt(idusuarioenvio)==parseInt(mens.idenvio)) && (parseInt(mens.idsoporte)==parseInt(idusuario))) {
+
+                         const div = '<li class="clearfix"><span class="chat-img"><img src="../../static/images/icono2.png" alt=""></span><div class="chat-body clearfix"><p>' + mens.mensaje + '</p><div class="chat_time">' + mens.horapresentar + '</div></div></li>';
+
+
+                         html += div
+                     }else{
+                         if (parseInt(idusuarioenvio)==parseInt(mens.idrecive) && (parseInt(mens.idsoporte)==parseInt(idusuario))) {
+
+                               const div2 = '<li class="clearfix admin_chat"><span class="chat-img"><img src="../../static/images/icono1.png" alt=""></span><div class="chat-body clearfix"><p>' + mens.mensaje + '</p><div class="chat_time">' + mens.horapresentar + '</div></div></li>';
+                               html += div2
+                         }
+                     }
+                });
+                if (html.length>0) {
+                    postmessage_holder.innerHTML = html;
+                }else{
+                    postmessage_holder.innerHTML='<p>no hay mensaje</p>';
+                }
+            }else{
+                postmessage_holder.innerHTML='<p>no hay mensaje</p>';
+            }
+
+
+
+
+
+         }
+
+
+
+        selecusrchat = function(iduser) {
+
+               idusuario=iduser;
+
+               fs.collection('soporte').where("id","==",parseInt(idusuario))
+                    .get()
+                    .then((snapshot)=>{
+                     veresoporte(snapshot.docs);
+
+               });
+
+
+               fs.collection("message").where("idestudiante","==",parseInt(idusuarioenvio), "idsoporte","==",parseInt(idusuario)).orderBy("hora","asc","fecha","asc")
+                    .get()
+                    .then((snapshot)=>{
+
+                    setuppostmessage_holder(snapshot.docs);
+               });
+
+
+               fs.collection("message").where("idestudiante","==",parseInt(idusuarioenvio), "idsoporte","==",parseInt(idusuario),"estado","==","false")
+                  .get()
+                  .then(function(querySnapshotnoread) {
+                      querySnapshotnoread.forEach(function(doc) {
+                        var obdataread = fs.collection("message").doc(doc.id);
+                        const dataaux=doc.data();
+
+                        if ( (parseInt(dataaux.idenvio)==parseInt(idusuario)) && (parseInt(dataaux.idrecive)==parseInt(idusuarioenvio))) {
+                            return obdataread.update({
+                                estado: "true"
+                            })
+                                .then(function () {
+                                    //smoke.alert('Incio de sesión exitosamente');
+                                })
+                                .catch(function (error) {
+                                    // The document probably doesn't exist.
+                                     swal("Error", error, "error");
+                                });
+                        }
+                      });
+               });
+
+
+
+
+          }
+
+
+
+         const postlistsoportechat= document.querySelector('#idlistsoportechat');
+            soportechat= function(data) {
+              if (data.length){
+                let htmlsoporte='';
+                data.forEach(doc => {
+                    const sopochat=doc.data();
+                    if(String(sopochat.estado)=="true") {
+                        const divesoporte = '<li id="' + sopochat.id + '" onclick="selecusrchat(' + sopochat.id + ')" ><a href="#"><img src="../../static/images/icono1.png" alt=""><h3 class="clearfix">' + sopochat.nombre + '</h3><p id="' + sopochat.id + 'cont"><i class="fa fa-circle text-light-green"></i> en Línea</p></a> </li>';
+                        htmlsoporte += divesoporte
+                    }else{
+                        if(parseInt(sopochat.id)==idusuario){
+
+                            document.querySelector('#message_holder').innerHTML="";
+                            $("#id_message").val("");
+                            $("#lblnombresoporte").html("");
+                        }
+                    }
+                });
+                if (htmlsoporte.length>0) {
+                    postlistsoportechat.innerHTML = htmlsoporte;
+                }else{
+                    postlistsoportechat.innerHTML='<p>no hay soporte activo</p>';
+                }
+            }else{
+                postlistsoportechat.innerHTML='<p>no hay soporte activo</p>';
+            }
+          }
+
+         fs.collection("soporte").onSnapshot((querySnapshot) => {
+                 soportechat(querySnapshot.docs);
+
+         });
+
+
+        fs.collection("message").orderBy("hora","asc","fecha","asc").onSnapshot((querySnapshot) => {
+                 let html='';
+                querySnapshot.forEach(doc => {
+                    const mens=doc.data();
+
+                    if ((parseInt(idusuarioenvio)==parseInt(mens.idenvio)) && (parseInt(mens.idsoporte)==parseInt(idusuario))) {
+                        const div = '<li class="clearfix"><span class="chat-img"><img src="../../static/images/icono2.png" alt=""></span><div class="chat-body clearfix"><p>' + mens.mensaje + '</p><div class="chat_time">' + mens.horapresentar + '</div></div></li>';
+
+
+                         html += div
+                    }else{
+                         if (parseInt(idusuarioenvio)==parseInt(mens.idrecive) && (parseInt(mens.idsoporte)==parseInt(idusuario))) {
+                             const div2 = '<li class="clearfix admin_chat"><span class="chat-img"><img src="../../static/images/icono1.png" alt=""></span><div class="chat-body clearfix"><p>' + mens.mensaje + '</p><div class="chat_time">' + mens.horapresentar + '</div></div></li>';
+                             html += div2
+                         }
+                     }
+                })
+
+                postmessage_holder.innerHTML=html;
+
+
+                $("#idlistsoportechat li").each(function(){
+                          var idauxsoporte= $(this).attr('id')+"cont";
+                          var idsport=$(this).attr('id');
+                          nummensaje=0;
+                              fs.collection("message").where("estado","==","false","idestudiante","==",parseInt(idusuarioenvio))
+                                  .get()
+                                  .then(function (querySnapshotnoread) {
+                                      nummensaje=0;
+                                       querySnapshotnoread.forEach(function(doc) {
+                                           const mensaux=doc.data();
+
+                                           if ((parseInt(mensaux.idsoporte)==parseInt(idsport)) && (parseInt(mensaux.idestudiante)== parseInt(idusuarioenvio)) ){
+                                                 if (parseInt(mensaux.idenvio)==parseInt(idsport)) {
+                                                      if ((parseInt(idusuario) > 0) && (parseInt(mensaux.idenvio)==parseInt(idusuario))) {
+
+                                                           var obdataread = fs.collection("message").doc(doc.id);
+                                                                const dataaux=doc.data();
+
+                                                                if ( (parseInt(mensaux.idenvio)==parseInt(idsport)) && (parseInt(mensaux.idrecive)==parseInt(idusuarioenvio))) {
+                                                                    return obdataread.update({
+                                                                        estado: "true"
+                                                                    })
+                                                                        .then(function () {
+                                                                            //smoke.alert('Incio de sesión exitosamente');
+                                                                        })
+                                                                        .catch(function (error) {
+                                                                            // The document probably doesn't exist.
+                                                                            swal("Error", error, "error");
+                                                                        });
+                                                                }else{
+                                                                    nummensaje = nummensaje + 1;
+                                                                }
+
+                                                      }else {
+                                                          nummensaje = nummensaje + 1;
+                                                      }
+                                                 }
+
+                                           }
+
+                                       });
+                                      $("#" + idauxsoporte).html('<p><i class="fa fa-circle text-light-green"></i> en línea - '+nummensaje+' mensaje no leidos <p>');
+
+
+                                  })
+
+
+                 });
+         });
+
+
+
+        function enviarmensaje(){
+
+
+                    var f = new Date();
+                    var fechastr = f.getDate() + "/" + (f.getMonth() + 1) + "/" + f.getFullYear();
+                    var hor = 0;
+                    var min = 0;
+                    var segu = 0;
+
+                    if (f.getHours() <= 9) {
+                        hor = "0" + f.getHours();
+                    } else {
+                        hor = f.getHours();
+                    }
+
+                    if (f.getMinutes() <= 9) {
+                        min = "0" + f.getMinutes();
+                    } else {
+                        min = f.getMinutes();
+                    }
+
+                    if (f.getSeconds() <= 9) {
+                        segu = "0" + f.getSeconds();
+                    } else {
+                        segu = f.getSeconds();
+                    }
+
+                    var hora = hor + ":" + min + ":" + segu;
+                    var horapresentar = hor + ":" + min;
+
+                    fs.collection("message").doc().set({
+                        fecha: fechastr,
+                        hora: hora,
+                        horapresentar: horapresentar,
+                        idenvio: parseInt({{ persona.id }}),
+                        idrecive: parseInt(idusuario),
+                        mensaje: $("#id_message").val(),
+                        idestudiante: parseInt({{ persona.id }}),
+                        idsoporte: parseInt(idusuario),
+                        estado: "false"
+                    });
+
+                    $("#id_message").val("");
+
+         }
+
+        enviar=function(){
+
+              if ($("#id_message").val()!='' ) {
+                  if ((parseInt(idusuario) > 0)) {
+                        enviarmensaje();
+                  } else{
+                        swal("Alerta", 'Debe seleccionar el estudiante', "warning");
+                  }
+              }else{
+                    swal("Alerta", 'Debe ingresar un mensaje', "warning");
+              }
+
+        }
+
+        nuevochat=function(){
+
+              document.querySelector('#message_holder').innerHTML="";
+              var idfotosopor = document.getElementById('idfotosoporte');
+              idfotosopor.style.display = 'none';
+              $("#lblnombresoporte").html("");
+              $("#id_message").val("");
+              idusuario=0;
+
+        }
+
+
+        cerrarchat=function(){
+
+            auth.signOut().then(()=>{
+
+
+                fs.collection("estudiantes").where("id", "==", parseInt('{{ persona.id }}'))
+                  .get()
+                  .then(function(querySnapshot) {
+                      querySnapshot.forEach(function(doc) {
+                        var obdata = fs.collection("estudiantes").doc(doc.id);
+                        return obdata.update({
+                            estado: "false"
+                        })
+                        .then(function() {
+                              swal("Alerta", 'Se cerro la sesión exitosamente', "success");
+                              document.querySelector('#message_holder').innerHTML="";
+                              var idfotosopor = document.getElementById('idfotosoporte');
+                              var idfooterenvio = document.getElementById('idchatfooter');
+                              idfotosopor.style.display = 'none';
+                              idfooterenvio.style.display = 'none';
+                              $("#lblnombresoporte").html("");
+                              postlistsoportechat.innerHTML="";
+                              idusuario=0;
+                              location.href = "/";
+
+                        })
+                        .catch(function(error) {
+                            // The document probably doesn't exist.
+                            swal("Error", error, "error");
+                        });
+                      });
+                })
+
+             });
+
+
+        }
+
+
+
+    });
+</script>
+
+{% endblock %}
+{% block canvas %}
+
+		<div class="pd-ltr-20 xs-pd-20-10">
+			<div class="min-height-200px">
+
+				<div class="bg-white border-radius-4 box-shadow mb-30">
+					<div class="row no-gutters">
+						<div class="col-lg-3 col-md-4 col-sm-12">
+							<div class="chat-list bg-light-gray">
+								<div class="chat-search">
+
+									<h4>Listado Soporte Activo <span title="Limpiar Chat" onclick="nuevochat()"><i class="dw dw-file"></i>  </span><span title="Cerrar Chat" onclick="cerrarchat()"><i class="dw dw-logout"></i></span></h4>
+
+								</div>
+								<div class="notification-list chat-notification-list customscroll">
+									<ul id="idlistsoportechat">
+									</ul>
+								</div>
+							</div>
+						</div>
+						<div class="col-lg-9 col-md-8 col-sm-12">
+							<div class="chat-detail">
+								<div class="chat-profile-header clearfix">
+									<div class="left">
+										<div class="clearfix">
+											<div id="idfotosoporte" class="chat-profile-photo">
+												<img src="../../static/images/icono1.png"  alt="">
+											</div>
+											<div class="chat-profile-name">
+												<h3 id="lblnombresoporte"></h3>
+											</div>
+										</div>
+									</div>
+
+								</div>
+								<div class="chat-box">
+                                    <div class="row">
+
+                                        <div class="span12">
+
+
+                                        <div class="chat-desc customscroll" style="min-height: 370px;max-height:370px;">
+                                            <ul id="message_holder" >
+
+                                            </ul>
+                                        </div>
+                                        </div>
+
+                                    </div>
+
+									<div id="idchatfooter" class="chat-footer" style="margin-top: 5px">
+										<div class="file-upload"><a href="#"></a></div>
+										<div class="chat_text_area">
+											<textarea id="id_message"  type="text" autocomplete="false" placeholder="Escribir el mensaje…"></textarea>
+										</div>
+										<div class="chat_send">
+											<button class="btn btn-link" onclick="enviar()"><i class="icon-copy ion-paper-airplane"></i></button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+{% endblock %}
+
+

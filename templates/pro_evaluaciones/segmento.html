@@ -1,0 +1,122 @@
+<script type="text/javascript">
+    $(function() {
+        clases = [{% for clase in clases %}
+            {"id":"{{ clase.id }}", "sede":"{{ clase.materia.nivel.sede }}", "paralelo":"{{ clase.materia.nivel.paralelo }} ", "carrera":"{{ clase.materia.nivel.carrera }}", "nivelmalla":"{{ clase.materia.nivel.nivelmalla }}", "asignatura": "{{ clase.materia.asignatura }}", "profesor": "{{ clase.profesor }}", "turno": "{{ clase.turno.id }}","dia":"{{ clase.dia }}", "aula": "{{ clase.aula }}"}{% if not forloop.last %},{% endif %}{% endfor %}
+        ];
+        findClases = function(d, t) {
+            var l = [];
+            for (i in clases) {
+                var am = clases[i];
+                if (am.dia==d && am.turno==t) {
+                    l.push(am);
+                }
+            }
+            return l;
+        }
+        fixValues = function(id) {
+            var n1 = parseFloat($("#evn1"+id).html());
+            var n2 = parseFloat($("#evn2"+id).html());
+            var pi = parseFloat($("#evpi"+id).html());
+            var sup = parseFloat($("evnsup"+id).html());
+            var n3 = (n1+n2)/4 + pi/2;
+
+            $("#evn3"+id).html(n3.toFixed(2));
+            var nf = (n1 + n2 + n3)/3;
+            $("#evnf"+id).html(nf.toFixed(0));
+        }
+        $(".editn1").editInPlace({
+            url: "/pro_evaluaciones",
+            callback: function(data) {
+                var id = data.substring(4);
+                var val = parseFloat($("#"+data).html());
+                $.post("/pro_evaluaciones", {'action': 'n1', 'element_id': id,
+                    'update_value': val}, function(data) {
+                    fixValues(data.id);
+                }, "json")
+                return val.toFixed(2);
+            }
+        });
+        $(".editn2").editInPlace({
+            url: "/pro_evaluaciones",
+            callback: function(data) {
+                var id = data.substring(4);
+                var val = parseFloat($("#"+data).html());
+                $.post("/pro_evaluaciones", {'action': 'n2', 'element_id': id,
+                    'update_value': val}, function(data) {
+                    fixValues(data.id);
+                }, "json")
+                return val.toFixed(2);
+            }
+        });
+        $(".editpi").editInPlace({
+            url: "/pro_evaluaciones",
+            callback: function(data) {
+                var id = data.substring(4);
+                var val = parseFloat($("#"+data).html());
+                $.post("/pro_evaluaciones", {'action': 'pi', 'element_id': id,
+                    'update_value': val}, function(data) {
+                    fixValues(data.id);
+                }, "json")
+                return val.toFixed(2);
+            }
+
+        });
+
+        $(".editsu").editInPlace({
+            url: "/pro_evaluaciones",
+            callback: function(data) {
+                var id = data.substring(4);
+                var val = parseFloat($("#"+data).html());
+                $.post("/pro_evaluaciones", {'action': 'su', 'element_id': id,
+                    'update_value': val}, function(data) {
+                    fixValues(data.id);
+                }, "json")
+                return val.toFixed(2);
+            }
+
+        });
+
+    });
+</script>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="10">
+     {% if materia.lecciones %}
+        <tbody>
+            <tr>
+                <td>
+                    <table class='data' border="0" cellpadding="0" cellspacing="0">
+                        <thead>
+                        <th>Alumnos</th>
+                        <th>Nota 1</th>
+                        <th>Nota 2</th>
+                        <th>Proy. Int.</th>
+                        <th>Nota 3</th>
+                        <th>Supletorio</th>
+                        <th>Notal Final</th>
+                        <th>Asistencia</th>
+                        </thead>
+                        <tbody>
+                        {% for asignadomateria in materia.asignados_a_esta_materia %}
+                            <tr>
+                                <td>{{ asignadomateria.matricula.inscripcion }}</td>
+                                <td><div class='editn1' id='evn1{{ asignadomateria.evaluacion.id }}'>{{ asignadomateria.evaluacion.n1|floatformat:"2" }}</div></td>
+                                <td><div class='editn2' id='evn2{{ asignadomateria.evaluacion.id }}'>{{ asignadomateria.evaluacion.n2|floatformat:"2" }}</div></td>
+                                <td><div class='editpi' id='evpi{{ asignadomateria.evaluacion.id }}'>{{ asignadomateria.evaluacion.pi|floatformat:"2" }}</div></td>
+                                <td>n3</td>
+                                <td><div class='editsu' id='evsu{{ asignadomateria.evaluacion.id }}'>{{ asignadomateria.evaluacion.supletorio|floatformat:"2" }}</div></td>
+
+                                <td><b><div id='evnf{{ asignadomateria.evaluacion.id }}'>{{ asignadomateria.evaluacion.nota_final|floatformat }}</div></b></td>
+                                <td>
+                                    {% if asignadomateria.porciento_asistencia < 60 %} <span style="color: #dc143c;"><b>{{ asignadomateria.porciento_asistencia }}%</b></span>{% endif %}
+                                    {% if asignadomateria.porciento_asistencia >= 60 and asignadomateria.porciento_asistencia < 69 %} <span style="color: #daa520;"><b>{{ asignadomateria.porciento_asistencia }}%</b></span>{% endif %}
+                                    {% if  asignadomateria.porciento_asistencia >= 70 %} <span style="color:#006400;"><b>{{ asignadomateria.porciento_asistencia }}%</b></span>{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+     {% endif %}
+ </table>

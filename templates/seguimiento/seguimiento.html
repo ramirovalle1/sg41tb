@@ -1,0 +1,733 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src="/static/js/smoke.min.js"></script>
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <script type="text/javascript">
+        $(function() {
+
+            $("form").validationEngine();
+            $("#asignapanel #asitentes").addClass("validate[required]");
+            $("#asignadepartpanel #departamentos").addClass("validate[required]");
+            $("#observacionresp").addClass("validate[required]");
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/{% if departamento or asistente  %}incidenciaadministrativa{% else %}seguimiento{% endif %}?action=correos&s="+term;
+            });
+
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+            var contasi=0;
+            $(".asigasit").click(function(){
+                $("#asignapanel #idincide").val($(this).attr('idinfo'));
+                $("#idasist").val("");
+                $("#observacion").val("");
+                contasi = contasi +1;
+                $("#asignapanel #asitentes").val("");
+                $("#asignapanel #paneltitle2").html($(this).attr('mensaje'));
+                $("#asignapanel").modal({"backdrop":"static","width":"40%"});
+                $("#asignapanel").modal("show");
+                if (contasi == 1)
+                {
+                    $("#asignapanel #formbutton").click();
+                    $("#asignapanel #formbutton").click();
+                }
+                $("#asignapanel .help-text").html('');
+            });
+            $("#asignapanel .btn-cerrar").click(function(){
+                $("#asignapanel").modal("hide");
+                return false;
+            });
+            $("#asignapanel #asitentes").change(function(){
+                if ($("#asignapanel #asitentes").val()== '')
+                {
+                   $("#idasist").val('');
+                }
+                else{
+                    $("#idasist").val($("#asignapanel #asitentes").val());
+                    $("#asignapanel .help-text").html('');
+                }
+
+            });
+
+            $("#asignapanel #formbutton").click(function(){
+
+                if ($("#idasist").val() == '')
+                {
+                    $("#asignapanel .help-text").html('Este campo es obligatorio');
+                }
+                else
+                {
+                    $("#asignapanel .help-text").html('');
+                }
+                $(".formError").removeClass('aparece');
+                $(".formError").addClass('oculta');
+            });
+
+{#        ///////////////////////////////////////////////////////////////////////////////#}
+{#        ////////////////////////////////////////////////////////////////////////////////#}
+            var contdep=0;
+            $(".asigdepartamen").click(function(){
+                $("#asignadepartpanel #idcorreo").val($(this).attr('idinfo'));
+                $("#iddepart").val("");
+                contdep = contdep + 1;
+                $("#observaciondepar").val("");
+                $("#asignadepartpanel #departamentos").val("");
+                $("#asignadepartpanel #paneltitle2").html($(this).attr('mensaje'));
+                $("#asignadepartpanel").modal({"backdrop":"static","width":"40%"});
+                $("#asignadepartpanel").modal("show");
+                if (contdep == 1)
+                {
+                    $("#asignadepartpanel #formbutton").click();
+                    $("#asignadepartpanel #formbutton").click();
+                }
+                $("#asignadepartpanel .help-text").html('');
+            });
+            $("#asignadepartpanel .btn-cerrar").click(function(){
+                $("#asignadepartpanel").modal("hide");
+                return false;
+            });
+
+            $("#asignadepartpanel #departamentos").change(function(){
+                if ($("#asignadepartpanel #departamentos").val()== '')
+                {
+                   $("#iddepart").val('');
+                }
+                else{
+                    $("#iddepart").val($("#asignadepartpanel #departamentos").val());
+                    $("#asignadepartpanel .help-text").html('');
+                }
+
+            });
+
+            $("#asignadepartpanel #formbutton").click(function(){
+
+                if ($("#iddepart").val() == '')
+                {
+                    $("#asignadepartpanel .help-text").html('Este campo es obligatorio');
+                }
+                else
+                {
+                    $("#asignadepartpanel .help-text").html('');
+                }
+                $(".formError").removeClass('aparece');
+                $(".formError").addClass('oculta');
+            });
+
+            {% if errordep %}
+                smoke.alert('{{ errordep }}');
+                setInterval(function(){
+                    location.href = '/incidenciaadministrativa?action=correos';
+                }, 2000);
+
+
+            {% endif %}
+
+{#        ///////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#        ///////////////////////////////////////////////////////////////////////////////////////////////////////#}
+            var contresp=0;
+            var idcorreo = 0;
+            $(".respondeconsult").click(function(){
+
+                $("#resolucion").hide();
+                $("#labelresolucion").hide();
+                $("#labelobservacionresp").hide();
+                $("#resolucion").removeClass("validate[required]");
+                $("#seguimintcorreopanel #action").val('respuestacorreo');
+                idinfo = 0;
+                $("#seguimintcorreopanel #obsasistente").val($(this).attr('obasiste'));
+                $("#seguimintcorreopanel #idcorreo").val($(this).attr('idinfo'));
+                idcorreo = $(this).attr('idinfo');
+                contresp = contresp + 1;
+                $("#observacionresp").val("");
+                $("#seguimintcorreopanel #paneltitle3").html('');
+                $("#seguimintcorreopanel #departamentos").val("");
+                $("#seguimintcorreopanel #paneltitle1").html($(this).attr('paneltitl'));
+                $("#seguimintcorreopanel #paneltitle2").html($(this).attr('mensaje'));
+                $("#seguimintcorreopanel").modal({"backdrop":"static","width":"40%"});
+                $("#seguimintcorreopanel").modal("show");
+                if (contresp == 1)
+                {
+                    $("#seguimintcorreopanel #formbutton").click();
+                    $("#seguimintcorreopanel #formbutton").click();
+                }
+
+            });
+
+
+            $("#seguimintcorreopanel .btn-cerrar").click(function(){
+                $("#seguimintcorreopanel").modal("hide");
+                contresp = 1;
+                if (idinfo != 0)
+                {
+                    $.get("/incidenciaadministrativa", {'action':'detallpartamentos', 'iddepart': $("#seguimintcorreopanel #idcorreo").val()}, function(data) {
+                        $("#detalledepartamentopanel .modal-body").html(data);
+                        $("#detalledepartamentopanel").modal({"backdrop":"static","width":'70%'});
+                        $('#detalledepartamentopanel').show();
+{#                        $("#verdepartamentopanel").modal("hide");#}
+                    }, "html");
+                    $("#seguimintcorreopanel #idcorreo").val('');
+                    return false;
+                }
+                else
+                {
+                    if ( nomdeparta != '' && mens != '' && iddepa != '')
+                    {
+                        detalledepartamento(nomdeparta,mens,iddepa);
+                    }
+
+                }
+
+                $("#seguimintcorreopanel #action").val('respuestacorreo');
+                return false;
+            });
+
+
+
+            $("#seguimintcorreopanel #formbutton").click(function(){
+                contresp = 1;
+                if (idcorreo != 0)
+                {
+                    $("#seguimintcorreopanel #idcorreo").val(idcorreo);
+                }
+
+                if ($("#observacionresp").val() == '')
+                {
+                    $("#seguimintcorreopanel .help-text").html('Este campo es obligatorio');
+                }
+                else
+                {
+                    $("#seguimintcorreopanel .help-text").html('');
+                }
+                $(".formError").removeClass('aparece');
+                $(".formError").addClass('oculta');
+            });
+
+{#        ///////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#        ///////////////////////////////////////////////////////////////////////////////////////////////////////#}
+            var idinfo = 0;
+            $(".verdepartament").click(function() {
+                idcorreo = 0;
+                if ( idinfo == 0 || ($(this).attr("idinfo") != '' && $(this).attr("idinfo") != idinfo))
+                {
+                    idinfo = $(this).attr("idinfo");
+                }
+               $("#verdepartamentopanel #paneltitle2").html($(this).attr('mensaje'));
+               $.get("/incidenciaadministrativa", {'action':'verdepartamentos', 'idinfo': idinfo}, function(data) {
+                    $("#verdepartamentopanel .modal-body").html(data);
+                    $("#verdepartamentopanel").modal({"backdrop":"static","width":"50%"});
+                    $("#verdepartamentopanel").modal("show");
+               }, "html");
+               return false;
+            });
+
+            $("#verdepartamentopanel .btn-cerrar").click(function(){
+                $("#verdepartamentopanel").modal("hide");
+                return false;
+            });
+            $("#detalledepartamentopanel .btn-cerrar").click(function(){
+                if (valida == 0)
+                {
+                    $("#detalledepartamentopanel").modal("hide");
+                    $("#verdepartamentopanel #paneltitle2").html($(this).attr('mensaje'));
+                    $.get("/incidenciaadministrativa", {'action':'verdepartamentos', 'idinfo': idinfo}, function(data) {
+                        $("#verdepartamentopanel .modal-body").html(data);
+                        $("#verdepartamentopanel").modal({"backdrop":"static","width":"50%"});
+                        $("#verdepartamentopanel").modal("show");
+                    }, "html");
+                    return false;
+                }
+                else{
+                    $("#detalledepartamentopanel").modal("hide");
+                    valida = 0;
+                    nomdeparta = '';
+                    mens = '';
+                    iddepa = '';
+                    return false;
+                }
+
+            });
+            var asigna = 0;
+            {% if observacionincidencia %}
+               asigna = 0;
+               idinfo =  {{ observacionincidencia.departamentoincidenciaasig.incidenciaasignada.solicituinfo.id }}
+               $("#detalledepartamentopanel #paneltitle1").html('Detalle de Departamento Asignado  ()');
+               $("#detalledepartamentopanel #paneltitle2").html();
+               detalledepartamento('{{ observacionincidencia.departamentoincidenciaasig.departamento.name }}','{{ observacionincidencia.departamentoincidenciaasig.incidenciaasignada.solicituinfo.mensaje }}','{{ observacionincidencia.departamentoincidenciaasig.id }}');
+            {% endif %}
+
+            var nomdeparta = '';
+            var mens = '';
+            var iddepa = '';
+
+            $(".mensajeconsul").click(function(){
+                nomdeparta = $(this).attr('nomdepart');
+                mens = $(this).attr('mensaje');
+                iddepa = $(this).attr('iddeppart');
+                asigna = $(this).attr('asigna');
+                detalledepartamento(nomdeparta,mens,iddepa)
+            });
+
+            var valida = 0;
+
+            function detalledepartamento(title1,title2,iddep){
+               valida = 1;
+               $("#detalledepartamentopanel #paneltitle1").html('Detalle de Departamento Asignado  ('+ title1 +')');
+               $("#detalledepartamentopanel #paneltitle2").html(title2);
+               $.get("/incidenciaadministrativa", {'action':'detallpartamentos', 'iddepart': iddep,'asigna':asigna}, function(data) {
+                    $("#detalledepartamentopanel .modal-body").html(data);
+                    $("#detalledepartamentopanel").modal({"backdrop":"static","width":'70%'});
+                    $('#detalledepartamentopanel').show();
+{#                    $("#verdepartamentopanel").modal("hide");#}
+                }, "html");
+                return false;
+            }
+
+            $('.finalizar').click(function()
+            {
+                $("#resolucion").show();
+                $("#labelresolucion").show();
+                $("#labelobservacionresp").show();
+                $("#resolucion").addClass("validate[required]");
+                $("#seguimintcorreopanel #idcorreo").val($(this).attr('idinfo'));
+                idinfo = 0;
+                $("#seguimintcorreopanel #action").val('finaliza');
+                contresp = contresp + 1;
+                $("#observacionresp").val("");
+                $("#resolucion").val("");
+                $("#seguimintcorreopanel #paneltitle1").html('Finalizar Incidencia');
+                $("#seguimintcorreopanel #paneltitle3").html('');
+                $("#seguimintcorreopanel #departamentos").val("");
+                $("#seguimintcorreopanel #paneltitle2").html($(this).attr('mensaje'));
+                $("#seguimintcorreopanel").modal({"backdrop":"static","width":"40%"});
+                $("#seguimintcorreopanel").modal("show");
+                if (contresp == 1)
+                {
+                    $("#seguimintcorreopanel #formbutton").click();
+                    $("#seguimintcorreopanel #formbutton").click();
+                }
+
+            });
+
+            $("#resolucion").blur(function(){
+                if ($("#resolucion").val() == '')
+                {
+                    $("#seguimintcorreopanel .help-text2").html('Este campo es obligatorio');
+                }
+                else
+                {
+                    $("#seguimintcorreopanel .help-text2").html('');
+                }
+            });
+
+            $(".verfinaliza").click(function() {
+
+
+                $("#verfinalizadopanel .modal-body").html("<label><b>Respuesta:</b></label><textarea type='text' id='observacionresp' style='width:98%;text-transform: uppercase' rows='6' cols='50' readonly> "+ $(this).attr('mensaje') +" </textarea><br/>" +
+                                                            "<br/><b>Resoluci&oacute;n:</b><textarea type='text' id='observacionresp' style='width:98%;text-transform: uppercase' rows='6' cols='50' readonly> "+ $(this).attr('resolucion') +" </textarea><br/>" +
+                                                            "<br/><output style='border:1px solid #c7c7c7;padding:10px;border-radius: 2px;'> <b>Fecha Finalizacion:</b> "+ $(this).attr('fechafinaliza') +"</output>" +
+                                                            "<br/><br/><output style='border:1px solid #c7c7c7;padding:10px;border-radius: 2px;'> <b>Usuario:</b> "+ $(this).attr('usuario') +"</output>");
+                $("#verfinalizadopanel").modal({"backdrop":"static","width":"50%"});
+                $("#verfinalizadopanel").modal("show");
+
+                return false;
+            });
+
+            $("#verfinalizadopanel .btn-cerrar").click(function(){
+                $("#verfinalizadopanel").modal("hide");
+                return false;
+            });
+
+{#        ///////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#        //////////////////////////////////////////////////////////////////////////////////////////////////////#}
+
+            $(".verasistente").click(function() {
+                idinfo = $(this).attr("idinfo");
+               $("#verasistentasigpanel #paneltitle2").html($(this).attr('mensaje'));
+               $.get("/seguimiento", {'action':'verasistentes', 'idinfo': idinfo}, function(data) {
+                    $("#verasistentasigpanel .modal-body").html(data);
+                    $("#verasistentasigpanel").modal({"backdrop":"static","width":"60%"});
+                    $("#verasistentasigpanel").modal("show");
+               }, "html");
+               return false;
+            });
+
+            $("#verasistentasigpanel .btn-cerrar").click(function(){
+                $("#verasistentasigpanel").modal("hide");
+                return false;
+            });
+        });
+    </script>
+    <style>
+        .oculta{
+            display: none;
+        }
+        .aparece{
+            display: block;
+        }
+    </style>
+
+{% endblock %}
+{% block canvas %}
+    <br/> <div class='row-fluid'>
+        <div class='atright'>
+           <div class='span11'>
+               <h3> INCIDENCIAS DE CORREOS DE PAGINA WEB</h3>
+            </div>
+            <div class='span1'>
+                <a href="/{% if departa or asistente  %}incidenciaadministrativa{% else %}seguimiento{% endif %}" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            </div>
+        </div>
+    </div>
+    <div class="row-fluid" >
+        <div class='span5'>
+            <form class="form-search">
+{#                <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>#}
+{#            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>#}
+            {% if search or finalizados  %}
+                <a href="/{% if asistente or departa %}incidenciaadministrativa?{% else %}seguimiento?{% endif %}action=correos" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i>&nbsp;Incidencias x Atender </a>
+            {% endif %}
+            {% if not finalizados and not departamento %}
+                <a href="/{% if asistente or departamento  %}incidenciaadministrativa?action=correos&f=1{% else %}seguimiento?action=correos&f=1{% endif %}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Finalizados</a>
+            {% endif %}
+            </form>
+        </div>
+
+        <div class="span3" style="text-align: right;width: 370px;">
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>C&oacute;digo</th>
+                <th>Nombres</th>
+                <th>Correo</th>
+                <th>Ciudad</th>
+                <th>Direcci&oacute;n</th>
+                <th>Tel&eacute;fono Domicilio</th>
+                <th>Tel&eacute;fono Oficina</th>
+                <th>Celular</th>
+                <th>Mensaje</th>
+                <th>Inter&eacute;s</th>
+                <th>Fecha</th>
+                <th>Finalizado</th>
+                <th> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for s in solicitudes %}
+
+                    <tr >
+                        <td >{{ s.codigo }}
+                            {% if s.comparafecha  %}&nbsp;<span class="label label-important tl">Atrasada</span>{% endif %}
+                            {% if not departa  and not asistente and s.asistenteasigna.atendiendo %}&nbsp; <span class="label label-success tl">Asignado</span>{% endif %}
+                            {% if s|args:user|call:"departamentoasignado" and asistente %}&nbsp; <span class="label label-success tl">Asignado</span>{% endif %}
+                        </td>
+                        <td>{{ s.nombres }}</td>
+                        <td>{{ s.correo }}</td>
+                        <td>{{ s.ciudad }}</td>
+                        <td>{{ s.direccion }}</td>
+                        <td>{{ s.fonodom }}</td>
+                        <td>{{ s.fonoofi }}</td>
+                        <td>{{ s.celular }}</td>
+                        <td>{{ s.mensaje }}</td>
+                        <td>{{ s.interes }}</td>
+                        <td>{{ s.fecha|date:'Y-m-d'}}</td>
+                        <td style="text-align: center">
+                            {% if s.finalizado %}
+                                <img src='/static/images/16/true.png' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' border='0'/>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+{#                                <li><a href="/seguimiento?action=correos&ficha&id={{ s.id }}"><i class="icon-book"></i> ficha</a></li>#}
+                                    {% if s|args:user.id|call:"respuestanumero"  and departa %}
+                                        <li><a style="cursor: pointer" iddeppart='{{ s.busdepartamento.id }}' nomdepart='{{ s.busdepartamento.departamento.name }}' mensaje="{{ s.mensaje }}" observasig='{{ s.busdepartamento.observacion }}'  asigna='2' class="mensajeconsul"><i class="icon-eye-open"></i> Ver respuestas&nbsp;{% if s|args:user.id|call:"respuestanumero" %}<span class="label label-inverse tl" title="Respuestas" data-placement="bottom">{{ s|args:user.id|call:"respuestanumero" }}R</span>{% endif %}</a></li>
+                                    {% endif %}
+                                    {% if s|args:user.id|call:"mensajeconsult" and departa %}
+                                            <li><a style="cursor: pointer" iddeppart='{{ s.busdepartamento.id }}' nomdepart='{{ s.busdepartamento.departamento.name }}' mensaje="{{ s.mensaje }}" asigna='1' class="mensajeconsul"><i class="icon-circle-arrow-right"></i> Mensaje <span class="label label-inverse tl" title="Respuestas" data-placement="bottom">{{ s|args:user.id|call:"mensajeconsult" }}</span></a></li>
+                                    {% endif %}
+                                    {% if s|args:user|call:"departamentoasignado" and asistente %}
+                                        <li><a style="cursor: pointer" idinfo='{{ s.id }}' mensaje="{{ s.mensaje }}" class="verdepartament"><i class="icon-eye-open"></i> Ver departamento Asignado</a></li>
+                                    {% endif %}
+                                    {% if not departa  and not asistente and s.asistenteasigna %}
+                                        <li><a style="cursor: pointer" idinfo='{{ s.id }}' mensaje="{{ s.mensaje }}" class="verasistente"><i class="icon-eye-open"></i> Ver Asistentes Asignado</a></li>
+                                    {% endif %}
+                                    {% if not s.finalizado %}
+                                        {% if departa or asistente %}
+                                            {% if asistente %}
+                                                {% if s|args:user|call:"departamentoasignado" %}
+                                                    {% with dep=s|args:user|call:"departamentoasignado" %}
+                                                        {% if dep.incidenciaasignada.atendiendo %}
+                                                            <li><a style="cursor: pointer" idinfo='{{ s.id }}' mensaje="{{ s.mensaje }}" class="asigdepartamen"><i class="icon-circle-arrow-right"></i> Reasignar departamento</a></li>
+                                                            <li><a style="cursor: pointer" idinfo='{{ s.id }}' mensaje="{{ s.mensaje }}" paneltitl="Escribir a Departamento Asignado" class="respondeconsult"  obasiste='1'><i class="icon-edit"></i> Escribir a departamento asignado</a></li>
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                {% else %}
+                                                    <li><a style="cursor: pointer" idinfo='{{ s.id }}' mensaje="{{ s.mensaje }}" class="asigdepartamen"><i class="icon-circle-arrow-right"></i> Asignar departamento</a></li>
+
+                                                {% endif %}
+                                            {% else %}
+                                                <li><a style="cursor: pointer" idinfo='{{ s.id }}' mensaje="{{ s.mensaje }}" paneltitl="Responder a consulta" class="respondeconsult" obasiste='0'><i class="icon-circle-arrow-right"></i> Responder Consulta </a></li>
+                                            {% endif %}
+                                        {% else %}
+                                                {% if s.asignado %}
+
+                                                    <li><a style="cursor: pointer" idinfo='{{ s.id }}' mensaje="{{ s.mensaje }}" class="asigasit"><i class="icon-eye-open"></i> Reasignar Asistente</a></li>
+                                                {% else %}
+                                                    <li><a style="cursor: pointer" idinfo='{{ s.id }}' mensaje="{{ s.mensaje }}" class="asigasit"><i class="icon-circle-arrow-right"></i> Asignar Asistente</a></li>
+                                                {% endif %}
+                                        {% endif %}
+                                        {% if s|args:user|call:"asistenteasignaexiste" and asistente %}
+                                            {% with asisit=s|args:user|call:"asistenteasignaexiste" %}
+                                                {% if asisit.atendiendo %}
+                                                    <li style="background:#a5a5a5;text-align: center;border-radius:8px 8px 8px 8px "><a style="cursor: pointer" class="finalizar" idinfo='{{ s.id }}' mensaje="{{ s.mensaje }}" ><h6 style="height: 15px;margin: 0 auto;"><i class='icon-remove-circle'></i> Finalizar Incidencia</h6></a></li>
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% else %}
+                                            {% if not departa %}
+                                                <li style="background:#a5a5a5;text-align: center;border-radius:8px 8px 8px 8px "><a style="cursor: pointer" class="finalizar" idinfo='{{ s.id }}' mensaje="{{ s.mensaje }}" ><h6 style="height: 15px;margin: 0 auto;"><i class='icon-remove-circle'></i> Finalizar Incidencia</h6></a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        {% if s|args:user|call:"asistenteasignaexiste" and asistente %}
+                                            {% with asisit=s|args:user|call:"asistenteasignaexiste" %}
+                                                {% if asisit.atendiendo %}
+                                                    <li><a style="cursor: pointer" usuario='{{ s.usuariofinali }}' fechafinaliza='{{ s.fechafinaliza|date:'d-m-Y H:i:s' }}' mensaje="{{ s.observacion }}" resolucion="{{ s.resolucion }}" class="verfinaliza"><i class="icon-eye-open"></i> Ver Observacion</a></li>
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% else %}
+                                            {% if not asistente and not departa %}
+                                                <li><a style="cursor: pointer" usuario='{{ s.usuariofinali }}' fechafinaliza='{{ s.fechafinaliza|date:'d-m-Y H:i:s' }}' mensaje="{{ s.observacion }}" resolucion="{{ s.resolucion }}" class="verfinaliza"><i class="icon-eye-open"></i> Ver Observacion</a></li>
+                                            {% endif %}
+                                        {% endif %}
+
+                                    {% endif %}
+
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            {% if not solicitudes %}
+                <tr>
+                    <td colspan="12">NO HAY REGISTRO</td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/{% if asistente or departa %}incidenciaadministrativa{% else %}seguimiento{% endif %}?action=correos&page=1{% if finalizados  %}&f=1{% endif %}">1</a></li>
+                            <li><a href="/{% if asistente or departa %}incidenciaadministrativa{% else %}seguimiento{% endif %}?page={{ paging.ellipsis_izquierda }}{% if finalizados  %}&f=1{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/{% if asistente or departa %}incidenciaadministrativa{% else %}seguimiento{% endif %}?action=correos&page={{ pagenumber }}{% if finalizados  %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/{% if asistente or departa %}incidenciaadministrativa{% else %}seguimiento{% endif %}?action=correos&page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}{% if finalizados  %}&f=1{% endif %}" class="active">...</a></li>
+                            <li><a href="/{% if asistente or departa %}incidenciaadministrativa{% else %}seguimiento{% endif %}?action=correos&page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}{% if finalizados  %}&f=1{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/{% if asistente or departa %}incidenciaadministrativa{% else %}seguimiento{% endif %}?action=correos&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}{% if finalizados  %}&f=1{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="asignapanel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4> Asignar Asistente a Correo Info:  </h4><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/seguimiento" method="POST"  >
+                <input type='hidden' name='action' value='asigasitentecorreo'/>
+                <input type='hidden' id='idincide' name='idincide' />
+                <input type='hidden' id='idasist' name='idasist' />
+                <input type='hidden' name='editar' id='editar' value="0"/>
+
+{#                <fieldset class="control-group nomargins">#}
+
+                    <div class="controls" style="margin-left: 1%">
+                        ASISTENTES:
+                        <select id='asitentes'  />
+                            <option value=''>-----</option>
+                            {% for g in asistasuntoestudiant %}
+                                <option value="{{ g.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ g.asistente }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="help-text">{{ field.help_text }} </p>
+                        <br/><br/>
+                        <textarea type='text' id='observacion' style="width:98%;text-transform: uppercase" rows="6" cols="50" name='observacion'> </textarea>
+
+                    </div>
+{#                </fieldset>#}
+                <br/><br/><button type="submit" class="btn btn-success" id="formbutton" style="float: right">Guardar</button>
+                <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="asignadepartpanel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4   >Asignar Departamento a Correo de Informacion:  </h4><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/incidenciaadministrativa" method="POST"  >
+                <input type='hidden' name='action' value='asigdepartcorreo'/>
+                <input type='hidden' id='idcorreo' name='idcorreo' />
+                <input type='hidden' id='iddepart' name='iddepart' />
+                <input type='hidden' name='editar' id='editar' value="0"/>
+
+{#                <fieldset class="control-group nomargins">#}
+
+                    <div class="controls" style="margin-left: 1%">
+                        DEPARTAMENTOS:
+                        <select id='departamentos' />
+                            <option value=''>-----</option>
+                            {% for d in departamentos %}
+                                <option value="{{ d.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="help-text">{{ field.help_text }} </p>
+                        <br/><br/>
+                        <textarea type='text' id='observaciondepar' style="width:98%;text-transform: uppercase" rows="6" cols="50" name='observaciondepar'> </textarea>
+
+                    </div>
+{#                </fieldset>#}
+                <br/><br/><button type="submit" class="btn btn-success" id="formbutton" style="float: right">Guardar</button>
+                <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="seguimintcorreopanel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4 id='paneltitle1' >Ingrese Respuesta</h4><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <h5 id='paneltitle3' ></h5>
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/incidenciaadministrativa" method="POST"  >
+                <input type='hidden' name='action' id='action' value='respuestacorreo'/>
+                <input type='hidden' id='idcorreo' name='idcorreo' />
+                <input type='hidden' name='idobserv' id='idobserv' value="0"/>
+                <input type='hidden' name='obsasistente' id='obsasistente' value="0"/>
+
+{#                <fieldset class="control-group nomargins">#}
+
+                    <div class="controls" style="margin-left: 1%">
+                        <label id="labelobservacionresp" style="display: none"><b>Respuesta:</b></label><textarea type='text' id='observacionresp' style="width:98%;text-transform: uppercase" rows="6" cols="50" name='observacionresp'> </textarea>
+                        <p class="help-text">{{ field.help_text }} </p>
+                        <br/><br/><label id="labelresolucion" style="display: none"><b>Resolucion:</b></label> <textarea type='text' id='resolucion'  style="width:98%;text-transform: uppercase;display: none" rows="6" cols="50" name='resolucion' > </textarea>
+                        <p class="help-text2">{{ field.help_text }} </p><br/>
+                    </div>
+{#                </fieldset>#}
+                <br/><br/><button type="submit" class="btn btn-success" id="formbutton" style="float: right">Guardar</button>
+                <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="verdepartamentopanel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4 >Departamentos Asignados</h4><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer" >
+            <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+        </div>
+
+    </div>
+
+    <div class="modal fade static" id="verfinalizadopanel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4 ></h4><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer" >
+            <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+        </div>
+
+    </div>
+
+
+    <div class="modal fade static" id="detalledepartamentopanel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4 id='paneltitle1'>Detalle de Departamento Asignados</h4><br/>
+            <h5 id='paneltitle2' ></h5>
+            <h5 id='paneltitle3' ></h5>
+        </div>
+        <div class="modal-body" style="word-wrap: break-word" >
+
+        </div>
+        <div class="modal-footer" >
+            <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+        </div>
+
+    </div>
+
+
+    <div class="modal fade static" id="verasistentasigpanel">
+        <div class="modal-header" style="word-wrap: break-word">
+            <h4 >Asistentes Asignados</h4><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer" >
+            <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+        </div>
+
+    </div>
+
+
+
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "layout/basebs.html" %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        $(function() {
+            $(".action_delete").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const question = `Al eliminar el registro no podra volver a recuperar los datos. <br>¿Está seguro de eliminar el registro <span class="text-info">${name}</span>?`;
+            	console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: `${response.message}`,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.reload();
+                        });
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+				}, ()=>{})
+            });
+        });
+    </script>
+{% endblock %}
+{% block atras %}/mallas?action=pea&id={{ plananalitico.asignaturamalla_id }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid ">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3>{{ title }}</h3>
+                    <h5><b>Asignatura malla: </b> {{ plananalitico.asignaturamalla.asignatura }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <a href="/mallas?action=addbibliografiaapa&id={{ plananalitico.id }}" class="btn btn-success"/><i class="icon-plus"></i> Adionar nueva bibliografía</a>
+            </div>
+        </div>
+        <div class='row bm-4'>
+            <div class='col-12'>
+                <table class='table table-bordered table-striped text-nowrap customize-table mb-0 align-middle' cellpadding="0" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>Bibliografía</th>
+                        <th style="text-align: center; width: 20px">Estado</th>
+                        <th style="text-align: center; width: 80px">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for apa in bibliografias %}
+                        <tr>
+                            <td style="text-align: justify">
+                                {{ apa.descripcion }}<br>
+                                <span class="label label-info">Fecha de creación: {{ apa.fecha_creacion|date:'d-m-Y H:i A' }}</span>
+                                <span class="label label-warning">Fecha de modificación: {{ apa.fecha_ultimamodificacion|date:'d-m-Y H:i A' }}</span>
+                            </td>
+                            <td style="text-align: center"><i class="fa  {% if apa.activo %}fa-check success {% else %}fa-close danger{% endif %}"></i></td>
+                            <td class="text-center">
+                                <div class="dropdown">
+                                    <a href="#" class="btn dropdown-toggle" id="dropdownMenuPA_{{ pa.id }}"
+                                       data-bs-toggle="dropdown">
+                                        Acciones <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuPA_{{ apa.id }}"
+                                        data-popper-placement="left-start">
+                                        <li><a class="dropdown-item" href="/mallas?action=editbibliografiaapa&id={{ apa.id }}"><i class="fa fa-edit"></i>  Editar</a></li>
+                                        <li><a class="dropdown-item action_delete" data-id="{{ apa.id }}" data-action="delbibliografiaapa" data-name="{{ apa.descripcion }}" href="javascript:void(0);"><i class="fa fa-trash me-2"></i>Eliminar</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" style="text-align: center">No existe registros</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

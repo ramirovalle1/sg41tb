@@ -1,0 +1,414 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+<style>
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color:  #184679; }
+
+.btn-primary {
+  color: #fff;
+  background-color: #184679;
+  border-color: #184679;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover, .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color:#184679;
+    color: #fff;
+    border-color: #184679;
+}
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover,.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #184679;
+}
+</style>
+<script src="../../static/sganuevo/src/plugins/apexcharts/apexcharts.min.js"></script>
+<script src="../../static/sganuevo/src/plugins/sweetalert2/sweetalert2.all.js"></script>
+<script src="../../static/sganuevo/src/plugins/sweetalert2/sweet-alert.init.js"></script>
+<script type="text/javascript">
+    $(function () {
+        $( document ).ready(function() {
+            var tiposcondiciones = [];
+            var listcarrera = [];
+            var listcondxcarr = [];
+
+            tiposcondiciones.push([{% for ch in condhogares %}"{{ ch.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]); {# TIPOS DE CONDICIONES DE HOGAR #}
+            {% for ls in lista_carreras_codhogar %}
+                listcarrera.push('{{ ls.carreranombre }}');
+                var cond = [];
+                {% for lsdata in ls.data %}
+                    cond.push(parseInt('{{ lsdata.cantidad }}'));
+                {% endfor %}
+                listcondxcarr.push(cond);
+            {% endfor %}
+
+            var listado_condhogarxcarrera = [{"carreras": listcarrera, "lista": listcondxcarr, "tiposcondiciones": tiposcondiciones}];
+
+            var seriesData = [];
+            for (var i = 0; i < listado_condhogarxcarrera[0].tiposcondiciones[0].length; i++) {
+                seriesData.push({
+                    name: listado_condhogarxcarrera[0].tiposcondiciones[0][i],
+                    data: listcondxcarr.map(function(cond) { return cond[i]; })
+                });
+            }
+            var optionsxcarrera = {
+                series: seriesData,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: false,
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_condhogarxcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+            var chartxcarrera  = new ApexCharts(document.querySelector("#chart_div_condhogarxcarrera"), optionsxcarrera);
+            chartxcarrera.render();
+
+        {# --------------------POR COORDINACION------------------------    #}
+            var listcoordinacion=[]
+            var listcondxcoord =[]
+
+            {% for ls in lista_coordinaciones_codhogar %}
+                listcoordinacion.push('{{ ls.coordnombre }}');
+                var condcoord = [];
+                {% for lsdata in ls.data %}
+                    condcoord.push(parseInt('{{ lsdata.cantidad }}'));
+                {% endfor %}
+                listcondxcoord.push(condcoord);
+            {% endfor %}
+
+            var listado_condhogarxcoordinacion = [{"coordinacion": listcoordinacion, "lista": listcondxcoord, "tiposcondiciones": tiposcondiciones}];
+            var seriesData2 = [];
+            for (var lc = 0; lc < listado_condhogarxcoordinacion[0].tiposcondiciones[0].length; lc++) {
+                seriesData2.push({
+                    name: listado_condhogarxcoordinacion[0].tiposcondiciones[0][lc],
+                    data: listcondxcoord.map(function(condcoord) { return condcoord[lc]; })
+                });
+            }
+            var optionsxcoordinacion = {
+                series:seriesData2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: false,
+
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_condhogarxcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+
+            var chartxcoordinacion  = new ApexCharts(document.querySelector("#chart_div_condhogarxcoordinacion"), optionsxcoordinacion);
+            chartxcoordinacion.render();
+
+            {# --------------------FILTRAR------------------------    #}
+            $("#btnbuscarxcarrera").click(function() {
+                buscarcondhogarxcarrera();
+            });
+            function buscarcondhogarxcarrera(){
+                var filt_condhogarxcarrera=[];
+                var listcarrera2=[];
+                var lista1 = [];
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarcondhogarxcarrera",
+                    idanio: $("#cmbaniocarr").val(),
+                    idcarrera: $("#cmbcondcarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarreraxcond.forEach(function(item) {
+                                listcarrera2.push(item.carreranombre);
+                                var cond = [];
+                                item.info.forEach(function(infoItem) {
+                                    cond.push(parseInt(infoItem.cantidad));
+                                });
+                                lista1.push(cond);
+                            });
+                            filt_condhogarxcarrera.push({"carreras": listcarrera2,  "lista": lista1, "tiposcondiciones":tiposcondiciones});
+                            var seriesData3 = [];
+                            for (var fi = 0; fi < filt_condhogarxcarrera[0].tiposcondiciones[0].length; fi++) {
+                                seriesData3.push({
+                                    name: filt_condhogarxcarrera[0].tiposcondiciones[0][i],
+                                    data: lista1.map(function (cond) {return cond[fi];})
+                                });
+                            }
+                            chartxcarrera.updateOptions({
+                                series: seriesData3,
+                                xaxis: {
+                                    categories: filt_condhogarxcarrera[0].carreras
+                                }
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+             }
+
+            $("#btnbuscarxcoordinacion").click(function (){
+                buscarcondhogarxcoordinacion()
+            })
+            function buscarcondhogarxcoordinacion(){
+                var filt_condxcoordinacion=[];
+                var listcoordinacion2=[];
+                var lista2 = [];
+
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarcondhogarxcoordinacion",
+                    idanio: $("#cmbaniocord").val(),
+                    idcoordinacion: $("#cmbidcoordinacion").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxcondhogar.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var cond2 = [];
+                                item.info.forEach(function(infoItem) {
+                                    cond2.push(parseInt(infoItem.cantidad));
+                                });
+                                lista2.push(cond2);
+                            });
+                            filt_condxcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": lista2, "tiposcondiciones": tiposcondiciones});
+                            var seriesData4 = [];
+                            for (var fi = 0; fi < filt_condxcoordinacion[0].tiposcondiciones[0].length; fi++) {
+                                seriesData4.push({
+                                    data: lista2.map(function (cond2) {return cond2[fi];})
+                                });
+                            }
+                            chartxcoordinacion.updateOptions({
+                                series: seriesData4,
+                                xaxis: {
+                                    categories: filt_condxcoordinacion[0].coordinaciones
+                                }
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+             }
+        {# ----------------------- CONDICIONES DE HOGAR RESUMEN ------------------------#}
+            var listadoxresumen =[]
+            var nombrescondhogar=[]
+            var cantidadresumen=[]
+            {% for xlista_condiciones_resumen in lista_condiciones_resumen  %}
+                    cantidadresumen.push(parseInt('{{ xlista_condiciones_resumen.cantidad  }}'));
+                    nombrescondhogar.push('{{ xlista_condiciones_resumen.condnombre  }}');
+
+            {% endfor %}
+             listadoxresumen.push({"condiciones":nombrescondhogar,"cantidad":cantidadresumen });
+             var optionsresumen = {
+                series:listadoxresumen[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                labels: listadoxresumen[0].condiciones,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        },
+                        legend: {
+                          position: 'bottom'
+                        }
+                    }
+                }]
+            };
+            var chart = new ApexCharts(document.querySelector("#chart_resumen"), optionsresumen);
+            chart.render();
+        });
+    });
+</script>
+
+{% endblock %}
+
+{% block canvas %}
+<div class="main-container">
+    <div class="xs-pd-20-10 pd-ltr-20">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-10 col-sm-12">
+                    <div class="title">
+                        <h4>Estad&iacute;sticas de Ingreso a ITB - Condiciones de Hogar</h4>
+                    </div>
+                </div>
+                 <div class="col-lg-2 col-md-2 col-sm-2">
+                    <div class="title">
+                        <a href="/cons_encuestaingreso" style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+                 </div>
+            </div>
+        </div>
+
+        {# NUCLEO FAMILIAR POR CARRERA        #}
+        <div class="row clearfix" >
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Condiciones de Hogar de Estudiantes por Carrera</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarr" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbcondcarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listadocarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarrera" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_condhogarxcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Condiciones de Hogar de Estudiantes Resumen</h4>
+                    <div id="chart_resumen" ></div>
+                </div>
+            </div>
+        </div>
+        {# NUCLEO FAMILIAR POR COORDINACION        #}
+        <div class="row clearfix" >
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Condiciones de Hogar de Estudiantes por Coordinaci&oacute;n</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocord" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinacion" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_condhogarxcoordinacion" ></div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+{% endblock %}

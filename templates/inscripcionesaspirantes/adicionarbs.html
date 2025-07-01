@@ -1,0 +1,568 @@
+{% extends "practicasadmin/formvehic.html" %}
+{% block extraheading %}
+{% endblock %}
+{% block javascript %}
+{#    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>#}
+{#    <script src='/static/js/adicionarproveedor.js'></script>#}
+{##}
+{#    <script>#}
+{#    $(function() {#}
+    $("#id_nombres,#id_apellido1,#id_sexo,#id_respuesta,#id_tiporegistro,#id_carrera,#id_sesionpractica,#id_telefono,#id_email,#id_vendedor").addClass("validate[required]");
+    $("#id_email").css({'text-transform': 'lowercase'});
+
+    $("#id_nombres, #id_apellido1, #id_apellido2,#id_carrera").addClass("input-block-level");
+    $("#id_email, #id_telefono,#id_telefono_conv").addClass("input-medium");
+    $("#id_sexo,#id_respuesta,#id_tiporegistro,#id_tiponoregistro").addClass("input-medium");
+    $("#id_f_inscripcion").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+    $("#id_cedula").mask("9999999999");
+    $("#id_cedula, #id_pasaporte, #id_vendedor").addClass("input-large");
+
+
+    chequeaCedula = function(){
+        numero = $("#id_cedula").val();
+        var suma = 0;
+        var residuo = 0;
+        var pri = false;
+        var pub = false;
+        var nat = false;
+        var numeroProvincias = 24;
+        var extranjero = 30;
+        var modulo = 11;
+
+        prov = numero.substr(0,2);
+        if (parseInt(prov)>numeroProvincias || parseInt(prov)<=0){
+            if (parseInt(prov)!= extranjero){
+                alert('El código de la provincia (dos primeros dígitos) es inválido');
+                $("#id_cedula").val("");
+            }
+        }
+
+        /* Aqui almacenamos los digitos de la cedula en variables. */
+        d1 = numero.substr(0,1);
+        d2 = numero.substr(1,1);
+        d3 = numero.substr(2,1);
+        d4 = numero.substr(3,1);
+        d5 = numero.substr(4,1);
+        d6 = numero.substr(5,1);
+        d7 = numero.substr(6,1);
+        d8 = numero.substr(7,1);
+        d9 = numero.substr(8,1);
+        d10 = numero.substr(9,1);
+
+        /* El tercer digito es: */
+        /* 9 para sociedades privadas y extranjeros */
+        /* 6 para sociedades publicas */
+        /* menor que 6 (0,1,2,3,4,5) para personas naturales */
+
+        if (d3==7 || d3==8){
+            alert('El tercer dígito ingresado es inválido');
+            $("#id_cedula").val("");
+        }
+
+        /* Solo para personas naturales (modulo 10) */
+       {#  OCU 02-feb-2017 para que valide cedulas de extranjeros con tercer digito = 6 #}
+        if (d3 <=6){
+            nat = true;
+            p1 = d1 * 2; if (p1 >= 10) p1 -= 9;
+            p2 = d2 * 1; if (p2 >= 10) p2 -= 9;
+            p3 = d3 * 2; if (p3 >= 10) p3 -= 9;
+            p4 = d4 * 1; if (p4 >= 10) p4 -= 9;
+            p5 = d5 * 2; if (p5 >= 10) p5 -= 9;
+            p6 = d6 * 1; if (p6 >= 10) p6 -= 9;
+            p7 = d7 * 2; if (p7 >= 10) p7 -= 9;
+            p8 = d8 * 1; if (p8 >= 10) p8 -= 9;
+            p9 = d9 * 2; if (p9 >= 10) p9 -= 9;
+            modulo = 10;
+        }
+
+        /* Solo para sociedades publicas (modulo 11) */
+        /* Aqui el digito verficador esta en la posicion 9, en las otras 2 en la pos. 10 */
+        else if(d3 == 6){
+            pub = true;
+            p1 = d1 * 3;
+            p2 = d2 * 2;
+            p3 = d3 * 7;
+            p4 = d4 * 6;
+            p5 = d5 * 5;
+            p6 = d6 * 4;
+            p7 = d7 * 3;
+            p8 = d8 * 2;
+            p9 = 0;
+        }
+
+        /* Solo para entidades privadas (modulo 11) */
+        else if(d3 == 9) {
+            pri = true;
+            p1 = d1 * 4;
+            p2 = d2 * 3;
+            p3 = d3 * 2;
+            p4 = d4 * 7;
+            p5 = d5 * 6;
+            p6 = d6 * 5;
+            p7 = d7 * 4;
+            p8 = d8 * 3;
+            p9 = d9 * 2;
+        }
+
+        suma = p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+        residuo = suma % modulo;
+
+        /* Si residuo=0, dig.ver.=0, caso contrario 10 - residuo*/
+        digitoVerificador = residuo==0 ? 0: modulo - residuo;
+
+        /* ahora comparamos el elemento de la posicion 10 con el dig. ver.*/
+        if (pub==true){
+            if (digitoVerificador != d9){
+                alert('El ruc de la empresa del sector público es incorrecto.');
+                $("#id_cedula").val("");
+            }
+            /* El ruc de las empresas del sector publico terminan con 0001*/
+            if ( numero.substr(9,4) != '0001' ){
+                alert('El ruc de la empresa del sector público debe terminar con 0001');
+                $("#id_cedula").val("");
+            }
+        }
+
+        else if(pri == true){
+            if (digitoVerificador != d10){
+                alert('El ruc de la empresa del sector privado es incorrecto.');
+                $("#id_cedula").val("");
+            }
+            if ( numero.substr(10,3) != '001' ){
+                alert('El ruc de la empresa del sector privado debe terminar con 001');
+                $("#id_cedula").val("");
+            }
+        }
+
+        else if(nat == true){
+            if (digitoVerificador != d10){
+                alert('El número de cédula de la persona natural es incorrecto.');
+                $("#id_cedula").val("");
+            }
+            if (numero.length >10 && numero.substr(10,3) != '001' ){
+                alert('El ruc de la persona natural debe terminar con 001');
+                $("#id_cedula").val("");
+            }
+        }
+        return true;
+    };
+
+    $("#id_cedula").blur(function(){
+        if ($(this).val() != ''){
+            chequeaCedula();
+        }
+        else{
+            $($("#id_cedula").get(0).parentNode).find(".help-text").html("");
+            $("#id_pasaporte").attr("disabled",false);
+        }
+        $.post("/inscripcionesaspirantes", {action: 'buscarcedula', cedula: $("#id_cedula").val()}, function(data) {
+                if (data.result=='bad') {
+                   $($("#id_cedula").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Estudiante ya existe en el SGA en la carrera " +  data.estudiante);
+
+                   $("#id_nombres").attr("disabled",true);
+                   $("#id_apellido1").attr("disabled",true);
+                   $("#id_apellido2").attr("disabled",true);
+                   $("#id_carrera").attr("disabled",true);
+                   $("#id_sesionpractica").attr("disabled",true);
+                   $("#id_email").attr("disabled",true);
+                   $("#id_telefono").attr("disabled",true);
+                   $("#id_telefono_conv").attr("disabled",true);
+                   $("#id_sexo").attr("disabled",true);
+                   $("#id_respuesta").attr("disabled",true);
+                   $("#id_tiporegistro").attr("disabled",true);
+                   $("#id_tiponoregistro").attr("disabled",true);
+                   $("#id_pasaporte").attr("disabled",true);
+                   $("#id_f_inscripcion").attr("disabled",true);
+                   $("#id_vendedor").attr("disabled",true);
+
+                   $("#formbutton").attr("disabled",true);
+
+                   $("#id_apellido1").val('');
+                   $("#id_apellido2").val('');
+                   $("#id_nombres").val('');
+                   $("#id_cedula").val('');
+                }
+                if (data.result=='bad2') {
+                   $($("#id_cedula").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Aspirante ya esta registrado " +  data.aspirante);
+
+                   $("#id_nombres").attr("disabled",true);
+                   $("#id_apellido1").attr("disabled",true);
+                   $("#id_apellido2").attr("disabled",true);
+                   $("#id_carrera").attr("disabled",true);
+                   $("#id_sesionpractica").attr("disabled",true);
+                   $("#id_email").attr("disabled",true);
+                   $("#id_telefono").attr("disabled",true);
+                   $("#id_telefono_conv").attr("disabled",true);
+                   $("#id_sexo").attr("disabled",true);
+                   $("#id_respuesta").attr("disabled",true);
+                   $("#id_tiporegistro").attr("disabled",true);
+                   $("#id_tiponoregistro").attr("disabled",true);
+
+                   $("#id_pasaporte").attr("disabled",true);
+                   $("#id_f_inscripcion").attr("disabled",true);
+                   $("#id_vendedor").attr("disabled",true);
+
+                   $($("#id_apellido1").get(0).parentNode).find(".help-text").html("");
+                   $("#id_apellido1").val('');
+                   $("#id_apellido2").val('');
+                   $("#id_nombres").val('');
+                   $("#id_cedula").val('');
+
+                   $("#formbutton").attr("disabled",true);
+                }
+                if (data.result=='ok') {
+                   $($("#id_cedula").get(0).parentNode).find(".help-text").html("");
+                   $("#formbutton").attr("disabled",false);
+                   $("#id_pasaporte").attr("disabled",true);
+
+                   $("#id_nombres").attr("disabled",false);
+                   $("#id_apellido1").attr("disabled",false);
+                   $("#id_apellido2").attr("disabled",false);
+                   $("#id_carrera").attr("disabled",false);
+                   $("#id_sesionpractica").attr("disabled",false);
+                   $("#id_email").attr("disabled",false);
+                   $("#id_telefono").attr("disabled",false);
+                   $("#id_telefono_conv").attr("disabled",false);
+                   $("#id_sexo").attr("disabled",false);
+                   $("#id_respuesta").attr("disabled",false);
+                   $("#id_tiporegistro").attr("disabled",false);
+                   $("#id_tiponoregistro").attr("disabled",false);
+                   $("#id_f_inscripcion").attr("disabled",false);
+                   $("#id_vendedor").attr("disabled",false);
+
+                }
+        }, "json");
+    });
+
+    $("#id_pasaporte").blur(function(){
+        if ($(this).val() != ''){
+            $.post("/inscripcionesaspirantes", {action: 'buscarpas', pasaporte: $("#id_pasaporte").val()}, function(data) {
+                if (data.result=='bad') {
+                   $($("#id_pasaporte").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Estudiante ya existe en el SGA en la carrera " +  data.estudiante);
+
+                   $("#id_nombres").attr("disabled",true);
+                   $("#id_apellido1").attr("disabled",true);
+                   $("#id_apellido2").attr("disabled",true);
+                   $("#id_carrera").attr("disabled",true);
+                   $("#id_sesionpractica").attr("disabled",true);
+                   $("#id_email").attr("disabled",true);
+                   $("#id_telefono").attr("disabled",true);
+                   $("#id_telefono_conv").attr("disabled",true);
+                   $("#id_sexo").attr("disabled",true);
+                   $("#id_respuesta").attr("disabled",true);
+                   $("#id_tiporegistro").attr("disabled",true);
+                   $("#id_tiponoregistro").attr("disabled",true);
+                   $("#id_pasaporte").attr("disabled",true);
+                   $("#id_f_inscripcion").attr("disabled",true);
+                   $("#id_vendedor").attr("disabled",true);
+
+                   $("#formbutton").attr("disabled",true);
+
+                   $($("#id_apellido1").get(0).parentNode).find(".help-text").html("");
+                   $("#id_apellido1").val('');
+                   $("#id_apellido2").val('');
+                   $("#id_nombres").val('');
+                   $("#id_pasaporte").val('');
+
+                }
+                if (data.result=='bad2') {
+                   $($("#id_pasaporte").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Aspirante ya esta registrado " +  data.aspirante);
+
+                   $("#id_nombres").attr("disabled",true);
+                   $("#id_apellido1").attr("disabled",true);
+                   $("#id_apellido2").attr("disabled",true);
+                   $("#id_carrera").attr("disabled",true);
+                   $("#id_sesionpractica").attr("disabled",true);
+                   $("#id_email").attr("disabled",true);
+                   $("#id_telefono").attr("disabled",true);
+                   $("#id_telefono_conv").attr("disabled",true);
+                   $("#id_sexo").attr("disabled",true);
+                   $("#id_respuesta").attr("disabled",true);
+                   $("#id_tiporegistro").attr("disabled",true);
+                   $("#id_tiponoregistro").attr("disabled",true);
+                   $("#id_pasaporte").attr("disabled",true);
+                   $("#id_f_inscripcion").attr("disabled",true);
+                   $("#id_vendedor").attr("disabled",true);
+
+                   $("#formbutton").attr("disabled",true);
+
+                   $($("#id_apellido1").get(0).parentNode).find(".help-text").html("");
+                   $("#id_apellido1").val('');
+                   $("#id_apellido2").val('');
+                   $("#id_nombres").val('');
+                   $("#id_pasaporte").val('');
+
+                }
+                if (data.result=='ok') {
+                    $($("#id_pasaporte").get(0).parentNode).find(".help-text").html("");
+                    $("#formbutton").attr("disabled",false);
+                    $("#id_cedula").attr("disabled",true);
+
+                    $("#id_nombres").attr("disabled",false);
+                    $("#id_apellido1").attr("disabled",false);
+                    $("#id_apellido2").attr("disabled",false);
+                    $("#id_carrera").attr("disabled",false);
+                    $("#id_sesionpractica").attr("disabled",false);
+                    $("#id_email").attr("disabled",false);
+                    $("#id_telefono").attr("disabled",false);
+                    $("#id_telefono_conv").attr("disabled",false);
+                    $("#id_sexo").attr("disabled",false);
+                    $("#id_respuesta").attr("disabled",false);
+                    $("#id_tiporegistro").attr("disabled",false);
+                    $("#id_tiponoregistro").attr("disabled",false);
+                    $("#id_f_inscripcion").attr("disabled",false);
+                    $("#id_vendedor").attr("disabled",false);
+
+                }
+            }, "json");
+        }
+        else{
+            $($("#id_pasaporte").get(0).parentNode).find(".help-text").html("");
+            $("#id_cedula").attr("disabled",false);
+        }
+
+    });
+
+    $("#id_apellido2").blur(function(){
+        $.post("/inscripcionesaspirantes", {action: 'buscarapellidos', apellido1: $("#id_apellido1").val(), apellido2: $("#id_apellido2").val(), nombres: $("#id_nombres").val()}, function(data) {
+
+            if (data.result=='bad') {
+                smoke.alert("Aspirante ya se encuentra registrado");
+
+                $("#id_nombres").attr("disabled",true);
+                $("#id_apellido1").attr("disabled",true);
+                $("#id_apellido2").attr("disabled",true);
+                $("#id_carrera").attr("disabled",true);
+                $("#id_sesionpractica").attr("disabled",true);
+                $("#id_email").attr("disabled",true);
+                $("#id_telefono").attr("disabled",true);
+                $("#id_telefono_conv").attr("disabled",true);
+                $("#id_sexo").attr("disabled",true);
+                $("#id_respuesta").attr("disabled",true);
+                $("#id_tiporegistro").attr("disabled",true);
+                $("#id_tiponoregistro").attr("disabled",true);
+                $("#id_pasaporte").attr("disabled",true);
+                $("#id_f_inscripcion").attr("disabled",true);
+                $("#id_vendedor").attr("disabled",true);
+
+                $("#formbutton").attr("disabled",true);
+
+                $($("#id_apellido1").get(0).parentNode).find(".help-text").html("");
+                $("#id_apellido1").val('');
+                $("#id_apellido2").val('');
+                $("#id_nombres").val('');
+                $("#id_cedula").val('');
+                $("#id_pasaporte").val('');
+
+
+                }
+            else{
+                    $("#formbutton").attr("disabled",false);
+                    $($("#id_apellido1").get(0).parentNode).find(".help-text").html("");
+
+                    $("#id_nombres").attr("disabled",false);
+                    $("#id_apellido1").attr("disabled",false);
+                    $("#id_apellido2").attr("disabled",false);
+                    $("#id_carrera").attr("disabled",false);
+                    $("#id_sesionpractica").attr("disabled",false);
+                    $("#id_email").attr("disabled",false);
+                    $("#id_telefono").attr("disabled",false);
+                    $("#id_telefono_conv").attr("disabled",false);
+                    $("#id_sexo").attr("disabled",false);
+                    $("#id_respuesta").attr("disabled",false);
+                    $("#id_tiporegistro").attr("disabled",false);
+                    $("#id_tiponoregistro").attr("disabled",false);
+                    $("#id_pasaporte").attr("disabled",false);
+                    $("#id_f_inscripcion").attr("disabled",false);
+                    $("#id_vendedor").attr("disabled",false);
+
+            }}, "json");
+    });
+
+     $("#id_respuesta").change(function(){
+        var combo = document.getElementById("id_respuesta");
+             if (combo.options[combo.selectedIndex].text == 'NO'){
+                $("#id_f_inscripcion").attr("disabled", true);
+                $("#id_f_inscripcion").val('');
+                $("#id_tiponoregistro").attr("disabled", false);
+             }
+             else{
+                 $("#id_f_inscripcion").attr("disabled", false);
+                 $("#id_tiponoregistro").attr("disabled", true);
+             }
+     });
+
+     var numeros="@";
+
+        function tiene_arroba(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                  num = num + 1;
+              }
+           }
+           return num;
+        }
+
+     var caracteres="º\·!|#($~%&¬/<)='?¿¡`]^[+*´¨ç}>;{,:";
+
+        function tiene_caracteres(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (caracteres.indexOf(texto.charAt(i),0)!=-1){
+                  num = num + 1;
+              }
+           }
+           return num;
+        }
+
+     var numerosdec="0123456789";
+
+        function solo_numerosdec(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+
+     $('#id_email').blur(function(){
+            var v = $("#id_email").val();
+            var p = tiene_arroba(v);
+            var c = tiene_caracteres(v);
+
+            if($("#id_email").val() != ""){
+                if(c == 0 ){
+                    if(p != 1 ){
+                       $("#id_email").focus();
+                       $($("#id_email").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>El correo debe tener un signo '@', el email no contiene ninguno o tiene mas de uno, ingresar correctamente ejemplo (email@dominio.com).</i></span>");
+                    }
+                    else{
+                        if(v.split('@')[1].length > 0)
+                        {
+                            if(v.split(' ').length > 1)
+                            {
+                              $("#id_email").focus();
+                              $($("#id_email").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>El email no debe contener espacios, ingresar correctamente. </i></span>");
+                            }
+                            else
+                            {
+                                var punto = tiene_punto(v.split('@')[1]);
+                                if(punto < 1 )
+                                {
+                                    $("#id_email").focus();
+                                    $($("#id_email").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>El formato del correo es incorrecto ejemplo (email@dominio.com). </i></span>");
+                                }
+                                else{
+                                    $($("#id_email").get(0).parentNode).find(".help-text").html("");
+                                }
+                            }
+                        }
+                        else{
+                            $("#id_email").focus();
+                            $($("#id_email").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>El formato del correo es incorrecto ejemplo (email@dominio.com). </i></span>");
+                        }
+                    }
+                }
+                else{
+                    $("#id_email").focus();
+                    $($("#id_email").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>El email no debe contener caracteres especiales </i></span>");
+                }
+            }
+
+     });
+
+     $("#id_telefono_conv").blur(function(){
+        var numero = $(this).val();
+        var p = solo_numerosdec(numero);
+
+        if($("#id_telefono_conv").val() != ""){
+            if (p != numero.length){
+                  $($("#id_telefono_conv").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Ingrese solo numeros</i></h6>");
+                  $("#id_telefono_conv").val("");
+                  $("#id_telefono_conv").focus();
+            }
+            else{
+                if (numero.length != 7 &&  numero.length != 9 ){
+                    $($("#id_telefono_conv").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Numero Convencional debe tener 7 digitos si es local o 9 digitos si es de provincia</i></h6>");
+                    $("#id_telefono_conv").val('');
+                    $("#id_telefono_conv").focus();
+                }
+                else{
+                  $($("#id_telefono_conv").get(0).parentNode).find(".help-text").html("");
+                }
+            }
+        }
+        else{
+            $($("#id_telefono_conv").get(0).parentNode).find(".help-text").html("");
+            }
+     });
+
+     $("#id_telefono").blur(function(){
+        var numero = $(this).val();
+        var p = solo_numerosdec(numero);
+
+        if($("#id_telefono").val() != ""){
+            if (p != numero.length){
+                  $($("#id_telefono").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Ingrese solo numeros</i></h6>");
+                  $("#id_telefono").val("");
+                  $("#id_telefono").focus();
+            }
+            else{
+                if (numero.length != 10 ){
+                    $($("#id_telefono").get(0).parentNode).find(".help-text").html("<h6 style='color:darkblue' ><i> Numero Celular debe tener 10 digitos</i></h6>");
+                    $("#id_telefono").val('');
+                    $("#id_telefono").focus();
+                }
+                else{
+                    if (numero.substr(0,2) != '09' && numero.substr(0,2) != '08' ){
+                       $($("#id_telefono").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Numero Celular debe comenzar en 09 o 08</i></h6>");
+                       $("#id_telefono").val("");
+                    }
+                    else{
+                        $($("#id_telefono").get(0).parentNode).find(".help-text").html("");
+                    }
+                }
+            }
+        }
+        else{
+            {% if not inscripcion_conduccion %}
+                $($("#id_telefono").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Numero Celular es obligatorio</i></h6>");
+            {% endif %}
+            }
+
+     });
+
+     $("#formbutton").click(function(){
+        if ($("#id_pasaporte").val() == '' && $("#id_cedula").val()=='') {
+             smoke.alert("No se puede registrar, no ha ingresado informaci&oacute;n");
+             location.href='/inscripcionesaspirantes';
+             return false;
+        }
+        $("#formbutton").hide();
+     });
+
+     {% if error1 %}
+        smoke.alert('{{ error1 }}')
+     {% endif %}
+
+{% endblock %}
+{% block titulo %}
+{{ title }}
+{% endblock %}
+
+{% block formaction %}/inscripcionesaspirantes{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+
+    <input type='hidden' name='action' value='add'/>
+
+    {% if insasp %}
+        <input type='hidden' name='inscritoasp' value='{{ insasp.id }}'/>
+    {% endif %}
+{% endblock %}
+
+{% block formback %}/inscripcionesaspirantes{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

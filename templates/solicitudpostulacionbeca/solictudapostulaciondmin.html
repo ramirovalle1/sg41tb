@@ -1,0 +1,811 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <style>
+
+        body {
+            background-color: #eee
+
+        }
+
+        .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+          color: #fff;
+          background-color:  #184679; }
+
+        .btn-primary {
+          color: #fff;
+          background-color: #184679;
+          border-color: #184679;
+        }
+
+        .custom-control-input:checked ~ .custom-control-label::before {
+          color: #fff;
+          border-color:#184679;
+          background-color: #184679; }
+
+
+        .div.dataTables_wrapper div.dataTables_filter, div.dataTables_wrapper div.dataTables_info, div.dataTables_wrapper div.dataTables_paginate,div.dataTables_wrapper div.dataTables_filter label,div.dataTables_wrapper div.dataTables_length label {
+            padding-left: 15px;
+            padding-right: 15px;
+            visibility: hidden;
+        }
+
+        .modal-body-descragar-postulante  {
+          position: relative;
+          -ms-flex: 1 1 auto;
+          -webkit-box-flex: 1;
+          flex: 1 1 auto;
+          padding: 1rem;
+        }
+
+
+        .badge-declaracionjuramentada {
+            color: #fff;
+            background-color: #D35400;
+            font-size: 11px;
+        }
+
+        .badge-jornada {
+            color: #fff;
+            background-color: #D36D00;
+            font-size: 12px;
+        }
+
+
+
+    </style>
+
+    <script type="text/javascript">
+        $(function() {
+            
+            
+            $( document ).ready(function() {
+             
+              $("#cmbcarrerapostulacion").val('{{ carrera }}');
+              $('#cmbcarrerapostulacion').trigger('change.select2');
+              
+              $("#cmbconvenioingreso").val('{{ convenio }}');
+              $('#cmbconvenioingreso').trigger('change.select2');
+
+              $("#cmbprovinciafiltro").val('{{ provincia }}');
+              $('#cmbprovinciafiltro').trigger('change.select2');
+              
+              $("#cmbcertificadoenviado").val('{{ certificadoeviado }}');
+              $('#cmbcertificadoenviado').trigger('change.select2');
+              
+              $("#cmbinscritofiltro").val('{{ inscrito }}');
+              $('#cmbinscritofiltro').trigger('change.select2');
+              
+              $("#cmbmedioenterastes").val('{{ medio }}');
+              $('#cmbmedioenterastes').trigger('change.select2');
+              
+              llenarciudad();
+
+              
+
+
+              
+           });   
+            
+           versolicitud=function (idsolicitud) {
+               Loader.open(); 
+              $.get("/solicitudpostulacionbecadmin", {'action':'versolicitud', 'idsolicitud': idsolicitud}, function(data) {
+                 $("#verdatossolicitud .modal-body").html(data);
+                 $("#verdatossolicitud").modal({backdrop: 'static', keyboard: false});
+                  Loader.close();
+                 }, "html");
+                 return false;
+           }
+           
+           
+           function buscar(){
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/solicitudpostulacionbecadmin?s="+term+"&carrera="+$("#cmbcarrerapostulacion").val()+"&convenio="+$("#cmbconvenioingreso").val()+"&provincia="+$("#cmbprovinciafiltro").val()+"&ciudad="+$("#cmbciudadfiltro").val()+"&certificadoeviado="+$("#cmbcertificadoenviado").val()+"&inscrito="+ $("#cmbinscritofiltro").val()+"&medio="+$("#cmbmedioenterastes").val();
+           }
+              
+           $("#btnbuscar").click(function() {
+               buscar();
+            });
+           
+           $("#btnlistadopostulantes").click(function() {
+               $("#ventadescarga").modal({backdrop: 'static', keyboard: false});                
+           }); 
+           
+           $("#btnenviarcertificado").click(function() {
+               $("#ventacertificado").modal({backdrop: 'static', keyboard: false});                
+           });
+           
+           $("#btndescpos").click(function() {
+                    Loader.open();
+                    $("#ventadescarga").modal("hide");
+                    $.post("/solicitudpostulacionbecadmin", {"action":"generar_excel","empresaconvenio_id":$("#cmbconveniodescarga").val()}, function(data) {
+                    if (data.result=='ok'){
+                        
+                        setInterval(function(){
+                                location.href = '/solicitudpostulacionbecadmin';
+                        }, 2500);
+                        location.href=data.url;
+                        
+                    }else{
+                        smoke.alert("Error:" + data.result);
+                        
+                    }
+                   
+                    Loader.close();
+                 }, "json");
+           });
+           
+           $("#btncertificado").click(function() {
+               
+               if($("#cmbconveniocerti").val()>0){
+                   
+                       swal({
+                        title: '¿Está seguro que desea enviar los certificado de inscripción del Sga?',
+                        type: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Si,Enviar los certificados!',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonClass: 'btn btn-success margin-5',
+                        cancelButtonClass: 'btn btn-danger margin-5',
+                        buttonsStyling: false,
+                        allowOutsideClick: false,
+                    }).then(function (isConfirm) {
+        
+                         if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+                             
+                                
+                                $("#ventacertificado").modal('hide');   
+                                 Loader.open();
+                                 var formData = new FormData();
+                                 formData.append('action', 'enviarcertificadoinscripcion');
+                                 formData.append('idconvenio', $("#cmbconveniocerti").val());
+        
+                                 $.ajax({
+                                         url: '/solicitudpostulacionbecadmin',
+                                         type: "POST",
+                                         contentType: false,
+                                         data: formData,
+                                         processData: false,
+                                         cache: false,
+                                         success: function (data) {
+                                             if (data.result == "ok") {
+                                                 swal("! Solicitud", "Se envio certificado de inscripción correctamente ", "success");
+                                                buscar();
+                                             } else {
+                                                 swal("Error", data.message, "error");
+                                             }
+        
+                                         },
+                                         error: function (xhr, ajaxOptions, thrownError) {
+                                             swal("Error", "Error Conexion en el Servidor", "error");
+                                          
+                                         },
+                                         complete: function () {
+                                            Loader.close();
+                                         }
+                                 });
+        
+        
+        
+        
+                        }
+                    })
+                   
+               }else{
+                    swal("Alerta", 'Debe seleccionar un convenio', "warning");
+               }
+                
+               
+               
+           });
+           
+           
+            
+           aprobarsolicitud=function (idsolicitud,nombre) {
+
+
+               swal({
+                   title: 'Esta Seguro que desea aprobar la postuación?',
+                   text: "Postulante: " + nombre,
+                   type: 'warning',
+                   input: 'textarea',
+                   showCancelButton: true,
+                   confirmButtonText: 'Si,Aprobar!',
+                   cancelButtonText: 'Cancel',
+                   confirmButtonClass: 'btn btn-success margin-5',
+                   cancelButtonClass: 'btn btn-danger margin-5',
+                   buttonsStyling: false,
+                   allowOutsideClick: false,
+                   inputValidator: textarea => {
+                       if (!textarea) {
+                           return "Ingrese el motivo de la aprobación ";
+                       } else {
+                           return undefined;
+                       }
+                   },
+
+               }).then(function (isConfirm) {
+
+
+                   if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+
+                        Loader.open();
+                       var formData = new FormData();
+                       formData.append('action', 'aprobarpostulacion');
+                       formData.append('idsoli', idsolicitud);
+                       formData.append('txtmotivo', isConfirm.value);
+
+
+                       $.ajax({
+                           url: '/solicitudpostulacionbecadmin',
+                           type: "POST",
+                           contentType: false,
+                           data: formData,
+                           processData: false,
+                           cache: false,
+                           success: function (data) {
+                               if (data.result == "ok") {
+                                   swal("! Solicitud", "Se aprobo correctamente la postulación", "success").then((willDelete) => {
+                                        location.href = "/solicitudpostulacionbecadmin";
+                                    });
+                                   
+                               } else {
+                                   swal("Error", data.message, "error");
+                                   
+                               }
+
+                           },
+                           error: function (xhr, ajaxOptions, thrownError) {
+                               swal("Error", "Error Conexion en el Servidor", "error");
+                              
+                           },
+
+                           complete: function () {
+                               Loader.close(); 
+
+                           }
+
+
+                       });
+
+
+                   }
+               })
+           } 
+           
+           seleccionarcarrerasolicitud=function (idsolicitud,nombrespostulante) {
+
+
+             $.get("/solicitudpostulacionbecadmin", {'action':'cambiarcarrerapostulacion', 'idsolicitud': idsolicitud
+             }, function(data) {
+    
+    
+                         $("#ventaseleccionarcarrera .modal-body").html(data);
+                         $("#ventaseleccionarcarrera").modal({backdrop: 'static', keyboard: false});
+             }, "html");
+             return false;
+    
+          }
+          
+          
+           registrarsga=function (idsolicitud) {
+
+             Loader.open();
+             $.get("/solicitudpostulacionbecadmin", {'action':'regitsrarsga', 'idsolicitud': idsolicitud,"carrera":$("#cmbcarrerapostulacion").val(),"s":$("#searchfield").val().toUpperCase()}, function(data) {
+    
+    
+                         $("#ventanaregistrarsga .modal-body").html(data);
+                         $("#ventanaregistrarsga").modal({backdrop: 'static', keyboard: false});
+                         
+                          Loader.close();
+             }, "html");
+    
+    
+    
+             return false;
+         }
+
+
+           function llenarciudad(){
+               $.post("/solicitudpostulacionbecadmin", {
+                 "action": "buscarcantones",
+                 idprovincia: $("#cmbprovinciafiltro").val()
+               }, function (data) {
+                 var cantontxtfiltro = '';
+                 if (data.result == 'ok') {
+
+                     for (var x in data.listacanton) {
+                         cantontxtfiltro = cantontxtfiltro + '<option  value="' + data.listacanton[x].id + '"> ' + data.listacanton[x].nombre + '</option>';
+                     }
+                     $("#cmbciudadfiltro").html(cantontxtfiltro);
+
+                 } else {
+                     $("#cmbciudadfiltro").html(cantontxtfiltro);
+                 }
+
+             }, 'json').always(function() {
+                $("#cmbciudadfiltro").val('{{ ciudad }}');
+                $('#cmbciudadfiltro').trigger('change.select2');
+             });
+           }
+           
+           $("#cmbprovinciafiltro").change(function () {
+                llenarciudad();
+           });
+           
+           elminarinscripcionsga=function (idsolicitud,nombre) {
+
+
+                swal({
+                title: 'Esta Seguro que desea eliminar la solcitud ya registrada en el Sga?',
+                text: "Postulante: "+nombre,
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si,Eliminar!',
+                cancelButtonText: 'Cancel',
+                confirmButtonClass: 'btn btn-success margin-5',
+                cancelButtonClass: 'btn btn-danger margin-5',
+                buttonsStyling: false,
+                allowOutsideClick: false,
+
+                }).then(function (isConfirm) {
+
+
+                       if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+
+                            
+                                 Loader.open();
+                                 var formData = new FormData();
+                                 formData.append('action', 'eliminarregistrosga');
+                                 formData.append('idsolicitud', idsolicitud);                            
+
+
+                                 $.ajax({
+                                         url: '/solicitudpostulacionbecadmin',
+                                         type: "POST",
+                                         contentType: false,
+                                         data: formData,
+                                         processData: false,
+                                         cache: false,
+                                         success: function (data) {
+                                             if (data.result == "ok") {
+                                                 swal("! Solicitud", "Se elimino correctamente el registro en el Sga", "success").then((willDelete) => {
+                                                    buscar();
+                                                });
+                                                 
+                                             } else {
+                                                 swal("Error", data.message, "error");
+                                                 
+                                             }
+
+                                         },
+                                         error: function (xhr, ajaxOptions, thrownError) {
+                                             swal("Error", "Error Conexion en el Servidor", "error");
+                                           
+                                         },
+
+                                         complete: function () {
+                                             Loader.close();
+
+                                         }
+
+
+                                 });
+
+
+
+                        }
+                })
+
+           }
+           
+          
+           
+           reneviarcorreo=function (idsolicitud) {
+               
+               Loader.open();  
+            
+             var formData = new FormData();
+             formData.append('action', 'reenviocertificadosga');
+             formData.append('idsolicitud', idsolicitud);
+            
+             $.ajax({
+                     url: '/solicitudpostulacionbecadmin',
+                     type: "POST",
+                     contentType: false,
+                     data: formData,
+                     processData: false,
+                     cache: false,
+                     success: function (data) {
+                         if (data.result == "ok") {
+                             swal("! Solicitud", "Se reenvio correctamente el certificado del registro en el Sga", "success");
+                             buscar();
+                         } else {
+                             swal("Error", data.message, "error");
+                         }
+
+                     },
+                     error: function (xhr, ajaxOptions, thrownError) {
+                         swal("Error", "Error Conexion en el Servidor", "error");
+                     },
+                     complete: function () {
+                          Loader.close();
+
+                     }
+
+
+             });
+
+     }
+           
+           
+       });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+    <div class="mobile-menu-overlay"></div>
+
+        <div class="main-container">
+             <div class="page-header">
+                <div class="row">
+                    <div class="col-md-10 col-sm-10">
+                        <div class="title">
+                            <h4>Listado de Solicitudes de Postulación </h4>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-2">
+                         <a href="/" style="float: right;color: white;background: #0b132b" class="btn btn-black"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+
+                </div>
+            </div>
+            <div class="card-box mb-30">
+                    <div class="pd-20">
+
+                        <div class="row">
+                             <div class="col-md-3" style="margin-top: 5px">
+                                <div class="form-group" >
+                                    <label > <a style="color: #d92550"></a></label>
+                                    <input id="searchfield" type="text" class="form-control" value='{{ search }}' >
+                                </div>
+                             </div>
+                            
+                            <div class="col-md-3">
+                                <div class="form-group">      
+                                     <label > <a >Convenios</a></label>
+                                    <select id="cmbconvenioingreso" class="custom-select2 form-control"  name="cmbconvenioingreso" style="width: 100%; ">
+                                           <option value="0">TODOS</option>
+                                           {% for xlistconvenio in listconvenio %}
+                                                <option value='{{ xlistconvenio.id }}'>{{ xlistconvenio.nombre }}</option>
+                                           {% endfor %}
+                                    </select>                                 
+                                </div>
+                            </div>
+                        
+                             <div class="col-md-3" >
+                                <div class="form-group">      
+                                     <label > <a >Carrera</a></label>
+                                    <select id="cmbcarrerapostulacion" class="custom-select2 form-control"  name="cmbcarrerapostulacion" style="width: 100%; ">
+                                           <option value="0">TODAS</option>
+                                           {% for xlistcarrerapostulacion in listcarrerapostulacion %}
+                                                <option value='{{ xlistcarrerapostulacion.id }}'>{{ xlistcarrerapostulacion.nombre }}</option>
+                                           {% endfor %}
+                                    </select>
+                                    <p id="helpcmbgrupoinscripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-3" style="margin-top: 5px">
+                                <label > <a style="color: #d92550"></a></label>
+                                <div class="form-group">
+                                    <button type="button" id="btnbuscar" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+                                    <button type="button" id="btnlistadopostulantes" style="margin-left: 5px" class="btn" title="Descargar Postulantes" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>
+                                    <button type="button" id="btnenviarcertificado" style="margin-left: 5px" title="Enviar Certificado de Inscripción"  class="btn" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-email"></span></button>
+                                </div>
+                            </div>
+                        </div>                     
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                     <label > <a >Provincia</a></label>
+                                    <select id="cmbprovinciafiltro" class="custom-select2 form-control"  name="cmbprovinciafiltro" style="width: 100%; ">
+                                           <option value="0">TODOS</option>
+                                           {% for xlistprovincia in listprovincia %}
+                                                <option value='{{ xlistprovincia.id }}'>{{ xlistprovincia.nombre }}</option>
+                                           {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                             <div class="col-md-3">
+                                <div class="form-group">
+                                     <label > <a >Ciudad</a></label>
+                                    <select id="cmbciudadfiltro" class="custom-select2 form-control"  name="cmbciudadfiltro" style="width: 100%; ">
+                                           <option value="0">TODOS</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                     <label > <a >Certificado Enviado</a></label>
+                                    <select id="cmbcertificadoenviado" class="custom-select2 form-control"  name="cmbcertificadoenviado" style="width: 100%; ">
+                                           <option value="0">TODOS</option>
+                                           <option value="1">SI</option>
+                                           <option value="2">NO</option> 
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                     <label > <a >Inscrito</a></label>
+                                    <select id="cmbinscritofiltro" class="custom-select2 form-control"  name="cmbinscritofiltro" style="width: 100%; ">
+                                           <option value="0">TODOS</option>
+                                           <option value="1">SI</option>
+                                           <option value="2">NO</option> 
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                     <label > <a >Medio te Enterastes</a></label>
+                                    <select id="cmbmedioenterastes" class="custom-select2 form-control"  name="cmbmedioenterastes" style="width: 100%; ">
+                                           <option value="0">TODOS</option>
+                                           {% for xlistipoanuncio in listipoanuncio %}
+                                                <option value='{{ xlistipoanuncio.id }}'>{{ xlistipoanuncio.descripcion }}</option>
+                                           {% endfor %}
+                                    </select>
+                                </div>
+                            </div>                         
+                        </div>
+                    </div>
+					<div class="pd-20">
+                        <table class="data-table table stripe hover nowra">
+							<thead>
+								<tr>
+									<th class="table-plus datatable-nosort">Fecha </th>
+                                    <th>Tipo Identificación</th>
+                                    <th>Identificación</th>
+                                    <th>Nombres</th>
+                                    <th>Convenio</th>
+                                    <th>Actualizado</th>
+                                    <th>Provincia</th>
+                                    <th>Ciudad</th>
+                                    <th>Parroquia</th>
+                                    <th>Email</th>
+                                    <th>Carrera</th>
+                                    <th>Aprobado</th>
+                                    <th>Inscrito</th>
+                                    <th>Certificado Inscripción Sga</th>
+                                    <th>Acción</th>
+								</tr>
+							</thead>
+							<tbody>
+                                {% for solicitud in solicitudpostulacion %}
+
+                                    <tr>
+                                        <td>{{ solicitud.fecha|date:'d-m-Y' }} </td>
+                                        <td>{{ solicitud.tipoidentificacion.nombre }}<br>
+                                           <span class="badge badge-primary" style="margin-top: 10px;font-size: 12px">GENERO:  {% if  solicitud.sexo %} {{  solicitud.sexo.nombre }} {% else %} NO TIENE {% endif %} </span><br>
+                                        </td>
+                                        <td>{{ solicitud.identificacion }}</td>
+                                        <td>{{ solicitud.nombre_completo_inverso }}
+                                            <span class="badge badge-primary" style="margin-top: 10px;font-size: 12px">Medio Enterastes:  {% if  solicitud.anuncio %} {{  solicitud.anuncio.descripcion }} {% else %} NO TIENE {% endif %} </span><br>
+                                        </td>
+                                        <td> {{ solicitud.empresaconvenio.nombre }}</td>
+                                        <td>{% if solicitud.actualizado %} <span class="badge badge-success">SI</span> {% else %} <span class="badge badge-danger" style="margin-top: 10px">NO</span> {% endif %}</td>
+
+                                        <td>{{ solicitud.provincia.nombre }}</td>
+                                        <td>{{ solicitud.ciudad.nombre }}</td>
+                                        <td>{{ solicitud.parroquia.nombre }}</td>
+
+                                        <td>{{ solicitud.email }}<br>
+                                            <span class="badge badge-danger" style="margin-top: 10px;font-size: 12px">Teléfono: {{  solicitud.telefono }}</span><br>
+                                            <span class="badge badge-primary" style="margin-top: 10px;font-size: 12px">Celular: {{ solicitud.celular }}</span><br>
+                                        </td>
+                                        <td>{{ solicitud.carrera.nombre }} <br>
+                                            {% if  solicitud.jornada > 0%}
+                                                 <span class="badge badge-jornada" style="margin-top: 10px">Jornada: {{ solicitud.nombrejornada.jornada }}</span><br>                                                                                                  
+                                                 <span class="badge badge-secondary" style="margin-top: 12px">Horario: {{ solicitud.nombrejornada.dias }} - {{ solicitud.nombrejornada.horainica  }} a {{solicitud.nombrejornada.horafinal }}</span><br>
+                                            {% endif %}
+                                        </td>
+                                        <td>{% if solicitud.aprobado %} <span class="badge badge-success">SI</span> {% else %} <span class="badge badge-danger" style="margin-top: 10px">NO</span> {% endif %}</td>
+                                        <td>{% if solicitud.inscrito %} <span class="badge badge-success">SI</span> {% else %} <span class="badge badge-danger" style="margin-top: 10px">NO</span> {% endif %}</td>
+                                        <td>{% if solicitud.enviocorrecertificacion %} <span class="badge badge-success">SI</span> {% else %} <span class="badge badge-danger" style="margin-top: 10px">NO</span> {% endif %}</td>
+                                        <td>
+                                               <div class="dropdown">
+                                                    <a class="btn btn-link font-24 p-0 line-height-1 no-arrow dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                                                        <i class="dw dw-more"></i>
+                                                    </a>
+                                                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-icon-list">
+                                                        <a class="dropdown-item" style="cursor: pointer"  onclick="versolicitud('{{ solicitud.id }}')"><i class="dw dw-eye"></i> Ver Solicitud</a>
+                                                        {% if solicitud.aprobado == False %}
+                                                            <a class="dropdown-item" style="cursor: pointer" onclick="aprobarsolicitud('{{ solicitud.id }}','{{ solicitud.nombre_completo_inverso }}')"><i class="dw dw-notepad-2"></i> Aprobado</a>
+                                                        {% else %}
+                                                             {% if solicitud.inscrito == False %}
+                                                                <a class="dropdown-item" style="cursor: pointer" onclick="registrarsga('{{ solicitud.id }}')" ><strong><i class="dw dw-notepad-2"></i> Registrar en el Sga</strong></a>
+                                                             {% else %}
+                                                                 <a class="dropdown-item"  style="cursor: pointer" onclick="reneviarcorreo('{{ solicitud.id }}')"><i class="icon-copy dw dw-email-2"></i>Reenviar Certificación de Registro Sga </a>
+                                                                 <a class="dropdown-item" style="cursor: pointer"  onclick="elminarinscripcionsga('{{ solicitud.id }}','{{ solicitud.nombre_completo_inverso }}')"><i class="dw dw-delete-3"></i> Eliminar Inscricpción Sga</a>
+                                                             {% endif %}    
+                                                        {% endif %}
+                                                         
+                                                        <a class="dropdown-item" style="cursor: pointer" onclick="seleccionarcarrerasolicitud('{{ solicitud.id }}','{{ solicitud.nombre_completo_inverso  }}')"> <i class="icon-copy dw dw-exchange"></i> Seleccionar la Carrera</a>
+                                                    </div>
+                                               </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                {% if not solicitudpostulacion %}
+                                    <tr>
+                                        <td colspan="5">
+                                            NO HAY REGISTRO
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                        <div >
+                            <div class="text-right" style="margin-left: 10px">
+
+                              {% if paging.num_pages > 20 %}
+                                    <nav aria-label="Page navigation example">
+                                        <ul class="pagination" >
+
+                                            {% if paging.primera_pagina %}
+                                                <li class="page-item"><a class="page-link" href="/solicitudpostulacionbecadmin?page=1">1</a></li>
+                                                <li class="page-item"><a class="page-link" href="/solicitudpostulacionbecadmin?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                                            {% endif %}
+                                            {% for pagenumber in paging.paginas %}
+                                                <li {% if pagenumber == page.number %}class='page-item active'{% else %}class="page-item"{% endif %}><a class="page-link" href="/solicitudpostulacionbecadmin?page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}{% if carrera %}&carrera={{ carrera }}{% endif %}{% if convenio %}&convenio={{ convenio }}{% endif %}{% if provincia %}&provincia={{ provincia }}{% endif %}{% if ciudad %}&ciudad={{ ciudad }}{% endif %}{% if certificadoeviado %}&certificadoeviado={{ certificadoeviado }}{% endif %}{% if inscrito %}&inscrito={{ inscrito }}{% endif %}{% if medio %}&medio={{ medio }}{% endif %}">{{ pagenumber }}</a></li>
+                                            {% endfor %}
+                                            {% if paging.ultima_pagina %}
+                                                <li class="page-item"><a class="page-link" href="/solicitudpostulacionbecadmin?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}{% if carrera %}&carrera={{ carrera }}{% endif %}{% if convenio %}&convenio={{ convenio }}{% endif %}{% if provincia %}&provincia={{ provincia }}{% endif %}{% if ciudad %}&ciudad={{ ciudad }}{% endif %}{% if certificadoeviado %}&certificadoeviado={{ certificadoeviado }}{% endif %}{% if inscrito %}&inscrito={{ inscrito }}{% endif %}{% if medio %}&medio={{ medio }}{% endif %}" class="active">...</a></li>
+                                                <li class="page-item"><a class="page-link" href="/solicitudpostulacionbecadmin?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}{% if carrera %}&carrera={{ carrera }}{% endif %}{% if convenio %}&convenio={{ convenio }}{% endif %}{% if provincia %}&provincia={{ provincia }}{% endif %}{% if ciudad %}&ciudad={{ ciudad }}{% endif %}{% if certificadoeviado %}&certificadoeviado={{ certificadoeviado }}{% endif %}{% if inscrito %}&inscrito={{ inscrito }}{% endif %}{% if medio %}&medio={{ medio }}{% endif %}">{{ paging.num_pages }}</a></li>
+                                            {% endif %}
+                                            <h4 class="h4" style="margin-left: 5px;color: #184679"><span class="badge badge-success">  {{ totalpostulantes }} Totales de Postulantes</span> </h4>
+                                        </ul>
+                                    </nav>
+                              {% else %}
+                                    <nav aria-label="Page navigation example">
+                                        <ul class="pagination" >
+                                            {% for pagenumber in paging.page_range %}
+                                                <li {% if pagenumber == page.number %}class='page-item active'{% else %}class="page-item"{% endif %}><a class="page-link" href="/solicitudpostulacionbecadmin?{% if posiblins %}&posiblins={{ posiblins }}{% endif %}{% if asignad %}&asignad={{ asignad }}{% endif %}{% if singes %}&singes={{ singes }}{% endif %}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if carrera %}&carrera={{ carrera }}{% endif %}{% if convenio %}&convenio={{ convenio }}{% endif %}{% if provincia %}&provincia={{ provincia }}{% endif %}{% if ciudad %}&ciudad={{ ciudad }}{% endif %}{% if certificadoeviado %}&certificadoeviado={{ certificadoeviado }}{% endif %}{% if inscrito %}&inscrito={{ inscrito }}{% endif %}{% if medio %}&medio={{ medio }}{% endif %}">{{ pagenumber }}</a></li>
+                                            {% endfor %}
+                                             <h4 class="h4" style="margin-left: 5px;color: #184679"><span class="badge badge-success">{{ totalpostulantes }} Totales de Postulantes</span> </h4>
+                                        </ul>
+
+                                    </nav>
+                              {% endif %}
+
+
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+    
+    <div  class="modal fade " id="verdatossolicitud"  role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true" >
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Datos de la Solicitud</h4>
+                </div>
+
+                <div class="modal-body" style="min-height: 750px;max-height: 750px;overflow: auto">
+
+
+
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"  class="btn" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff">Salir</button>
+
+                </div>
+            </div>
+        </div>
+   </div>
+   <div  class="modal fade " id="ventaseleccionarcarrera"  role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Seleccionar Carrera</h4>
+
+                </div>
+
+                <div class="modal-body" >
+
+
+
+
+
+                </div>
+
+            </div>
+        </div>
+  </div> 
+    
+   <div  class="modal fade " id="ventanaregistrarsga" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Registrar en el Sga</h4>
+
+                </div>
+
+                <div class="modal-body" >
+
+
+
+
+
+                </div>
+
+            </div>
+        </div>
+  </div> 
+    
+  <div  class="modal fade " id="ventadescarga"  role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Descargar Postulaciones</h4>
+                </div>
+                <div class="modal-body" >
+                    <div class="col-md-12">
+                        <div class="form-group">
+                             <label >Convenio <a style="color: #d92550">(*)</a>: </label>
+                              <select style="width: 100%" id="cmbconveniodescarga"  class="custom-select2 form-control">
+                                  <option value="0">Seleccionar el convenio</option>
+                                   {% for xlistconvenio in listconvenio %}
+                                       <option value='{{ xlistconvenio.id }}'>{{ xlistconvenio.nombre }}</option>
+                                   {% endfor %}
+                              </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn" data-bgcolor="#FA1D06" style="background: #FF0000;color: white" data-dismiss="modal" data-color="#ffffff">Salir</button>
+                        <button type="button" id="btndescpos" class="btn" style="background: #63A836;color: white" data-bgcolor="#63A836" data-color="#ffffff">Descargar</button>
+                     </div>
+                </div>
+            </div>
+        </div>
+  </div>   
+    
+ <div  class="modal fade " id="ventacertificado"  role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Envio de Certificados de Postulaciones</h4>
+                </div>
+                <div class="modal-body" >
+                    <div class="col-md-12">
+                        <div class="form-group">
+                             <label >Convenio <a style="color: #d92550">(*)</a>: </label>
+                              <select style="width: 100%" id="cmbconveniocerti"  class="custom-select2 form-control">
+                                  <option value="0">Seleccionar el convenio</option>
+                                   {% for xlistconvenio in listconvenio %}
+                                       <option value='{{ xlistconvenio.id }}'>{{ xlistconvenio.nombre }}</option>
+                                   {% endfor %}
+                              </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn" data-bgcolor="#FA1D06" style="background: #FF0000;color: white" data-dismiss="modal" data-color="#ffffff">Salir</button>
+                        <button type="button" id="btncertificado" class="btn" style="background: #63A836;color: white" data-bgcolor="#63A836" data-color="#ffffff">Enviar</button>
+                     </div>
+                </div>
+            </div>
+        </div>
+  </div>      
+
+
+
+
+
+
+
+{% endblock %}

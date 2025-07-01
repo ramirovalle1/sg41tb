@@ -1,0 +1,155 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+    <script src="/static/js/notificacionpanel.js"></script>
+
+    <link type='text/css' rel='stylesheet' href="/static/css/datepicker.css"/>
+    <script src="/static/js/bootstrap-datepicker.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+    $(function() {
+
+        showWaiting = function(titulo, mensaje, close) {
+            $("#waitpanel").find("#paneltitle").html(titulo);
+            $("#waitpanel").find("#panelbody").html(mensaje);
+            if (!close) {
+                $("#waitpanel").modal({keyboard: false, backdrop: 'static'});
+            }
+            $("#waitpanel").modal("show");
+        };
+
+        hideWaiting = function() {
+            $("#waitpanel").modal("hide");
+        };
+        $(".indicador").click(function(){
+            var idin = $(this).attr('idin');
+            var idsegdet = $(this).attr('idsegdet');
+            {% for p in puntajeindicador %}
+                if ($("#indicador"+idsegdet+idin).is(':checked')) {
+                    if(parseInt(idin)!=parseInt('{{ p.id }}')){
+                        $("#indicador"+idsegdet+'{{ p.id }}').attr('checked',false)
+                    }else{
+                        $("#puntaje"+idsegdet).val('{{ p.puntos }}')
+                    }
+                }
+                else{
+                    $("#puntaje"+idsegdet).val('0')
+                }
+            {% endfor %}
+            sumatotal();
+        });
+        sumatotal = function(){
+            var valor = 0;
+            {% for s in segmentoindicadoremp %}
+                {% for d in s.segdetaindica %}
+                     valor = parseFloat(valor) + parseFloat($('#puntaje'+'{{ d.id }}').val());
+                {% endfor %}
+            {% endfor %}
+            $("#totpuntaje").html(valor);
+        };
+        $(".btn-guardareval").click(function(){
+            var idin = $(this).attr('idin');
+            var idsegdet = $(this).attr('idsegdet');
+            var datos = {};
+            var valida = true;
+            datos.indicadores = [];
+            datos.idsolicitud = '{{ solicitud.id }}';
+            {% for s in segmentoindicadoremp %}
+                {% for d in s.segdetaindica %}
+                    var eleccionin = false;
+                    {% for p in puntajeindicador %}
+                        if ($("#indicador"+"{{ d.id }}"+"{{ p.id }}").is(':checked')) {
+                            eleccionin = true;
+                            datos.indicadores.push({"idindic":"{{ p.id }}","iddetseg":"{{ d.id }}"})
+                        }
+                        if(parseInt("{{ puntajeindicador.count }}") == parseInt("{{ forloop.counter }}")){
+                            if(!eleccionin){
+                                valida = false;
+                            }
+                        }
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
+            if(valida){
+                smoke.confirm("Esta seguro de enviar la evaluación del estudiante?", function(e){
+                    if (e){
+                        showWaiting("Enviando la evaluación", "espere un momento por favor...");
+                        $.post("/supervisor", {"action":'guardareval', "datos":  JSON.stringify(datos)}, function(data) {
+                            hideWaiting();
+                            if (data.result=='ok') {
+                                location.href = '/supervisor?id={{ solicitud.id }}';
+                            }else{
+                                smoke.alert("Error al Guardar, intentelo nuevamente");
+                            }
+
+                        }, "json");
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            }else{
+                smoke.alert("Debe seleccionar todos los items..");
+            }
+        });
+        var column = parseInt('{{ puntajeindicador.count }}') + 2;
+
+        $("#tfootform").html('<tr><td colspan="'+column+'"><h3>TOTAL</h3></td><td ><h3 id="totpuntaje" style="text-align:center">0</h3></td></tr>');
+    });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span6">
+            <h3>Evaluación al Estudiante {{ solicitud.matricula.inscripcion.persona.nombre_completo }}</h3>
+        </div><br><br>
+    </div>
+    <div class="row-fluid">
+        <div class="span3"></div>
+        <div class="span6">
+            <h4>Indique dando click en la evaluación que usted considere adecuada, basada en el desempeño del estudiante durante la Práctica Pre-profesional laboral, y teniendo en cuenta la siguiente escala:   </h4>
+            <h6>
+                {% for p in puntajeindicador %}
+                    {{ p.puntos }}.- {{ p.descripcion }}&nbsp;&nbsp;&nbsp;&nbsp;
+                {% endfor %}
+            </h6>
+            <table  class='table' cellpadding="0" cellspacing="0" id="tab_logic">
+                <thead>
+                    <tr >
+                        <th colspan="2"><h4 style="text-align: center">INDICADORES:</h4> </th>
+                        {% for p in puntajeindicador %}
+                            <th> {{ p.puntos }}</th>
+                        {% endfor %}
+                        <th>Puntaje</th>
+                    </tr>
+                </thead>
+                <tbody id="bodyformulario">
+                    {% for s in segmentoindicadoremp %}
+                        <tr alt="{{ forloop.counter }}" segid="{{ s.id }}" idin="0">
+                            <th rowspan="{{ s.numsegspan }}" style="vertical-align : middle;text-align:center;"> {{ s.descripcion }}</th>
+                        </tr>
+                        {% for d in s.segdetaindica %}
+                            <tr alt="{{ forloop.counter }}" segid="{{ s.id }}" idin="0">
+                                <td> {{ d.descripcion }}</td>
+                                {% for p in puntajeindicador %}
+                                    <td><input type="checkbox" class="input input-xxlarge indicador" id="indicador{{ d.id }}{{ p.id }}" idin="{{ p.id }}" idsegdet="{{ d.id }}" /></td>
+                                {% endfor %}
+                                <td><input type="number" value="0" id="puntaje{{ d.id }}" style="text-align: center;font-size: 1.5em;font-weight: bold" class="input input-small" disabled/></td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+                <tfoot id="tfootform">
+
+                </tfoot>
+            </table>
+            <a style="cursor: pointer;float: right" class="btn btn-success btn-guardareval"> <b> Guardar</b></a>
+            <a href="/supervisor?id={{ solicitud.id }}" class="btn btn-info btn-cerrarpanelregis">Salir</a>
+        </div><br><br>
+    </div>
+
+{% endblock %}

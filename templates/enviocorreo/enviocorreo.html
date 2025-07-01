@@ -1,0 +1,112 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+
+    <!-- <link type='text/css' rel='stylesheet' href="/static/css/modules.css"/> -->
+    <script type="text/javascript">
+        $(function() {
+            {% block javascript %}
+            {% endblock %}
+            $("form").validationEngine();
+        });
+    </script>
+    <script src="/static/js/nicEdit-latest.js" type="text/javascript"> </script>
+    <script type="text/javascript">
+        $(function() {
+            $("#id_asunto,#id_correo").addClass("validate[required]");
+            {% if accion == 'carrera' %}
+                $("#id_periodo,#id_nivel,#id_carrera").addClass("validate[required]");
+            {% endif %}
+            $($("#id_emails").get(0).parentNode.parentNode).hide();
+            $("#id_prueba").click(function(){
+                if ($("#id_prueba").is(':checked')) {
+                    $($("#id_emails").get(0).parentNode.parentNode).show();
+                    $("#id_emails").addClass("validate[required]");
+                }
+                else{
+                    $($("#id_emails").get(0).parentNode.parentNode).hide();
+                    $("#id_emails").removeClass("validate[required]");
+                }
+            });
+            $("#id_emails").blur(function(){
+                validarEmail($("#id_emails").val())
+            });
+            function validarEmail( email ) {
+                expr = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+                var cant = email.split(';').length;
+                for (i=0;i<=cant-1;i++) {
+                    if ( !expr.test(email.split(';')[i]) )
+                        smoke.alert("Error: La dirección de correo " + email.split(';')[i] + " es incorrecta.");
+                }
+            }
+            {% if accion == 'egresados' or accion == 'graduados' %}
+                $("#id_carrera").addClass("validate[required]");
+            {% endif %}
+
+
+            bkLib.onDomLoaded(function() { new
+                nicEditor().panelInstance('id_correo'); });
+
+        });
+    </script>
+    <style>
+        #id_asunto{
+            text-transform: none;
+        }
+        #id_emails{
+            text-transform: none;
+        }
+    </style>
+{% endblock %}
+
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>{{ titulo }}</h3>
+        </div>
+        <div class='span1'>
+            <a href="/enviocorreo" class="btn linkback"><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    {% if formerror %}
+        <div class='row-fluid'>
+            <div class='span12'>
+                <div class="alert alert-error">
+                    <a class="close" data-dismiss="alert">×</a>
+                    <h4 class="alert-heading">Error de Datos!</h4>
+                    {% autoescape off %}{{ formerror }}{% endautoescape %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class='row-fluid'>
+        <div class='row-fluid'>
+            <div class='span12'>
+                <form id="formulario" class='well {% block form-type %}form-horizontal{% endblock %}' action="{% block formaction %}{% endblock %}" method="POST" enctype="multipart/form-data">
+                    <input type='hidden' name='action' value='{{ accion }}'/>
+
+                    {% for field in form %}
+                        <fieldset class="control-group nomargins">
+                            <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                            <div class="controls">
+                                {{ field }}
+                                <p class="help-text">{{ field.help_text }} </p>
+                            </div>
+                        </fieldset>
+                    {% endfor %}
+
+                    {% block formsuffix %}
+                    {% endblock %}
+
+                    <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">Enviar</button>
+
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

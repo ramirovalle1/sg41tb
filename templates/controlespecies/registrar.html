@@ -1,0 +1,151 @@
+{% extends "practicasadmin/formvehic.html" %}
+{% block extraheading %}
+    <style xmlns="http://www.w3.org/1999/html">
+{#        #formulary #id_reporte { text-transform: none; }#}
+        #formulario #id_observaciones { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+{#    <script>#}
+    var codmateria = 0;
+    $("#id_fechae").datepicker({format:"yyyy-mm-dd"});
+    $("#id_codigoe,#id_numeroe").addClass("input-medium");
+    $("#id_destinatario").addClass("input-xlarge");
+    $("#materia").addClass("input-xxlarge");
+    $("#id_fechae,#id_numeroe").attr("disabled",true);
+    $($("#id_destinatario").get(0).parentNode.parentNode).hide();
+    $('#id_reporte').attr({"style":"text-transform:none"});
+    $("#id_reporte").attr({"autocomplete":"off"});
+
+      buscar_reporte = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Reporte',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#id_reporte").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+            $($("#id_reporte_id").get(0).parentNode.parentNode).hide();
+            $('#id_reporte').typeahead({source: buscar_reporte, updater: function(item) {
+                var results = $("#id_reporte").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_reporte").attr("myval",datos.id);
+                        $("#id_reporte_id").val(datos.id);
+
+                    }
+                }
+                return item;
+            }});
+
+     {% if especie.tipoespecie.certificado %}
+         $($("#id_destinatario").get(0).parentNode.parentNode).show();
+     {% endif %}
+
+{#     {% if especie.tipoespecie.id == asentamiento or  especie.tipoespecie.id == examen or especie.tipoespecie.id == recuperacion or especie.tipoespecie.id == mejoramiento %}#}
+{#         $("#materia").addClass("validate[required]");#}
+{#     {% endif %}#}
+
+    $("#formbutton").click(function(){
+        $("#id_fechae,#id_numeroe,#id_destinatario").attr("disabled",false);
+        $("#materia").attr("disabled",false);
+        $("#id_codigoe").attr("disabled",false);
+        $("#id_numeroe").attr("disabled",false);
+        $("#id_fechae").attr("disabled",false);
+    });
+
+     {% if especie.es_online %}
+            $("#id_codigoe").attr("disabled",true);
+    {% endif %}
+
+
+     {% if error %}
+            smoke.alert("{{ error }}")
+    {% endif %}
+
+    $("#id_codigoe").blur(function(){
+         var codigo = $("#id_codigoe").val();
+        if($("#id_codigoe").val() != "")
+        {
+            if(codigo.length > 6)
+            {
+                $($("#id_codigoe").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>El c&oacute;digo no puede ser mayor a 6 caracteres. </i></span>");
+                $("#id_codigoe").focus();
+            }
+            else
+            {
+                $($("#id_codigoe").get(0).parentNode).find(".help-text").html("");
+            }
+        }
+    });
+
+    $("#id_destinatario").blur(function(){
+         var destino = $("#id_destinatario").val();
+        if($("#id_destinatario").val() != "")
+        {
+            if(destino.length > 100)
+            {
+                $($("#id_destinatario").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>El destinatario tiene un m&aacute;ximo de 100 caracteres. </i></span>");
+                $("#id_destinatario").focus();
+            }
+            else
+            {
+                $($("#id_destinatario").get(0).parentNode).find(".help-text").html("");
+            }
+        }
+    });
+
+    $("#id_observaciones").blur(function(){
+         var obs = $("#id_observaciones").val();
+        if($("#id_observaciones").val() != "")
+        {
+            if(obs.length > 300)
+            {
+                $($("#id_observaciones").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Las observaciones tienen un m&aacute;ximo de 300 caracteres. </i></span>");
+                $("#id_observaciones").focus();
+            }
+            else
+            {
+                $($("#id_observaciones").get(0).parentNode).find(".help-text").html("");
+            }
+        }
+    });
+
+
+
+
+{% endblock %}
+{% block titulo %}
+    INGRESAR DATOS DE ESPECIES
+    <h3>{% if especie.materia %}Materia: {{ especie.materia.materia.asignatura }}  {% endif %} </h3>
+    <h3>{% if especie.materia %}Nivel: {{ especie.materia.materia.nivel }}  {% endif %} </h3>
+    <h3>Estudiante: {{ especie.rubro.inscripcion.persona.nombre_completo_inverso }}  {% if especie.es_online %} <a style="color: red"> -  SOLICITUD ONLINE</a> {% endif %} </h3>
+    <h4>Tipo de Especie: {{ especie.tipoespecie.nombre }} - N&uacute;mero: {{ especie.serie }}</h4>
+{#    <h4>Fecha de Especie: {{ especie.rubro.fecha|date:'d-m-Y'  }}</h4>#}
+{% endblock %}
+
+
+{% block formaction %}/controlespecies{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='registro'/>
+    <input type='hidden' name='id' value='{{ especie.id }}'/>
+    <input type='hidden' name='op' value='{{ op }}'/>
+
+
+{% endblock %}
+{% block formback %}
+    {% if  op == 'sol' %}
+        /solicitudonline?tiposol=3&s='{{ inscripcion.persona.nombre_completo_inverso }}'
+    {% else %}
+        /controlespecies?id={{ especie.id }}
+    {% endif %}
+{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

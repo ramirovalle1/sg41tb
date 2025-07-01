@@ -1,0 +1,871 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function(){
+
+            var vali = 0;
+            /***************************
+             * Tabla Dinamica***********
+             * ************************/
+            $("#add_ro").on("click", function() {
+                vali = 0;
+                $("#PromedAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        if(parseInt($('input[name=escala' + $(this).attr('con') + ']').val()) <= 0 || ($('input[name=escala' + $(this).attr('con') + ']').val()) == "")
+                            vali = 1;
+                        if(parseInt($('input[name=calific1' + $(this).attr('con') + ']').val()) < 0 || $('input[name=calific1' + $(this).attr('con') + ']').val() == "")
+                            vali = 1;
+                        if(parseInt($('input[name=calific2' + $(this).attr('con') + ']').val()) < 0 || $('input[name=calific2' + $(this).attr('con') + ']').val() == "")
+                            vali = 1;
+                        if($('textarea[name=metodevalua' + $(this).attr('con') + ']').val() == "")
+                            vali = 1;
+                    }
+                });
+                if (vali == 0 ){
+                    var newid = 0;
+                    $.each($("#tab_logic #PromedAddForm tr"), function () {
+                        if (parseInt($(this).data("id")) > newid) {
+                            newid = parseInt($(this).data("id"));
+                        }
+                    });
+                    newid++;
+
+                    var tr = $("<tr></tr>", {
+                        id: "addr" + newid,
+                        con: newid,
+                        "data-id": newid
+                    });
+                    var col=0;
+                    $.each($("#PromedAddForm tr:nth(0) td"), function () {
+                        var cur_td = $(this);
+                        var children = cur_td.children();
+                        // Añade el nuevo Elemento en la tabla.
+
+                        if ($(this).data("name") != undefined) {
+                            col++;
+                            if(col>6) {
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name"),
+                                    "class": 'hidden'
+                                });
+                            }else{
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name")
+                                });
+                            }
+
+
+
+                            var c = '';
+                            for(var x = 0;x < $(children).length;x++)
+                            {
+                                c = $(cur_td).find($(children[x]).prop('tagName')).clone().val("");
+                                if($(children[x]).prop('tagName') != 'BR')
+                                {
+                                    if($(cur_td).data("name") == "del")
+                                    td.attr("colspan","1");
+                                    if($(cur_td).data("name") != "del")
+                                        td.attr("style","text-align:center;");
+                                    if($(cur_td).data("name") == "metodevalua")
+                                        td.attr("colspan","3");
+                                    if($(cur_td).data("name") != "metodevalua" && $(cur_td).data("name") != "del")
+                                        td.attr("colspan","2");
+                                    c.attr("name", $(cur_td).data("name") + newid);
+                                    c.attr("alt",newid);
+                                }
+                                c.appendTo($(td));
+                                td.appendTo($(tr));
+                            }
+
+
+                        }else{
+                            var td = $("<td></td>", {
+                                'text': $('#PromedAddForm tr').length
+                            }).appendTo($(tr));
+                        }
+                    });
+
+                    // Añade la nueva fila.
+                    $(tr).appendTo($('#PromedAddForm'));
+                }
+                else{
+                    smoke.alert("Ingresar Valores antes de agregar fila");
+                }
+                $(tr).find("td button.row-remove").on("click", function (){alert(98);
+                    $(this).closest("tr").remove();
+                    var calific1 = parseFloat(0);
+                    var calific2 = parseFloat(0);
+                    var promedio = parseFloat(0);
+                    $("#PromedAddForm tr").each(function (index) {
+
+                        if ($(this).attr('con') > 0) {
+                            if (parseFloat($('input[name=escala' + $(this).attr('con') + ']').val()) > 0 ){
+
+                                if($('input[name=calific1' + $(this).attr('con') + ']').val() != "")
+                                {
+                                    calific1 = calific1 +  parseFloat($('input[name=calific1' + $(this).attr('con') + ']').val());
+                                }
+                                else{
+                                    $('input[name=calific1' + $(this).attr('con') + ']').val(0);
+                                }
+                                if($('input[name=calific2' + $(this).attr('con') + ']').val() != "")
+                                {
+                                    calific2 = calific2 + parseFloat($('input[name=calific2' + $(this).attr('con') + ']').val());
+                                }
+                                else{
+                                    $('input[name=calific2' + $(this).attr('con') + ']').val(0);
+                                }
+                                promedio = (parseFloat($('input[name=calific2' + $(this).attr('con') + ']').val()) + parseFloat($('input[name=calific1' + $(this).attr('con') + ']').val())) / 2;
+                                $('input[name=promedio' + $(this).attr('con') + ']').val(promedio);
+                                promedio = 0
+                            }
+                            else{
+                                $('input[name=escala' + $(this).attr('con') + ']').val(0);
+                                $($('input[name=escala' + $(this).attr('con') + ']').get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Escala</h6>");
+                                $('input[name=escala' + $(this).attr('con') + ']').focus();
+                            }
+                        }
+
+
+                    });
+                    $("#totatcali1").val(calific1);
+                    $("#totatcali2").val(calific2);
+                    promedio = (calific2 + calific1) / 2;
+                    $("#totatprome").val(promedio);
+                });
+            });
+{#        //////////////////////////////////////////////////////////////////////////////////#}
+{#        //////////////////////////////////////////////////////////////////////////////////#}
+            var promedcal1 = 0;
+            var promedcal2 = 0;
+            {% for det in detalleexamen %}
+                vali = 0;
+                $("#PromedAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        if(parseInt($('input[name=escala' + $(this).attr('con') + ']').val()) <= 0 || ($('input[name=escala' + $(this).attr('con') + ']').val()) == "")
+                            vali = 1;
+                        if(parseInt($('input[name=calific1' + $(this).attr('con') + ']').val()) < 0 || $('input[name=calific1' + $(this).attr('con') + ']').val() == "")
+                            vali = 1;
+                        if(parseInt($('input[name=calific2' + $(this).attr('con') + ']').val()) < 0 || $('input[name=calific2' + $(this).attr('con') + ']').val() == "")
+                            vali = 1;
+                        if($('textarea[name=metodevalua' + $(this).attr('con') + ']').val() == "")
+                            vali = 1;
+                    }
+                });
+                if (vali == 0 ){
+                    var newid = 0;
+                    $.each($("#tab_logic #PromedAddForm tr"), function () {
+                        if (parseInt($(this).data("id")) > newid) {
+                            newid = parseInt($(this).data("id"));
+                        }
+                    });
+                    newid++;
+
+                    var tr = $("<tr></tr>", {
+                        id: "addr" + newid,
+                        con: newid,
+                        "data-id": newid
+                    });
+                    var col=0;
+                    var tex = $('textarea[name=met'+"{{ forloop.counter }}"+']').val();
+                    $.each($("#PromedAddForm tr:nth(0) td"), function () {
+                        var cur_td = $(this);
+                        var children = cur_td.children();
+                        // Añade el nuevo Elemento en la tabla.
+
+                        if ($(this).data("name") != undefined) {
+                            col++;
+                            if(col>3) {
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name"),
+                                    "class": 'hidden'
+                                });
+                            }else{
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name"),
+                                    "style" : 'text-align:center'
+                                });
+                            }
+
+
+
+                            var c = '';
+                            for(var x = 0;x < $(children).length;x++)
+                            {
+                                c = $(cur_td).find($(children[x]).prop('tagName')).clone().val("");
+                                if($(children[x]).prop('tagName') != 'BR')
+                                {
+{#                                    if($(cur_td).data("name") == "del")#}
+{#                                    td.attr("colspan","1");#}
+{#                                    if($(cur_td).data("name") != "del")#}
+{#                                        td.attr("style","text-align:center;");#}
+                                    if($(cur_td).data("name") == "metodevalua")
+                                    {
+                                        td.attr("colspan","6");
+                                        c.attr("value",tex)
+                                    }
+                                    if($(cur_td).data("name") != "metodevalua" && $(cur_td).data("name") != "del")
+                                        td.attr("colspan","3");
+                                    if($(cur_td).data("name") == "escala")
+                                        c.attr("value","{{ det.escala }}");
+                                    if($(cur_td).data("name") == "calific1")
+                                        c.attr("value","{{ det.calif1 }}");
+                                    if($(cur_td).data("name") == "calific2")
+                                        c.attr("value","{{ det.calif2 }}");
+                                    if($(cur_td).data("name") == "promedio")
+                                        c.attr("value","{{ det.promedio }}");
+                                    if($(cur_td).data("name") == "examenpractdetId")
+                                        c.attr("value","{{ det.id }}");
+                                    c.attr("name", $(cur_td).data("name") + newid);
+                                    c.attr("disabled",true);
+                                    c.attr("alt",newid);
+                                }
+                                c.appendTo($(td));
+                                td.appendTo($(tr));
+                            }
+
+
+                        }else{
+                            var td = $("<td></td>", {
+                                'text': $('#PromedAddForm tr').length
+                            }).appendTo($(tr));
+                        }
+                    });
+
+                    // Añade la nueva fila.
+                    $(tr).appendTo($('#PromedAddForm'));
+
+                    promedcal1 = parseFloat(promedcal1) + parseFloat("{{ det.calif1 }}");
+                    promedcal2 = parseFloat(promedcal2) + parseFloat("{{ det.calif2 }}");
+
+
+                }
+                else{
+                    smoke.alert("Ingresar Valores antes de agregar fila");
+                }
+                $(tr).find("td button.row-remove").on("click", function (){
+                    $(this).closest("tr").remove();
+                    var calific1 = parseFloat(0);
+                    var calific2 = parseFloat(0);
+                    var promedio = parseFloat(0);
+                    $("#PromedAddForm tr").each(function (index) {
+
+                        if ($(this).attr('con') > 0) {
+                            if (parseFloat($('input[name=escala' + $(this).attr('con') + ']').val()) > 0 ){
+
+                                if($('input[name=calific1' + $(this).attr('con') + ']').val() != "")
+                                {
+                                    calific1 = calific1 +  parseFloat($('input[name=calific1' + $(this).attr('con') + ']').val());
+                                }
+                                else{
+                                    $('input[name=calific1' + $(this).attr('con') + ']').val(0);
+                                }
+                                if($('input[name=calific2' + $(this).attr('con') + ']').val() != "")
+                                {
+                                    calific2 = calific2 + parseFloat($('input[name=calific2' + $(this).attr('con') + ']').val());
+                                }
+                                else{
+                                    $('input[name=calific2' + $(this).attr('con') + ']').val(0);
+                                }
+                                promedio = (parseFloat($('input[name=calific2' + $(this).attr('con') + ']').val()) + parseFloat($('input[name=calific1' + $(this).attr('con') + ']').val())) / 2;
+                                $('input[name=promedio' + $(this).attr('con') + ']').val(promedio);
+                                promedio = 0
+                            }
+                            else{
+                                $('input[name=escala' + $(this).attr('con') + ']').val(0);
+                                $($('input[name=escala' + $(this).attr('con') + ']').get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Escala</h6>");
+                                $('input[name=escala' + $(this).attr('con') + ']').focus();
+                            }
+                        }
+
+
+                    });
+                    $("#totatcali1").val(calific1);
+{#                    $("#totatcali2").val(calific2);#}
+{#                    promedio = (calific2 + calific1) / 2;#}
+{#                    $("#totatprome").val(promedio);#}
+                });
+            {% endfor %}
+            $("#totatcali1").val(promedcal1);
+{#            $("#totatcali2").val(promedcal2);#}
+{#            $("#totatprome").val((parseFloat(promedcal2)+parseFloat(promedcal2))/2);#}
+
+            var numerosdec="0123456789.";
+
+            function solo_numerosdec(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+
+            solonumeros = function(val){
+                var num = $(val).val();
+                if (solo_numerosdec(num) != num.length){
+                    $($(val).get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+                    $(val).focus();
+                }
+                else{
+                    var calific1 = parseFloat(0);
+                    var calific2 = parseFloat(0);
+                    var promedio = parseFloat(0);
+
+
+                    $("#PromedAddForm tr").each(function (index) {
+
+                        if ($(this).attr('con') > 0) {
+                            if (parseFloat($('input[name=escala' + $(this).attr('con') + ']').val()) > 0 ){
+
+                                if($('input[name=calific1' + $(this).attr('con') + ']').val() != "")
+                                {
+                                    var val1 = parseFloat($('input[name=calific1' + $(this).attr('con') + ']').val());
+                                    calific1 = calific1 +  parseFloat(val1);
+                                    $('input[name=calific2' + $(this).attr('con') + ']').val(parseFloat(val1))
+                                }
+                                else{
+                                    $('input[name=calific1' + $(this).attr('con') + ']').val(0);
+                                    $('input[name=calific2' + $(this).attr('con') + ']').val(0);
+                                }
+                                if($('input[name=calific2' + $(this).attr('con') + ']').val() != "")
+                                {
+                                    calific2 = calific2 + parseFloat($('input[name=calific2' + $(this).attr('con') + ']').val());
+                                }
+                                else{
+                                    $('input[name=calific2' + $(this).attr('con') + ']').val(0);
+                                }
+                                promedio = (parseFloat($('input[name=calific2' + $(this).attr('con') + ']').val()) + parseFloat($('input[name=calific1' + $(this).attr('con') + ']').val())) / 2;
+                                $('input[name=promedio' + $(this).attr('con') + ']').val(promedio);
+                                promedio = 0
+                            }
+                            else{
+                                $('input[name=escala' + $(this).attr('con') + ']').val(0);
+                                $($('input[name=escala' + $(this).attr('con') + ']').get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Escala</h6>");
+                                $('input[name=escala' + $(this).attr('con') + ']').focus();
+                            }
+                        }
+
+
+                    });
+                    $("#totatcali1").val(calific1);
+{#                    $("#totatcali2").val(calific2);#}
+{#                    promedio = (calific2 + calific1) / 2;#}
+{#                    $("#totatprome").val(promedio);#}
+
+                    if(parseFloat($('input[name=escala' + $(val).attr('alt') + ']').val()) < parseFloat($('input[name=' + $(val).attr('name')+ ']').val()) && $(val).attr('name').indexOf('escala') != 0){
+                        $($(val).get(0).parentNode).find(".help-text").html("<h6 style='color:red' >La escala es menor que la calificacion</h6>");
+                        $(val).focus();
+                    }else{
+                        $($(val).get(0).parentNode).find(".help-text").html("");
+                    }
+                }
+            }
+{#        //////////////////////////////////////////////////////////////////////////////////#}
+{#        //////////////////////////////////////////////////////////////////////////////////#}
+            $('#editbutton').click(function(){
+                $("#PromedAddForm tr").each(function (index) {
+
+                    if ($(this).attr('con') > 0) {
+{#                       document.getElementsByName('metodevalua' + $(this).attr('con'))[0].disabled = false;#}
+{#                       document.getElementsByName('escala' + $(this).attr('con'))[0].disabled = false;#}
+                       document.getElementsByName('calific1' + $(this).attr('con'))[0].disabled = false;
+{#                       document.getElementsByName('calific2' + $(this).attr('con'))[0].disabled = false;#}
+{#                       document.getElementsByName('del' + $(this).attr('con'))[0].disabled = false;#}
+                    }
+                });
+
+                $("#DocenteAddForm tr").each(function (index) {
+
+                    if ($(this).attr('con') > 0) {
+                       document.getElementsByName('docente' + $(this).attr('con'))[0].disabled = false;
+                       document.getElementsByName('del' + $(this).attr('con'))[0].disabled = false;
+                    }
+                });
+
+{#                document.getElementsByName('titutdescr')[0].disabled = false;#}
+                document.getElementsByName('casopracti')[0].disabled = false;
+                $("#add_row").removeClass('hidden');
+                $("#formbutton").removeClass('hidden');
+                $("#editbutton").addClass('hidden');
+                $("#cancelbutton").removeClass('hidden');
+            });
+            $('#editprofebutton').click(function(){
+
+
+                $("#DocenteAddForm tr").each(function (index) {
+
+                    if ($(this).attr('con') > 0) {
+                       document.getElementsByName('docente' + $(this).attr('con'))[0].disabled = false;
+                       document.getElementsByName('del' + $(this).attr('con'))[0].disabled = false;
+                    }
+                });
+                $("#add_row").click();
+                $("#add_row").removeClass('hidden');
+                $("#formbutton").removeClass('hidden');
+                $("#editprofebutton").addClass('hidden');
+                $("#cancelbutton").removeClass('hidden');
+            });
+            $('#cancelbutton').click(function(){
+                location.href = "/egresados?action=verdetexamen&id={{ examenpractico.id }}"
+            });
+            $('#formbutton').click(function(){
+                vali = 0;
+                var datos = [];
+                $("#PromedAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        if(parseInt($('input[name=escala' + $(this).attr('con') + ']').val()) <= 0 || ($('input[name=escala' + $(this).attr('con') + ']').val()) == "")
+                            vali = 1;
+                        if(parseInt($('input[name=calific1' + $(this).attr('con') + ']').val()) < 0 || $('input[name=calific1' + $(this).attr('con') + ']').val() == "")
+                            vali = 1;
+                        if(parseInt($('input[name=calific2' + $(this).attr('con') + ']').val()) < 0 || $('input[name=calific2' + $(this).attr('con') + ']').val() == "")
+                            vali = 1;
+                        if($('textarea[name=metodevalua' + $(this).attr('con') + ']').val() == "")
+                            vali = 1;
+                        if(vali == 0){
+                            var examenpractdetid = 0;
+                            if ($('input[name=examenpractdetId' + $(this).attr('con') + ']').val() != ''){
+                                examenpractdetid = $('input[name=examenpractdetId' + $(this).attr('con') + ']').val();
+                            }
+                            datos.push({'metodevalua': $('textarea[name=metodevalua' + $(this).attr('con') + ']').val(),
+                                        'escala': $('input[name=escala' + $(this).attr('con') + ']').val(),
+                                        'calificacion1': $('input[name=calific1' + $(this).attr('con') + ']').val(),
+                                        'calificacion2':$('input[name=calific2' + $(this).attr('con') + ']').val(),
+                                        'promedio':$('input[name=promedio' + $(this).attr('con') + ']').val(),
+                                        'examenpractdetid':examenpractdetid});
+                        }
+                        else{
+                            smoke.alert("Ingresar Valores en campos vacios");
+                            datos = [];
+                        }
+                    }
+                });
+                var docen = [];
+                $("#DocenteAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        $($("#docente"+$(this).attr('con')).get(0).parentNode).find(".help-text").html("");
+                        if(parseInt($("#docente"+$(this).attr('con')).attr("myval")) == 0 || $("#docente"+$(this).attr('con')).attr("myval") == undefined)
+                        {
+                            if(vali == 0)
+                            {
+                                vali = 1;
+                                $($("#docente"+$(this).attr('con')).get(0).parentNode).find(".help-text").html("<h4 style='color:red' >Ingrese el docente correctamente</h4>");
+                            }
+                            docen = [];
+                            return false;
+                        }
+                        else{
+                            docen.push({'docente': $("#docente"+$(this).attr('con')).attr("myval"),
+                                'profeexame': $("#docente"+$(this).attr('con')).attr("profeexame")});
+                        }
+
+
+                    }
+                });
+                var data = {'datos':datos,'docen':docen};
+                data['titutdescr'] = $("#titutdescr").val();
+                data['casopracti'] = $("#casopracti").val();
+                data['totatcali1'] = $("#totatcali1").val();
+                data['totatcali2'] = $("#totatcali1").val();
+{#                data['totatcali2'] = $("#totatcali2").val();#}
+{#                data['totatprome'] = $("#totatprome").val();#}
+                data['totatprome'] = parseFloat(parseFloat(parseFloat($("#totatcali1").val())+ parseFloat($("#totatcali1").val()))/2).toFixed(2);
+                if(vali == 0){
+                    showWaiting("Ingresando Datos","Espere unos segundos por favor...");
+                    $.post("/egresados", {'action': 'editexampract', 'data': JSON.stringify(data),'idinscrip':'{{ examenpractico.inscripcion.id }}','idexamen':'{{ examenpractico.id }}'}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok'){
+                            location.href = '/egresados?action=verdetexamen&id={{ examenpractico.id }}';
+                        }else{
+                            smoke.alert("Error al ingresar los datos");
+                        }
+
+                    }, "json");
+                    return false;
+                }
+            });
+
+{#            ///////////////////////////////////////////////////////////////////////////////////////#}
+{#            ///////////////////////////////////////////////////////////////////////////////////////#}
+            {% for prof in profeexamen %}
+                vali = 0;
+                $("#DocenteAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        if($('input[name=docente' + $(this).attr('con') + ']').val() == "")
+                            vali = 1;
+                    }
+                });
+                if (vali == 0 ){
+                    var newid = 0;
+                    $.each($("#tab_logic #DocenteAddForm tr"), function () {
+                        if (parseInt($(this).data("id")) > newid) {
+                            newid = parseInt($(this).data("id"));
+                        }
+                    });
+                    newid++;
+
+                    var tr = $("<tr></tr>", {
+                        id: "addr" + newid,
+                        con: newid,
+                        "data-id": newid
+                    });
+                    var col=0;
+                    $.each($("#DocenteAddForm tr:nth(0) td"), function () {
+                        var cur_td = $(this);
+                        var children = cur_td.children();
+                        // Añade el nuevo Elemento en la tabla.
+
+                        if ($(this).data("name") != undefined) {
+                            col++;
+                            if(col>2) {
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name"),
+                                    "class": 'hidden'
+                                });
+                            }else{
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name")
+                                });
+                            }
+
+
+
+                            var c = '';
+                            for(var x = 0;x < $(children).length;x++)
+                            {
+                                c = $(cur_td).find($(children[x]).prop('tagName')).clone().val("");
+                                if($(children[x]).prop('tagName') != 'BR')
+                                {
+                                    if($(cur_td).data("name") == "del"){
+                                        td.attr("colspan","1");
+                                    }
+                                    else
+                                        td.attr("colspan","11");
+
+                                    c.attr("name", $(cur_td).data("name") + newid);
+                                    c.attr("id", $(cur_td).data("name") + newid);
+                                    c.attr("alt",newid);
+                                }
+                                c.appendTo($(td));
+                                td.appendTo($(tr));
+                            }
+
+
+                        }else{
+                            var td = $("<td></td>", {
+                                'text': $('#DocenteAddForm tr').length
+                            }).appendTo($(tr));
+                        }
+                    });
+
+                    // Añade la nueva fila.
+                    $(tr).appendTo($('#DocenteAddForm'));
+                    $('input[name=docente' + newid + ']').val('{{ prof.profesor.flexbox_repr  }}');
+                    $('input[name=docente' + newid + ']').attr('myval','{{ prof.profesor.id  }}');
+                    $('input[name=docente' + newid + ']').attr('profeexame','{{ prof.id  }}');
+                    $('input[name=docente' + newid + ']').attr('disabled',true);
+                    $('button[name=del' + newid + ']').attr('disabled',true);
+
+                }
+                else{
+                    smoke.alert("Ingresar Valores antes de agregar fila");
+                }
+                $(tr).find("td button.row-remove").on("click", function (){
+                    $(this).closest("tr").remove();
+                    var c = 0;
+                    $("#DocenteAddForm tr").each(function (index) {
+                        c = c +1;
+                    });
+                    if (c <2)
+                        $("#add_row").click();
+
+                });
+            {% endfor %}
+            $("#add_row").on("click", function() {
+                vali = 0;
+                $("#DocenteAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        if(parseInt($('#docente' + $(this).attr('con')).attr("myval")) == 0 || $('#docente' + $(this).attr('con')).attr("myval") == undefined)
+                            vali = 1;
+                    }
+                });
+                if (vali == 0 ){
+                    var newid = 0;
+                    $.each($("#tab_logic #DocenteAddForm tr"), function () {
+                        if (parseInt($(this).data("id")) > newid) {
+                            newid = parseInt($(this).data("id"));
+                        }
+                    });
+                    newid++;
+
+                    var tr = $("<tr></tr>", {
+                        id: "addr" + newid,
+                        con: newid,
+                        "data-id": newid
+                    });
+                    var col=0;
+                    $.each($("#DocenteAddForm tr:nth(0) td"), function () {
+                        var cur_td = $(this);
+                        var children = cur_td.children();
+                        // Añade el nuevo Elemento en la tabla.
+
+                        if ($(this).data("name") != undefined) {
+                            col++;
+                            if(col>2) {
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name"),
+                                    "class": 'hidden'
+                                });
+                            }else{
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name")
+                                });
+                            }
+
+
+
+                            var c = '';
+                            for(var x = 0;x < $(children).length;x++)
+                            {
+                                c = $(cur_td).find($(children[x]).prop('tagName')).clone().val("");
+                                if($(children[x]).prop('tagName') != 'BR')
+                                {
+                                    if($(cur_td).data("name") == "del"){
+                                        td.attr("colspan","1");
+                                    }
+                                    else
+                                        td.attr("colspan","11");
+
+                                    c.attr("name", $(cur_td).data("name") + newid);
+                                    c.attr("id", $(cur_td).data("name") + newid);
+                                    c.attr("alt",newid);
+                                }
+                                c.appendTo($(td));
+                                td.appendTo($(tr));
+                            }
+
+
+                        }else{
+                            var td = $("<td></td>", {
+                                'text': $('#DocenteAddForm tr').length
+                            }).appendTo($(tr));
+                        }
+                    });
+
+                    // Añade la nueva fila.
+                    $(tr).appendTo($('#DocenteAddForm'));
+                }
+                else{
+                    smoke.alert("Ingresar Valores antes de agregar fila");
+                }
+                $(tr).find("td button.row-remove").on("click", function (){
+                    $(this).closest("tr").remove();
+                    var c = 0;
+                    $("#DocenteAddForm tr").each(function (index) {
+                        c = c +1;
+                    });
+                    if (c <2)
+                        $("#add_row").click();
+
+                });
+            });
+
+            buscar_profesor = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length == 0) {
+                        $("#docente"+numfil).attr("myval",0);
+                        $("#docente"+numfil).attr("name", "");
+                        $("#docente"+numfil).attr("val", "");
+                        $("#docente"+numfil).focus();
+                    }
+                    if (data.results) {
+                        $("#docente"+numfil).get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+            var numfil=0;
+            agregar = function (evalinspec) {
+                numfil = $(evalinspec).attr("alt");
+                $(evalinspec).typeahead({source: buscar_profesor, updater: function(item) {
+                    var results = $("#docente"+numfil).get(0).results;
+                    for (var i in results) {
+                        var datos = results[i];
+                        if (item==datos.name) {
+                            $("#docente"+numfil).attr("myval",datos.id);
+                            $("#docente"+numfil).attr("name", datos.name);
+
+                        }
+                    }
+
+                    $("#DocenteAddForm tr").each(function (index) {
+                        if ($(this).attr('con') > 0) {
+                            if(parseInt(numfil) != parseInt($(this).attr('con')))
+                            {
+                                if($("#docente"+numfil).attr("myval") == $("#docente"+$(this).attr('con')).attr("myval"))
+                                {
+
+                                    $($("#docente"+numfil).get(0).parentNode).find(".help-text").html("<h4 style='color:red' >El Docente ya existe</h4>");
+                                    $("#docente"+numfil).attr("myval",0);
+                                    $("#docente"+numfil).attr("alias", "");
+                                    item = '';
+                                    $("#docente"+numfil).focus();
+                                    return false;
+                                }
+                                else{
+                                    $($("#docente"+numfil).get(0).parentNode).find(".help-text").html("");
+                                }
+
+                            }
+
+                        }
+                    });
+                    return item;
+
+                }});
+            };
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="row-fluid">
+        <div class='span2'></div>
+        <div class='span7' style="text-align: center">
+            <h3>NOTAS DE EXÁMEN COMPLEXIVO PRÁCTICO</h3>
+            <h4>{{ examenpractico.inscripcion.persona.nombre_completo }}</h4>
+        </div>
+        <div class='span1'>
+            <a href="/egresados?idexam={{ examenpractico.id }}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div><br/><br/><br/>
+    </div>
+    <div class="row-fluid">
+        <div class='span2'></div>
+        <div class='span8' >
+            <h3>Puntaje: <a class="btn btn-large {% if examenpractico.puntaje >= EXAMEN_PRACTI_COMPLEX %}btn-success{% else %}btn-danger{% endif %}" style="font-size: 32px">
+                {{ examenpractico.puntaje }}
+            </a></h3>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span2"></div>
+        <div class="span8" style="overflow-x: auto">
+            <table class='table  tabla' cellpadding="0" cellspacing="0" id="tab_logic">
+
+                <thead>
+                    <tr>
+                        <th colspan="6">
+                            <a id="add_ro" data-placement="top" data-toggle="tooltip" title="" class="btn btn-success hidden">
+                                <i class="icon-plus"></i><span class="fa fa-plus"></span> Agregar
+                            </a>
+                        </th>
+                        <th colspan="3" style="text-align: center"><h3>Escala</h3></th>
+                        <th colspan="3" style="text-align: center"><h3>Calificación {# <br/> Eval:1 #}</h3></th>
+{#                        <th colspan="2" style="text-align: center"><h3>Calificación <br/> Eval:2</h3></th>#}
+{#                        <th colspan="2" style="text-align: center"><h3>Promedio</h3></th>#}
+{#                        <th colspan="1" style="text-align: center"></th>#}
+
+                    </tr>
+                </thead>
+                <tbody id="PromedAddForm">
+                    <tr id='addr0' data-id="0" con="0" class="hidden">
+                        <td data-name="metodevalua" colspan="6">
+                            <textarea type='text' id='metodevalua0' placeholder='Metodo de evaluación' name="metodevalua0" style="width:98%;" rows="3" cols="50"  > </textarea>
+                        </td>
+                        <td data-name="escala" colspan="3"><br/>
+                            <input style="text-align: center" type="text" onblur="solonumeros(this);" placeholder='Puntaje'  class="form-horizontal" name="escala0" id="escala0"   />
+                            <p class="help-text"></p>
+                        </td>
+                        <td data-name="calific1" colspan="3"><br/>
+                            <input type="text" style="text-align: center" onblur="solonumeros(this)" placeholder='Puntaje' class="form-horizontal" name="calific10" id="calific10"  />
+                            <p class="help-text"></p>
+                        </td>
+                        <td data-name="calific2" colspan="2"><br/>
+                            <input type="text" style="text-align: center" onblur="solonumeros(this)" placeholder='Puntaje' class="form-horizontal" name="calific20" id="calific20"   />
+                            <p class="help-text"></p>
+                        </td>
+                        <td data-name="promedio" colspan="2"><br/>
+                            <input type="text" style="text-align: center" onblur="solonumeros(this)" placeholder='Puntaje' class="form-horizontal" name="promedio0" id="promedio0" disabled />
+                            <p class="help-text"></p>
+                        </td>
+                        <td data-name="dell" colspan="1"><br/>
+                            <button name="dell0" class='btn btn-danger glyphicon glyphicon-trash row-remove' ><i class="icon-remove icon-white"></i></button>
+                        </td>
+                        <td data-name="examenpractdetId" style="display: none">
+                            <input type="hidden"  name='examenpractdetId0' value="0"/>
+                        </td>
+                    </tr>
+                    {% for det in examenpractico.detalleexamen %}
+                        <textarea type='text' class="hidden" id='met{{ forloop.counter }}'  placeholder='Metodo de evaluación' name="met{{ forloop.counter }}" style="width:98%;" rows="3" cols="50" > {{ det.metodevalua }}</textarea>
+                    {% endfor %}
+                </tbody>
+                <thead>
+                    <tr>
+                        <th colspan="6">
+                            <h4>TOTAL</h4>
+                        </th>
+                        <th colspan="3" style="text-align: center"></th>
+                        <th colspan="3" style="text-align: center"><input type="text" style="text-align: center"  class="form-horizontal" name="totatcali1" id="totatcali1" value="0" disabled /></th>
+{#                        <th colspan="2" style="text-align: center"><input type="text" style="text-align: center"  class="form-horizontal" name="totatcali2" id="totatcali2" value="0" disabled /></th>#}
+{#                        <th colspan="2" style="text-align: center"><input type="text" style="text-align: center"  class="form-horizontal" name="totatprome" id="totatprome" value="0" disabled /></th>#}
+{#                        <th colspan="1" style="text-align: center"></th>#}
+                    </tr>
+                </thead>
+                <thead>
+                    <tr>
+                        <td colspan="12" style="text-align: center"><h3>DESCRIPCIÓN</h3></td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="12">
+                            <input type="hidden" style="width:98%;text-align: center" name="titutdescr" id="titutdescr"  value="{{ examenpractico.titulo }}" disabled/><br/>
+                            <textarea type='text' id='casopracti' name='casopracti' style="width:98%;text-align: justify" rows="8" cols="50" disabled>{{ examenpractico.caso }} </textarea><br/><br/>
+                        </td>
+                    </tr>
+                </tbody>
+
+                <thead>
+                    <tr>
+                        <th colspan="12"><h3>Docente Evaluador:
+                        <a style="float: right;" id="add_row" data-placement="top" data-toggle="tooltip" title="" class="btn btn-success hidden">
+                                <i class="icon-plus"></i><span class="fa fa-plus"></span></a></h3>
+                        </th>
+
+                    </tr>
+                </thead>
+                <tbody id="DocenteAddForm">
+                    <tr id='addr0' data-id="0" con="0" class="hidden">
+                        <td data-name="docente" colspan="11">
+                            <input type="text" style="width:75%;float: right" name="docente" id="docente" onkeypress="agregar(this);" alt='0' profeexame='0' />
+                            <p class="help-text" ></p>
+                        </td>
+                        <td data-name="del" colspan="1">
+                            <button name="del0" class='btn btn-danger glyphicon glyphicon-trash row-remove' ><i class="icon-remove icon-white"></i></button>
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+
+            <tfoot>
+                {% if examenpractico.valida and not examenpractico.inscripcion.inscripcionexamenValido.valida  %}
+                    <button class="btn btn-info" style="float: right" id="editbutton">Editar</button>
+                {% endif %}
+                {% if not examenpractico.profeexiste and examenpractico.valida and examenpractico.inscripcion.inscripcionexamenValido.valida  %}
+                    <button class="btn btn-info" style="float: right" id="editprofebutton">Editar</button>
+                {% endif %}
+
+                <button class="btn btn-success hidden" style="float: right" id="formbutton" >Guardar</button>
+                <button class="btn btn-danger hidden" style="float: right" id="cancelbutton" >Cancelar</button>
+            </tfoot>
+        </div>
+    </div>
+
+{% endblock %}

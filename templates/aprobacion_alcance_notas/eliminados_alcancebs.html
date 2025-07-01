@@ -1,0 +1,219 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+    <script type="text/javascript">
+        $(function() {
+            buscar_materia = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        $("#searchinput").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#searchinput').typeahead({source: buscar_materia, updater: function(item) {
+                var results = $("#searchinput").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        profesor = datos.id;
+                        location.href = "/eliminados_alcancenotas?profesorid="+datos.id;
+                    }
+                }
+                return item;
+            }});
+
+            $(".estadonota").click(function() {
+                idmateriaasig=$(this).attr("matid");
+                $.post("/eliminados_alcancenotas", {'action':'cambiodeestado','matasignada': idmateriaasig}, function(data) {
+                    if (data.result=="ok") {
+                        alert('REGISTRO GUARDADO');
+                        location.reload();
+                    }
+                }, "json");
+            });
+
+            $("#selector").change(function() {
+                var term =$("#selector").val();
+                if (term >0) {
+                    location.href = "/eliminados_alcancenotas?id="+term+"&profesorid={{ profesor.id }}";
+                }
+            });
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span8'>
+            <h3>
+                {% if aprobadas and not noaprobadas and not todos %}Notas de Alcance Aprobadas{% endif %}
+                {% if noaprobadas and not aprobadas and not todos %}Notas de Alcance Sin Aprobar{% endif %}
+                {% if not aprobadas and not noaprobadas and not todos %}Notas de Alcance Eliminadas
+                    <br> {% if profesor %}Profesor:  {{ profesor.persona.nombre_completo  }}{% endif %}
+                    <br> {% if materiaselec %}Materia: {{ materiaselec.asignatura.nombre }} - {{ materiaselec.nivel.paralelo }} - {{ materiaselec.nivel.nivelmalla.nombre }}{% endif %}
+                    {% endif %}
+                {% if todos and not aprobadas and not noaprobadas %}Notas de Alcance (TODOS) {% endif %}
+            </h3>
+            <br>
+        </div>
+        <div class='span3'>
+            {% if not aprobadas %}
+                <a href="/aprobacion_alcance_notas?aprob=aprobadas" id='allresults' class='btn btn-success'><i class="icon-eye-open icon-white"></i> Alcance de Notas Aprobadas</a>
+                <a href="/aprobacion_alcance_notas?t=1" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% else %}
+                <a href="/aprobacion_alcance_notas?noaprob=noaprobadas" id='allresults' class='btn btn-warning'><i class="icon-refresh icon-white"></i> &nbsp;Alcance de Notas por Aprobar</a>
+                <a href="/aprobacion_alcance_notas?t=1" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </br></br>
+            <a href="/aprobacion_nivelcerrado" class="btn btn-danger"><i class="icon-list"></i> Aprobaci&oacute;n Materias en Nivel Cerrado</a></br></br>
+        </div>
+        <div class='span1'>
+            <a href="/aprobacion_alcance_notas" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <br>
+    <div class='row-fluid'>
+        <div class="span12 atright" style="text-align: center;">
+            <b>Profesor  </b>
+            <input type="text" id="searchinput" value="{% if profesor %}{{ profesor.persona.nombre_completo }} {% endif %}" class="searchinput input-xxlarge search-query" data-provide="typeahead"/>
+
+            <b>Materia </b>
+            <select id="selector" class="input-xxlarge bigger">
+                <option value="">-----</option>
+                {% for m in materias %}
+                    <option  {% if mat == m.id %}selected="selected"{% endif %} value="{{ m.id }}" >{{ m.asignatura }} - {{ m.nivel.paralelo }} - {{ m.nivel.nivelmalla.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <br>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th style="background-color: lightblue;text-align: center"><h3>Estudiante</h3></th>
+                    <th style="background-color: lightblue;text-align: center"><h3>N1</h3> </th>
+                    <th style="background-color: lightblue;text-align: center"><h3>N2 </h3></th>
+                    <th style="background-color: lightblue;text-align: center"><h3>N3</h3></th>
+                    <th style="background-color: lightblue;text-align: center"><h3>N4</h3></th>
+                    <th style="background-color: lightblue;text-align: center"><h3>Exa</h3></th>
+                    <th style="background-color: lightblue;text-align: center"><h3>Recup</h3></th>
+                    <th style="background-color: lightblue;text-align: center"><h3>NFinal</h3></th>
+                    <th style="background-color: lightblue;text-align: center"><h3>Estado</h3></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for evaal in evaalcance %}
+                    {% with notatotal=evaal.nota_total_alcance asentamiento=evaal.materiaasignada.ver_asentamiento tieneexamen=evaal.materiaasignada.ver_examen tienerecuperacion=evaal.materiaasignada.ver_recuperacion verificacion=evaal.materiaasignada.ver_verificacion %}
+                        <tr>
+                            <td style="background-color: aliceblue; text-align: center">
+                                {{ evaal.materiaasignada.matricula.inscripcion.persona.nombre_completo_inverso }} <span class="label label-warning"> {{ evaal.fecha|date:"d-m-Y" }}</span><br/>
+                                <span class="label label-info">{{ evaal.materiaasignada.asignacion}}</span><br/>
+                                <span class="label label-success">{{ evaal.profesor_alcance }}</span>
+                            </td>
+                            {% if evaal.materiaasignada.materia.cerrado and not evaal.materiaasignada.nivel.cerrado  %}
+                                 <td>
+                                     <b style="color: blue">{{ evaal.materiaasignada.evaluacion.n1 }}</b> <br/>
+                                 </td>
+                                 <td>
+                                     <b style="color: blue">{{ evaal.materiaasignada.evaluacion.n2 }}</b><br/>
+                                 </td>
+                                 <td>
+                                     <b style="color: blue">{{ evaal.materiaasignada.evaluacion.n3 }}</b><br/>
+                                 </td>
+                                 <td>
+                                    <b style="color: blue">{{ evaal.materiaasignada.evaluacion.n4 }}</b><br/>
+                                 </td>
+                                 <td>
+                                     <b style="color: blue">{{ evaal.materiaasignada.evaluacion.examen }}</b><br/>
+                                 </td>
+                                <td>
+                                    <b style="color: blue">{{ evaal.materiaasignada.evaluacion.recuperacion }}</b><br/>
+                                </td>
+                                <td>
+                                     {{evaal.materiaasignada.notafinal|floatformat}}
+                                </td>
+                                <td>
+                                    {%  if not evaal.aprobado and not evaal.aprobadoex and not evaal.aprobadorec %}
+                                         {% if perms.sga.change_evaluacionalcance %}
+                                            <a href="#"matid='{{ evaal.materiaasignada.id }}' class='estadonota' title="Cambio de Estado Alcance "><b style="color: #0000ff" >
+                                                {% if evaal.eliminado %}
+                                                    Eliminado</b></a></br>
+                                                {% endif %}
+                                         {% endif %}
+                                         <b style="color:green">{{ evaal.usuarioelimina}}</b></br>
+                                         <b style="color:green">{{ evaal.fechaelimina|date:"d-m-Y"}}</b>
+                                    {% else %}
+                                        <b style="color: #0000ff">{% if evaal.eliminado %}Eliminado {% endif %}</b><br/>
+                                        <b style="color:green">{{ evaal.usuarioelimina}}</b></br>
+                                        <b style="color:green">{{ evaal.fechaelimina|date:"d-m-Y"}}</b>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                        </tr>
+                     {% endwith %}
+                {% endfor %}
+                {% if not evaalcance %}
+                    <tr>
+                        <td colspan="6" align='center'>NO EXISTEN REGISTROS</td>
+                    </tr>
+                {% endif %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan='11'>
+                        </td>
+                    </tr>
+                </tfoot>
+
+            </table>
+        </div>
+    </div>
+
+   <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 10 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/eliminados_alcancenotas?page=1">1</a></li>
+                            <li><a href="/eliminados_alcancenotas?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/eliminados_alcancenotas?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if aprobadas %}&aprob={{ aprobadas }}{% endif %}{% if noaprobadas %}&noaprob={{ noaprobadas }}{% endif %}{% if profesor %}&profesorid={{ profesor.id }}{% endif %}{% if mat %}&id={{ mat }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/eliminados_alcancenotas?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}{% if aprobadas %}&aprob={{ aprobadas }}{% endif %}{% if noaprobadas %}&noaprob={{ noaprobadas }}{% endif %}{% if profesor %}&profesorid={{ profesor.id }}{% endif %}{% if mat %}&id={{ mat }}{% endif %} " class="active">...</a></li>
+                            <li><a href="/eliminados_alcancenotas?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}{% if aprobadas %}&aprob={{ aprobadas }}{% endif %}{% if noaprobadas %}&noaprob={{ noaprobadas }}{% endif %}{% if profesor %}&profesorid={{ profesor.id }}{% endif %}{% if mat %}&id={{ mat }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/eliminados_alcancenotas?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if aprobadas %}&aprob={{ aprobadas }}{% endif %}{% if noaprobadas %}&noaprob={{ noaprobadas }}{% endif %}{% if profesor %}&profesorid={{ profesor.id }}{% endif %}{% if mat %}&id={{ mat }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block moreblock %}
+{% endblock %}

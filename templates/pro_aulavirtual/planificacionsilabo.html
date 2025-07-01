@@ -1,0 +1,384 @@
+{% extends "layout/basebs.html" %}
+{% load sga_extras %}
+{% block more_ccs %}
+    <style>
+        .select_semana {
+            background-color: #099fcb !important;
+            color: white!important;
+            font-weight: bold;
+        }
+
+        .sidenav li{
+            padding: 2px 4px;
+        }
+        .sidenav ul li a {
+            border-radius: 5px;
+            background-color: rgba(255, 191, 89, 0.71);
+        }
+    </style>
+{% endblock %}
+{% block more_js %}
+    <style>
+
+    </style>
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        $(function() {
+            $(".action_delete").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const question = `Al eliminar el registro no podra volver a recuperar los datos. <br>¿Está seguro de eliminar el registro <span class="text-info">${name}</span>?`;
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            });
+
+            $(".changeOjetivoTema").change(function (event) {
+                const objetivo = $(this).val();
+                const id = $(this).data('id');
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {'action': 'changeOjetivoTema', 'id': id, 'obj': objetivo}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        AlertLayout.success(`${response.message}`);
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+
+            });
+
+            $(".editarEnfoqueMetodologico").click(function () {
+                const id = $(this).data('id');
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.call('GET','{{ request.path }}', {'action': 'editEnfoqueMetodologico', 'id': id}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        $("#modalEnfoqueMetodlogico").modal({backdrop: 'static', keyboard: false}).modal("show");
+                        $(".modal-body", $("#modalEnfoqueMetodlogico")).html(response.html);
+                        $("#modalEnfoqueMetodlogico").modal("show").off('shown.bs.modal').on('shown.bs.modal', function () {
+                            $(".action-close", $("#modalEnfoqueMetodlogico")).off('click').on('click', function () {
+                                $(this).closest('.modal').modal('hide');
+                            });
+                            $(".action-save", $("#modalEnfoqueMetodlogico")).off('click').on('click', function () {
+                            const data = formGetData('formEnfoqueMetodlogico', 'modalEnfoqueMetodlogico');
+                            LoadingLayout.show({
+                                message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                            });
+                            AjaxLayout.multipart('POST', '{{ request.path }}', data, (response) => {
+                                LoadingLayout.hide();
+                                if (response.isSuccess){
+                                    Swal.fire({
+                                        title: 'Operación Exitosa',
+                                        text: `${response.message}`,
+                                        icon: 'success'
+                                    }).then(function() {
+                                        LoadingLayout.show();
+                                        location.reload();
+                                    });
+                                }
+                                else{
+                                    AlertLayout.danger(response.message);
+                                    if (response.forms?.errors){
+                                        formSetErrors(response.forms.errors, 'modalEnfoqueMetodlogico');
+                                    }
+                                }
+
+                            }, () => {
+                                console.log('Failed');
+                                LoadingLayout.hide();
+                            });
+                        });
+                        });
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+            });
+
+            $(".changeRecurso").change(function (event) {
+                const rec = $(this).val();
+                const id = $(this).data('id');
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {'action': 'changeRecurso', 'id': id, 'rec': rec}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        AlertLayout.success(`${response.message}`);
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+
+            });
+
+
+            $(".editrecursolink").click(function () {
+                var id = $(this).attr('ids');
+                $.post("{{ request.path }}", {'action': 'viewListaRecursoLink', 'id': id}, function (data) {
+                    if (data.isSuccess) {
+                        $.unblockUI();
+                        $(".panelbodylink").html(data.data);
+                        $(".itemspanellink").modal({backdrop: 'static', width: '700px'}).modal('show');
+                    }
+                    else{
+                        mensajeWarning(data.mensaje);
+                    }
+                }, 'json');
+            });
+            $("#itemspanellink .btn-cerrar").click(function () {
+                $("#itemspanellink").modal("hide");
+            });
+
+            $(".addComponeteEvaluacion").click(function () {
+                const id = $(this).attr('ids');
+                $.get("{{ request.path }}", {'action': 'consultacomponentes', 'id': id}, function (data) {
+                    if (data.isSuccess) {
+                        $.unblockUI();
+                        $(".paneltitle").html('Planificar evaluaciones');
+                        $("#itemspanelcompotente .modal-body").html(data.html);
+                        $("#itemspanelcompotente").modal("show").off('shown.bs.modal').on('shown.bs.modal', function () {
+                            $(document).on('click', '#addcomponente', function(){
+                                // Obtener el formulario
+                                const form = document.getElementById('formevaluacion');
+                                if (!form.checkValidity()) {
+                                    AlertLayout.danger('Por favor, completa todos los campos requeridos.');
+                                    return;
+                                }
+                                const formData = new FormData(form);
+                                formData.append('action', 'addcomponenteevaluacion');
+                                // Enviar los datos del formulario usando fetch
+
+                                for (let [key, value] of formData.entries()) {
+                                    console.log(`${key}: ${value}`);
+                                }
+
+                                console.log(formData)
+                                fetch('{{ request.path }}', {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {
+                                        'X-CSRFToken': getCookie('csrftoken') // Incluye el token CSRF si usas Django
+                                    }
+                                })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.isSuccess) {
+                                            // Cerrar el modal y mostrar un mensaje de éxito
+                                            $('#itemspanelcompotente').modal('hide');
+                                            location.reload();
+                                            // Opcional: actualizar la página o una parte de ella para reflejar los nuevos datos
+                                        } else {
+                                            // Manejar errores y mostrar un mensaje
+                                            AlertLayout.danger('Ocurrió un error al guardar los datos.');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error:', error);
+                                        alert('Ocurrió un error al guardar los datos.');
+                                    });
+                            });
+                        });
+                        {#$("#itemspanelcompotente").on.modal({backdrop: 'static', width: '500px'}).modal('show');#}
+                    }
+                }, 'json');
+            });
+
+
+        });
+        function showModal(title, componente) {
+            $("#waitpanel").find("#paneltitle").html(title);
+            $("#waitpanel .modal-body").html(componente);
+            $("#waitpanel").find(".btn_action").hide();
+            $("#waitpanel").modal({'backdrop': 'static', 'width':'800px'}).modal('show');
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}
+{% block atras %}{{ request.path }}?action=silabo&id={{ silabo.materia_id }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid ">
+        <div class='row mb-4'>
+            <div class="col-lg-12 col-md-12 col-12">
+                <div class="page_title">
+                    {% with materia=silabo.materia %}
+                        <h3 class="fw-semibold mb-0">{{ title }}</h3>
+                        <h6 class="mb-0"><b class="fw-semibold">Periodo:</b> {{ materia.nivel.periodo }}</h6>
+                        {% if materia.nivel.carrera.coordinacion %}
+                            <h6><b class="fw-semibold">Facultad:</b> {{ materia.nivel.carrera.coordinacion }}</h6>
+                        {% endif %}
+                        <h6 class="mb-0"><b class="fw-semibold">Carrera:</b> {{ materia.nivel.carrera }}</h6>
+                        <h6 class="mb-0"><b class="fw-semibold">Profesor:</b> {{ profesor }}</h6>
+                        <h6 class="mb-0"><b class="fw-semibold">Nivel:</b> {{ materia.nivel.nivelmalla }}</h6>
+                        <h6 class="mb-0"><b class="fw-semibold">Asignatura:</b> {{ materia.asignatura }}</h6>
+                        <h6 class="mb-0"><b class="fw-semibold">Paralelo:</b> {{ materia.nivel.paralelo }}</h6>
+                        {#                    <h6>Materia ID: {{ materia.id }}</h6>#}
+                        {#                    <h6>Moodle ID: {{ materia.id_moodle_course }}</h6>#}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+
+        <div class='row'>
+            <div class="col-lg-4 col-md-12 col-12">
+                <div class="card border-1 shadow-none mb-3">
+                    <div class="card-header" style="background-color: aliceblue;">
+                        <h6 class="card-title fs-4 fw-semibold m-0"><i class="fa fa-list-alt"></i> Detalle Planificación</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="border-top row border-bottom mb-2 g-0">
+                            <div class="col">
+                                <div class="pe-1 ps-2 py-3 text-center">
+                                    <h5 class="mb-0">v{{ silabo.versionsilabo }}</h5>
+                                    <span>Versión</span>
+                                </div>
+                            </div>
+                            <div class="col border-start">
+                                <div class="pe-1 ps-3 py-3 text-center">
+                                    <h5 class="mb-0 {% if porcentaje_planificacion_silabo >= 100 %}text-success{% else %}text-danger{% endif %}">
+                                        {% if not tienesemanas %}
+                                            0.00
+                                        {% else %}
+                                            {{ porcentaje_planificacion_silabo }}
+                                        {% endif %}%
+                                    </h5>
+                                    <span>Planificado</span>
+                                </div>
+                            </div>
+                            <div class="col border-start">
+                                <div class="pe-1 ps-3 py-3 text-center">
+                                    {% with idestado=silabo.estado %}
+                                        <h5 class="mb-0 text-{% if idestado == 1 %}warning{% elif idestado == 2 %}success{% else %}danger{% endif %}">
+                                            {{ silabo.get_estado_display }}
+                                        </h5>
+                                    {% endwith %}
+                                    <span>Estado</span>
+                                </div>
+                            </div>
+                        </div>
+                        {#                        <a class="btn waves-effect waves-light btn-rounded btn-outline-info btn-sm " id="addSilabo" href="javascript:;"><i class="fa fa-print"></i> Imprimir Sílabo</a>#}
+                        {#                    <a class="btn btn-rounded btn-warning btn-sm" id="addSilabo  btn-sm" href="javascript:;"><i class="fa fa-list"></i> Trazabilidad</a>#}
+                        <p class="p-0 m-0">
+                            <i class="fa fa-exclamation-circle"></i> Los temas planificados comprenden {{ porcentaje_planificacion_silabo }}% del Plan Analítico
+                        </p>
+                    </div>
+                </div>
+                <nav class="navbar navbar-expand-md navbar-light shadow-sm m-0 p-0" style="display:block">
+                    <div class="card border-1 shadow-none mb-3">
+                        <div class="card-header" style="background-color: aliceblue;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <h6 class="card-title fs-4 fw-semibold m-0"><i class="ti ti-calendar me-2"></i> Semanas</h6>
+                                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidenav" aria-controls="sidenav" aria-expanded="false" aria-label="Toggle navigation">
+                                    <span class="navbar-toggler-icon"></span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body m-0 p-0">
+                            <div class="collapse navbar-collapse m-0 p-0 border-0" id="sidenav">
+                                <div class="list-group border-0" style="width: 100%">
+                                    {% for cro in cronogramasemanal %}
+                                        <a href="{{ request.path }}?action=planificacionsilabo&id={{ silabo.id }}&ids={{ cro.id }}" class="list-group-item list-group-item-action {% if cro.id == ids_sel %} list-group-item-primary active{% endif %} rounded-0">
+                                            <i class="ti ti-calendar-check me-2"></i> <span class="me-2">[S-{{ cro.numsemana }}]</span> {{ cro.descripcion }}
+                                            <span class="ms-2 fs-2 {% if cro.id != ids_sel %}text-muted{% endif %} ms-2">({{ cro.inicio|date:'d-m-Y' }}-{{ cro.fin|date:'d-m-Y' }}) {% if cro.examen %}(Examen){% endif %} </span>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+            <div class="col-lg-8 col-md-12 col-12">
+                {% include 'pro_aulavirtual/semanadetalle.html' with semana_crono=semana_crono sin_edicion=True %}
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade opacity" id="modalEnfoqueMetodlogico" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-lg-down" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Enfoque Metodológico</h5>
+                </div>
+                <div class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <a href="javascript:void(0);" class="btn bg-primary text-white action-save">Guardar</a>
+                    <a href="javascript:void(0);" class="btn bg-danger text-white action-close">Cerrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static itemspanellink" id="itemspanellink" style="display: none;">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="paneltitle">Editar recursos didácticos (Link de youtube, etc)</h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body  panelbodylink"> </div>
+                <div class="modal-footer">
+                    <a href="javascript:;" id="adicionarlink" class="btn btn-success adicionarlink"><i class="fa fa-check"></i> Guardar</a>
+                    <button type="button" class="btn btn-default" data-bs-dismiss="modal"><i class="fa fa-window-close"></i> Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="itemspanelcompotente" style="display: none;">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="paneltitle"></h3>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body"> </div>
+                <div class="modal-footer ">
+                    <a href="javascript:;" id="addcomponente" class="btn btn-adicionar btn-success"><i class="fa fa-check"></i> Guardar</a>
+                    <button type="button" class="btn btn-default" data-bs-dismiss="modal"><i class="fa fa-window-close"></i> Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

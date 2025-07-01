@@ -1,0 +1,84 @@
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+             $(".inactivarvalor").click(function() {
+                $("#modal_consultavalores").modal("hide");
+                var id = $(this).attr("id");
+                $.post("/cons_mallas", {"action":"inactivarvalores",'id':id}, function(data) {
+                    if (data.result=='ok'){
+                        alert("Valor Inactivo");
+                        location.reload();
+                    }else{
+                        alert("NO SE INACTIVO EL VALOR  Error: " + data.error);
+                        $("#modal_consultavalores").modal("show");
+                    }
+                }, "json");
+            });
+
+        });
+
+    </script>
+{% endblock %}
+    <div class='row-fluid'>
+     <div class="span1"></div>
+        <div class='span9'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="background-color: #49afcd;text-align: center;width: 30%"><h3>Carrera</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 20%"><h3>Asignatura</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 10%"><h3>Valor</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 10%"><h3>Fecha</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 10%"><h3>Usuario</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 10%"><h3>Estado</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 10%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for costo in costos %}
+                        <tr>
+                            <td style="background-color: #c1eee1;text-align: center;width:20%">
+                                {{ costo.asignaturamalla.malla.carrera.nombre }}
+                            </td>
+                            <td style="background-color: #c1eee1;text-align: center;width:20%">
+                                {{ costo.asignaturamalla.asignatura.nombre }}
+                            </td>
+                            <td style="background-color: #c1eee1;text-align: center;width:5%">
+                                {{ costo.valor|floatformat:2 }}
+                            </td>
+                            <td style="background-color: #c1eee1;text-align: center;width:10%">
+                                {{ costo.fecha|date:"d-m-Y"  }}
+                            </td>
+                            <td style="background-color: #c1eee1;text-align: center;width:5%">
+                                {{ costo.usuario }}
+                            </td>
+                            <td style="background-color: #c1eee1;text-align: center;width:10%">
+                                {% if costo.activo %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if perms.sga.change_asignaturamalla  %}
+                                            {% if costo.activo %}
+                                                <li><a class="inactivarvalor"  id="{{costo.id }}" href='#'> <i class='icon-move'></i> Inactivar </a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>

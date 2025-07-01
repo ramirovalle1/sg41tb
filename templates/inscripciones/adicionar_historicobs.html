@@ -1,0 +1,72 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_fecha").datepicker({format:"dd-mm-yyyy"});
+    $("#id_inscripcion,#id_asignatura,#id_nota,#id_asistencia,#id_fecha,#id_nivelmalla").addClass("validate[required]");
+    {% if error %}
+        smoke.alert("{{ error }}");
+    {% endif %}
+
+    var numeros1="0123456789.";
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros1.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+    }
+
+    $("#id_nota").blur(function(){
+            var v = $("#id_nota").val();
+            var p = solo_numeros(v);
+            if (p != v.length)
+            {
+              $($("#id_nota").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingresar solo Numeros</h6>");
+              $("#id_nota").focus();
+            }
+            else{
+                $($("#id_nota").get(0).parentNode).find(".help-text").html("");
+                if ($("#id_nota").val() > {{nota_maxima}}){
+                  $($("#id_nota").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >La nota es mayor a {{nota_maxima}}</h6>");
+                  $("#id_nota").val("");
+                  $("#id_nota").focus();
+                }
+            }
+    });
+
+    $("#id_asistencia").blur(function(){
+            var v = $("#id_asistencia").val();
+            var p = solo_numeros(v);
+            if (p != v.length)
+            {
+              $($("#id_asistencia").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingresar solo Numeros</h6>");
+              $("#id_asistencia").focus();
+            }
+            else{
+                $($("#id_asistencia").get(0).parentNode).find(".help-text").html("");
+                if ($("#id_asistencia").val() > 100){
+                  $($("#id_asistencia").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >La asistencia es mayor a 100</h6>");
+                  $("#id_asistencia").val("");
+                  $("#id_asistencia").focus();
+                }
+            }
+    });
+
+{% endblock %}
+
+{% block titulo %}Adicionar Hist&oacute;rico Registro Acad&eacute;mico del Alumno: {{ inscripcion }}{% endblock %}
+{% block formaction %}/inscripciones{% endblock %}
+
+{% block formextra %}
+    <input type='hidden' name='action' value='addhistorico'/>
+    <input type='hidden' name='id' value='{{ inscripcion.id }}'/>
+{% endblock %}
+{% block formback %}/inscripciones?action=historico&id={{ inscripcion.id }}{% endblock %}
+{% block buttonname %}Guardar Hist&oacute;rico{% endblock %}

@@ -1,0 +1,336 @@
+<script type="text/javascript">
+
+    $(function() {
+
+{#        $("#id_fechae").datepicker({format:"dd-mm-yyyy"});#}
+{#        $("#id_numeroe, #id_codigoe, #id_fechae, #id_observaciones, #id_profesor").addClass("validate[required]");#}
+        $("#id_observaciones, #id_profesor").addClass("validate[required]");
+{#        $("#id_numeroe, #id_codigoe, #id_fechae").addClass('input-small');#}
+{#        $("#id_codigoe").mask('******');#}
+
+        $("#justificarpanel .btn-cerrar").click(function(){
+            $("#justificarpanel").modal("hide");
+            return false;
+        });
+        $(".justificar").click(function(){
+            $("#alertas").hide();
+{#            $("#id_numeroe").val("");#}
+{#            $("#id_codigoe").val("");#}
+            $("#id_observaciones").val("");
+{#            {% if especienum %}#}
+{#                $("#id_numeroe").val("{{ especienum }}");#}
+{#                $("#id_numeroe").attr('disabled','true');#}
+{#                {% if op == 'on' %}#}
+{#                    $("#id_codigoe").attr('disabled','true');#}
+{#                {% endif %}#}
+{#            {% endif %}#}
+            var asistid = $(this).attr('leccid');
+            var asignado = $(this).attr('asig');
+            var fecha = $(this).attr('fecha');
+            var profesor = "{{ profesor.persona }}";
+            $("#justificarpanel #profesor").val('{{ profesor.id }}');
+            $("#justificarpanel #asist").val(asistid);
+            $("#justificarpanel #profesortitle").html(profesor);
+            $("#justificarpanel #inscripciontitle").html(asignado);
+            $("#justificarpanel #fechatitle").html(fecha);
+            $("#justificarpanel").modal({'backdrop': 'static', 'width': '750px', maxHeight: ($(window).height()*3)/2});
+            $("#justificarpanel").modal("show");
+             $("#justificarpanel .btn-adicionar").show();
+            return false;
+        });
+        $("#ver_abstentos .btn-cerrar").click(function(){
+            $("#ver_abstentos").modal("hide");
+        return false;
+    });
+        $("#justificarpanel .btn-adicionar").click(function(){
+            var profid = $("#justificarpanel #profesor").val();
+            var asistid = $("#justificarpanel #asist").val();
+            $("#justificarpanel .btn-adicionar").hide();
+{#            var numeroe = $("#id_numeroe").val();#}
+{#            var codigoe = $("#id_codigoe").val();#}
+{#            var fechae = $("#id_fechae").val();#}
+            var observaciones = $("#id_observaciones").val();
+            {% if especienum  %}
+                {% if op == 'on'  %}
+                    codigoe="{{ especienum }}";
+                {% endif %}
+            {% endif %}
+
+{#            if (numeroe && codigoe && fechae && observaciones){#}
+                $.post("/adm_docentes", {'action': 'justificar2', 'profid': profid, 'asistid': asistid,
+
+                                    'observaciones': observaciones}, function(data){
+                if (data.result=='ok'){
+                    $("#justificarpanel").modal("hide");
+                    $("#justi"+asistid).html("<img src='/static/images/16/true.png' width='14px' alt='' border='0'/>");
+                }
+                if (data.result=='badfechas'){
+                    $("#justificarpanel .btn-adicionar").show();
+                    $("#alertas").show();
+                    $("#alertas").html(" ALERTA: Se ha vencido el tiempo para justificacion (" + data.dias + " dias)");
+                }
+                if (data.result=='badespecie'){
+                    $("#alertas").show();
+                    $("#justificarpanel .btn-adicionar").show();
+                    $("#alertas").html(" ALERTA: Estudiante no ha adquirido especie con esos datos en este anno");
+                }
+                if (data.result=='badfechanegativa'){
+                    $("#alertas").show();
+                    $("#justificarpanel .btn-adicionar").show();
+                    $("#alertas").html(" ALERTA: La fecha de la especie es menor que la fecha de la Leccion a justificar");
+                }
+                if (data.result=='badfechae'){
+                    $("#alertas").show();
+                    $("#justificarpanel .btn-adicionar").show();
+                    $("#alertas").html(" ALERTA: Existe una especie con el numero en la base, <b>con otra Fecha</b>");
+                }
+                if (data.result=='badprof'){
+                    $("#alertas").show();
+                    $("#justificarpanel .btn-adicionar").show();
+                    $("#alertas").html("ALERTA: Existe una especie con  numero en la base, <b>con otro Profesor</b>");
+                }
+                if (data.result=='badins'){
+                    $("#alertas").show();
+                    $("#justificarpanel .btn-adicionar").show();
+                    $("#alertas").html("ALERTA: Existe una especie con ese numero en la base, <b>con otro Estudiante</b>");
+                }
+                if (data.result=='badcanti'){
+                    $("#alertas").show();
+                    $("#justificarpanel .btn-adicionar").show();
+                    $("#alertas").html("ALERTA: La cantidad de Justificacion excede al permitido por especie");
+                }
+                    if (data.result=='badfechaesp'){
+                    $("#alertas").show();
+                    $("#justificarpanel .btn-adicionar").show();
+                    $("#alertas").html("ALERTA: No Puede Justificar asistencias con fecha mayor a la especie");
+                }
+                if(data.result=='bad'){
+                    $("#alertas").show();
+                    $("#justificarpanel .btn-adicionar").show();
+                    $("#alertas").html("Ocurrio un Error Intente Nuevamente");
+                }
+                }, "json");
+{#            }else{#}
+{#                $("#alertas").show();#}
+{#                $("#justificarpanel .btn-adicionar").show();#}
+{#                $("#alertas").html("POR FAVOR, LLENE TODOS LOS CAMPOS");#}
+{#            }#}
+
+            return false;
+        });
+    });
+    $('.verabstentos').click(function(){
+
+        $("#ver_abstentos #paneltitle2").html('Listado de Abstentos');
+        $("#ver_abstentos").modal({"backdrop":"static","width":"40%"});
+        $("#ver_abstentos").modal("show");
+    });
+
+    $("#id_fechae").blur(function(){
+        $.post("/adm_docentes", {action: 'fechaespecie', fechaespecie: $("#id_fechae").val()}, function(data) {
+                if (data.result=='bad') {
+                    $($("#id_fechae").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i> ALERTA: Se ha vencido el tiempo para justificacion, especie tiene " +  data.dias + " dias" + "</i></span>"  );
+                }
+        }, "json");
+    });
+</script>
+
+<tr>
+    <td>
+    <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+        <thead>
+        <th>Alumnos  <span class="label label-info tl" title="Total Estudiante/ ">({{ totalestmateria }})</span> </th>
+        <th>Deuda</th>
+        {% for leccion in materia.lecciones %}
+            <th class='columnaleccion' idleccion='{{ leccion.id }}'>
+                <a href="/pro_clases?action=view&id={{ leccion.id }}" title="{{ leccion.fecha|date:"d-m-Y" }}, {{ leccion.horaentrada }}">
+                    {% if materia.lecciones.count > 18 %}
+                        {{ forloop.counter }}
+                    {% else %}
+                        {% if materia.lecciones.count > 12 %}
+                            {{ leccion.fecha|date:"d" }}<br/>
+                            {{ leccion.fecha|date:"m" }}<br/>
+                            {{ leccion.fecha|date:"Y" }}
+                        {% else %}
+                            {{ leccion.fecha|date:"d-m-Y" }}
+                        {% endif %}
+                    {% endif %}
+                </a>
+            </th>
+        {% endfor %}
+        <th>%</th>
+        </thead>
+        <tbody>
+
+
+
+        {% for asignadomateria in materiaasignada %}
+
+        <tr>
+            {% if asignadomateria.verifica_ultimas_tres_asistencias %}
+                <td style="background-color: yellow"> {{ asignadomateria.matricula.inscripcion }}{% if asignadomateria.matricula.esta_retirado_inscripcion %} <span class="label label-important tl" title="Retirado/a ">R</span> {% endif %}</td>
+            {% else %}
+                <td> {{ asignadomateria.matricula.inscripcion }} {% if asignadomateria.matricula.esta_retirado_inscripcion %} <span class="label label-important tl" title="Retirado/a ">R</span> {% endif %}</td>
+
+            {% endif %}
+            <td style="text-align: right;">${{ asignadomateria.matricula.inscripcion.adeuda_a_la_fecha }} </td>
+            {% for leccionAsistencia in asignadomateria.asistencias %}
+                <td id="justi{{ leccionAsistencia.id }}" style="text-align: center">
+                    {% if leccionAsistencia.asistio %}
+                        <img src='/static/images/16/true.png' width='14px' alt='' border="0"/>
+
+                        {% else %}
+                        {% if usa_modulo_justificacion_ausencias and perms.sga.change_asistencialeccion %}
+                            <a href="#" class='justificar' leccid='{{ leccionAsistencia.id }}' asig='{{ asignadomateria.matricula.inscripcion }}' fecha='{{ leccionAsistencia.leccion.fecha|date:'d-m-Y' }}'><img src='/static/images/16/false.png' width="14px" alt='' border="0"/></a>
+                        {% else %}
+                            <img src='/static/images/16/false.png' width="14px" alt='' border="0"/></a>
+                        {% endif %}
+                    {% endif %}
+
+                </td>
+            {% endfor %}
+
+            <td>
+                {% if not conduccion %}
+                    {% if asignadomateria.porciento_asistencia < 60 %} <span style="color: #dc143c;"><b>{{ asignadomateria.porciento_asistencia }}%</b></span>{% endif %}
+                    {% if asignadomateria.porciento_asistencia >= 60 and asignadomateria.porciento_asistencia < 69 %} <span style="color: #daa520;"><b>{{ asignadomateria.porciento_asistencia }}%</b></span>{% endif %}
+                    {% if  asignadomateria.porciento_asistencia >= 70 %} <span style="color:#006400;"><b>{{ asignadomateria.porciento_asistencia }}%</b></span>{% endif %}
+                {% else %}
+                    {% if asignadomateria.porciento_asistencia < 80 %} <span style="color: #dc143c;"><b>{{ asignadomateria.porciento_asistencia }}%</b></span>{% endif %}
+                    {% if asignadomateria.porciento_asistencia >= 80 and asignadomateria.porciento_asistencia < 94 %} <span style="color: #daa520;"><b>{{ asignadomateria.porciento_asistencia }}%</b></span>{% endif %}
+                    {% if  asignadomateria.porciento_asistencia >= 95 %} <span style="color:#006400;"><b>{{ asignadomateria.porciento_asistencia }}%</b></span>{% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+
+
+
+        <tr>
+
+            <td colspan="2" style="text-align: center"> <b>TOTAL DE ASISTENCIAS</b> </td>
+            {% for leccion in materia.lecciones %}
+                <td style="text-align: center; font-weight: bold"> {{ leccion.asistencia_real }} </td>
+
+            {% endfor %}
+            <td></td>
+        </tr>
+        <tr>
+            <td colspan="2" style="text-align: center; font-weight: bold"> TOTAL DE FALTAS </td>
+            {% for leccion in materia.lecciones %}
+                <td style="text-align: center; font-weight: bold"> {{ leccion.inasistencia_real }}  </td>
+            {% endfor %}
+            <td></td>
+        </tr>
+        <tr>
+            <td colspan="2" style="text-align: center; font-weight: bold"> TOTAL DE ESTUDIANTES </td>
+            {% for leccion in materia.lecciones %}
+                <td style="text-align: center; font-weight: bold" > {{ leccion.totales_estudiantes }}  </td>
+            {% endfor %}
+            <td></td>
+        </tr>
+
+
+
+{#                {% for contar in asignadomateria %}#}
+
+{#            {% endfor %}#}
+
+
+
+        </tbody>
+
+    </table>
+    </td>
+{#    <a  style="font-size: 18px" class=" label label-important tl " abstentos="{{ abstentos.id }}"> Total de Abstentos : ({{ absentos }})</a>#}
+    <span style="font-size: 18px"  class="label label-important tl " title="Abstentos/a ">Total de Absentos: ({{ absentos }}) </span><a href="#" class="verabstentos"> Click para Ver Absentos</a>
+{#    <span class="label label-info tl" title="Total Abstentos/ ">({{ abstentos }})</span> </th>#}
+
+{#    <p style="font-weight: bold;font-size: 18px"></p>#}
+</tr>
+
+<div class="modal fade static" id="justificarpanel" style="display: none;">
+    <div class="row-fluid">
+        <div class="span8">
+            <div class="modal-header">
+                <h4 class="paneltitle">JUSTIFICACION DE AUSENCIAS</h4>
+                <h5>Profesor: </h5> <span id="profesortitle"></span>
+                <h5>Estudiante: </h5> <span id="inscripciontitle"></span>
+                <h5>Fecha Lecci&oacute;n: </h5> <span id='fechatitle'></span>
+                {% if especienum  %}
+                {% if op == 'on'  %}
+                    <br><span class="label label-success">Especie On-Line</span>
+                {% endif %}
+
+                {% endif %}
+            </div>
+        </div>
+        <div class="span4">
+            <img src="/static/images/iconos/justificar.png"/>
+        </div>
+
+    </div>
+    <div class="row-fluid">
+        <div class="span12">
+            <div id='alertas' class="alert alert-danger" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="modal-body panelbody">
+        <input type="hidden" id='profesor' value=""/>
+        <input type="hidden" id='asist' value=""/>
+        <form id="formulario" class='well form-horizontal' method="POST">
+            {% for field in form %}
+                <fieldset class="control-group nomargins">
+                    <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+        </form>
+    </div>
+    <div class="modal-footer">
+        <div class="row-fluid">
+            <div class="span8">
+                <span class="label label-info"><i> ALERTA: Esta Acci&oacute;n ser&aacute; registrada en la base, como control interno de la Entidad</i></span>
+            </div>
+            <div class="span4">
+                <a href="#" class="btn btn-cerrar">Cerrar</a>
+                <a href="#" class="btn btn-adicionar btn-success">Justificar</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade static" id="ver_abstentos">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/adm_docentes" method="POST"  >
+                <input type='hidden' name='action' value='verabstentos' />
+{#                <input type='hidden' name='editar' id='editar' value="0"/>#}
+                <input type='hidden' name='idabstentos' id='idabstentos'/>
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nombres</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for c in absentosver %}
+                    <tr><td>{{ c.matricula.inscripcion.persona.nombre_completo }}</td></tr>
+
+
+
+                {% endfor %}
+                </tbody>
+                 </table>
+
+                <a href="#" class="btn btn-success btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+

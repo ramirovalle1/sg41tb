@@ -1,0 +1,287 @@
+{% extends "basenueva.html" %}
+{% block heading %}
+
+<style>
+
+
+body {
+    background-color: #eee
+
+}
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color:  #184679; }
+
+.btn-primary {
+  color: #fff;
+  background-color: #184679;
+  border-color: #184679;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+
+.div.dataTables_wrapper div.dataTables_filter, div.dataTables_wrapper div.dataTables_info, div.dataTables_wrapper div.dataTables_paginate,div.dataTables_wrapper div.dataTables_filter label,div.dataTables_wrapper div.dataTables_length label {
+    padding-left: 15px;
+    padding-right: 15px;
+    visibility: hidden;
+}
+
+
+
+</style>
+
+<script>
+
+    $(function () {
+
+
+          $("#search").click(function() {
+            var term = $("#txtbusqueda").val();
+            location.href = "/testingresoadmin?s="+term;
+          });
+
+          $('#txtbusqueda').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+          });
+
+          $("#btnagregar").click(function() {
+             Loader.open();
+             $.get("/testingresoadmin", {'action':'agregatest'}, function(data) {
+                     $("#addtest .modal-body").html(data);
+                     $("#addtest").modal({backdrop: 'static', keyboard: false});
+                      Loader.close();
+             }, "html");
+             return false;
+         });
+
+         editartest=function (idregistrotest) {
+
+              Loader.open();
+             $.get("/testingresoadmin", {'action':'editartest',"idtest":idregistrotest }, function(data) {
+                         $("#edittest .modal-body").html(data);
+                         $("#edittest").modal({backdrop: 'static', keyboard: false});
+                         Loader.close();
+             }, "html");
+             return false;
+
+         }
+
+        eliminar=function (idtestelimina,nombre) {
+            swal({
+                title: 'Confirma eliminar el Test de Ingreso?',
+                text: "Nombre: "+nombre,
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si,Eliminar!',
+                cancelButtonText: 'Cancel',
+                confirmButtonClass: 'btn btn-success margin-5',
+                cancelButtonClass: 'btn btn-danger margin-5',
+                buttonsStyling: false,
+                allowOutsideClick: false
+            }).then(function (isConfirm) {
+
+                if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss'] != 'esc') {
+
+                     Loader.open();
+                     var formData = new FormData();
+                     formData.append('action', 'eliminar');
+                     formData.append('idtest', idtestelimina);
+
+                     $.ajax({
+                             url: '/testingresoadmin',
+                             type: "POST",
+                             contentType: false,
+                             data: formData,
+                             processData: false,
+                             cache: false,
+                             success: function (data) {
+                                 if (data.result == "ok") {
+                                     swal("! Test", "Se elimino correctamente el test", "success");
+                                     location.href = "/testingresoadmin";
+                                 } else {
+                                     swal("Error", data.message, "error");
+
+                                 }
+                             },
+                             error: function (xhr, ajaxOptions, thrownError) {
+                                 swal("Error", "Error Conexion en el Servidor", "error");
+
+                             },
+                             complete: function () {
+                                Loader.close();
+                             }
+                     });
+                }
+            })
+        }
+
+
+    });
+
+
+</script>
+
+
+{% endblock %}
+{% block canvas %}
+
+     <div class="mobile-menu-overlay"></div>
+
+     <div class="main-container">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-6 col-sm-12">
+                    <div class="title">
+                        <h4> Listado de Test Ingreso</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-box mb-30">
+            <div class="pd-20">
+                <div class="row">
+                    <div class="col-md-4" style="margin-top: 5px">
+                        <div class="form-group" >
+                            <label > <a style="color: #d92550"></a></label>
+                            <input id="txtbusqueda" type="text" class="form-control" value='{{ search }}' >
+                        </div>
+                    </div>
+                    <div class="col-md-4" style="margin-top: 5px">
+                        <label > <a style="color: #d92550"></a></label>
+                        <div class="form-group">
+                            <button type="button" id="search" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+                            <button type="button" id="btnagregar" class="btn" title="Agregar Test" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-plus"></i></button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+			<div class="pb-20">
+                <table class="data-table table stripe hover nowra">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripcion Corta</th>
+                            <th>Encuesta</th>
+                            <th>Tiempo del Test</th>
+                            <th>Mensaje</th>
+                            <th>Fecha</th>
+                            <th style="text-align: center">Estado</th>
+                            <th style="text-align: center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                       {% for p in listadoTest %}
+                            <tr>
+                                <td style="text-align: center">{{ p.titulo }}</td>
+                                <td style="text-align: center">{{ p.descripcioncorta }}</td>
+                                <td style="text-align: center;">
+                                    {% if p.encuesta %}
+                                        <span class="badge badge-success">SI</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">NO</span>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center">{{ p.minutofin }}</td>
+                                <td style="text-align: center">{{ p.observacion }}</td>
+                                <td style="text-align: center">{{ p.fecha|date:'d-m-Y' }}</td>
+                                <td style="text-align: center;">
+                                    {% if p.estado %}
+                                        <span class="badge badge-success">ACTIVO</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">INACTIVO</span>
+                                    {% endif %}
+                                </td>
+
+                                <td style="text-align: center">
+                                    <div class="dropdown">
+                                        <a class="btn btn-link font-24 p-0 line-height-1 no-arrow dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                                            <i class="dw dw-more"></i>
+                                        </a>
+                                        <div class="dropdown-menu dropdown-menu-right dropdown-menu-icon-list">
+
+                                             <a class="dropdown-item" style="cursor:pointer" onclick="editartest('{{ p.id }}')" ><i class="dw dw-edit2"></i> Editar Test</a>
+                                             <a class="dropdown-item" style="cursor:pointer" href="/preguntatestingreso?idtest={{ p.id }}"  ><i class="dw dw-invoice"></i> Preguntas</a>
+                                             <a class="dropdown-item" style="cursor:pointer" href="/inscribiralumno?idtest={{ p.id }}"  ><i class="dw dw-newspaper-1"></i> Inscribir Alumnos</a>
+
+                                            {%  if p.alumnosinscriptos %}
+                                                <a class="dropdown-item" style="cursor:pointer" href="/alumnosinscritotest?acc={{ permisopcion.id }}&idtest={{ p.id }}"  ><i class="dw dw-newspaper-1"></i> Alumnos Inscritos</a>
+                                            {% endif %}
+
+                                            {%  if p.termino %}
+                                                {% if permisopcion.eliminar %}
+                                                    <a class="dropdown-item" style="cursor:pointer" onclick="eliminarTermino('{{ p.id }}','{{ p.titulo }}')" ><i class="dw dw-paragraph"></i> Quitar Término y Condiciones</a>
+                                                {% endif %}
+                                                 <a class="dropdown-item" style="cursor:pointer" onclick="verTerminos('{{ p.id }}','{{ p.titulo }}')" ><i class="dw dw-eye"></i> Ver Términos y Condiciones</a>
+
+                                            {%  else %}
+                                                    <a class="dropdown-item" onclick="ventsubirtermino('{{ p.id }}','{{ p.titulo  }}')"><i class="icon-copy dw dw-credit-card"></i> Subir Términos y Condiciones</a>
+                                            {% endif %}
+
+                                            <a class="dropdown-item" style="cursor:pointer" onclick="eliminar('{{ p.id }}','{{ p.titulo }}')" ><i class="dw dw-delete-3"></i> Eliminar Test</a>
+
+
+
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                       {% endfor %}
+                        {% if not listadoTest %}
+                            <tr>
+                                <td colspan="12">
+                                    NO EXISTEN REGISTROS
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+
+     </div>
+
+
+    <div  class="modal fade " id="addtest" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Agregar Test</h4>
+                </div>
+
+                <div class="modal-body">
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div  class="modal fade " id="edittest"  role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Editar Test</h4>
+                </div>
+                <div class="modal-body">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+{% endblock %}

@@ -1,0 +1,84 @@
+<script type="text/javascript">
+    $('.quitar').click(function(){
+        $("#detalle_archivo").modal("hide");
+        var id = $(this).attr('idarch');
+        smoke.confirm('esta seguro de eliminar el registro', function(e){
+            if (e){
+                location.href = '/beca_solicitud?action=eliminar&id='+id;
+            }else{
+                $("#detalle_archivo").modal("show");
+            }
+            }, {
+            ok: "Si",
+            cancel: "No",
+            classname: "custom-class",
+            reverseButtons: true
+        });
+        return false;
+    });
+
+
+    $('.editar').click(function(){
+        $($("#id_tipo").get(0).parentNode).find(".help-text").html("").removeClass('alert-error');
+        $($("#id_motivo").get(0).parentNode.parentNode).hide();
+        $("#id_tipo").val($(this).attr('tipo'));
+        $('#id_archivo').val('');
+        $("#paneltitle1").html("Editar Registro");
+        $("#idsoliciar").val($(this).attr('pid'));
+        $("#editararch").val($(this).attr('idarch'));
+        $("#detalle_archivo").modal("hide");
+        $("#archivopanel").modal({"backdrop":"static","width":"40%"});
+        $("#archivopanel").modal("show");
+        if ($("#id_tipo").val() == '{{ TIPO_ESPECIE_BECA }}')
+        {
+           $("#id_tipo").attr('disabled',true);
+           $("#id_archivo").addClass('validate[required]');
+        }
+        else
+        {
+             $("#id_tipo").addClass('validate[required]',true);
+             $("#id_tipo").attr('disabled',false);
+             $("#id_archivo").removeClass('validate[required]');
+        }
+        return false;
+    });
+</script>
+<div class="row-fluid">
+<div class="span12">
+    <table class="table table-condensed table-stripped">
+        <thead>
+        <tr>
+            <th style="text-align: center;width:15% ">Tipo</th>
+            <th style="text-align: center;width:20%">Fecha</th>
+            <th style="text-align: center;width:15%">Descargar</th>
+            {% if opc == '1' and not solicitudbeca.fechaproces %}
+                <th style="text-align: center;width:10%"></th>
+                <th style="text-align: center;width:10%"></th>
+            {% endif %}
+
+        </tr>
+        </thead>
+    <tbody>
+        {% for detarch in archarchivbec %}
+            <tr>
+                <td style="text-align: center"> {{ detarch.tipodocumenbeca }} </td>
+                <td style="text-align: center"> {{ detarch.fecha|date:'d-m-Y' }} </td>
+                <td  style="text-align: center"> {% if detarch.archivo %} <a href='{{ detarch.archivo.url }}' class='btn btn-success btn-mini'><i class="icon-download icon-white"></i>Descargar</a> {% endif %}</td>
+                {% if puedeeditar %}
+                    {% if opc == '1' and not solicitudbeca.fechaproces %}
+                        {% if not solicitudbeca.estadoverificaciondoc %}
+                            <td  style="text-align: center"><a href="#" pid="{{ detarch.solicitudbeca.id }}" idarch="{{ detarch.id }}" tipo="{{ detarch.tipodocumenbeca.id }}" class="btn  btn-info btn-mini editar"><i class="icon-edit icon-white"></i>Editar</a></td>
+                            {% if TIPO_ESPECIE_BECA != detarch.tipodocumenbeca.id %}
+                                <td  style="text-align: center"><a href="#" idarch = '{{ detarch.id }}' class="btn  btn-danger btn-mini quitar"><i class="icon-remove icon-white"></i>Eliminar</a></td>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+
+
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>

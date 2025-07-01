@@ -1,0 +1,172 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>
+    <script type="text/javascript">
+    {% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+
+     $(function() {
+         var c,d=0;
+         {% if ban  == 2 %}
+             $("#id_canton").val('{{ canton }}');
+             $("#id_idcanton").val('{{ canton.id }}');
+             $("#id_pais").val('{{ pais }}');
+             $("#id_idpais").val('{{ pais.id }}');
+
+         {% endif %}
+        $("form").validationEngine();
+        $('#id_horas').addClass('input-small');
+        $('#id_contacto,#id_contactofono,#id_canton,#id_pais,#id_prolonga,#id_contactoemail,#id_tiempo,#id_tipo').addClass('input-xxlarge');
+        $('#id_representante,#id_representantetelefono,#id_representanteemail,#id_administrador,#id_administradortelefono,#id_administradoremail').addClass('input-xxlarge');
+        $("#id_inicio,#id_fin").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+        $("#id_proyecto, #id_lugar,#id_objetivo").attr({rows:3 , style:'width:58%;font-size:12px'});
+        $("#id_institucion,#id_direccion,#id_nombre").attr({rows:2,style:'width:58%;font-size:12px'});
+        $("#id_proyecto,#id_horas,#id_taller,#id_objetivo,#id_lugar,#id_lider,#id_inicio,#id_fin").addClass("validate[required]");
+         $($("#id_idcanton").get(0).parentNode.parentNode).hide();
+         $($("#id_idpais").get(0).parentNode.parentNode).hide();
+
+        prety = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(2), {prefix: '$', thousandSeparator: ',', decimalSeparator: ".", sufix: '', decimalPlaces: 2});
+        };
+
+        pretyPct = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(1), {prefix: '', thousandSeparator: ',', decimalSeparator: ".", sufix: '%', decimalPlaces: 1});
+        };
+
+        simple = function(sid) {
+            return Big($.fn.floats.simplify_fn($(sid).val(), {prefix: '$', thousandSeparator: ',', sufix: '%'}));
+        };
+
+        simpleV = function(v) {
+            return Big($.fn.floats.simplify_fn(v, {prefix: '$', thousandSeparator: ','}));
+        };
+
+         $(".linkback").click(function(){
+            location.href = "/convenios";
+         });
+        chequea = function() {
+            if ($("#id_indefinido").is(':checked')) {
+                   $("#id_inicio,#id_fin,#id_tiempo").each(function(){
+                    $($(this).get(0).parentNode.parentNode).hide();
+                    });
+
+            }else{
+                   $("#id_inicio,#id_fin,#id_tiempo").each(function(){
+                    $($(this).get(0).parentNode.parentNode).show();
+                    });
+            }
+        }
+
+         var numeros="0123456789";
+
+        function solo_numeros(texto){
+            var num = 0;
+                for(i=0; i<texto.length; i++){
+                    if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                    num = num +1;
+                }
+            }
+        return num;
+        }
+        buscar_canton = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Canton',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_canton").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+
+        $('#id_canton').typeahead({source: buscar_canton, updater: function(item) {
+            var results = $("#id_canton").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+
+                    $("#id_canton").attr("myval",datos.id);
+                    c=datos.id;
+                    $("#id_idcanton").val(c);
+                }
+            }
+            return item;
+        }});
+
+         buscar_pais = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Pais',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_pais").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+
+        $('#id_pais').typeahead({source: buscar_pais, updater: function(item) {
+            var results = $("#id_pais").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_pais").attr("myval",datos.id);
+                    p=datos.id;
+                    $("#id_idpais").val(p);
+                }
+            }
+            return item;
+        }});
+
+        $("#id_horas").blur(function(){
+            var v = $("#id_horas").val();
+            var p = solo_numeros(v);
+            if (p != v.length)
+            {
+              $($("#id_horas").get(0).parentNode).find(".help-text").html("Ingresar solo Numeros");
+              $("#id_horas").val("");
+              $("#id_horas").focus();
+            }
+            else{
+
+                $($("#id_horas").get(0).parentNode).find(".help-text").html("");
+            }
+
+        });
+
+        $("#id_indefinido").click(chequea);
+         chequea();
+     });
+
+
+
+    </script>
+
+{% endblock %}
+{% block titulo %}{% if  ban == 2  %}Editar Convenio{% else %}Adicionar Convenio {% endif %}
+{% if error %}
+    {% if ban == 2 %}
+        </br></br> <span> ERROR AL EDITAR EL CONVENIO</span>
+    {% else %}
+        </br></br> <span> ERROR AL CREAR EL CONVENIO</span>
+    {% endif %}
+{% endif %}
+{% endblock %}
+
+
+{% block formaction %}/convenios{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='add'/>
+    <input type='hidden' name='ban' value='{{ ban }}'/>
+    <input type='hidden' name='convenio' value='{{ convenio.id }}'/>
+{% endblock %}
+{% block formback %}/convenios{% endblock %}
+{% block buttonname %}Guardar Cambios{% endblock %}

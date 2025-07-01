@@ -1,0 +1,630 @@
+{% extends "layout/formbs.html" %}
+{% load sga_extras %}
+{% block more_css %}
+    <link type='text/css' rel='stylesheet' href="/static/sganuevo/malla/css/programaAnalitico.css?v={{ version }}">
+    <style>
+        #addunidad {
+            border: #0a7ea4 1px solid;
+        }
+        .text-center {
+            text-align: center!important;
+        }
+
+    </style>
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block before_saving %}
+    const rais = $("textarea", $(".contenidoRai"));
+    lista_items1 = [];
+    rais.each(function() {
+    const id = $(this).data('id');
+    const descripcion = $(this).val();
+    lista_items1.push({id: parseInt(id), descripcion: `${descripcion}`});
+    });
+    const racs = $("textarea", $(".contenidoRac"));
+    lista_items2 = [];
+    racs.each(function() {
+    const id = $(this).data('id');
+    const descripcion = $(this).val();
+    lista_items2.push({id: parseInt(id), descripcion: `${descripcion}`});
+    });
+    const objetivos = $("textarea", $(".contenidoObj"));
+    lista_items3 = [];
+    objetivos.each(function() {
+    const id = $(this).data('id');
+    const descripcion = $(this).val();
+    lista_items3.push({id: parseInt(id), descripcion: `${descripcion}`});
+    });
+    const metodologias = $("textarea", $(".contenidoMet"));
+    lista_items4 = [];
+    metodologias.each(function() {
+    const id = $(this).data('id');
+    const descripcion = $(this).val();
+    lista_items4.push({id: parseInt(id), descripcion: `${descripcion}`});
+    });
+    
+    lista_items5 = [];
+	var lista_unidad = [];
+	var lista_tema = [];
+	var lista_subtema = [];
+	$(".resultado").each(function () {
+		var resultado = $(this).find('.des_resultado').text();
+		var indice_resultado = $(this).find('.indice_resultado').text();
+		if (resultado.length > 0) {
+			lista_unidad = [];
+			$(this).find('.unidad .content-unidad').each(function () {
+				let unidad = $(this).find('.des_unidad').text();
+				let indice_unidad = $(this).find('.indice_unidad').text();
+				lista_tema = [];
+                if (unidad.length > 0) {
+                    $(this).find('.tema .content-tema').each(function () {
+                        let tema = $(this).find('.des_tema').text();
+                        var indice_tema = $(this).find('.indice_tema').text();
+                        lista_subtema = [];
+                        if (tema.length > 0) {
+                            $(this).find('.subtema .content-subtema').each(function () {
+                                let subtema = $(this).find('.des_subtema').text();
+                                var indice_subtema = $(this).find('.indice_subtema').text();
+                                lista_subtema.push({indice: indice_subtema, subtema: subtema})
+                            });
+                            lista_tema.push({indice: indice_tema, tema: tema, subtemas: lista_subtema})
+                        }
+                    });
+				    lista_unidad.push({indice: indice_unidad, unidad: unidad, temas: lista_tema});
+                }
+			});
+			lista_items5.push({indice: indice_resultado, resultado: resultado, unidades: lista_unidad});
+			console.log('resultado', lista_items5)
+		}
+	});
+    
+    actionFormSubmission();
+{% endblock %}
+{% block form_more_javascript %}
+    <script type="text/javascript">
+        $(function() {
+            $("#id_sumilla, #id_compromiso, #id_caracterinvestigacion").addClass("validate[required]").css({'text-transform': 'none'});
+
+            $("#addrai").click(function () {
+                addrows('contenidoRai', 'rai', 'editrai', 'delrai')
+            });
+
+            $("#addrac").click(function () {
+                addrows('contenidoRac', 'rac', 'editrac', 'delrac')
+            });
+
+            $("#addobj").click(function () {
+                addrows('contenidoObj', 'obj', 'editobj', 'delobj')
+            });
+            $("#addmet").click(function () {
+                addrows('contenidoMet', 'met', 'editmet', 'delmet')
+            });
+
+            controlador = function() {
+                $(".delrai").click(function () {
+                    delRow('contenidoRai',  $(this))
+                })
+
+                $(".delrac").click(function () {
+                    delRow('contenidoRac',  $(this))
+                })
+
+                $(".delobj").click(function () {
+                    delRow('contenidoObj',  $(this))
+                })
+                $(".delmet").click(function () {
+                    delRow('contenidoMet',  $(this))
+                })
+            }
+            
+            /* Ociones de resultados */
+            $("#addRA").click(function () {
+                targetElement = $("#content-programatico");
+                showModal('Adicionar Resultado aprendizaje', 'addResultado_save');
+            });
+
+            $("#content-programatico").on("click", ".editra", function(event) {
+                targetElement = $(this);
+                let restultado = $(this).parent().find('.des_resultado').text();
+                editModal('Editar Resultado', restultado,  'editResultado');
+            });
+
+            $("#content-programatico").on("click", ".delra", function(event) {
+                $(this).parent().remove();
+
+            });
+            /* Opciones de unidad */
+            $("#content-programatico").on("click", ".addunidad", function(event) {
+                targetElement = $(this);
+                showModal('Adicionar Unidad', 'addUnidad_save');
+            });
+
+            $("#content-programatico").on("click", ".editunidad", function(event) {
+                targetElement = $(this);
+                let unidad = $(this).parent().find('.des_unidad').text();
+                editModal('Editar Resultado', unidad,  'editUnidad_save');
+            });
+
+            $("#content-programatico").on("click", ".delunidad", function(event) {
+                $(this).parent().remove();
+
+            });
+
+            /* Opciones de temas */
+
+            $("#content-programatico").on("click", ".addtema", function(event) {
+                targetElement = $(this);
+                showModal('Adicionar Tema', 'addTema_save');
+            });
+
+            $("#content-programatico").on("click", ".edittema", function(event) {
+                targetElement = $(this);
+                let tema = $(this).parent().find('.des_tema').text();
+                editModal('Editar Tema', tema,  'editTema_save');
+            });
+
+            $("#content-programatico").on("click", ".deltema", function(event) {
+                $(this).parent().remove();
+
+            });
+
+            /* opciones de sutemas */
+
+            $("#content-programatico").on("click", ".addsubtema", function(event) {
+                targetElement = $(this);
+                showModal('Adicionar SubTema', 'addSubTema_save');
+            });
+
+            $("#content-programatico").on("click", ".editsubtema", function(event) {
+                targetElement = $(this);
+                let subtema = $(this).parent().find('.des_subtema').text();
+                editModal('Editar SubTema', subtema,  'editSubTema_save');
+            });
+
+            $("#content-programatico").on("click", ".delsubtema", function(event) {
+                $(this).parent().remove();
+
+            });
+
+            $(".cerrar_modal", $("#waitpanel")).click(function () {
+                $("#waitpanel").modal("hide");
+            });
+
+            controlador();
+        });
+
+        function addrows(elementoFill, classDescripcion, btnEdit, btnDell) {
+            if ($("."+elementoFill+" tr").not('.noDataRow').length === 0){
+                $("."+elementoFill+" .noDataRow").hide();
+            }
+            $("."+elementoFill).append('<tr>' +
+                '<td class="text-justify textDescripcion '+classDescripcion+'">' +
+                '<textarea class="form-control" data-id="0" rows="2" style="text-transform: none"></textarea></td>' +
+                '<td class="text-center">' +
+                '<a class="btn btn-sm btn-info hide '+btnEdit+'" style="margin: 3px"><i class="fa fa-edit"></i></a>' +
+                '<a class="btn btn-sm btn-danger '+btnDell+'" style="margin: 3px"><i class="fa fa-trash"></i></a>' +
+                '</td>');
+            controlador();
+            
+            /* Ociones de resultados */
+            $("#addRA").click(function () {
+                targetElement = $("#content-programatico");
+                showModal('Adicionar Resultado aprendizaje', 'addResultado_save');
+            });
+
+            $("#content-programatico").on("click", ".editra", function(event) {
+                targetElement = $(this);
+                let restultado = $(this).parent().find('.des_resultado').text();
+                editModal('Editar Resultado', restultado,  'editResultado');
+            });
+
+            $("#content-programatico").on("click", ".delra", function(event) {
+                $(this).parent().remove();
+
+            });
+        }
+
+        function delRow(elementoFill, btndel) {
+            btndel.closest('tr').remove();
+            if ($("."+elementoFill+" tr").not(".noDataRow").length === 0){
+                $("."+elementoFill+" .noDataRow").show();
+            }
+        }
+
+        function collectValues(elementoFill, classDescripcion) {
+            let values = [];
+            $("."+elementoFill+" ."+classDescripcion+" textarea").each(function() {
+                values.push($(this).val());
+            });
+            return values.join('||');
+        }
+        
+        function agregarResultado(text) {
+            let numIndice = $("#content-programatico .resultado").length + 1;
+            let elementoHTML = crearElementoResultado(text, numIndice);
+            $("#content-programatico").append(elementoHTML)
+        }
+
+        function crearElementoResultado(text, numIndice) {
+            return '<li class="resultado">' +
+                '<a class="btn btn-sm btn-success addunidad"><i class="fa fa-plus"></i></a> ' +
+                '<a class="btn btn-sm btn-info editra"><i class="fa fa-edit"></i></a> ' +
+                '<a class="btn btn-sm btn-danger delra"><i class="fa fa-trash"></i></a> ' +
+                '<span><i class="fa fa-leaf"></i>  <a class="a_resultado">RESULTADO DE APRENDIZAJE <span style="border: none" class="indice_resultado">'+numIndice+'</span>: <span style="border: none" class="des_resultado">'+text+'</span></a></span> ' +
+                '</li>';
+        }
+        
+        function editResultado(text) {
+            let content_resultado = targetElement.parent();
+            content_resultado.find('.des_resultado').html(text);
+        }
+
+        function agregarUnidad(texto) {
+            let content_resultado = targetElement.parent();
+            let numIndice_unidad = content_resultado.find('.unidad').length + 1;
+            content_resultado.append('<ul class="unidad"> ' +
+                '<li class="content-unidad"> ' +
+                '<a class="btn btn-sm btn-success addtema"><i class="fa fa-plus"></i></a> ' +
+                '<a class="btn btn-sm btn-info editunidad"><i class="fa fa-edit"></i></a> ' +
+                '<a class="btn btn-sm btn-danger delunidad"><i class="fa fa-trash"></i></a> ' +
+                '<span><i class="fa fa-leaf"></i>  <a>UNIDAD <span style="border: none" class="indice_unidad">'+numIndice_unidad+'</span>: <span style="border: none" class="des_unidad">'+texto+'</span></a></span> ' +
+                '</li>' +
+                '</ul>'
+            )
+        }
+
+        function editUnidad(text) {
+            let content_unidad = targetElement.parent();
+            content_unidad.find('.des_unidad').html(text);
+        }
+
+        function agregarTema(texto) {
+            let content_unidad = targetElement.parent();
+            let numIndice_tema = content_unidad.find('.tema').length + 1;
+            content_unidad.append('<ul class="tema"> ' +
+                '<li class="content-tema"> ' +
+                '<a class="btn btn-sm btn-success addsubtema"><i class="fa fa-plus"></i></a> ' +
+                '<a class="btn btn-sm btn-info edittema"><i class="fa fa-edit"></i></a> ' +
+                '<a class="btn btn-sm btn-danger deltema"><i class="fa fa-trash"></i></a> ' +
+                '<span><i class="fa fa-leaf"></i>  <a>TEMA <span style="border: none" class="indice_tema">'+numIndice_tema+'</span>: <span style="border: none" class="des_tema">'+texto+'</span></a></span> ' +
+                '</li>' +
+                '</ul>'
+            )
+        }
+
+        function editTema(text) {
+            let content_Tema = targetElement.parent();
+            content_Tema.find('.des_tema').html(text);
+        }
+
+        function agregarSubTema(texto) {
+            let content_tema = targetElement.parent();
+            let numIndice_subtema = content_tema.find('.subtema').length + 1;
+            content_tema.append('<ul class="subtema"> ' +
+                '<li class="content-subtema"> ' +
+                '<a class="btn btn-sm btn-info editsubtema"><i class="fa fa-edit"></i></a> ' +
+                '<a class="btn btn-sm btn-danger delsubtema"><i class="fa fa-trash"></i></a> ' +
+                '<span><i class="fa fa-leaf"></i>  <a>SubTEMA <span style="border: none" class="indice_subtema">'+numIndice_subtema+'</span>: <span style="border: none" class="des_subtema">'+texto+'</span></a></span> ' +
+                '</li>' +
+                '</ul>'
+            )
+        }
+
+        function editSubTema(text) {
+            let content_SubTema = targetElement.parent();
+            content_SubTema.find('.des_subtema').html(text);
+        }
+
+        function showModal(title, btnAction) {
+            $("#waitpanel").find("#paneltitle").html(title);
+            $("#waitpanel").find(".btn_action").removeClass().addClass("btn btn-primary btn_action " + btnAction);
+            $("#waitpanel .modal-body").find("#descripcion").val('');
+
+            $("#waitpanel").modal("show").off('shown.bs.modal').on('shown.bs.modal', function () {
+                $("." + btnAction).off('click').on('click', function() {
+                    let resultado = $("#descripcion").val().trim();
+                    if (resultado.length == 0){
+                        alert('No existe datos para ingresar el componente');
+                        return false;
+                    }
+                    $(".btn_action").removeClass(btnAction);
+                    $(this).parent().parent().modal("hide");
+                    if (btnAction.includes('addResultado')){
+                        agregarResultado(resultado);
+                    }
+                    if (btnAction.includes('addUnidad')){
+                        agregarUnidad(resultado);
+                    }
+                    if (btnAction.includes('addTema')){
+                        agregarTema(resultado)
+                    }
+                    if (btnAction.includes('addSub')){
+                        agregarSubTema(resultado)
+                    }
+                    $("#waitpanel").modal("hide");
+                });
+            });
+        }
+
+        function editModal(title, contenido, btnAction) {
+            $("#waitpanel").find("#paneltitle").html(title);
+            $("#waitpanel").find(".btn_action").removeClass().addClass("btn btn-primary btn_action " + btnAction);
+            $("#waitpanel .modal-body").find("#descripcion").val(contenido);
+            $("#waitpanel").modal("show").off('shown.bs.modal').on('shown.bs.modal', function () {
+                $("." + btnAction).off('click').on('click', function() {
+                    let resultado = $("#descripcion").val().trim();
+                    if (resultado.length == 0){
+                        alert('No existe datos para ingresar el componente');
+                        return false;
+                    }
+                    $(".btn_action").removeClass(btnAction);
+                    $(this).parent().parent().modal("hide");
+                    if (btnAction.includes('editResultado')){
+                        editResultado(resultado);
+                    }
+                    if (btnAction.includes('editUnidad')){
+                        editUnidad(resultado);
+                    }
+                    if (btnAction.includes('editTema')){
+                        editTema(resultado)
+                    }
+                    if (btnAction.includes('editSub')){
+                        editSubTema(resultado)
+                    }
+                    $("#waitpanel").modal("hide");
+                });
+            });
+        }
+
+        function listar_contenido_programatico() {
+            const lista_resultado = [];
+            var lista_unidad = [];
+            var lista_tema = [];
+            var lista_subtema = [];
+            $(".resultado").each(function () {
+                var resultado = $(this).find('.des_resultado').text();
+                var indice_resultado = $(this).find('.indice_resultado').text();
+                if (resultado.length > 0) {
+                    lista_unidad = [];
+                    $(this).find('.unidad .content-unidad').each(function () {
+                        let unidad = $(this).find('.des_unidad').text();
+                        let indice_unidad = $(this).find('.indice_unidad').text();
+                        lista_tema = [];
+                        $(this).find('.tema .content-tema').each(function () {
+                            let tema = $(this).find('.des_tema').text();
+                            var indice_tema = $(this).find('.indice_tema').text();
+                            lista_subtema = [];
+                            $(this).find('.subtema .content-subtema').each(function () {
+                                let subtema = $(this).find('.des_subtema').text();
+                                var indice_subtema = $(this).find('.indice_subtema').text();
+                                lista_subtema.push({indice: indice_subtema, subtema: subtema})
+                                console.log('subtemas', lista_subtema)
+                            });
+                            lista_tema.push({indice: indice_tema, tema: tema, subtemas: lista_subtema})
+                            console.log('temas', lista_tema)
+                        });
+                        lista_unidad.push({indice: indice_unidad, unidad: unidad, temas: lista_tema});
+                        console.log('unidad', lista_unidad)
+                    });
+                    lista_resultado.push({indice: indice_resultado, resultado: resultado, unidades: lista_unidad});
+                    {#console.log('resultado', lista_resultado)#}
+                }
+            });
+            return lista_resultado;
+        }
+    </script>
+{% endblock %}
+
+{% block frm_title %}{{ title }}{% endblock %}
+{% block frm_subtitle %}Asignatura: {{ plananalitico.asignaturamalla.asignatura.nombre }}{% endblock %}
+{% block form_destination %}{{ request.path }}?action=pea&id={{ plananalitico.asignaturamalla.id }}{% endblock %}
+{% block form_action_cancel %}/mallas?action=pea&id={{ plananalitico.asignaturamalla.id }}{% endblock %}
+{% block atras %}/mallas?action=pea&id={{ plananalitico.asignaturamalla.id }}{% endblock %}
+{% block form_extra %}
+    <input type='hidden' name='action' value='editpea'/>
+    <input type='hidden' name='id' value='{{ plananalitico.id }}'/>
+    <input type='hidden' name='ida' value='{{ plananalitico.asignaturamalla.id }}'/>
+{% endblock %}
+
+{% block form_suffix %}
+    <!--<div class="row mt-3">
+        <div class="col-12">
+            <table class="table table-bordered table-striped text-nowrap customize-table mb-0 align-middle">
+                <thead>
+                <tr>
+                    <th class="text-center" width="90%">Resultado de aprendizaje institucional RAI</th>
+                    <th class="text-center" width="10%"><a class="btn btn-sm btn-success" id="addrai"><i class="fa fa-plus"></i></a></th>
+                </tr>
+                </thead>
+                <tbody class="contenidoRai">
+                {% for rai in rais %}
+                    <tr>
+                        <td class="text-justify textDescripcion rai">
+                            <textarea class="form-control" data-id="{{ rai.id }}" rows="2" style="text-decoration: none">{{ rai.descripcion }}</textarea>
+                        </td>
+                        <td class="text-center">
+                            <a class="btn btn-sm btn-info editrai hide"><i class="fa fa-edit"></i></a>
+                            <a class="btn btn-sm btn-danger delrai"><i class="fa fa-trash"></i></a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr class="noDataRow">
+                        <th colspan="2" class="text-center">No existen resultado de aprendizaje institucional RAI registrados</th>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <p id="error_field_lista_items1" class="text-danger field_error hide"></p>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <table class="table table-bordered table-striped text-nowrap customize-table mb-0 align-middle">
+                <thead>
+                <tr>
+                    <th class="text-center" width="90%">Resultado de aprendizaje</th>
+                    <th class="text-center" width="10%"><a class="btn btn-sm btn-success" id="addrac"><i class="fa fa-plus"></i></a></th>
+                </tr>
+                </thead>
+                <tbody class="contenidoRac">
+                {% for rac in racs %}
+                    <tr>
+                        <td class="text-justify textDescripcion rac">
+                            <textarea class="form-control" data-id="{{ rac.id }}" rows="2" style="text-decoration: none">{{ rac.descripcion }}</textarea>
+                        </td>
+                        <td class="text-center">
+                            <a class="btn btn-sm btn-info editrac hide"><i class="fa fa-edit"></i></a>
+                            <a class="btn btn-sm btn-danger delrac"><i class="fa fa-trash"></i></a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr class="noDataRow">
+                        <th colspan="2" class="text-center">No existen resultado de aprendizaje registrados</th>
+                    </tr>
+                {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <table class="table table-bordered table-striped text-nowrap customize-table mb-0 align-middle">
+                <thead>
+                <tr>
+                    <th class="text-center" width="90%">Objetivo General</th>
+                    <th class="text-center" width="10%"><a class="btn btn-sm btn-success" id="addobj"><i class="fa fa-plus"></i></a></th>
+                </tr>
+                </thead>
+                <tbody class="contenidoObj">
+                {% for obj in objetivos %}
+                    <tr>
+                        <td class="text-justify textDescripcion obj">
+                            <textarea class="form-control" rows="2" data-id="{{ obj.id }}" style="text-decoration: none">{{ obj.descripcion }}</textarea>
+                        </td>
+                        <td class="text-center">
+                            <a class="btn btn-sm btn-info editobj hide"><i class="fa fa-edit"></i></a>
+                            <a class="btn btn-sm btn-danger delobj"><i class="fa fa-trash"></i></a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr class="noDataRow">
+                        <th colspan="2" class="text-center">No existen objetivos registrados</th>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-12">
+            <table class="table table-bordered table-striped text-nowrap customize-table mb-0 align-middle">
+                <thead>
+                <tr>
+                    <th class="text-center" width="90%">Metodologías de enseñanza</th>
+                    <th class="text-center" width="10%"><a class="btn btn-sm btn-success" id="addmet"><i class="fa fa-plus"></i></a></th>
+                </tr>
+                </thead>
+                <tbody class="contenidoMet">
+                {% for met in metodologias %}
+                    <tr>
+                        <td class="text-justify textDescripcion met">
+                            <textarea class="form-control" rows="2" data-id="{{ met.id }}" style="text-decoration: none">{{ met.descripcion }}</textarea>
+                        </td>
+                        <td class="text-center">
+                            <a class="btn btn-sm btn-info editobj hide"><i class="fa fa-edit"></i></a>
+                            <a class="btn btn-sm btn-danger delobj"><i class="fa fa-trash"></i></a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr class="noDataRow {% if metodologias|length > 0 %}hide{% endif %}">
+                        <th colspan="2" class="text-center">No existen metodologías registrados</th>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <p id="error_field_lista_items4" class="text-danger field_error hide"></p>
+        </div>
+    </div>-->
+    <br>
+    <div class="tree well mt-3">
+        <div class="d-flex align-items-center">
+            <h5 class="fw-semibold">PLAN TEMÁTICO.</h5>
+            <div class="ms-auto d-flex button-group">
+                <a class="btn btn-success btn-sm" id="addRA"><i class="fa fa-plus"></i> Adicionar</a>
+            </div>
+        </div>
+        <ul id="content-programatico">
+            {% for resultado in plananalitico.mis_resultados %}
+                <li class="resultado">
+                    <a class="btn btn-sm btn-success addunidad"><i class="fa fa-plus"></i></a>
+                    <a class="btn btn-sm btn-info editra"><i class="fa fa-edit"></i></a>
+                    <a class="btn btn-sm btn-danger delra"><i class="fa fa-trash"></i></a>
+                    <span><i class="fa fa-leaf"></i>  <a class="a_resultado">RESULTADO DE APRENDIZAJE <span style="border: none" class="indice_resultado">{{ resultado.2 }}</span>: <span style="border: none" class="des_resultado">{{ resultado.1 }}</span></a></span>
+                    {% with unidades=plananalitico|args:resultado.0|call:'mis_unidades' %}
+                        {% for unidad in unidades %}
+                            <ul class="unidad">
+                                <li class="content-unidad">
+                                    <a class="btn btn-sm btn-success addtema"><i class="fa fa-plus"></i></a>
+                                    <a class="btn btn-sm btn-info editunidad"><i class="fa fa-edit"></i></a>
+                                    <a class="btn btn-sm btn-danger delunidad"><i class="fa fa-trash"></i></a>
+                                    <span><i class="fa fa-leaf"></i>  <a>UNIDAD <span style="border: none" class="indice_unidad">{{ unidad.2 }}</span>: <span style="border: none" class="des_unidad">{{ unidad.1 }}</span></a></span>
+                                    {% with temas=plananalitico|args:unidad.0|call:'mis_temas' %}
+                                        {% for tema in temas %}
+                                            <ul class="tema">
+                                                <li class="content-tema">
+                                                    <a class="btn btn-sm btn-success addsubtema"><i class="fa fa-plus"></i></a>
+                                                    <a class="btn btn-sm btn-info edittema"><i class="fa fa-edit"></i></a>
+                                                    <a class="btn btn-sm btn-danger deltema"><i class="fa fa-trash"></i></a>
+                                                    <span><i class="fa fa-leaf"></i>  <a>TEMA <span style="border: none" class="indice_tema">{{ tema.2 }}</span>: <span style="border: none" class="des_tema">{{ tema.1 }}</span></a></span>
+                                                </li>
+                                                {% with subtemas=plananalitico|args:tema.0|call:'mis_subtemas' %}
+                                                    {% for subtema in subtemas %}
+                                                        <ul class="subtema">
+                                                            <li class="content-subtema">
+                                                                <a class="btn btn-sm btn-info editsubtema"><i class="fa fa-edit"></i></a>
+                                                                <a class="btn btn-sm btn-danger delsubtema"><i class="fa fa-trash"></i></a>
+                                                                <span><i class="fa fa-leaf"></i>  <a>SubTEMA <span style="border: none" class="indice_subtema">'{{ subtema.2 }}</span>: <span style="border: none" class="des_subtema">{{ subtema.1 }}</span></a></span>
+                                                            </li>
+                                                        </ul>
+                                                    {% endfor %}
+                                                {% endwith %}
+                                            </ul>
+                                        {% endfor %}
+                                    {% endwith %}
+                                </li>
+                            </ul>
+                        {% endfor %}
+                    {% endwith %}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="modal fade opacity" id="waitpanel" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-md modal-dialog-centered modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header bg-danger-light">
+                    <h4 class="modal-title" id="paneltitle">Titulo</h4>
+                </div>
+                <div class="modal-body with-padding">
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold" for="id_descripcion">Descripción</label>
+                        <textarea id="descripcion" class="form-control" rows="3"></textarea>
+                        <p id="error_field_descripcion" class="text-danger field_error hide"></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="javascript:void(0);" class="btn btn-primary btn_action">Guardar</a>
+                    <a href="javascript:void(0);" class="btn btn-danger cerrar_modal">Cerrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+

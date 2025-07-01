@@ -1,0 +1,445 @@
+{% extends "basebs.html" %}
+{% load func_extras %}
+{% block heading %}
+    <script src="../../ube/static/src/scripts/bootstrap3-typeahead.js"></script>
+    <script>
+        $(function () {
+
+
+
+             $(".salirinstrucciones").click(function(){
+                $("#modal_instrucciones").modal("hide");
+                return false;
+            });
+            Responder=function (pregid,respid) {
+
+                     $("#login-modal4").modal({backdrop: 'static', keyboard: false});
+                     $('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../ube/static/imagen/loader.gif"/><br/> espere un momento...</div>');
+                     var formData = new FormData();
+                     formData.append('action', 'evaluarpregunta');
+                     formData.append('pregid', pregid);
+                     formData.append('respid', respid);
+                     formData.append('evaluaciondirectivo', {{ evaluaciondirectivo.id }});
+
+                     formData.append('val',  document.getElementById("check"+pregid+respid).checked);
+                     var valor = document.getElementById("check"+pregid+respid).checked;
+                         var obj = $(this);
+
+                         if (valor == true){
+                             $(".chk"+pregid).prop('checked',false)
+                             {#alert(obj)#}
+                             document.getElementById("check"+pregid+respid).checked=true
+                             {#document.getElementById("check"+pregid+respid).prop('checked',true)#}
+                         }
+
+                     $.ajax({
+                             url: '/areasevaluacion',
+                             type: "POST",
+                             contentType: false,
+                             data: formData,
+                             processData: false,
+                             cache: false,
+                             success: function (data) {
+
+                                 if (data.result == "ok") {
+
+
+                                 } else {
+                                     swal("Error", data.message, "error");
+                                     $("#login-modal4").remove();//ocultamos el modal
+                                     $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                     $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                     $('#content').html('');
+                                 }
+
+                             },
+                             error: function (xhr, ajaxOptions, thrownError) {
+                                 swal("Error", "Error Conexion en el Servidor", "error");
+                                 $("#login-modal4").remove();//ocultamos el modal
+                                 $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                 $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                 $('#content').html('');
+                             },
+
+                             complete: function(){
+                                 $("#login-modal4").remove();//ocultamos el modal
+                                 $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                 $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                 $('#content').html('');
+
+                              }
+
+
+                     });
+
+            }
+
+            Finalizar= function(){
+                swal({
+                    title: 'Esta seguro de finalizar la evaluación?',
+                    {#text: "# Número: "+idpersonadobe,#}
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5',
+                    buttonsStyling: false,
+                    allowOutsideClick: false,
+                    }).then(function (isConfirm) {
+                        if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                            showWaiting("Guardando Evaluación");
+                            $("#login-modal4").modal({backdrop: 'static', keyboard: false});
+                             $('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../ube/static/imagen/loader.gif"/><br/> espere un momento...</div>');
+                             var formData = new FormData();
+                             formData.append('action', 'finalizar');
+                             formData.append('evaluaciondirectivo', {{ evaluaciondirectivo.id }});
+                             $.ajax({
+                                     url: '/areasevaluacion',
+                                     type: "POST",
+                                     contentType: false,
+                                     data: formData,
+                                     processData: false,
+                                     cache: false,
+                                     success: function (data) {
+
+                                         if (data.result == "ok") {
+                                             {#hideWaiting();#}
+                                             location.reload()
+
+                                         } else {
+                                             swal("Error", data.message, "error");
+                                             cambiarTab('base-tab'+data.eje,'tab'+data.eje+'edit');
+                                             $("#login-modal4").remove();//ocultamos el modal
+                                             $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                             $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                             $('#content').html('');
+                                         }
+
+                                     },
+                                     error: function (xhr, ajaxOptions, thrownError) {
+                                         swal("Error", "Error Conexion en el Servidor", "error");
+                                         $("#login-modal4").remove();//ocultamos el modal
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+                                     },
+
+                                     complete: function(){
+                                         $("#login-modal4").remove();//ocultamos el modal
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+
+                                      }
+
+
+                             });
+
+                            }
+
+                         });
+
+
+                }
+                var evaid=0
+        evaluacioncualitativa = function(id){
+            evaid=id
+            $("#evaluacioncualitativamodal").modal("show");
+        }
+
+         vercualitativa=function (analisis,fallas,aciertos,acciones) {
+
+             $("#txtgeneral").val(analisis);
+             $("#txtfallas").val(fallas);
+             $("#txtaciertos").val(aciertos);
+             $("#txtacciones").val(acciones);
+             $("#txtgeneral").attr("disabled",true);
+             $("#txtfallas").attr("disabled",true);
+             $("#txtaciertos").attr("disabled",true);
+             $("#txtacciones").attr("disabled",true);
+             $("#btnguardacualitativa").hide();
+             $("#evaluacioncualitativamodal").modal("show");
+
+          };
+        $("#btnguardacualitativa").click(function() {
+
+                  {#$("#helpcmbmalla").html("");#}
+                var general = $("#txtgeneral").val();
+                var fallas = $("#txtfallas").val();
+                var aciertos = $("#txtaciertos").val();
+                var acciones = $("#txtacciones").val();
+
+
+                var acc = '{{ acc }}'
+              showWaiting("Guardando Respuestas de Evaluacion Cualitativa");
+                 $.post("/areasevaluacion", {
+                        "action": "addresultadoeva",
+                       "general": general,
+                        "fallas":fallas,
+                        "aciertos":aciertos,
+
+                        "acciones":acciones,
+
+                        "evaid":evaid,
+                        "acc":acc
+                        {#id:idmallaasi#}
+
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            swal("Notificacion", "Evaluacion Cualitatica Guardada Correctamente ", "success");
+                            hideWaiting();
+                            location.reload()
+
+                        } else {
+                         hideWaiting();
+                           swal("Error",data.result, "error");
+                        }
+                        hideWaiting();
+         }, 'json');
+             });
+            $("#reporteexcel").click(function() {
+
+
+            var acc = '{{ acc }}'
+
+
+            $.post("/areasevaluacion", {"action":"generarexceldirectivo", "acc":acc, 'id':{{ evaluaciondirectivo.id }}}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    location.href=data.url;
+                    swal("Notificación",'Reporte Ejecutado','success');
+
+                }else{
+                    swal("Error", data.result, "error");
+                    $("#login-modal7").remove();//ocultamos el modal
+                    $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                    $('.modal-backdrop').remove();
+                    location.href = '/maestria?acc={{ acc }}';
+                }
+            }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                    console.log(errorThrown);
+                    console.log('getJSON request failed! ' + textStatus+ ' eroro jqk'+jqXHR.responseText);
+                    swal("Error", "ERROR DE CONEXION", "error");
+                    $("#login-modal7").remove();//ocultamos el modal
+                    $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                    $('.modal-backdrop').remove();
+                    location.href = '/maestria?acc={{ acc }}';
+            });
+         });
+
+            function cambiarTab(tab,div){
+                $("#tabpanelprospecto a").removeClass('active');
+                $("#tabpanelcontenido div").removeClass('active');
+                $('#'+tab).addClass('active');
+                $('#'+div).addClass('active');
+            }
+
+
+        });
+    </script>
+{% endblock %}
+{% block containertype %}{% endblock %}
+{% block canvas %}
+    <div class="pd-ltr-20 xs-pd-20-10">
+        <div class="min-height-200px">
+            <div class="page-header">
+                <div class="row">
+                    <div class="col-lg-7 col-md-7 col-sm-7">
+                        <div class="title">
+                            <h4 class="card-title" id="basic-layout-colored-form-control">Evaluacion Directivo de {{ evaluaciondirectivo.evaluaciondocenteperiodo.profesor.persona.nombre_completo }} </br> Calificación: {{ evaluaciondirectivo.resultadodirectivo.nombre}} </h4>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-3 col-sm-3">
+                        <div class="title">
+{#                            {% if not escoordinador %}#}
+{#                                <button type="button" id="reporteexcel"  class="btn btn-success"><i class="icon-floppy-disk icon-white"></i> Reporte</button>#}
+{#                            {% endif %}#}
+                            {% if  not  evaluaciondirectivo.cualitativadirectivo.finalizada and evaluaciondirectivo.finalizado%}
+                                <button type="button"  onclick="evaluacioncualitativa('{{ evaluaciondirectivo.id }}')" class="btn btn-success"><i class="icon-floppy-disk icon-white"></i> Evaluacion Cualitativa</button>
+                            {% endif %}
+                            {% if evaluaciondirectivo.cualitativadirectivo.finalizada %}
+                                <button type="button"  onclick="vercualitativa('{{ evaluaciondirectivo.cualitativadirectivo.analisis }}','{{ evaluaciondirectivo.cualitativadirectivo.fallas }}',
+                                        '{{ evaluaciondirectivo.cualitativadirectivo.aciertos }}','{{ evaluaciondirectivo.cualitativadirectivo.acciones }}')" class="btn btn-warning"><i class="icon-floppy-disk icon-white"></i> Ver Evaluacion Cualitativa</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-2 col-sm-2">
+                        <a href="/areasevaluacion?action=verevaluaciondocente&acc={{ acc }}&id={{ evaluaciondirectivo.evaluaciondocenteperiodo.profesor.id }}&eva={{ evaluaciondirectivo.evaluaciondocenteperiodo.evaluaciondocente.id }}{% if op %}&op={{ op }}{% endif %}"style="float: right;color: white;background: #0b132b" class="btn btn-black"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+
+                </div>
+            </div>
+            <div class="card-box mb-30">
+                <div class="pd-20">
+                    <form id="frmprospecto"  class="form" enctype="multipart/form-data">
+                        <div class="form-body">
+                            <ul class="nav nav-tabs" id="tabpanelprospecto">
+                                {% for e in ejes %}
+                                    <li class="nav-item">
+                                        <a class="nav-link  {% if forloop.first %}active {% endif %}" alt="tabedit{{e.id }}" id="base-tab{{e.id }}" style="font-size: 15px;color:black;" data-toggle="tab" aria-controls="tabedit{{e.id }}" href="#tab{{ e.id }}edit" aria-expanded="true"><b>{{ e.descripcion }}</b></a>
+                                    </li>
+                                {% endfor %}
+{#                                <li class="nav-item">#}
+{#                                    <a class="nav-link" alt="tabedit2" id="base-tab2" style="font-size: 15px;color:black;" data-toggle="tab" aria-controls="tabedit2" href="#tab2edit" aria-expanded="false">Información Personal</a>#}
+{#                                </li>#}
+                            </ul>
+                            <div class="tab-content px-1 pt-1" id="tabpanelcontenido" >
+                                {% for e in ejes %}
+
+                                    <div class="tab-pane {% if forloop.first %}active {% endif %}" id="tab{{ e.id }}edit" aria-labelledby="base-tab{{ e.id }}" aria-expanded="true">
+                                         <div class="pb-20">
+                                             <div id="DataTables_Table_0_wrapper" class="dataTables_wrapper dt-bootstrap4 no-footer">
+                                                <div class="row">
+                                                    <div class="col-lg-12">
+                                                        <table  class="data-table table stripe hover nowrap">
+
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td ></td>
+                                                                    <td colspan="6" style="padding: 20px">
+                                                                        <table class="table">
+                                                                            <thead>
+                                                                                <tr>
+                                                                                    <td colspan="3" style="text-align: center;border-top: 0"> Desacuerdo </td>
+                                                                                    <td colspan="3" style="text-align: center;border-top: 0">Acuerdo</td>
+                                                                                </tr>
+
+                                                                                <tr>
+                    {#                                                                <td  style="border-top: 0;padding: 0.2em;height: 2px" ></td>#}
+                                                                                    {% for r in e.respuestas  %}
+                                                                                        <td  {% if forloop.last  %}colspan="2"{% endif %} style="padding: 0em  0.1em 0em 0em;border-top: 0;"  >
+                                                                                            <h3 style="background-color: #1F4C{{ forloop.counter }}{{ e.respuestas.count }};width: 100%;height: 0.{{ forloop.counter }}{{ e.respuestas.count }}em;">&nbsp;</h3>
+                                                                                        </td>
+
+                                                                                    {% endfor %}
+                                                                                </tr>
+                                                                            </thead>
+                                                                        </table>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td ><b>{{  e.descripcion }}</b></td>
+                                                                    {% for r in e.respuestas  %}
+                                                                            <td style="text-align: center"> <b>{{ r.respuesta.nombre }}</b></td>
+                                                                    {% endfor %}
+                                                                </tr>
+                                                                {% for p in e.preguntas_directivo  %}
+                                                                    <tr>
+                                                                        <td> {{ p.nombre }}</td>
+                                                                         {% for r in e.respuestas  %}
+                                                                            <td style="text-align: center ">
+                                                                                <div class="custom-control custom-checkbox mb-5">
+                                                                                {% with respuesta=p|args:evaluaciondirectivo|call:'tiene_respuesta_directivo' %}
+                                                                                    {% if   evaluaciondirectivo.finalizado %}
+                                                                                        {% if respuesta and  respuesta.respuesta == r %}<img src='../../ube/static/vendors/images/check-mark-green.png' width="14px" alt='' border="0"/>{% else %}<img src='../../ube/static/vendors/images/cross.png' width="14px"  alt='' border="0"/>{% endif %}
+                                                                                    {% else %}
+                                                                                        <input type="checkbox" class="custom-control-input chk{{ p.id }}" {% if respuesta and  respuesta.respuesta == r %}checked="true"{% endif %}  onclick="Responder('{{ p.id }}','{{ r.id }}')"  id='check{{ p.id }}{{ r.id }}'>
+                                                                                        <label class="custom-control-label" for='check{{ p.id }}{{ r.id }}'></label>
+                                                                                    {% endif %}
+                                                                                {% endwith %}
+                                                                     </div>
+                                                                            </td>
+                                                                        {% endfor %}
+
+                                                                    </tr>
+                                                                {% endfor %}
+
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                              </div>
+                                          </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="form-actions left">
+                            {% if  not evaluaciondirectivo.finalizado %}
+                                <button type="button" id="finalizar" onclick="Finalizar()" class="btn btn-success"><i class="icon-floppy-disk icon-white"></i> Finalizar </button>
+                            {% else %}
+                                <h4> Evaluacion finalizada el {{  evaluaciondirectivo.fecha|date:'d-m-Y' }}</h4    >
+                            {% endif %}
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <div class="modal fade" id="login-modal4"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="row">
+                    <div id="content" class="col-lg-12">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div  class="modal fade " id="evaluacioncualitativamodal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="width: 1000px;left: -100px">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">EVALUACIÓN CUALITATIVA DEL DOCENTE POR EL DIRECTIVO A CARGO:</h4>
+                </div>
+
+                <div class="modal-body" >
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <h6> ANÁLISIS CUALITATIVO POR PARTE DEL DIRECTIVO A CARGO:  En general, CONSIDERO que el docente: </h6>
+                            <textarea type="text" id="txtgeneral"  class="form-control" value=""></textarea>
+                             <p id="helptxtgeneral"  style="text-align: center;font-size: 20px;color:red;"></p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <h6>Si comparo mi nivel de desempeño como directivo y los resultados alcanzados por el docente considero que las fallas y aciertos están dadas en: (%): </h6></br>
+                            <label>DEBILIDADES:</label>
+                             <textarea type="text" id="txtfallas"  class="form-control" value="" ></textarea>
+                             <p id="helptxthablado"  style="text-align: center;font-size: 20px;color:red;"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>ACIERTOS (%): </label>
+                             <textarea type="text" id="txtaciertos"  class="form-control" value="" ></textarea>
+                             <p id="helptxtaciertos"  style="text-align: center;font-size: 20px;color:red;"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <h6>Acciones recomendadas a este docente para ser ejecutadas en el siguiente período académico: (%): </h6>
+                             <textarea type="text" id="txtacciones"  class="form-control " value="" ></textarea>
+                             <p id="helptxtacciones"  style="text-align: center;font-size: 20px;color:red;"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                <div class="modal-footer">
+                <button type="button" id="btnguardacualitativa" class="btn btn-success btn-min-width "><i class="icon-floppy-disk icon-white"></i> Guardar</button>
+
+                    <button type="button"  class="btn" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff">Salir</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

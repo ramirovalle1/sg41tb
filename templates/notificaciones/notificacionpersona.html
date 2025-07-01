@@ -1,0 +1,325 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $('#id_notificacion, #id_extra, #id_persona').addClass('input-large');
+
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/notificaciones_mant?action=ver_grupo&s="+term+"&id={{ notificacion.id }}";
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+
+                $("#search").trigger("click");
+            }
+        });
+
+    {#---------------------------- ADD NOTIFICACION PERSONA---------------------------------------------#}
+    $('.add_individuo').click(function(){
+        $("#idnotificacion").val($(this).attr('id'));
+        $("#id_persona").val('');
+        $("#id_extra").val('');
+        $("#add_notificacionpersona #paneltitle2").html('Nueva notificacion persona de: '+($(this).attr('nombre')));
+        $("#add_notificacionpersona").modal({"backdrop":"static","width":"40%"});
+        $("#add_notificacionpersona").modal("show");
+    });
+
+    {# BUSCAR PERSONA  #}
+    buscar_persona = function(query, process) {
+        $.get("/reportes", {'action':'data', 'model': 'Persona','p': 1, 'q': query, 's': 10}, function(data) {
+            if (data.results) {
+                $("#id_persona").get(0).results = data.results;
+                listing = [];
+                for (var i in data.results) {
+                    var dato = data.results[i];
+                    listing.push(dato.name);
+                }
+                process(listing);
+            }
+
+        }, 'json');
+    };
+
+    $("#id_persona").typeahead({source: buscar_persona, updater: function(item) {
+        var results = $("#id_persona").get(0).results;
+        for (var i in results) {
+            var datos = results[i];
+            if (item==datos.name) {
+                $("#id_persona").attr("myval", datos.id);
+            }
+        }
+        return item;
+    }});
+
+    $("#btn_guardar").click(function(){
+        $("#add_notificacionpersona").modal("hide");
+        $.post("/notificaciones_mant",{"action": "add_persona", "idnotificacion":"{{ notificacion.id }}", "idpersona":$("#id_persona").attr("myval")},function(data) {
+            if(data.result=='ok'){
+                location.reload()
+           }else{
+                alert(data.result);
+           }
+           location.reload()
+        },"json");
+
+    });
+
+    $("#add_notificacionpersona .btn-cerrar").click(function(){
+        $(".formError").removeClass('aparece');
+        $(".formError").addClass('oculta');
+        $("#add_notificacionpersona").modal("hide");
+    });
+
+    add_grupo = function(){
+         $("#add_notificaciongrupo #paneltitle2").html('Notificaciones');
+        $("#add_notificaciongrupo").modal({"backdrop":"static","width":"500px"});
+        $("#add_notificaciongrupo").modal("show");
+
+    }
+
+    $("#guardar_grupo").click(function(){
+        idGrupo = $("#slcGrupo").val();
+        showWaiting("Adicionando el grupo", "Espere un momento por favor...");
+        $.post("/notificaciones_mant",{"action": "add_personas", "idnotificacion":"{{ notificacion.id }}", "idGrupo":idGrupo},function(data) {
+            if(data.result=='ok'){
+                location.reload()
+           }else{
+                alert(data.mensaje);
+           }
+           hideWaiting();
+           location.reload()
+        },"json");
+    });
+    {#-------------------------------- ELIMINAR ------------------------------------------#}
+    $(".eliminar_persgrupo").click(function(){
+        var id = $(this).attr("nid");
+        var nombre = $(this).attr("nombre");
+        smoke.confirm("Esta seguro de eliminar "+ nombre +" de las notificacion?", function(e){
+            if (e){
+                $.post("/notificaciones_mant",{"action": "eliminar_persgrupo", "idnotificacion":id},function(data) {
+                if(data.result=='ok'){
+                    location.reload()
+               }else{
+                    alert(data.mensaje);
+               }
+               location.reload()
+                },"json");
+            }else{
+            }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+
+    });
+
+     $("#add_notificaciongrupo .btn-cerrar").click(function(){
+        $(".formError").removeClass('aparece');
+        $(".formError").addClass('oculta');
+        $("#add_notificaciongrupo").modal("hide");
+    });
+    {#-------------------------------- ERROR ------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+    cambiarEstado = function(id, persona) {
+        $.post("/notificaciones_mant",{"action": "cambiar_estado_persona", "id":id},function(data) {
+            if(data.result=='ok'){
+                swal.fire("Cambio de estado", data.mensaje, "info").then(function(e) {
+                    location.reload()
+                })
+            }else{
+                swal.fire("Error", data.mensaje, "warning")
+            }
+        },"json");
+    }
+
+
+    });
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span6" >
+            <h3 >Listado de Notificaciones por Personas: {{ notificacion.nombre }}</h3></br>
+        </div>
+        <div class="span2" style="text-align: right" >
+            <a href="/notificaciones_mant" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span4'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/notificaciones_mant?action=ver_grupo&id={{ notificacion.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class='span4' style="text-align: right">
+            <a nombre="{{ notificacion.nombre }}" id="{{ notificacion.id }} "class='btn btn-info add_individuo'><i class="icon-plus icon-white"></i>Adicionar Persona</a>
+            <a class='btn btn-primary ' nombre="{{ notificacion.nombre }}" onclick="add_grupo()"><i class="icon-plus icon-white"></i>Adicionar Personas por Grupo</a>
+        </div>
+
+    </div>
+
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Persona </th>
+                        <th style="text-align: center"> Grupo</th>
+                        <th style="text-align: center">Estado</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for np in notificaciones %}
+                        <tr>
+                            <td> {{ np.persona.apellido1 }} {{ np.persona.apellido2 }} {{ np.persona.nombres }} </td>
+                            <td style="text-align: center">
+                                {% if np.persona %}
+                                    {% for np in np.persona.usuario.groups.all %}
+                                        {{ np }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                {% endif %}  </td>
+                            <td style="text-align: center;">
+                                {% if np.estado %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td>
+                                 <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a style="cursor: pointer" nombre="{{ np.persona.nombre_completo_inverso }}" nid="{{ np.id }}" class="eliminar_persgrupo"><i class="icon-remove"></i> Eliminar </a> </li>
+                                        <li><a style="cursor: pointer" onclick="cambiarEstado('{{ np.id }}', '{{ np.persona.nombre_completo_inverso }}')"><i class="icon-check"></i> Cambiar estado</a> </li>
+                                    </ul>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not notificaciones %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span10">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/notificaciones_mant?action=ver_grupo&id={{ notificacion.id }}&page=1">1</a></li>
+                            <li><a href="/notificaciones_mant?action=ver_grupo&id={{ notificacion.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/notificaciones_mant?action=ver_grupo&id={{ notificacion.id }}&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/notificaciones_mant?action=ver_grupo&id={{ notificacion.id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/notificaciones_mant?action=ver_grupo&id={{ notificacion.id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/notificaciones_mant?action=ver_grupo&id={{ notificacion.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+{#  ADICIONA INDIVIDUAL  #}
+    <div class="modal fade static" id="add_notificacionpersona">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/notificaciones_mant?action=ver_grupo&id={{ notificacion.id }}" method="POST"  >
+            <div class="modal-body" >
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" id="btn_guardar">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </div>
+        </form>
+
+    </div>
+
+{#  ADICIONA GRUPO  #}
+    <div class="modal fade static" id="add_notificaciongrupo">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <label>Grupo:</label>
+            <select name="" id="slcGrupo" style="width: 100%">
+                <option value="">---</option>
+                {% for grupo in grupos %}
+                    <option value="{{ grupo.id }}">{{ grupo.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-success" id="guardar_grupo" >Guardar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+{% endblock %}

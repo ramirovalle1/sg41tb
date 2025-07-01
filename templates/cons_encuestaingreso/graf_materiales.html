@@ -1,0 +1,1210 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+<style>
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color:  #184679; }
+
+.btn-primary {
+  color: #fff;
+  background-color: #184679;
+  border-color: #184679;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover, .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color:#184679;
+    color: #fff;
+    border-color: #184679;
+}
+
+.bootstrap-select .dropdown-menu li .dropdown-item.active:hover,.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #184679;
+    color: #fff
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #184679;
+}
+</style>
+<script src="../../static/sganuevo/src/plugins/apexcharts/apexcharts.min.js"></script>
+<script type="text/javascript">
+    $(function () {
+    {#        colors: ['#F44336', '#E91E63', '#9C27B0', '#008FFB', '#F86624', '#F9CE1D', '#2B908F', '#662E9B', '#7D02EB', '#546E7A', '#16deee'],#}
+
+        $( document ).ready(function() {
+            var tiposmaterial = [];
+            var listcarrera = [];
+            var listmatxcarr = [];
+
+            tiposmaterial.push([{% for m in listmaterial %}"{{ m.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]); {# TIPOS DE material #}
+            var total =0;
+            {% for ls in lista_carreras_materiales %}
+                listcarrera.push('{{ ls.carreranombre }}');
+                var material = [];
+                {% for lsdata in ls.data %}
+                    var cantidad =parseInt('{{ lsdata.cantidad }}');
+                    material.push(cantidad);
+                    total += cantidad;
+                {% endfor %}
+                listmatxcarr.push(material);
+            {% endfor %}
+
+            var listado_materialxcarrera = [{"carreras": listcarrera, "lista": listmatxcarr, "tiposmaterial": tiposmaterial}];
+
+            var seriesData = [];
+            for (var i = 0; i < listado_materialxcarrera[0].tiposmaterial[0].length; i++) {
+                seriesData.push({
+                    name: listado_materialxcarrera[0].tiposmaterial[0][i],
+                    data: listmatxcarr.map(function(material) { return material[i]; })
+                });
+            }
+            var optionsxcarrera = {
+                series: seriesData,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /total *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                      y: {
+                        formatter: function (val) {
+                          return  val 
+                        }
+                      }
+                },   
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_materialxcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+            var chartxcarrera  = new ApexCharts(document.querySelector("#chart_div_materialxcarrera"), optionsxcarrera);
+            chartxcarrera.render();
+
+        {# --------------------POR COORDINACION------------------------    #}
+            var listcoordinacion=[]
+            var listmatxcoord =[]
+            var totalcoord =0
+            {% for ls in lista_coordinaciones_materiales %}
+                listcoordinacion.push('{{ ls.coordnombre }}');
+                var matcoord = [];
+                {% for lsdata in ls.data %}
+                    var cantidadcoord =parseInt('{{ lsdata.cantidad }}')
+                    matcoord.push(cantidadcoord);
+                    totalcoord+=cantidadcoord
+                {% endfor %}
+                listmatxcoord.push(matcoord);
+            {% endfor %}
+
+            var listado_materialxcoordinacion = [{"coordinacion": listcoordinacion, "lista": listmatxcoord, "tiposmaterial": tiposmaterial}];
+            var seriesData2 = [];
+            for (var lc = 0; lc < listado_materialxcoordinacion[0].tiposmaterial[0].length; lc++) {
+                seriesData2.push({
+                    name: listado_materialxcoordinacion[0].tiposmaterial[0][lc],
+                    data: listmatxcoord.map(function(matcoord) { return matcoord[lc]; })
+                });
+            }
+            var optionsxcoordinacion = {
+                series:seriesData2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalcoord *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {  
+                    y: {
+                        formatter: function (val) {
+                          return  val 
+                        }
+                      }
+                },   
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_materialxcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+
+            var chartxcoordinacion  = new ApexCharts(document.querySelector("#chart_div_materialxcoordinacion"), optionsxcoordinacion);
+            chartxcoordinacion.render();
+
+            {# --------------------FILTRAR------------------------    #}
+            $("#btnbuscarxcarrera").click(function() {
+                buscarmaterialxcarrera();
+            });
+            function buscarmaterialxcarrera(){
+                var filt_matxcarrera=[];
+                var listcarrera2=[];
+                var lista1 = [];
+                var totcarr =0;
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarmaterialxcarrera",
+                    idanio: $("#cmbaniocarr").val(),
+                    idcarrera: $("#cmbmatcarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarreraxmat.forEach(function(item) {
+                                listcarrera2.push(item.carreranombre);
+                                var mat = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadxcarr =parseInt(infoItem.cantidad)
+                                    mat.push(cantidadxcarr);
+                                    totcarr +=cantidadxcarr
+                                });
+                                lista1.push(mat);
+                            });
+                            filt_matxcarrera.push({"carreras": listcarrera2,  "lista": lista1, "tiposmaterial":tiposmaterial});
+                            var seriesData3 = [];
+                            for (var fi = 0; fi < filt_matxcarrera[0].tiposmaterial[0].length; fi++) {
+                                seriesData3.push({
+                                    {#name: filt_nucleoxcarrera[0].tiposnucleos[0][i],#}
+                                    data: lista1.map(function (mat) {return mat[fi];})
+                                });
+                            }
+                            chartxcarrera.updateOptions({
+                                series: seriesData3,
+                                xaxis: {
+                                    categories: filt_matxcarrera[0].carreras
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totcarr *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinacion").click(function (){
+                buscarmaterialsxcoordinacion()
+            })
+            function buscarmaterialsxcoordinacion(){
+                var filt_materialxcoordinacion=[];
+                var listcoordinacion2=[];
+                var lista2 = [];
+                var totcoord= 0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarmaterialxcoordinacion",
+                    idanio: $("#cmbaniocord").val(),
+                    idcoordinacion: $("#cmbidcoordinacion").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxmat.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var mat = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadxcord =parseInt(infoItem.cantidad)
+                                    mat.push(cantidadxcord);
+                                    totcoord +=cantidadxcord
+                                });
+                                lista2.push(mat);
+                            });
+                            filt_materialxcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": lista2, "tiposmaterial": tiposmaterial});
+                            var seriesData4 = [];
+                            for (var fi = 0; fi < filt_materialxcoordinacion[0].tiposmaterial[0].length; fi++) {
+                                seriesData4.push({
+                                    data: lista2.map(function (mat) {return mat[fi];})
+                                });
+                            }
+                            chartxcoordinacion.updateOptions({
+                                series: seriesData4,
+                                xaxis: {
+                                    categories: filt_materialxcoordinacion[0].coordinaciones
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totcoord * 100).toFixed(1) + '%'
+                                    },
+                                },
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+        {# -----------------------materialS POR COORDINACION RESUMEN ------------------------#}
+            var listadoxresumen =[]
+            var nombresmaterials=[]
+            var cantidadresumen=[]
+            {% for xlista_material_resumen in lista_material_resumen  %}
+                    cantidadresumen.push(parseInt('{{ xlista_material_resumen.cantidad  }}'));
+                    nombresmaterials.push('{{ xlista_material_resumen.gennombre  }}');
+
+            {% endfor %}
+             listadoxresumen.push({"nucleos":nombresmaterials,"cantidad":cantidadresumen });
+             var optionsresumenxcoord = {
+                series:listadoxresumen[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                labels: listadoxresumen[0].nucleos,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        }
+                    }
+                }],
+                 legend: {
+                    position: 'bottom'
+                }
+            };
+            var chart = new ApexCharts(document.querySelector("#chart_resumen"), optionsresumenxcoord);
+            chart.render();
+
+        {# --------------- SERVICIOS POR CARRERA ------------------#}
+            var tiposservicios = [];
+            var listcarrera2 = [];
+            var listservicoxcarr = [];
+
+            tiposservicios.push([{% for ls in listservicio %}"{{ ls.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]); {# TIPOS DE SERVICIOS #}
+            var total2 =0;
+            {% for ls in lista_carreras_materiales %}
+                listcarrera2.push('{{ ls.carreranombre }}');
+                var servicio = [];
+                {% for lsdata in ls.data %}
+                    var cantidad2 =parseInt('{{ lsdata.cantidad }}');
+                    servicio.push(cantidad2);
+                    total2 += cantidad2;
+                {% endfor %}
+                listservicoxcarr.push(servicio);
+            {% endfor %}
+
+            var listado_serviciosxcarrera = [{"carreras": listcarrera2, "lista": listservicoxcarr, "tiposservicios": tiposservicios}];
+
+            var seriesDataser = [];
+            for (var is = 0; is < listado_serviciosxcarrera[0].tiposservicios[0].length; is++) {
+                seriesDataser.push({
+                    name: listado_serviciosxcarrera[0].tiposservicios[0][is],
+                    data: listservicoxcarr.map(function(servicio) { return servicio[is]; })
+                });
+            }
+            var optionsxcarreraservicos = {
+                series: seriesDataser,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /total2 *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                      y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_serviciosxcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+            var chartxcarreraservicios  = new ApexCharts(document.querySelector("#chart_div_serviciosxcarrera"), optionsxcarreraservicos);
+            chartxcarreraservicios.render();
+
+        {#  --------------- SERVICIOS POR COORDINACION --------------- #}
+            var listcoordinacion2=[];
+            var listservicioxcoord=[];
+            var totalcoord2 =0
+            {% for ls in lista_coordinaciones_servicios %}
+                listcoordinacion2.push('{{ ls.coordnombre }}');
+                var servcoord = [];
+                {% for lsdata in ls.data %}
+                    var cantidadc =parseInt('{{ lsdata.cantidad }}')
+                    servcoord.push(cantidadc);
+                    totalcoord2+=cantidadc
+                {% endfor %}
+                listservicioxcoord.push(servcoord);
+            {% endfor %}
+
+            var listado_servicioxcoordinacion = [{"coordinacion": listcoordinacion2, "lista": listservicioxcoord, "tiposservicios": tiposservicios}];
+            var seriesDataser2 = [];
+            for (var s = 0; s < listado_servicioxcoordinacion[0].tiposservicios[0].length; s++) {
+                seriesDataser2.push({
+                    name: listado_servicioxcoordinacion[0].tiposservicios[0][s],
+                    data: listservicioxcoord.map(function(servcoord) { return servcoord[s]; })
+                });
+            }
+            var optionsxcoordinacionservicio = {
+                series:seriesDataser2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalcoord2 *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_servicioxcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+            var chartxcoordinacionservicios  = new ApexCharts(document.querySelector("#chart_div_servicioxcoordinacion"), optionsxcoordinacionservicio);
+            chartxcoordinacionservicios.render();
+
+        {# --------------- FILTROS --------------- #}
+            $("#btnbuscarxcarrera_servicio").click(function() {
+                buscarservicoxcarrera();
+            });
+            function buscarservicoxcarrera(){
+                var filt_serviciosxcarrera=[];
+                var listcarreraserv=[];
+                var listaserv = [];
+                var serv_totcarr =0;
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarservicioxcarrera",
+                    idanio: $("#cmbaniocarr_servicio").val(),
+                    idcarrera: $("#cmbservcarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarreraxserv.forEach(function(item) {
+                                listcarreraserv.push(item.carreranombre);
+                                var serv = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadxcarr_serv =parseInt(infoItem.cantidad)
+                                    serv.push(cantidadxcarr_serv);
+                                    serv_totcarr +=cantidadxcarr_serv
+                                });
+                                listaserv.push(serv);
+                            });
+                            filt_serviciosxcarrera.push({"carreras": listcarreraserv,  "lista": listaserv, "tiposservicios":tiposservicios});
+                            var seriesDataserv = [];
+                            for (var fi = 0; fi < filt_serviciosxcarrera[0].tiposservicios[0].length; fi++) {
+                                seriesDataserv.push({
+                                    data: listaserv.map(function (serv) {return serv[fi];})
+                                });
+                            }
+                            chartxcarreraservicios.updateOptions({
+                                series: seriesDataserv,
+                                xaxis: {
+                                    categories: filt_serviciosxcarrera[0].carreras
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /serv_totcarr *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinacion_servicio").click(function (){
+                buscarservicioxcoordinacion()
+            })
+            function buscarservicioxcoordinacion(){
+                var filt_servicioxcoordinacion=[];
+                var listcoordinacion2=[];
+                var lista2 = [];
+                var totcoord2= 0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarservicioxcoordinacion",
+                    idanio: $("#cmbaniocord_servicio").val(),
+                    idcoordinacion: $("#cmbidcoordinacion_servicio").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxserv.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var mat = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadxcord =parseInt(infoItem.cantidad)
+                                    mat.push(cantidadxcord);
+                                    totcoord2 +=cantidadxcord
+                                });
+                                lista2.push(mat);
+                            });
+                            filt_servicioxcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": lista2, "tiposservicios": tiposservicios});
+                            var seriesData4 = [];
+                            for (var fi = 0; fi < filt_servicioxcoordinacion[0].tiposservicios[0].length; fi++) {
+                                seriesData4.push({
+                                    data: lista2.map(function (mat) {return mat[fi];})
+                                });
+                            }
+                            chartxcoordinacionservicios.updateOptions({
+                                series: seriesData4,
+                                xaxis: {
+                                    categories: filt_servicioxcoordinacion[0].coordinaciones
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totcoord2 * 100).toFixed(1) + '%'
+                                    },
+                                },
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            {#  SERVICIOS RESUMEN       #}
+            var listadoxresumen2 =[]
+            var nombresservicios=[]
+            var cantidadresumen2=[]
+            {% for xlista_servicios_resumen in lista_servicios_resumen  %}
+                    cantidadresumen2.push(parseInt('{{ xlista_servicios_resumen.cantidad  }}'));
+                    nombresservicios.push('{{ xlista_servicios_resumen.servnombre  }}');
+
+            {% endfor %}
+             listadoxresumen2.push({"nombre":nombresservicios,"cantidad":cantidadresumen2 });
+             var optionsresumenxcoord2 = {
+                series:listadoxresumen2[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                labels: listadoxresumen2[0].nombre,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        }
+                    }
+                }],
+                 legend: {
+                    position: 'bottom'
+                }
+            };
+            var chart2 = new ApexCharts(document.querySelector("#chart_resumen2"), optionsresumenxcoord2);
+            chart2.render();
+
+        {# --------------- AFILIACION POR CARRERA --------------- #}
+            var tiposafiliacion = [];
+            var listcarreraafil = [];
+            var listafilxcarr = [];
+
+            tiposafiliacion.push([{% for ls in listafiliacion %}"{{ ls.nombre }}"{% if not forloop.last %},{% endif %}{% endfor %}]); {# TIPOS DE SERVICIOS #}
+            var totalafil =0;
+            {% for ls in lista_carreras_afiliacion %}
+                listcarreraafil.push('{{ ls.carreranombre }}');
+                var afiliacion = [];
+                {% for lsdata in ls.data %}
+                    var cantidadafil =parseInt('{{ lsdata.cantidad }}');
+                    afiliacion.push(cantidadafil);
+                    totalafil += cantidadafil;
+                {% endfor %}
+                listafilxcarr.push(afiliacion);
+            {% endfor %}
+
+            var listado_afiliacionxcarrera = [{"carreras": listcarreraafil, "lista": listafilxcarr, "tiposafiliacion": tiposafiliacion}];
+
+            var seriesDataafil = [];
+            for (var a = 0; a < listado_afiliacionxcarrera[0].tiposafiliacion[0].length; a++) {
+                seriesDataafil.push({
+                    name: listado_afiliacionxcarrera[0].tiposafiliacion[0][a],
+                    data: listafilxcarr.map(function(afiliacion) { return afiliacion[a]; })
+                });
+            }
+            var optionsxcarreraafiliacion = {
+                series: seriesDataafil,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalafil *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                      y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_serviciosxcarrera[0].carreras,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                },
+            };
+
+              var chartxcarreraafiliacion  = new ApexCharts(document.querySelector("#chart_div_afiliacionxcarrera"), optionsxcarreraafiliacion);
+            chartxcarreraafiliacion.render();
+
+        {# --------------- AFILIACION POR COORDINACION  --------------- #}
+             var listcoordinacionafil=[];
+            var listafiliacionxcoord=[];
+            var totalcoordafil2 =0
+            {% for ls in lista_coordinaciones_servicios %}
+                listcoordinacionafil.push('{{ ls.coordnombre }}');
+                var afiliacion2 = [];
+                {% for lsdata in ls.data %}
+                    var cantidada =parseInt('{{ lsdata.cantidad }}')
+                    afiliacion2.push(cantidada);
+                    totalcoordafil2+=cantidada
+                {% endfor %}
+                listafiliacionxcoord.push(afiliacion2);
+            {% endfor %}
+
+            var listado_afiliacionxcoordinacion = [{"coordinacion": listcoordinacionafil, "lista": listafiliacionxcoord, "tiposafiliacion": tiposafiliacion}];
+            var seriesDataafil2 = [];
+            for (var af = 0; af < listado_afiliacionxcoordinacion[0].tiposafiliacion[0].length; af++) {
+                seriesDataafil2.push({
+                    name: listado_servicioxcoordinacion[0].tiposservicios[0][af],
+                    data: listafiliacionxcoord.map(function(afiliacion2) { return afiliacion2[af]; })
+                });
+            }
+            var optionsxcoordinacionafiliacion = {
+                series:seriesDataafil2,
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    toolbar: {
+                    show: false
+                    },
+                    zoom: {
+                        enabled: false
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%'
+                    },
+                },
+                dataLabels: {
+                    enabled: true,
+                    formatter: (val) => {
+                        return (val /totalcoordafil2 *100).toFixed(1)+ '%'
+                    },
+                },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                          return  val
+                        }
+                      }
+                },
+                stroke: {
+                  show: true,
+                  width: 2,
+                  colors: ['transparent']
+                },
+                xaxis: {
+                  categories:listado_servicioxcoordinacion[0].coordinacion,  {# LEYENDA X #}
+                },
+                yaxis: {
+                    title: {
+                    text: 'ESTUDIANTES', {# LEYENDA Y #}
+                    },
+                },
+                fill: {
+                  opacity: 1
+                }
+            };
+            var chartxcoordinacionafiliacion  = new ApexCharts(document.querySelector("#chart_div_afilacionxcoordinacion"), optionsxcoordinacionafiliacion);
+            chartxcoordinacionafiliacion.render();
+        {# --------------- FILTRAR --------------- #}
+            $("#btnbuscarxcarrera_afiliacion").click(function() {
+                buscarxcarrera_afiliacion();
+            });
+            function buscarxcarrera_afiliacion(){
+                var filt_afiliacionxcarrera=[];
+                var listcarreraafil2=[];
+                var listaafil = [];
+                var afil_totcarr =0;
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarafiliacionxcarrera",
+                    idanio: $("#cmbaniocarr_afiliacion").val(),
+                    idcarrera: $("#cmbafilcarreras").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcarreraxafilacion.forEach(function(item) {
+                                listcarreraafil2.push(item.carreranombre);
+                                var afil2 = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadxcarr_afi =parseInt(infoItem.cantidad)
+                                    afil2.push(cantidadxcarr_afi);
+                                    afil_totcarr +=cantidadxcarr_afi
+                                });
+                                listaafil.push(afil2);
+                            });
+                            filt_afiliacionxcarrera.push({"carreras": listcarreraafil2,  "lista": listaafil, "tiposafiliacion":tiposafiliacion});
+                            var seriesDataafil2 = [];
+                            for (var fi = 0; fi < filt_afiliacionxcarrera[0].tiposafiliacion[0].length; fi++) {
+                                seriesDataafil2.push({
+                                    data: listaafil.map(function (afil2) {return afil2[fi];})
+                                });
+                            }
+                            chartxcarreraafiliacion.updateOptions({
+                                series: seriesDataafil2,
+                                xaxis: {
+                                    categories: filt_afiliacionxcarrera[0].carreras
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /afil_totcarr *100).toFixed(1)+ '%'
+                                    },
+                                },
+                            });
+                        }
+                        else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+
+            $("#btnbuscarxcoordinacion_afiliacion").click(function (){
+                buscarxcoordinacion_afiliacion()
+            })
+            function buscarxcoordinacion_afiliacion(){
+                var filt_afiliacionxcoordinacion=[];
+                var listcoordinacion2=[];
+                var lista2 = [];
+                var totcoord2= 0
+                Loader.open();
+                $.post("/cons_encuestaingreso", {
+                    "action": "buscarafiliacionxcoordinacion",
+                    idanio: $("#cmbaniocord_afiliacion").val(),
+                    idcoordinacion: $("#cmbidcoordinacion_afiliacion").val()
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            data.listcoordinacionxafiliacion.forEach(function(item) {
+                                listcoordinacion2.push(item.coordnombre);
+                                var afil = [];
+                                item.info.forEach(function(infoItem) {
+                                    var cantidadxcord =parseInt(infoItem.cantidad)
+                                    afil.push(cantidadxcord);
+                                    totcoord2 +=cantidadxcord
+                                });
+                                lista2.push(afil);
+                            });
+                            filt_afiliacionxcoordinacion.push({"coordinaciones": listcoordinacion2,  "lista": lista2, "tiposafiliacion": tiposafiliacion});
+                            var seriesData4 = [];
+                            for (var fi = 0; fi < filt_afiliacionxcoordinacion[0].tiposafiliacion[0].length; fi++) {
+                                seriesData4.push({
+                                    data: lista2.map(function (afil) {return afil[fi];})
+                                });
+                            }
+                            chartxcoordinacionafiliacion.updateOptions({
+                                series: seriesData4,
+                                xaxis: {
+                                    categories: filt_afiliacionxcoordinacion[0].coordinaciones
+                                },
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: (val) => {
+                                        return (val /totcoord2 * 100).toFixed(1) + '%'
+                                    },
+                                },
+                            });
+                        }else{
+                            swal("Alerta", "No existen coincidencias", "warning")
+                        }
+                   Loader.close();
+                }, 'json');
+            }
+        {# --------------- AFILIACION RESUMEN --------------- #}
+              var listadoxresumen3 =[]
+            var nombresafiliacion=[]
+            var cantidadresumen3=[]
+            {% for xlista_afiliacion_resumen in lista_afiliacion_resumen  %}
+                    cantidadresumen3.push(parseInt('{{ xlista_afiliacion_resumen.cantidad  }}'));
+                    nombresafiliacion.push('{{ xlista_afiliacion_resumen.afiliacion_nombre  }}');
+
+            {% endfor %}
+             listadoxresumen3.push({"nombre":nombresafiliacion,"cantidad":cantidadresumen3 });
+             var optionsresumen3 = {
+                series:listadoxresumen3[0].cantidad,
+                chart: {
+                type: 'pie',
+                width: 550,
+                },
+                labels: listadoxresumen3[0].nombre,
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        chart: {
+                          width: 200
+                        }
+                    }
+                }],
+                 legend: {
+                    position: 'bottom'
+                }
+            };
+            var chart3 = new ApexCharts(document.querySelector("#chart_resumen3"), optionsresumen3);
+            chart3.render();
+
+        });
+
+
+    });
+</script>
+
+{% endblock %}
+
+{% block canvas %}
+<div class="main-container">
+    <div class="xs-pd-20-10 pd-ltr-20">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-10 col-sm-12">
+                    <div class="title">
+                        <h4>Estad&iacute;sticas de Ingreso a ITB - Materiales predominantes y servicios b&aacute;sicos de viviendas y afiliaci&oacute;n de estudiantes</h4>
+                    </div>
+                </div>
+                 <div class="col-lg-2 col-md-2 col-sm-2">
+                    <div class="title">
+                        <a href="/cons_encuestaingreso" style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+                 </div>
+            </div>
+        </div>
+
+        {# MATERIALES DE CONSTRUCCION POR CARRERA        #}
+        <div class="row clearfix" >
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Materiales predominantes de viviendas por Carrera</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarr" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbmatcarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listadocarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarrera" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_materialxcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Materiales predominantes de viviendas Resumen</h4>
+                    <div id="chart_resumen" ></div>
+                </div>
+            </div>
+        </div>
+        {# MATERIALES DE CONSTRUCCION POR COORDINACION        #}
+        <div class="row clearfix" >
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Materiales predominantes de viviendas por Coordinaci&oacute;n</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocord" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinacion" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_materialxcoordinacion" ></div>
+                </div>
+            </div>
+
+
+        </div>
+
+        {# SERVICIOS POR CARRERA    #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Servicios B&aacute;sicos por Carrera</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarr_servicio" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbservcarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listadocarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarrera_servicio" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_serviciosxcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Servicios B&aacute;sicos Resumen</h4>
+                    <div id="chart_resumen2" ></div>
+                </div>
+            </div>
+        </div>
+
+        {# SERVICIOS POR COORDINACION        #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue"> Servicios B&aacute;sicos por Coordinaci&oacute;n</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocord_servicio" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion_servicio" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinacion_servicio" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_servicioxcoordinacion" ></div>
+                </div>
+            </div>
+        </div>
+
+        {# AFILIACION POR CARRERA  #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Afiliaci&oacute;n por Carrera</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocarr_afiliacion" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Carreras :</label>
+                                <select id="cmbafilcarreras" style="width: 100%" class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlistadocarreras in listadocarreras %}
+                                      <option value={{ xlistadocarreras.id }}>{{ xlistadocarreras.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                         </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcarrera_afiliacion" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_afiliacionxcarrera" ></div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue">Afiliaci&oacute;n Resumen</h4>
+                    <div id="chart_resumen3" ></div>
+                </div>
+            </div>
+        </div>
+
+        {# AFILIACION POR COORDINACION       #}
+        <div class="row clearfix">
+            <div class="col-md-8 mb-30" >
+                <div class="pd-20 card-box height-100-p">
+                    <h4 class="h4 text-blue"> Afiliaci&oacute;n por Coordinaci&oacute;n</h4>
+                    <div class="row">
+                        <div class="col-md-2 col-sm-2">
+                            <div class="form-group">
+                                <label >Año :</label>
+                                <select id="cmbaniocord_afiliacion" style="width: 100%"  class="custom-select2 form-control">
+                                    <option value="0">TODOS</option>
+                                    {% for xlista in listanio %}
+                                        <option value={{ xlista.anio }}>{{ xlista.anio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4">
+                            <div class="form-group">
+                                <label >Coordinaci&oacute;n :</label>
+                                <select id="cmbidcoordinacion_afiliacion" style="width: 100%" class="custom-select2 form-control">
+                                     <option value="0">TODOS</option>
+                                    {% for xlistc in listcoordinaciones %}
+                                      <option value={{ xlistc.id }}>{{ xlistc.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2" style="margin-top: 5px">
+                            <label > <a style="color: #d92550"></a></label>
+                            <div class="form-group">
+                                <button type="button" id="btnbuscarxcoordinacion_afiliacion" class="btn" title="Buscar" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+{#                                <button type="button" id="btnlistadoratiosinsmatr" style="margin-left: 5px" class="btn" title="Descargar Inscritos/Matriculado" data-bgcolor="#184679" data-color="#ffffff" ><span class="icon-copy ti-import"></span></button>#}
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart_div_afilacionxcoordinacion" ></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+
+     $(function() {
+        var id_per;
+        $('#id_numerofact,#id_numeronotacre,#id_puntoventa').addClass('input-small');
+        $('#id_nombre,#id_persona,#id_direccion').addClass('input-xxlarge');
+
+         var numeros1="0123456789";
+
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros1.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+        $("#id_numerofact").blur(function(){
+            var v = $("#id_numerofact").val();
+            var p = solo_numeros(v);
+            if (p != v.length)
+            {
+{#              $("#dato").html("Ingresar solo Numeros");#}
+              $($("#id_numerofact").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+              $("#id_numerofact").val("");
+              $("#id_numerofact").focus();
+            }
+            else{
+                $($("#id_numerofact").get(0).parentNode).find(".help-text").html("");
+            }
+        });
+
+         $("#id_numeronotacre").blur(function(){
+            var v = $("#id_numeronotacre").val();
+            var p = solo_numeros(v);
+            if (p != v.length)
+            {
+{#              $("#dato").html("Ingresar solo Numeros");#}
+              $($("#id_numeronotacre").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+              $("#id_numeronotacre").val("");
+              $("#id_numeronotacre").focus();
+            }
+            else{
+                $($("#id_numeronotacre").get(0).parentNode).find(".help-text").html("");
+            }
+        });
+        {% if per %}
+             $("#id_persona").attr("myval",'{{ per.id }}');
+             $("#id_persona").val('{{ per }}');
+
+        {% endif %}
+
+     $("#id_persona").blur(function(){
+
+            $.post("/recaudacion", {'action': 'buscarpersona', 'persona': id_per}, function(data) {
+                if (data.result=='ok') {
+                   smoke.alert("Persona ya tiene asignado un punto" + data.puntos);
+                    $("#id_persona").val("");
+
+                }
+
+            }, "json");
+
+        });
+
+
+        $("#id_puntoventa").blur(function(){
+            var punto =  $("#id_puntoventa").val();
+            if (punto != '001-020')
+            {
+               $.post("/recaudacion", {'action': 'buscar', 'punto': punto}, function(data) {
+                if (data.result=='ok') {
+                   smoke.confirm("el punto ingresado ya existe para" + data.puntos , function(e){
+                   if (e){
+                        $("#id_puntoventa").val("");
+
+                       }else{
+
+                       }
+                   }, {
+                        ok: "Borrar",
+                        cancel: "Continuar",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+                }
+
+            }, "json");
+            }else{
+                $("#id_puntoventa").val("");
+                smoke.alert("NO SE PUEDE UTILIZAR ESTE PUNTO (RED FACILITO)")
+            }
+
+
+        });
+
+        buscar_persona = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Persona',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_persona").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+        $('#id_persona').typeahead({source: buscar_persona, updater: function(item) {
+            var results = $("#id_persona").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_persona").attr("myval",datos.id);
+                    id_per = datos.id;
+                }
+            }
+            return item;
+
+        }});
+        $('#formbutton').click(function(){
+            $("#id_persona").val($("#id_persona").attr("myval"));
+        });
+     });
+
+
+    </script>
+
+{% endblock %}
+{% block titulo %}Adicionar Lugar de Recaudaci&oacute;n{% endblock %}
+{% if error %}
+    <span> ERROR AL CREAR EL LUGAR DE RECAUDACION</span>
+{% endif %}
+{% block formaction %}/recaudacion{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='add'/>
+    <input type='hidden' name='ban' value='{{ ban }}'/>
+    <input type='hidden' name='lugar' value='{{ lugar.id }}'/>
+{% endblock %}
+{% block formback %}/recaudacion{% endblock %}
+{% block buttonname %}Guardar Cambios{% endblock %}

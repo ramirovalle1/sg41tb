@@ -1,0 +1,163 @@
+{% extends "layout/basebs.html" %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        $(function() {
+            $(".action_change_estado").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const value = $(this).data('value');
+                let question = `¿Está seguro de inactivar el plan analítico de la asignatura <span class="badge bg-info">${name}</span>?`;
+                if (value === 'activate')
+                {
+                    const question = `¿Está seguro de activar el plan analítico de la asignatura <span class="badge bg-info">${name}</span>?`;
+                }
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id, 'value': value}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            });
+
+            $(".action_delete").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const question = `Al eliminar el registro no podra volver a recuperar los datos. <br>¿Está seguro de eliminar el registro <span class="text-info">${name}</span>?`;
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            });
+        });
+    </script>
+{% endblock %}
+{% block atras %}{{ request.path }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid ">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                    <h6>{{ eAsignaturaMalla.asignatura.nombre }}</h6>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <a class="btn waves-effect waves-light btn-rounded btn-success lock_screen" href="{{ request.path }}?action=addpea&id={{ eAsignaturaMalla.id }}"><i class="fa fa-plus"></i> Adicionar PEA</a>
+            </div>
+        </div>
+        <div class='row bm-4'>
+            <div class='col-12'>
+                <table class='table table-bordered table-striped border-2 customize-table mb-0 align-middle' cellpadding="0" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th class="text-center" width="70%">Programa de estudio</th>
+                        <th class="text-center" width="15%">Estado</th>
+                        <th class="text-center" width="15%">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for l in listado %}
+                        <tr>
+                            <td>
+                                <div style="">
+                                    {{ l.formacionprofesional|safe }}
+                                </div>
+                                <div>
+                                    <span class="font-medium text-primary">Fecha de creación: {{ l.fecha_creacion|date:'d-m-Y H:i A' }}</span>
+                                    <span class="font-medium text-danger">Fecha de modificación: {{ l.fecha_ultimamodificacion|date:'d-m-Y H:i A' }}</span>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                {% if l.activo %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="dropdown">
+                                    <a href="#" class="btn dropdown-toggle" id="dropdownMenuPA_{{ l.id }}"
+                                       data-bs-toggle="dropdown">
+                                        Acciones <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu"
+                                        aria-labelledby="dropdownMenuPA_{{ l.id }}"
+                                        data-popper-placement="left-start">
+
+                                        {% if l.activo %}
+                                            <li>
+                                                <a class="dropdown-item action_change_estado" data-id="{{ l.id }}" data-action="changeEstadoPlan" data-value="desactivate" data-name="{{ l.asignaturamalla.asignatura.nombre }}" href="javascript:void(0);"><i class="ti ti-x me-2"></i>Inactivar</a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ request.path }}?action=editpea&id={{ l.id }}&ida={{ l.asignaturamalla.id }}"><i class="fa fa-edit me-2"></i>Editar</a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ request.path }}?action=bibliografiaapa&id={{ l.id }}"><i class="fa fa-list me-2"></i>Bibliografía APA</a>
+                                            </li>
+                                        {% else %}
+                                            <li>
+                                                <a class="dropdown-item action_change_estado" data-id="{{ l.id }}" data-action="changeEstadoPlan" data-value="activate" data-name="{{ l.asignaturamalla.asignatura.nombre }}" href="javascript:void(0);"><i class="ti ti-check me-2"></i>Activar</a>
+                                            </li>
+                                        {% endif %}
+                                        {% if not l.tiene_silabo %}
+                                            <li>
+                                                <a class="dropdown-item action_delete" data-id="{{ l.id }}" data-action="delplananalitico" data-name="{{ l.asignaturamalla.asignatura.nombre }}" href="javascript:void(0);"><i class="fa fa-trash me-2"></i>Eliminar</a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">No existe registros</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

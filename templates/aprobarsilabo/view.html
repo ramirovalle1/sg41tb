@@ -1,0 +1,167 @@
+{% extends "layout/basebs.html" %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+
+
+
+        $(function() {
+            $(".apro_rec_silabo").click(function () {
+                const id = $(this).attr('id');
+                const asignatura = $(this).attr('asig');
+                aprobarRecharSilabo('apro_rec_silabo', id, asignatura)
+            })
+        });
+
+        function aprobarRecharSilabo(action, id, asignatura) {
+            $.get("/aprobarsilabo", {'action': action, 'id': id}, function (data) {
+                if (data.result === 'ok') {
+                    $.unblockUI();
+                    $(".guardar_modal").attr('ids', id).attr('name', asignatura);
+                    $(".panelbodyAprobacion").html(data.html);
+                    $(".detalleAprobacion").modal({backdrop: 'static', width: '1000px'}).modal('show');
+                    $(".detalleAprobacion").modal("show").off('shown.bs.modal').on('shown.bs.modal', function () {
+                        $(".guardar_modal").off('click').on('click', function () {
+                            const id = $(this).attr('ids');
+                            const name = $(this).attr('name');
+                            const action = 'apro_rec_silabo';
+                            const idestado = $("#selectestado").val();
+                            const obs = $("#observacion").val();
+                            console.log(idestado)
+                            let question = `¿Está seguro de cambiar el estado de silabo de la asignatura <span class="badge bg-info">${name}</span>?`;
+                            QuestionLayout(question, ()=> {
+                                LoadingLayout.show({
+                                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                                });
+                                AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id, 'idest': idestado, 'obs': obs}, (response) => {
+                                    LoadingLayout.hide();
+                                    if (response.isSuccess) {
+                                        $(this).closest('.modal').modal('hide');
+                                        Swal.fire({
+                                            title: 'Operación Exitosa',
+                                            text: `${response.message}`,
+                                            icon: 'success'
+                                        }).then(function() {
+                                            LoadingLayout.show();
+                                            location.reload();
+                                        });
+                                    } else {
+                                        AlertLayout.danger(`${response.message}`);
+                                    }
+                                });
+                            }, ()=>{})
+
+
+
+                        });
+
+                        $(".cerrar_modal").off('click').on('click', function () {
+                            $(this).closest('.modal').modal('hide');
+                        });
+                    });
+                }
+            }, 'json');
+        }
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="container-fluid ">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                    <h6>Periodo: {{ periodo }}</h6>
+                </div>
+            </div>
+        </div>
+
+        <div class='row'>
+            <div class='col-12'>
+                <table class='table table-bordered table-striped text-nowrap customize-table mb-0 align-middle' cellpadding="0" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th style="text-align: left; vertical-align:middle;">Materia</th>
+                        <th style="text-align: center; vertical-align:middle; width: 10%">Nivel Paralelo</th>
+                        <th style="text-align: center; vertical-align:middle; width: 10%">Inicio Fin</th>
+                        <th style="text-align: center; vertical-align:middle; width: 5%">Tiene P.A.</th>
+                        <th style="text-align: center; vertical-align:middle; width: 5%">Tiene C.A</th>
+                        <th style="text-align: center; vertical-align:middle; width: 5%">Tiene sílabo</th>
+                        <th style="text-align: center; vertical-align:middle; width: 5%">% Plan.</th>
+                        <th style="text-align: center; vertical-align:middle; width: 5%">Estado</th>
+                        <th style="text-align: center; vertical-align:middle; width: 10%">Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for materia in materias %}
+                        {% with tiene_silabo=materia.tiene_silabo mi_silabo=materia.mi_silabo profesor_principal=materia.profesor_principal nivel=materia.nivel %}
+                            <tr>
+                                <td style="text-align: justify; vertical-align:middle;"><strong>{{ materia.asignatura.nombre }}</strong>
+                                    <br>
+                                    {{ nivel.carrera.alias }}
+                                    <br>
+                                    {% if profesor_principal %}{{ profesor_principal.persona }}{% else %}<span class="text-danger">No existe Profesor pincipal</span>{% endif %}
+                                </td>
+                                <td style="text-align: center; vertical-align:middle;">{{ nivel.nivelmalla }}<br>{{ nivel.paralelo }}</td>
+                                <td style="text-align: center; vertical-align:middle;">{{ materia.inicio|date:'d-m-Y' }}<br>{{ materia.fin|date:'d-m-Y' }}</td>
+                                <td style="text-align: center; vertical-align:middle;">{% if materia.tiene_plan_analitico %}Si{% else %}No{% endif %}</td>
+                                <td style="text-align: center; vertical-align:middle;">{% if materia.tiene_cronograma_academico %}Si{% else %}No{% endif %}</td>
+                                <td style="text-align: center; vertical-align:middle;">{% if tiene_silabo %}Si{% else %}No{% endif %}</td>
+                                <td style="text-align: center; vertical-align:middle;">{% if tiene_silabo %}{{ mi_silabo.porcentaje_planificacion_silabo }}{% else %}0{% endif %} %</td>
+                                <td style="text-align: center; vertical-align:middle;">
+                                    {% if tiene_silabo %}
+                                        {% with get_estado=mi_silabo.get_estado %}
+                                            <span class="badge bg-{{ get_estado.bg }}">{{ get_estado.estado }}</span>
+                                        {% endwith %}
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center; vertical-align:middle;">
+                                    {% if tiene_silabo %}
+                                        <a class="btn btn-success btn-sm lock_screen apro_rec_silabo tu" title="Aprobar o rechazar Sílabo" id="{{ mi_silabo.id }}" asig="{{ materia.asignatura }}"><i class="fa fa-check"></i></a>
+                                        {% with porcentaje_planificacion_silabo=mi_silabo.porcentaje_planificacion_silabo %}
+                                            {% if porcentaje_planificacion_silabo == 100 %}
+                                                <a class="btn btn-success btn-sm lock_screen tu" title="Aprobar o rechazar Sílabo" href="{{ request.path }}?action=editsemana&id={{ mi_silabo.id }}"><i class="fa fa-check"></i></a>
+                                            {% endif %}
+                                        {% endwith %}
+                                        <a class="btn btn-info btn-sm tu" href="{{ request.path }}?action=silabosemanal&id={{ materia.id }}&ids={{ mi_silabo.id }}"><i class="fa fa-list"></i></a>
+                                        <a class="btn btn-default btn-sm" data-id="{{ semana.id }}" data-action="delsemana" data-name="{{ semana.descripcion }}"href="#"><i class="fa fa-download"></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endwith %}
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; vertical-align:middle;">No existe registros</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static detalleAprobacion" id="detalleAprobacion" style="display: none;">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="paneltitle">Aprobar o rechazar sílabo</h3>
+                </div>
+                <div class="modal-body panelbodyAprobacion"></div>
+                <div class="modal-footer">
+                    <table class="pull-right">
+                        <tr>
+                            <td>
+                                <a href="javascript:;" class="btn btn-danger cerrar_modal">Cerrar</a>
+                                <a href="javascript:;" class="btn btn-primary guardar_modal">Guardar</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

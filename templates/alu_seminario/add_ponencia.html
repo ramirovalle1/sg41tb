@@ -1,0 +1,142 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>
+    <script type="text/javascript">
+
+     $(function() {
+        $("form").validationEngine();
+        $("#id_fecha").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+        $("#id_integrantes,#id_codigo,#id_precio").addClass("input-small");
+        $("#id_integrantes,#id_horainicio,#id_horafin").addClass("validate[required]");
+        $("#id_horainicio,#id_horafin").addClass("input-small");
+        $("#id_modalidad,#id_comision").addClass("validate[required]");
+        $("#id_nombre").attr({style:'text-transform: none'});
+
+        prety = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(2), {prefix: '$', thousandSeparator: ',', decimalSeparator: ".", sufix: '', decimalPlaces: 2});
+        };
+
+        pretyPct = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(1), {prefix: '', thousandSeparator: ',', decimalSeparator: ".", sufix: '%', decimalPlaces: 1});
+        };
+
+        simple = function(sid) {
+            return Big($.fn.floats.simplify_fn($(sid).val(), {prefix: '$', thousandSeparator: ',', sufix: '%'}));
+        };
+
+        simpleV = function(v) {
+            return Big($.fn.floats.simplify_fn(v, {prefix: '$', thousandSeparator: ','}));
+        };
+
+
+        $("#adicionarformapago").click(function() {
+            $("#id_tipopago").val("");
+            $("#formapago").modal({backdrop: 'static',width: '700px'});
+            $("#formapago").modal("show");
+            return false;
+        });
+         $(".linkback").click(function(){
+            location.href = "/alu_seminario";
+         });
+
+         var numeros="0123456789:";
+
+        function solo_numeros(texto){
+            var num = 0;
+                for(i=0; i<texto.length; i++){
+                    if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                    num = num +1;
+                }
+            }
+        return num;
+        }
+
+         $("#id_integrantes").blur(function(){
+            var num = $(this).val();
+                if (solo_numeros(num) != num.length){
+                    $($(this).get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+                    $(this).val("");
+                    $(this).focus();
+                }
+                else{
+                    $($(this).get(0).parentNode).find(".help-text").html("");
+                }
+        });
+
+        $("#id_horainicio").blur(function(){
+            var v = $("#id_horainicio").val();
+            var p = solo_numeros(v);
+            if(v!=''){
+                if( v.split(':').length == 3){
+                    if (p != v.length  |  v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':')[2].length < 2 | v.split(':').length > 3 | parseInt(v.split(':')[1])> 59)
+                    {
+                      $($("#id_horainicio").get(0).parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00:00 y los minutos deben ser  menor a 60");
+                      $("#id_horainicio").val("");
+                      $("#id_horainicio").focus();
+                    }else{
+                        $($("#id_horainicio").get(0).parentNode).find(".help-text").html("");
+                    }
+            }
+         }
+
+        });
+
+        chequeaprecio = function() {
+           if ($("#id_libre").is(":checked")){
+             $($("#id_precio").get(0).parentNode.parentNode).hide();
+           }else{
+              $($("#id_precio").get(0).parentNode.parentNode).show();
+           }
+        };
+        $("#id_libre").click(chequeaprecio);
+        $("#id_horafin").blur(function(){
+            var v = $("#id_horafin").val();
+            var p = solo_numeros(v);
+            if(v!=''){
+                if( v.split(':').length == 3){
+                    if (p != v.length  |  v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':')[2].length < 2 | v.split(':').length > 3 | parseInt(v.split(':')[1])> 59)
+                    {
+                      $($("#id_horafin").get(0).parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00:00 y los minutos deben ser  menor a 60");
+                      $("#id_horafin").val("");
+                      $("#id_horafin").focus();
+                    }else{
+                        $($("#id_horafin").get(0).parentNode).find(".help-text").html("");
+                    }
+            }
+         }
+
+        });
+         chequeaprecio()
+
+         {% if error %}
+            smoke.alert('{{ error }}');
+
+        {% endif %}
+
+     });
+
+
+    </script>
+
+{% endblock %}
+{% block titulo %}{% if  ban == 2  %}Editar Ponencia{% else %}Adicionar Ensayo Científico {% endif %}
+{% if error %}
+    {% if ban == 2 %}
+        </br></br> <span> ERROR AL EDITAR ENSAYO CIENTIFICO</span>
+    {% else %}
+        </br></br> <span> ERROR AL CREAR ENSAYO CIENTIFICO</span>
+    {% endif %}
+{% endif %}
+{% endblock %}
+
+
+{% block formaction %}/alu_seminario?ensayo={{ matricula }}{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='add_ponencia'/>
+    <input type='hidden' name='ban' value='{{ ban }}'/>
+    <input type='hidden' name='ponencia' value='{{ ponencia.id }}'/>
+    <input type='hidden' name='matricula' value='{{ matricula }}'/>
+
+{% endblock %}
+{% block formback %}/alu_seminario?ensayo={{ matricula }}{% endblock %}
+{% block buttonname %}Guardar Cambios{% endblock %}

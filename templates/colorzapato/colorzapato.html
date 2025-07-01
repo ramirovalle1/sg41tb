@@ -1,0 +1,237 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+<script type="text/javascript" >
+
+$(function() {
+    $("form").validationEngine();
+    $("#id_nombre").addClass("validate[required]");
+    $("#id_nombre").addClass("input-large");
+    $("#search").click(function() {
+        var term = $("#searchfield").val().toUpperCase();
+        location.href = "/colorzapato?s="+term;
+    });
+
+    $('#searchfield').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+    });
+
+
+    {#------------------------------------------------------ ELIMINAR ----------------------------------------------------------------#}
+
+
+
+    {#------------------------------------------------------ ADD ----------------------------------------------------------------#}
+    $('.add').click(function(){
+        $("#id_nombre").val('');
+        $("#agregar_colorzapato #paneltitle2").html('Nuevo Registro');
+        $("#agregar_colorzapato").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_colorzapato").modal("show");
+    });
+
+
+    $("#agregar_colorzapato .btn-cerrar").click(function(){
+       $("#agregar_colorzapato").modal("hide");
+        return false;
+    });
+
+    $("#formbutton").click(function(){
+        $(".formError").removeClass('oculta');
+        $(".formError").addClass('aparece');
+{#        $("#agregar_cuenta").modal("hide");#}
+    });
+    $('.modificar_colorzapato').click(function(){
+        $("#id_nombre").val($(this).attr('nombre'));
+        $("#agregar_colorzapato #idcolorzapato").val($(this).attr('colorzapato_id'));
+        $("#agregar_colorzapato #paneltitle2").html('Editar Datos ');
+        $("#agregar_colorzapato").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_colorzapato").modal("show");
+    });
+    $(".eliminar_colorzapato").click(function(){
+        var id = $(this).attr("colorzapato_id");
+        smoke.confirm('Esta seguro de eliminar el color del zapato', function(e){
+
+        if (e){
+            $.post("/colorzapato",{"action":"eliminar_colorzapato","idcolorzapato":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Registro Eliminado");
+               }else{
+                    alert(data.result);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+
+    {% endif %}
+
+
+
+});
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span7"  >
+            <h3 >Listado de Colores de Zapatos</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/tallauniforme" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/colorzapato" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span2'>
+{#            <a href="#" id='nuevo' class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Cuenta</a><br> </br>#}
+            <a href="#" class="btn btn-success add"><i class="icon-plus icon-white"></i> Nuevo Registro</a>
+
+        </div>
+    </div><br/>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+
+                        <th style="text-align: center;">Nombre</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for c in colorzapato %}
+                        <tr>
+                            <td> {% if c.nombre %}{{ c.nombre }}{% endif %}</td>
+                            <td>
+                                <div class="btn-group">
+                                   <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                   <ul class="dropdown-menu pull-right">
+                                        <li><a style="cursor: pointer" colorzapato_id="{{ c.id }}"nombre="{{ c.nombre }}" class="modificar_colorzapato"><i class="icon-edit"></i>Editar</a></li>
+                                        {% if not c.puede_eliminarse %}
+                                            <li><a style="cursor: pointer" colorzapato_id="{{ c.id }}" class="eliminar_colorzapato"><i class="icon-remove"></i>Eliminar</a></li>
+                                        {% endif %}
+                                   </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not colorzapato %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/colorzapato?page=1">1</a></li>
+                            <li><a href="/colorzapato?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/colorzapato?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/colorzapato?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/colorzapato?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/colorzapato?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+    <div class="modal fade static" id="agregar_colorzapato">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/colorzapato" method="POST"  >
+                <input type='hidden' name='action' value='add' />
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='idcolorzapato' id='idcolorzapato'/>
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+
+{% endblock %}

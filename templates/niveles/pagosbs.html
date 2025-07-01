@@ -1,0 +1,353 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+            var idpagonivel=0;
+            $(".borrar").click(function(){
+              var p = $(this).attr("pid");
+              smoke.confirm("Se eliminaran los rubros adicionados a los estudiantes  ", function(e){
+                    if (e){
+                        $.get("/niveles",{"action": "delpagos","id":p },function(data) {
+                            if(data.result=='ok'){
+                                alert('SE ELIMINARON LOS RUBROS RELACIONADOS ' );
+                                location.reload();
+                            }
+                            else{
+                                $("#espera").modal("hide");
+                                 alert("OCURRIERON ERRORES");
+                            }
+                            },"json");
+                        }else{
+                        }
+                        }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+            });
+
+
+            $("#descuentniv").click(function(){
+                $(".checkcuotas").attr('checked',false);
+                $("#porcentaje").val(0);
+                $("#observacion").val('');
+                $("#modnum").html('');
+                $("#modobserv").html('');
+                $("#modaldescuentniv").modal({"backdrop":"static","width":"30%"});
+                $("#modaldescuentniv").modal("show");
+            });
+
+            $("#porcentaje").blur(function(){
+                $("#modnum").html('');
+                var porcent = $("#porcentaje").val();
+                if(porcent != ''){
+                    if(porcent.split('.').length > 1 || porcent < 0){
+                        $("#modnum").html('Debe ingresar números enteros');
+                        $("#porcentaje").val(0);
+                        $("#porcentaje").focus();
+                    }
+                    else if(parseInt($("#porcentaje").val())> 100){
+                        $("#modnum").html('Debe ingresar números menores a 100');
+                        $("#porcentaje").val(0);
+                        $("#porcentaje").focus();
+                    }
+                }else{
+                    $("#porcentaje").val(0);
+                }
+            });
+            $("#modaldescuentniv .btn-cerrar").click(function(){
+                $(".checkcuotas").attr('checked',false);
+                $("#modaldescuentniv").modal("hide");
+                $("#porcentaje").val(0);
+                $("#observacion").val('');
+                $("#modnum").html('');
+                $("#modobserv").html('');
+                return false;
+            });
+
+            $("#modaldescuentniv .btn-aplicar").click(function(){
+                var chekselecionado = $(".checkcuotas:checked");
+                var ids = '';
+                chekselecionado.each(function() {
+                    if (ids.length>0) {
+                        ids += ",";
+                    }
+                    ids += $(this).attr('id');
+                });
+                var chekmat= $(".checkmat:checked");
+                var idsm = '';
+                chekmat.each(function() {
+                    if (idsm.length>0) {
+                        idsm += ",";
+                    }
+                    idsm += $(this).attr('id');
+                });
+
+                if(($("#porcentaje").val() > 0 && $.trim($("#observacion").val())!= '' && ids != '' ) || ($("#porcentajemat").val() >0 && $.trim($("#observacion").val())!= '' && idsm != '')) {
+
+                    $("#modaldescuentniv").modal("hide");
+                    smoke.confirm("Est&aacute; seguro de aplicar el descuento de <b style='font-size:26px;border:4px solid red;color:red'>&nbsp;"+$("#porcentaje").val()+"%&nbsp; </b>a las cuotas seleccionadas y<b style='font-size:26px;border:4px solid red;color:red'>&nbsp; "+$("#porcentajemat").val() +"%&nbsp; </b> en la matr&iacute;cula a los matriculados de este nivel?", function(e){
+                        if (e){
+                            showWaiting("Realizando el descuento","Espere unos segundos por favor...");
+                            $.post("/niveles", {action: 'descuentonivel', 'ids': ids,'idsm': idsm, 'observacion': $('#observacion').val(), 'idnivel':'{{ nivel.id }}','porcentaje':$("#porcentaje").val(),'porcentajemat':$("#porcentajemat").val()}, function(data) {
+                                hideWaiting();
+                                if (data.result=='ok') {
+                                    var msj='';
+                                    $("#modaldescuentniv .btn-cerrar").click();
+{#                                    if (data.sindescuento >0){#}
+                                        msj = "Descuento Realizado con &Eacute;xito.<br/> Alumnos Sin el Descuentos: "+data.sindescuento+"<br/>Alumnos Con el Descuentos: "+data.condescuento + "<br>";
+{#                                    }#}
+{#                                    if (data.sindescuentomat >0){#}
+                                        msj = msj + "Descuento Realizado con Exito en Matr&iacute;cula.<br/> Alumnos Sin el Descuentos en Matricula: "+data.sindescuentomat+"<br/>Alumnos Con el Descuentos en Matricula: "+data.condescuentomat;
+{#                                    }#}
+                                     smoke.alert(msj)
+
+                                }
+                                else
+                                {
+
+                                    $("#modaldescuentniv").modal({"backdrop":"static","width":"30%"});
+                                    $("#modaldescuentniv").modal("show");
+                                    $("#modobserv").html('Error al realizar el descuento vuelva a intentarlo.');
+                                }
+                            }, "json").fail(function() {
+                                    hideWaiting();
+                                    smoke.alert('Error de conexi&oacute;n');
+                          });
+
+                        }else{
+                            $("#modaldescuentniv").modal({"backdrop":"static","width":"30%"});
+                            $("#modaldescuentniv").modal("show");
+                        }
+                        }, {
+                        ok: "SI",
+                        cancel: "NO",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+                }else{
+                    $("#modobserv").html('Debe ingresar los datos correctamente.');
+                }
+            });
+
+          verlogobservacion = function(id,nombres) {
+                idpagonivel = id;
+              //alert(1);
+                detallelogobservacion(nombres);
+          }
+
+          function detallelogobservacion (nombres){
+                    $.get("/niveles", {'action':'verlogobservaciones', 'idpagonivel': idpagonivel}, function(data) {
+                    $("#lblnombre").html(nombres);
+                    $("#verlogobservaciones .modal-body").html(data);
+                    $("#verlogobservaciones").modal({"backdrop":"static",width:'40%'});
+                    $("#verlogobservaciones").modal("show");
+                   }, "html");
+                   return false;
+          }
+
+          $("#verlogobservaciones .btn-cerrar").click(function() {
+                $("#verlogobservaciones").modal("hide");
+                return false;
+          });
+
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3> CRONOGRAMA DE PAGOS </h3>
+            <h4>{{ nivel.nivelmalla }} - {{ nivel.paralelo }} - {{ nivel.sesion }}, {{ nivel.carrera }}</h4>
+            <h4>Per&iacute;odo: {{ nivel.periodo }}</h4>
+            <h4>Fechas: {{ nivel.inicio|date:"d-m-Y" }} - {{ nivel.fin|date:"d-m-Y" }}</h4>
+            <h4>Matricula hasta el: {{ nivel.fechatopematricula|date:"d-m-Y" }} {% if nivel.matricula_cerrada %}<span class="label label-important">MATRICULA CERRADA</span>{% endif %}</h4>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/niveles?action=materias&id={{ nivel.id }}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            {% if perms.sga.change_descuento %}
+                {% if nivel.grupo.descuento %}
+                    <a style="cursor: pointer;" idniv="{{ nivel.id }}" id="descuentniv" class='btn btn-warning'><i class="icon-money"></i> Descuento por Cuota/Nivel</a><br><br>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+
+            {% if e %}
+                <div class="alert alert-success">
+                    {% if e == '1' %}
+                    Agregada la Matr&iacute;cula/Cuota a todos los estudiantes matriculados en este nivel.
+                   {% endif %}
+                </div>
+            {% endif %}
+
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Fecha</th>
+                    <th> </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for pago in pagos %}
+                    <tr>
+                        <td>{{ pago.nombre}}</td>
+                        <td>$ {{ pago.valor }}</td>
+                        <td>{{ pago.fecha|date:'d-m-Y' }}</td>
+                        <td>
+                        {% if editable %}
+                            {% if not nivel.cerrado %}
+                                 {% if not persona.pertenece_soporte %}
+                                    {% if pago %}
+                                        <a href="/niveles?action=editpagos&id={{ pago.id }}" class='btn btn-info btn-mini'><i class="icon-edit"></i> Editar</a>
+                                        <a href="#" style="cursor: pointer" class='btn btn-danger btn-mini borrar' pid={{ pago.id }}><i class="icon-remove"></i> Borrar</a>
+    {#                                    <a href="/niveles?action=delpagos&id={{ pago.id }}" class='btn btn-danger btn-mini'><i class="icon-remove"></i> Borrar</a>#}
+                                        <a href="/niveles?action=addpagosmatricula&id={{ pago.id }}" class='btn btn-warning btn-mini'><i class="icon-tags icon-white"></i> Agregar a Matriculados</a>
+                                        {% if pago.tienelog %}
+                                            <a onclick="verlogobservacion('{{ pago.id }}','{{ pago.nombre }}')" class='btn btn-success btn-mini'><i class="icon-tags icon-white"></i> Ver Observaciones</a>
+                                        {% endif %}
+                                    {% endif %}
+                                 {% endif %}
+                            {% endif %}
+                        {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not pagos %}
+                    <tr>
+                        <td colspan="4">
+                            NO EXISTEN REGISTROS
+                        </td>
+                    </tr>
+                {% endif %}
+
+                </tbody>
+                {% if nivel.grupo %}
+                <tfoot>
+                    <tr>
+                        <td>
+                            <b>Cuotas: {{ nivel.total_cuotas }} de {{ nivel.cuotas_grupo }}<br/>
+                             {% if nivel.diferencia_cuotas > 0 %}
+                                 <span class="label label-info"> Faltan: {{ nivel.diferencia_cuotas }} cuotas</span>
+                             {% endif %}
+                             {% if nivel.diferencia_cuotas < 0 %}
+                                 <span class="label label-important"> Sobran cuotas</span>
+                             {% endif %}
+                            </b>
+                        </td>
+                        <td>
+                            Valor de Cuotas sin Matr&iacute;cula: <b> ${{ nivel.total_valores|floatformat:2 }}</b><br/>
+                            Valor Total Cuotas de Periodo: <b> ${{ nivel.grupo.precios.precioperiodo|floatformat:2 }}</b><br/>
+                            {% if nivel.compara_valores %}
+                            {% else %}
+                                <span class="label label-important"> AVISO: Ha Sobrepasado el Valor de Cuotas del Grupo</span>
+                                <b>Dif: $ {{ nivel.diferencia_valores|floatformat:2 }}</b>
+
+                            {% endif %}
+                        </td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+
+            </table>
+
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            {% if editable %}
+                {% if not nivel.cerrado %}
+                     {% if not persona.pertenece_soporte %}
+                        <a href="/niveles?action=addpagos&id={{ nivel.id }}" class="btn btn-success">Adicionar Pagos</a>
+                     {% endif %}
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+
+    <div class="modal fade static " id="modaldescuentniv" >
+        <div class="modal-header alert alert-info"  style="text-align: center">
+            <h4 id="nomalumn" > Ingrese Datos </h4>
+
+        </div>
+        <div class="modal-body" >
+            <div class="row-fluid" >
+                <b>Porcentaje de Desc.:</b> <input type="number" name="porcentaje" id="porcentaje" autocomplete="off"  value="0" class="input input-mini"/><br/>
+                <p style="color: red" id="modnum"></p>
+                <br/>
+
+                <b>Observaci&oacute;n:</b><br/> <textarea type='text' id='observacion' style="width:80%;text-transform: uppercase" rows="4" cols="50" > </textarea><br/>
+                <p style="color: red" id="moddescrip"></p>
+                <br/>
+                <p style="color: red" id="modobserv"></p>
+            </div>
+
+            {% for p in pagoniveles %}
+                <div class="row-fluid">
+                    <div class="span1" >
+                        <input type="checkbox" class="checkcuotas" name="{{ p.id }}" id="{{ p.id }}" style="width: 80%;height: 2em">
+                    </div>
+                    <div class="span8" style="margin: 1.5%;">
+                        <b style="padding-top: 1%">{{ p.nombre }} - F. VENCE {{ p.fecha|date:'Y-m-d' }}</b>
+                    </div>
+                </div>
+
+            {% endfor %}
+            <div class="row-fluid" >
+                <b>Porcentaje de Desc. Matr&iacute;cula:</b> <input type="number" name="porcentajemat" id="porcentajemat" autocomplete="off"  value="0" class="input input-mini"/><br/>
+                <p style="color: red" id="modnum"></p>
+                <br/>
+            </div>
+            {% for pm in pagomatricula %}
+                    <div class="row-fluid">
+                        <div class="span1" >
+                            <input type="checkbox" class="checkmat" name="{{ pm.id }}" id="{{ pm.id }}" style="width: 80%;height: 2em">
+                        </div>
+                        <div class="span8" style="margin: 1.5%;">
+                            <b style="padding-top: 1%">{{ pm.nombre }} - F. VENCE {{ pm.fecha|date:'Y-m-d' }}</b>
+                        </div>
+                    </div>
+
+                {% endfor %}
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a style="cursor: pointer" id="aplicar" class="btn btn-success  btn-aplicar">Aplicar</a>
+                <a style="cursor: pointer" id="cerrar" class="btn btn-danger  btn-cerrar">Cancelar</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static " id="verlogobservaciones"  >
+        <div class="modal-header" style="text-align: center;word-wrap: break-word">
+            <h3 id="paneltitle1" style="text-align: center"> Ver Historial de Observaciones</h3>
+            <h3 id="lblnombre" style="text-align: left"> </h3>
+        </div>
+        <div class="modal-body panelbody"  >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+            </div>
+        </div>
+     </div>
+
+
+{% endblock %}
+

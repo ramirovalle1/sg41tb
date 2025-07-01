@@ -1,0 +1,3233 @@
+{% extends 'basebs.html' %}
+{% load sga_extras%}
+{% block heading %}
+    <link type='text/css' rel='stylesheet' href="/static/css/datepicker.css"/>
+    <script src="/static/js/bootstrap-datepicker.js" type="text/javascript"></script>
+
+    <script type="text/javascript">
+        $(function(){
+            calcularhoralabor = function(validacalchor){
+                var feinici =  new Date($("#feciniciopr").val().split('-')[0],parseInt($("#feciniciopr").val().split('-')[1])-1,$("#feciniciopr").val().split('-')[2]);
+                var fefin =  new Date($("#fecfinpr").val().split('-')[0],parseInt($("#fecfinpr").val().split('-')[1])-1,$("#fecfinpr").val().split('-')[2]);
+                if(feinici < fefin && $.trim($('#horiniprac').val()) != ''&& $.trim($('#horfinprac').val()) != ''){
+                    if(parseFloat($("#horiniprac").val().replace(':','.')) < parseFloat($("#horfinprac").val().replace(':','.'))){
+                        var diasdif= fefin.getTime()-feinici.getTime();
+                        var dias = Math.round(diasdif/(1000*60*60*24));
+                        var days = [ 'domingo','lunes','martes','miercoles', 'jueves', 'viernes', 'sabado'];
+                        var conteo = 0;
+                        var horas = calculardiferencia('#horiniprac','#horfinprac');
+                        var segundos = (parseInt(horas.split(':')[0]) * 3600) + (parseInt(horas.split(':')[1]) * 60);
+                        for (let x = 0; x < dias+1; x++) {
+                            var dia = days[feinici.getUTCDay()];
+                            if($("#"+dia).is(':checked')){
+                                conteo = conteo + 1;
+                            }
+                            feinici.setDate(feinici.getDate() + 1);
+                        }
+                        if(conteo > 0){
+                            segundos = segundos * conteo;
+                            horas = transfhoras(segundos);
+                            if(validacalchor){
+                                var horprac1 = parseFloat('{{ HORAS_MIN_PRACTICAS }}');
+                                var horprac2 = parseFloat('{{ HORAS_MIN_PRACTICAS }}') * 2;
+                                var horprac3 = parseFloat('{{ HORAS_MIN_PRACTICAS }}') * 3;
+                                var cantpract = parseInt('{{ escenariopractica.numero_practica }}');
+                                if( parseFloat(horas.replace(':','.')) >=  horprac1 &&  parseFloat(horas.replace(':','.')) < horprac2 ){
+                                    if(cantpract == 1){
+                                        $("#pract1").show();
+                                        $("#numprac1").attr('disabled',false);
+                                        $("#numprac1").attr('checked',false);
+                                        $("#pract2").hide();
+                                        $("#numprac2").attr('disabled',true);
+                                        $("#numprac2").attr('checked',false);
+                                        $("#pract3").hide();
+                                        $("#numprac3").attr('disabled',true);
+                                        $("#numprac3").attr('checked',false);
+                                    }
+                                    else if(cantpract == 2){
+                                        $("#pract1").hide();
+                                        $("#numprac1").attr('disabled',true);
+                                        $("#numprac1").attr('checked',false);
+                                        $("#pract2").show();
+                                        $("#numprac2").attr('disabled',false);
+                                        $("#numprac2").attr('checked',false);
+                                        $("#pract3").hide();
+                                        $("#numprac3").attr('disabled',true);
+                                        $("#numprac3").attr('checked',false);
+                                    }else {
+                                        $("#pract1").hide();
+                                        $("#numprac1").attr('disabled',true);
+                                        $("#numprac1").attr('checked',false);
+                                        $("#pract2").hide();
+                                        $("#numprac2").attr('disabled',true);
+                                        $("#numprac2").attr('checked',false);
+                                        $("#pract3").show();
+                                        $("#numprac3").attr('disabled',false);
+                                        $("#numprac3").attr('checked',false);
+                                    }
+
+                                }
+                                else if(parseFloat(horas.replace(':','.')) >= horprac2 && parseFloat(horas.replace(':','.')) < horprac3 ){
+                                    if(cantpract == 1){
+                                        $("#pract1").show();
+                                        $("#numprac1").attr('disabled',false);
+                                        $("#numprac1").attr('checked',false);
+                                        $("#pract2").show();
+                                        $("#numprac2").attr('disabled',false);
+                                        $("#numprac2").attr('checked',false);
+                                        $("#pract3").hide();
+                                        $("#numprac3").attr('disabled',true);
+                                        $("#numprac3").attr('checked',false);
+                                    }
+                                    else if(cantpract == 2){
+                                        $("#pract1").hide();
+                                        $("#numprac1").attr('disabled',true);
+                                        $("#numprac1").attr('checked',false);
+                                        $("#pract2").show();
+                                        $("#numprac2").attr('disabled',false);
+                                        $("#numprac2").attr('checked',false);
+                                        $("#pract3").show();
+                                        $("#numprac3").attr('disabled',false);
+                                        $("#numprac3").attr('checked',false);
+                                    }else{
+                                        $("#pract1").hide();
+                                        $("#numprac1").attr('disabled',true);
+                                        $("#numprac1").attr('checked',false);
+                                        $("#pract2").hide();
+                                        $("#numprac2").attr('disabled',true);
+                                        $("#numprac2").attr('checked',false);
+                                        $("#pract3").show();
+                                        $("#numprac3").attr('disabled',false);
+                                        $("#numprac3").attr('checked',false);
+                                    }
+
+                                }else  if(parseFloat(horas.replace(':','.')) >= horprac3){
+                                    if(cantpract == 1){
+                                        $("#pract1").show();
+                                        $("#numprac1").attr('disabled',false);
+                                        $("#numprac1").attr('checked',false);
+                                        $("#pract2").show();
+                                        $("#numprac2").attr('disabled',false);
+                                        $("#numprac2").attr('checked',false);
+                                        $("#pract3").show();
+                                        $("#numprac3").attr('disabled',false);
+                                        $("#numprac3").attr('checked',false);
+                                    }
+                                    else if(cantpract == 2){
+                                        $("#pract1").hide();
+                                        $("#numprac1").attr('disabled',true);
+                                        $("#numprac1").attr('checked',false);
+                                        $("#pract2").show();
+                                        $("#numprac2").attr('disabled',false);
+                                        $("#numprac2").attr('checked',false);
+                                        $("#pract3").show();
+                                        $("#numprac3").attr('disabled',false);
+                                        $("#numprac3").attr('checked',false);
+                                    }else{
+                                        $("#pract1").hide();
+                                        $("#numprac1").attr('disabled',true);
+                                        $("#numprac1").attr('checked',false);
+                                        $("#pract2").hide();
+                                        $("#numprac2").attr('disabled',true);
+                                        $("#numprac2").attr('checked',false);
+                                        $("#pract3").show();
+                                        $("#numprac3").attr('disabled',false);
+                                        $("#numprac3").attr('checked',false);
+                                    }
+
+                                }else{
+                                    cantpractfun1();
+                                }
+                            }
+                            $("#horlabprac").val(horas);
+                        }
+                        else{
+                            cantpractfun1();
+                            $("#horlabprac").val('00:00');
+                        }
+                    }else{
+                        cantpractfun1();
+                        $("#horlabprac").val('00:00');
+                    }
+                }else{
+                    cantpractfun1();
+                    $("#horlabprac").val('00:00');
+                }
+            };
+
+            $("#add_row").on("click", function() {
+                vali = 0;
+                $("#ExpeLabAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        if(parseInt($('#lugar' + $(this).attr('con')).attr('myval')) == 0 || $('#tiempo' + $(this).attr('con')).val() == '' || $('#funcion' + $(this).attr('con')).val() == '')
+                            vali = 1;
+                    }
+                });
+                if (vali == 0 ){
+                    var newid = 0;
+                    $.each($("#tab_logic #ExpeLabAddForm tr"), function () {
+                        if (parseInt($(this).data("id")) > newid) {
+                            newid = parseInt($(this).data("id"));
+                        }
+                    });
+                    newid++;
+
+                    var tr = $("<tr></tr>", {
+                        id: "addr" + newid,
+                        con: newid,
+                        "data-id": newid
+                    });
+                    var col=0;
+                    $.each($("#ExpeLabAddForm tr:nth(0) td"), function () {
+                        var cur_td = $(this);
+                        var children = cur_td.children();
+                        // Añade el nuevo Elemento en la tabla.
+
+                        if ($(this).data("name") != undefined) {
+                            col++;
+                            if(col>5) {
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name"),
+                                    "class": 'hidden'
+                                });
+                            }else{
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name")
+                                });
+                            }
+
+
+
+                            var c = '';
+                            for(var x = 0;x < $(children).length;x++)
+                            {
+                                c = $(cur_td).find($(children[x]).prop('tagName')).clone().val("");
+                                if($(children[x]).prop('tagName') != 'BR')
+                                {
+                                    c.attr("name", $(cur_td).data("name") + newid);
+                                    c.attr("id", $(cur_td).data("name") + newid);
+                                    c.attr("alt",newid);
+                                }
+                                c.appendTo($(td));
+                                td.appendTo($(tr));
+                            }
+
+
+                        }else{
+                            var td = $("<td></td>", {
+                                'text': $('#ExpeLabAddForm tr').length
+                            }).appendTo($(tr));
+                        }
+                    });
+
+                    // Añade la nueva fila.
+                    $(tr).appendTo($('#ExpeLabAddForm'));
+
+
+                    buscar_empresa = function(query, process) {
+                        var nomodel = 'EmpresaConvenio:estado=True';
+                        if (!$("#convenio"+newid).is(':checked')) {
+                            nomodel = 'EmpresaSinConvenio:estado=True'
+                        }
+                        $.get("/reportes", {'action':'datafilt', 'model': nomodel,
+                                            'p': 1, 'q': query, 's': 10}, function(data) {
+                            if (data.results.length > 0) {
+                                $('#lugar'+newid).get(0).results = data.results;
+                                listing = [];
+                                for (var i in data.results) {
+                                    var dato = data.results[i];
+                                    listing.push(dato.alias);
+                                }
+                                process(listing);
+                            }
+                            else{
+                                 $('#lugar'+newid).attr("myval","0");
+                                 $('#lugar'+newid).get(0).results = "";
+                                 listing = [];
+                                 process(listing);
+                            }
+                        }, 'json');
+                    };
+
+                    $('#lugar'+newid).typeahead({source: buscar_empresa, updater: function(item) {
+                        var results = $('#lugar'+newid).get(0).results;
+                        var repetido = false;
+                        for (var i in results) {
+                            var datos = results[i];
+                            if (item==datos.alias) {
+                                $("#ExpeLabAddForm tr").each(function (index) {
+                                    var convenselec = false;
+                                    if (!$("#convenio"+newid).is(':checked')) {
+                                        convenselec = true;
+                                    }
+                                    var convenbody = false;
+                                    if (!$("#convenio"+ + $(this).attr('con')).is(':checked')) {
+                                        convenbody = true;
+                                    }
+                                    if ($(this).attr('con') > 0) {
+                                        if(parseInt($('#lugar' + $(this).attr('con')).attr("myval")) == datos.id && convenselec == convenbody){
+                                            repetido = true;
+                                            return false;
+                                        }
+                                    }
+                                });
+                                if(repetido){
+                                    $('#lugar'+newid).attr("myval","");
+                                    $('#lugar'+newid).val("");
+                                    smoke.alert("La empresa ya fue ingresada");
+                                    item = '';
+                                }else{
+                                    $('#lugar'+newid).attr("myval",datos.id);
+                                }
+
+                            }
+                        }
+                        return item;
+                    }});
+
+                }
+                else{
+                    smoke.alert("Ingresar Valores antes de agregar fila");
+                }
+                $(tr).find("td button.row-remove").on("click", function (){
+                    $(this).closest("tr").remove();
+                    var c = 0;
+                    $("#ExpeLabAddForm tr").each(function (index) {
+                        c = c +1;
+                    });
+                    if (c <2)
+                        $("#add_row").click();
+
+                });
+            });
+
+
+            $("#add_rowreg").on("click", function() {
+                vali = 0;
+                $("#RegActivAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        if($('#fechregact' + $(this).attr('con')).val() == '' || $('#actividadreg' + $(this).attr('con')).val() == '' || $('#hinicioreg' + $(this).attr('con')).val() == '' || $('#hfinreg' + $(this).attr('con')).val() == '')
+                            vali = 1;
+                    }
+                });
+                if (vali == 0 ){
+                    var newid = 0;
+                    $.each($("#tab_logic #RegActivAddForm tr"), function () {
+                        if (parseInt($(this).data("id")) > newid) {
+                            newid = parseInt($(this).data("id"));
+                        }
+                    });
+                    newid++;
+
+                    var tr = $("<tr></tr>", {
+                        id: "addr" + newid,
+                        con: newid,
+                        "data-id": newid
+                    });
+                    var col=0;
+                    $.each($("#RegActivAddForm tr:nth(0) td"), function () {
+                        var cur_td = $(this);
+                        var children = cur_td.children();
+                        // Añade el nuevo Elemento en la tabla.
+
+                        if ($(this).data("name") != undefined) {
+                            col++;
+                            if(col>6) {
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name"),
+                                    "class": 'hidden'
+                                });
+                            }else{
+                                var td = $("<td></td>", {
+                                    "data-name": $(cur_td).data("name")
+                                });
+                            }
+
+
+
+                            var c = '';
+                            for(var x = 0;x < $(children).length;x++)
+                            {
+                                c = $(cur_td).find($(children[x]).prop('tagName')).clone().val("");
+                                if($(children[x]).prop('tagName') != 'BR')
+                                {
+                                    if($(cur_td).data("name")=='fechregact'){
+                                        c.attr("value", '{{ fechahoy|date:"Y-m-d" }}');
+                                    }
+                                    c.attr("name", $(cur_td).data("name") + newid);
+                                    c.attr("id", $(cur_td).data("name") + newid);
+                                    c.attr("alt",newid);
+                                }
+                                c.appendTo($(td));
+                                td.appendTo($(tr));
+                            }
+
+
+                        }else{
+                            var td = $("<td></td>", {
+                                'text': $('#RegActivAddForm tr').length
+                            }).appendTo($(tr));
+                        }
+                    });
+
+                    // Añade la nueva fila.
+                    $(tr).appendTo($('#RegActivAddForm'));
+                    $("#fechregact"+newid).datepicker({format:"yyyy-mm-dd"}).mask("9999-99-99").removeClass('input-small');
+
+{#                    //////////////////////////////////////////////////////////////////////////////#}
+
+                    $("#hinicioreg"+newid).blur(function(){
+
+                        var v = $("#hinicioreg"+newid).val();
+                        var p = tiene_numeros(v);
+                        if(v!=''){
+                            if (v.split(':').length == 2 ){
+                                if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                                {
+                                  smoke.alert("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                                  $("#hinicioreg"+newid).focus();
+                                  $("#hinicioreg"+newid).val("");
+                                  $("#hlaborreg"+newid).val("");
+                                }
+                                else{
+                                    if($.trim($("#hfinreg"+newid).val()).split(':').length == 2){
+                                        var horas = calculardiferencia("#hinicioreg"+newid,"#hfinreg"+newid);
+                                        if(parseFloat('{{ HORAS_MAX_LABORA }}'.replace(':',',')) <  parseFloat(horas.replace(':','.'))){
+                                            smoke.alert("Las horas a laborar debe ser menores a {{ HORAS_MAX_LABORA }}");
+                                            $("#hfinreg"+newid).focus();
+                                            $("#hfinreg"+newid).val('');
+                                            $("#hlaborreg"+newid).val('');
+
+                                        }else{
+                                            var hinireg = $("#hinicioreg"+newid).val().replace(':','.');
+                                            var hofinreg = $("#hfinreg"+newid).val().replace(':','.');
+                                            if( parseFloat(hinireg.replace(':','.')) > parseFloat(hofinreg.replace(':','.'))){
+                                                smoke.alert("La hora de inicio debe ser menor a la de fin");
+                                                $("#hfinreg"+newid).focus();
+                                                $("#hfinreg"+newid).val('');
+                                                $("#hlaborreg"+newid).val('');
+                                            }
+                                            else{
+                                                $("#hlaborreg"+newid).val(horas);
+                                            }
+                                        }
+                                    }
+
+                                }
+                            }
+                            else{
+                                  smoke.alert("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                                  $("#hinicioreg"+newid).focus();
+                                  $("#hinicioreg"+newid).val("");
+                                  $("#hlaborreg"+newid).val('');
+                                }
+                        }
+
+                    });
+
+                    $("#hfinreg"+newid).blur(function(){
+                        var v = $("#hfinreg"+newid).val();
+                        var p = tiene_numeros(v);
+                        if(v!=''){
+                            if (v.split(':').length == 2 ){
+                                if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                                {
+                                  smoke.alert("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                                  $("#hfinreg"+newid).focus();
+                                  $("#hfinreg"+newid).val("");
+                                  $("#hlaborreg"+newid).val('');
+                                }
+                                else{
+                                    if($.trim($("#hinicioreg"+newid).val()).split(':').length == 2){
+                                        var horas = calculardiferencia("#hinicioreg"+newid,"#hfinreg"+newid);
+                                        if(parseFloat('{{ HORAS_MAX_LABORA }}'.replace(':','.')) < parseFloat(horas.replace(':','.'))){
+                                            smoke.alert("Las horas a laborar debe ser menores a {{ HORAS_MAX_LABORA }}");
+                                            $("#hfinreg"+newid).val('');
+                                            $("#hlaborreg"+newid).val('');
+
+                                        }else{
+                                            var hinireg = $("#hinicioreg"+newid).val().replace(':','.');
+                                            var hofinreg = $("#hfinreg"+newid).val().replace(':','.');
+                                            if( parseFloat(hinireg.replace(':','.')) > parseFloat(hofinreg.replace(':','.'))){
+                                                smoke.alert("La hora de inicio debe ser menor a la de fin");
+                                                $("#hfinreg"+newid).val('');
+                                                $("#hlaborreg"+newid).val('');
+                                            }else{
+                                                $("#hlaborreg"+newid).val(horas);
+                                            }
+                                        }
+                                    }
+
+
+                                }
+                            }
+                            else{
+                                  smoke.alert("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                                  $("#hfinreg"+newid).focus();
+                                  $("#hfinreg"+newid).val("");
+                                  $("#hlaborreg"+newid).val('');
+                                }
+                        }
+                    });
+
+                    $("#fechregact"+newid).on('changeDate', function(ev){
+                        var v = ev.date;
+                        if(v < inipract || v > finpract){
+                            smoke.alert('la Fecha debe ser mayor a '+ transformfecha(inipract) +' y menor a '+transformfecha(finpract)+' las fechas ingresadas en la ficha receptora ');
+                            $("#fechregact"+newid).val(transformfecha(inipract)).datepicker('update').removeClass('input-small');
+                        }else{
+                            $("#RegActivAddForm tr").each(function (index) {
+                                if ($(this).attr('con') > 0) {
+                                    var fechtr = nuevafecha($('#fechregact' + $(this).attr('con')).val());
+                                    if(fechtr.getFullYear()== v.getFullYear() && fechtr.getMonth()==v.getMonth()&& fechtr.getDate()==v.getDate() && $(this).attr('con') != newid ){
+                                       smoke.alert('La fecha ya se encuentra registrada');
+{#                                       fechtr.setDate(fechtr.getDate() + 1);#}
+                                       $("#fechregact"+newid).val(transformfecha(inipract)).datepicker('update').removeClass('input-small');
+
+                                    }
+
+                                }
+                            });
+                        }
+                        $("#fechregact"+newid).removeClass('input-small');
+                    });
+                    $("#fechregact"+newid).change(function(){
+                        $("#fechregact"+newid).removeClass('input-small');
+
+                    });
+{#                    //////////////////////////////////////////////////////////////////////////////#}
+
+                }
+                else{
+                    smoke.alert("Ingresar Valores antes de agregar fila");
+                }
+                $(tr).find("td button.row-remove").on("click", function (){
+                    $(this).closest("tr").remove();
+                    var c = 0;
+                    $("#RegActivAddForm tr").each(function (index) {
+                        c = c +1;
+                    });
+                    if (c <2)
+                        $("#add_rowreg").click();
+
+                });
+            });
+
+
+
+
+            var numerosdec="0123456789.";
+
+            function solo_numerosdec(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+
+            valida_numerosdec = function(varobje){
+                var num = $(varobje).val();
+                if(num){
+                    if (solo_numerosdec(num) != num.length){
+                        smoke.alert('Ingrese solo numeros');
+                        $(varobje).val('');
+                        $(varobje).blur();
+                    }
+                }
+
+            };
+
+            var numeros="0123456789";
+
+            function solo_numeros(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+            transformfecha = function(eval){
+                var dd = eval.getDate();
+                dd = (dd+'').padStart(2, "0");
+                var mm = eval.getMonth()+1;
+                mm = (mm+'').padStart(2, "0");
+                var yyyy = eval.getFullYear();
+                return yyyy + '-' + mm + '-' + dd;
+            }
+            nuevafecha = function(eval){
+                return new Date(parseInt(eval.split('-')[0]),parseInt(eval.split('-')[1])-1,parseInt(eval.split('-')[2]))
+            }
+            valida_numeros = function(varobje){
+                var num = $(varobje).val();
+                if(num){
+                    if (solo_numeros(num) != num.length){
+                        if($(varobje).attr('id') == 'numdocumento')
+                            smoke.alert('la cedula debe contener solo n&uacute;meros');
+                        else
+                            smoke.alert('Ingrese solo n&uacute;meros');
+                        $(varobje).val('');
+                        $(varobje).blur();
+                    }
+                }
+
+            };
+
+            function validate_fechaMayorQue(fechaInicial,fechaFinal)
+            {
+                valuesStart=fechaInicial.split("-");
+                valuesEnd=fechaFinal.split("-");
+
+                // Verificamos que la fecha no sea posterior a la actual
+                var dateStart=new Date(valuesStart[0],(valuesStart[1]-1),valuesStart[2]);
+                var dateEnd=new Date(valuesEnd[0],(valuesEnd[1]-1),valuesEnd[2]);
+                if(dateStart>dateEnd)
+                {
+                    return true;
+                }
+                else
+                    return false;
+            }
+            function esNumero(strNumber) {
+                if (strNumber == null) return false;
+                if (strNumber == undefined) return false;
+                if (typeof strNumber === "number" && !isNaN(strNumber)) return true;
+                if (strNumber == "") return false;
+                if (strNumber === "") return false;
+                var psInt, psFloat;
+                psInt = parseInt(strNumber);
+                psFloat = parseFloat(strNumber);
+                return !isNaN(strNumber) && !isNaN(psFloat);
+            }
+{#            ///////////////////////////////////TYPEAHEAD///////////////////////////#}
+{#            ///////////////////////////////////TYPEAHEAD///////////////////////////#}
+
+
+            function validarEmail( email,idinema ) {
+                expr = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+                var cant = email.split(';').length;
+                for (i=0;i<=cant-1;i++) {
+                    if ( !expr.test(email.split(';')[i]) ){
+                        $(idinema).val('');
+                        smoke.alert("Error: La dirección de correo " + email.split(';')[i] + " es incorrecta.");
+                        return false;
+                    }else{
+                        return true;
+                    }
+                }
+            }
+
+            $("#email").blur(function(){
+                if($("#email").val())
+                    validarEmail($("#email").val(),"#email")
+            });
+{#            /////////////////////////////////////////////////////////////////////////#}
+{#            ////////////////////////////GUARDAR DATOS GENERALES/////////////////////////////////////////////#}
+            editarinscrip = function(opc,eval){
+                var valido = true;
+                if($(eval).attr('id')== 'emailgen'){
+                    valido = validarEmail($(eval).val());
+                }
+                if ($.trim($(eval).val()) != '' && valido){
+                    showWaiting("Guardando información", "espere un momento por favor...");
+                    $.post("/solicitudpracticas", {"action":'editinscripcion', "dato": $(eval).val(),"idinscr":'{{ inscripcion.id }}',"opc":opc}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                           smoke.alert(data.mensaje)
+                        }
+                        else{
+                            smoke.alert('error al guardar la informacion');
+                        }
+
+                    }, "json");
+                }
+            };
+
+{#            /////////////////////////////////////VALIDA TIPO ARCHIVO ////////////////////////////////#}
+{#            /////////////////////////////////////VALIDA TIPO ARCHIVO ////////////////////////////////#}
+
+            bloquearexp = function(){
+
+                $("#add_row").hide();
+                $("#ExpeLabAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        $('#convenio' + $(this).attr('con')).attr('disabled',true);
+                        $('#lugar' + $(this).attr('con')).attr('disabled',true);
+                        $('#tiempo' + $(this).attr('con')).attr('disabled',true);
+                        $('#funcion' + $(this).attr('con')).attr('disabled',true);
+                        $('#dellex' + $(this).attr('con')).attr('disabled',true);
+                    }
+                });
+            };
+            desbloquearexp = function(){
+                $("#guardexperlab").show();
+                $("#add_row").show();
+                $("#cancelexperlab").show();
+                $("#editexperlab").hide();
+                $("#ExpeLabAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        $('#convenio' + $(this).attr('con')).attr('disabled',false);
+                        $('#lugar' + $(this).attr('con')).attr('disabled',false);
+                        $('#tiempo' + $(this).attr('con')).attr('disabled',false);
+                        $('#funcion' + $(this).attr('con')).attr('disabled',false);
+                        $('#dellex' + $(this).attr('con')).attr('disabled',false);
+                    }
+                });
+            };
+            bloquearregact = function(){
+
+                $("#add_rowreg").hide();
+                $("#RegActivAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        $('#fechregact' + $(this).attr('con')).attr('disabled',true);
+                        $('#actividadreg' + $(this).attr('con')).attr('disabled',true);
+                        $('#observacionreg' + $(this).attr('con')).attr('disabled',true);
+                        $('#hinicioreg' + $(this).attr('con')).attr('disabled',true);
+                        $('#hfinreg' + $(this).attr('con')).attr('disabled',true);
+                        $('#dell' + $(this).attr('con')).attr('disabled',true);
+                    }
+                });
+            };
+            desbloquearregact = function(){
+                $("#add_rowreg").show();
+                $("#guardregact").show();
+                $("#cancelregact").show();
+                $("#editregact").hide();
+                $("#ExpeLabAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        $('#fechregact' + $(this).attr('con')).attr('disabled',false);
+                        $('#actividadreg' + $(this).attr('con')).attr('disabled',false);
+                        $('#observacionreg' + $(this).attr('con')).attr('disabled',false);
+                        $('#hinicioreg' + $(this).attr('con')).attr('disabled',false);
+                        $('#hfinreg' + $(this).attr('con')).attr('disabled',false);
+                        $('#dell' + $(this).attr('con')).attr('disabled',false);
+                    }
+                });
+            };
+            var validos = " abcdefghijklmnopqrstuvwxyz0123456789-";
+
+            function soloLetrasYNum(campo) {
+               var letra;
+               var bien = true;
+               for (var i=0; i<campo.length; i++) {
+                letra=campo.charAt(i).toLowerCase()
+                if (validos.indexOf(letra) == -1){bien=false;};
+               }
+               if (!bien) {
+                return 1;
+
+               }else{
+                 return 0;
+               }
+            }
+            function readURL(input) {
+              if (input.files && input.files[0]) { //Revisamos que el input tenga contenido
+                var reader = new FileReader(); //Leemos el contenido
+
+                reader.onload = function(e) { //Al cargar el contenido lo pasamos como atributo de la imagen de arriba
+                  $('#prefotogen').attr('src', e.target.result);
+                };
+
+                reader.readAsDataURL(input.files[0]);
+              }
+            }
+            $("#fotogen").change(function(){
+                var prefotogen = document.querySelector("#prefotogen");
+                $("#guardafotogen").hide();
+                var x = document.getElementById("fotogen");
+                var fileExt = x.value;
+                var validExts = new Array(".png",".jpg");
+                var fileExt1 = fileExt.substring(fileExt.lastIndexOf('.'));
+                var nombre= fileExt.substring(fileExt.indexOf(x.files[0].name),fileExt.lastIndexOf('.'));
+                if (parseInt(soloLetrasYNum(nombre))==1){
+                    $("#fotogen").val('');
+                    $($("#fotogen").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El Nombre del Archivo contiene Tilde, espacios en blanco o Caracteres Especiales</h6>");
+                }else if (validExts.indexOf(fileExt1) < 0){
+                    $("#fotogen").val('');
+                    $($("#fotogen").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El formato del archivo solo debe ser png o jpg</h6>");
+                }else{
+                    readURL(this);
+                    $("#guardafotogen").show();
+                    $($("#fotogen").get(0).parentNode).find(".help-text").html("");
+                }
+            });
+            var idsoliprac = 0;
+            {% if solicitudpractica %}
+                idsoliprac = '{{ solicitudpractica.id }}';
+
+                var newid = 0;
+                {% for ex  in solicitudpractica.experienciaslabo %}
+                    $("#add_row").click();
+                    $("#lugar"+'{{ forloop.counter }}').attr('idexplab','{{ ex.id }}');
+
+                    {% if ex.convenio %}
+                        $('#convenio'+'{{ forloop.counter }}').attr('checked',true);
+                        $('#lugar'+'{{ forloop.counter }}').val('{{ ex.convenio.flexbox_alias }}');
+                        $('#lugar'+'{{ forloop.counter }}').attr('myval','{{ ex.convenio.id }}');
+                    {% else %}
+                        $('#convenio'+'{{ forloop.counter }}').attr('checked',false);
+                        $('#lugar'+'{{ forloop.counter }}').val('{{ ex.sinconvenio.flexbox_alias }}');
+                        $('#lugar'+'{{ forloop.counter }}').attr('myval','{{ ex.sinconvenio.id }}');
+                    {% endif %}
+                    $('#tiempo'+'{{ forloop.counter }}').val('{{ ex.tiempo }}');
+                    $('#funcion'+'{{ forloop.counter }}').val('{{ ex.funcion }}');
+
+
+                {% endfor %}
+                {% if solicitudpractica.experienciaslabo  %}
+                    $("#guardexperlab").hide();
+                    $("#editexperlab").show();
+                    bloquearexp();
+                {% endif %}
+                {% for re  in solicitudpractica.regactividad %}
+                    $("#add_rowreg").click();
+                    $("#fechregact"+'{{ forloop.counter }}').attr('myval','{{ re.id }}');
+                    $("#fechregact"+'{{ forloop.counter }}').val('{{ re.fecha|date:'Y-m-d' }}');
+
+                    $('#actividadreg'+'{{ forloop.counter }}').val('{{ re.actividad }}');
+                    $('#observacionreg'+'{{ forloop.counter }}').val('{{ re.observacion }}');
+                    $('#hinicioreg'+'{{ forloop.counter }}').val('{{ re.inicio|time:'H:i' }}');
+                    $('#hfinreg'+'{{ forloop.counter }}').val('{{ re.fin|time:'H:i' }}');
+                    var horlabora = calculardiferencia("#hinicioreg"+"{{ forloop.counter }}","#hfinreg"+"{{ forloop.counter }}");
+                    $('#hlaborreg'+'{{ forloop.counter }}').val(horlabora);
+                {% endfor %}
+                {% if solicitudpractica.regactividad  %}
+                    $("#guardregact").hide();
+                    $("#editregact").show();
+                    bloquearregact();
+                {% else %}
+                    $("#add_rowreg").click();
+                {% endif %}
+                {% if solicitudpractica.experienciaslabo  %}
+                    bloquearexp();
+                {% else %}
+                    {% if not solicitudpractica.fecfinaliza and not solicitudpractica.fecaprobada or not solicitudpractica.fecfinaliza and solicitudpractica.fecaprobada and solicitudpractica.aprobada %}
+                        $("#add_row").click();
+                    {% endif %}
+                {% endif %}
+            {% else %}
+                $("#add_row").click();
+                $("#add_rowreg").click();
+            {% endif %}
+            $("#guardafotogen").click(function(){
+                inputFileImage = document.getElementById("fotogen");
+                file = inputFileImage.files[0];
+                var data = new FormData();
+
+                data.append('archivo',file);
+                data.append('action','guardararchiv');
+                data.append('idins','{{ inscripcion.id }}');
+                data.append('idsoliprac',idsoliprac);
+                data.append('idesc','{{ escenariopractica.id }}');
+                var url = "/solicitudpracticas";
+                showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                $.ajax({
+                url:url,
+                type:"POST",
+                contentType:false,
+                data:data,
+                processData:false,
+                cache:false,
+                success: function(data)
+                   {
+                    if(data.result=="ok"){
+                        smoke.alert(data.mensaje);
+                        setInterval(function(){
+                            $.unblockUI();
+                            location.href='/solicitudpracticas?ides={{ escenariopractica.id }}&idsol='+data.idsoli;
+                        }, 1200);
+                    }
+                    else{
+                        smoke.alert(data.mensaje);
+                    }
+                    hideWaiting();
+                   }
+                })
+            });
+
+{#            ///////////////////////////////Guardar empresa ///////////////////////////////////////////#}
+{#            //////////////////////////////////////////////////////////////////////////#}
+            $("#agregaempresa").click(function(){
+                $("#empresapanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                $("#empresapanel").modal("show");
+            });
+            $(".btn-cerrarpanel").click(function(){
+                $("#empresapanel").modal("hide");
+            });
+{#            ///////////////////////////GUARDRA ADDROW //////////////#}
+{#            ///////////////////////////GUARDRA ADDROW //////////////#}
+
+            $("#rucempre").blur(function(){
+                $("#etiquetap").html("").removeClass("alert alert-danger");
+                if($.trim($("#rucempre").val())!= ''){
+                    showWaiting("Buscando información", "espere un momento por favor...");
+                    $.post("/solicitudpracticas", {"action":'buscarempresa', "ruc": $(this).val()}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            $("#etiquetap").html("EL RUC YA EXISTE CON LA EMPRESA "+data.mensaje).addClass("alert alert-danger");
+                            $("#empresasin").val("");
+                            $("#activempres").val("");
+                            $("#provinciaempre").val("");
+                            $("#provinciaempre").attr("myval",0);
+                            $("#ciudadempres").val("");
+                            $("#ciudadempres").attr("myval",0);
+                            $("#direcciempres").val("");
+                        }
+
+                    }, "json");
+                }
+
+            });
+
+
+            buscar_provinciaempr = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Provincia',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#provinciaempre").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#provinciaempre").attr("myval",0);
+                         $("#provinciaempre").val("");
+                         $("#ciudadempres").attr("myval","");
+                         $("#ciudadempres").val("");
+                         $("#ciudadempres").attr("readonly",true);
+                         $("#provinciaempre").get(0).results = "";
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#provinciaempre').typeahead({source: buscar_provinciaempr, updater: function(item) {
+                var results = $("#provinciaempre").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        $("#provinciaempre").attr("myval",datos.id);
+                        $("#ciudadempres").attr("readonly",false);
+                    }
+                }
+                return item;
+            }});
+
+            buscar_ciudadempr = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Canton:provincia__id='+$("#provinciaempre").attr("myval"),
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#ciudadempres").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#ciudadempres").attr("myval","0");
+                         $("#ciudadempres").get(0).results = "";
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#ciudadempres').typeahead({source: buscar_ciudadempr, updater: function(item) {
+                var results = $("#ciudadempres").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        $("#ciudadempres").attr("myval",datos.id);
+                    }
+                }
+                return item;
+            }});
+
+            $('.btn-guardarempr').click(function() {
+                $("#etiquetap").html("").removeClass("alert alert-danger");
+                var valido = true;
+                if($.trim($("#empresasin").val()) == ''){
+                    valido = false;
+                }
+                else if($.trim($("#empresasin").val()) == ''){
+                    valido = false;
+                }
+                else if($.trim($("#activempres").val()) == ''){
+                    valido = false;
+                }
+                else if($.trim($("#direcciempres").val()) == ''){
+                    valido = false;
+                }
+                else if(parseInt($("#provinciaempre").attr("myval")) == 0){
+                    valido = false;
+                }
+                else if(parseInt($("#ciudadempres").attr("myval")) == 0){
+                    valido = false;
+                }
+                if(valido){
+                    $("#empresapanel").modal("hide");
+                    var idciudaemp = $("#ciudadempres").attr("myval");
+                    var direcemp = $("#direcciempres").val();
+                    var actempre = $("#activempres").val();
+                    var nomempres = $("#empresasin").val();
+                    var rucempr = $("#rucempre").val();
+                    showWaiting("Guardando información", "espere un momento por favor...");
+                    $.post("/solicitudpracticas", {"action":'guardarempresa', "ruc": rucempr, "nomempres": nomempres, "actempre": actempre, "direcemp": direcemp, "idciudaemp": idciudaemp}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            smoke.alert("Registro Ingresado");
+                            setInterval(function(){
+                                $.unblockUI();
+                                if(idsoliprac > 0)
+                                    location.href='/solicitudpracticas?ides={{ escenariopractica.id }}&idsol='+idsoliprac;
+                                else
+                                    location.href='/solicitudpracticas?ides={{ escenariopractica.id }}';
+                            }, 1200);
+                        }else{
+
+                            $("#empresapanel").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                            $("#empresapanel").modal("show");
+                            $("#etiquetap").html(data.mensaje).addClass("alert alert-danger");
+                        }
+
+                    }, "json");
+
+                }else{
+                    $("#etiquetap").html("Faltan datos por ingresar, debe llenar todos los campos").addClass("alert alert-danger");
+                }
+            });
+
+            $(".convenioemcla").click(function(){
+                $("#lugar"+$(this).attr('alt')).attr("myval",0);
+                $("#lugar"+$(this).attr('alt')).val('');
+            });
+
+            $("#guardexperlab").click(function(){
+                var datos = {};
+                datos.experlabo = [];
+                var valido = true;
+
+                $("#ExpeLabAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        if(parseInt($('#lugar' + $(this).attr('con')).attr("myval")) == 0 || $('#tiempo' + $(this).attr('con')).val() == '' || $('#funcion' + $(this).attr('con')).val() == ''){
+                            valido = false;
+                            return false;
+                        }else{
+                            valido = true;
+                            var conveniogua = false;
+                            if ($('#convenio' + $(this).attr('con')).is(':checked')) {
+                                conveniogua = true;
+                            }
+                            datos.experlabo.push({"empresid": $('#lugar' + $(this).attr('con')).attr("myval"), "tiempo": $('#tiempo' + $(this).attr('con')).val(),
+                                        "funcion": $('#funcion' + $(this).attr('con')).val(),"idexplab": $('#lugar' + $(this).attr('con')).attr("idexplab"),"convenio":conveniogua});
+                        }
+                    }else{
+                        valido = false;
+                    }
+                });
+                datos.idinscripcion = '{{ inscripcion.id }}';
+                {% if solicitudpractica %}
+                    datos.idsolicitudprac = '{{ solicitudpractica.id }}';
+                {% else %}
+                    datos.idsolicitudprac = '0';
+                {% endif %}
+                if(valido){
+                    showWaiting("Guardando información", "espere un momento por favor...");
+                    $.post("/solicitudpracticas", {"action":'guardarexplab', "datos": JSON.stringify(datos),'idesc':'{{ escenariopractica.id }}'}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            smoke.alert("Registro Ingresado");
+                            var idsolg = data.idsol;
+                            setInterval(function(){
+                                $.unblockUI();
+                                location.href='/solicitudpracticas?ides={{ escenariopractica.id }}&idsol='+idsolg;
+                            }, 1200);
+                        }else{
+
+                            smoke.alert("Error al Guardar, intentelo nuevamente");
+                        }
+
+                    }, "json");
+                }else{
+                    smoke.alert("Faltan datos por ingresar");
+                }
+            });
+
+{#            /////////////////////////////////////////////////////////////////////////////////#}
+{#            /////////////////////////////////////////////////////////////////////////////////#}
+
+            buscar_provinciaemprrec = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Provincia',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#provinciarec").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#provinciarec").attr("myval",0);
+                         $("#provinciarec").val("");
+                         $("#ciudadrec").attr("myval","");
+                         $("#ciudadrec").val("");
+                         $("#ciudadrec").attr("readonly",true);
+                         $("#provinciarec").get(0).results = "";
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#provinciarec').typeahead({source: buscar_provinciaemprrec, updater: function(item) {
+                var results = $("#provinciarec").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        $("#provinciarec").attr("myval",datos.id);
+                        $("#ciudadrec").attr("readonly",false);
+                    }
+                }
+                return item;
+            }});
+
+            buscar_ciudademprrec = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Canton:provincia__id='+$("#provinciarec").attr("myval"),
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#ciudadrec").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#ciudadrec").attr("myval","0");
+                         $("#ciudadrec").get(0).results = "";
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#ciudadrec').typeahead({source: buscar_ciudademprrec, updater: function(item) {
+                var results = $("#ciudadrec").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        $("#ciudadrec").attr("myval",datos.id);
+                    }
+                }
+                return item;
+            }});
+
+            $('#rucent').blur(function() {
+                if($('#rucent').val()!=''){
+                    showWaiting("Buscando información", "espere un momento por favor...");
+                    $.post("/solicitudpracticas", {"action":'buscarempresa', "ruc": $('#rucent').val()}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            $("#entidadrec").val(data.mensaje);
+                            $("#rucent").attr("myval",data.idempresasin);
+                            $("#actividaent").val(data.actividad);
+                            $("#provinciarec").attr("myval",data.idprov);
+                            $("#provinciarec").val(data.provincia);
+                            $("#direccionent").val(data.direccion);
+                            $("#ciudadrec").attr("myval",data.idciu);
+                            $("#ciudadrec").val(data.ciudad);
+                        }else{
+                            $("#entidadrec").val("");
+                            $("#entidadrec").attr("disabled",false);
+                            $("#actividaent").val("");
+                            $("#actividaent").attr("disabled",false);
+                            $("#rucent").attr("myval",0);
+                            $("#provinciarec").attr("myval",0);
+                            $("#provinciarec").attr("disabled",false);
+                            $("#provinciarec").val("");
+                            $("#direccionent").val("");
+                            $("#direccionent").attr("disabled",false);
+                            $("#ciudadrec").attr("myval",0);
+                            $("#ciudadrec").val("");
+                            $("#ciudadrec").attr("disabled",false);
+
+                        }
+
+                    }, "json");
+                }
+            });
+
+            var numeroshor="0123456789:";
+
+            function tiene_numeros(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numeroshor.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+
+            $("#horiniprac").blur(function(){
+                var v = $("#horiniprac").val();
+                var p = tiene_numeros(v);
+                if(v!=''){
+                    if (v.split(':').length == 2 ){
+                        if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                        {
+                          $("#phoriniprac").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                          $("#horiniprac").focus();
+                          $("#horiniprac").val("");
+                        }
+                        else{
+                            if($("#horfinprac").val() != ''){
+                                if(parseFloat($("#horiniprac").val().replace(':','.')) >= parseFloat($("#horfinprac").val().replace(':','.'))){
+                                    $("#phoriniprac").html("Las horas de inicio debe ser menor a las del fin de la practica ");
+                                    $("#horiniprac").val('');
+                                    $("#horiniprac").focus();
+                                }else{
+                                    $("#phoriniprac").html("");
+                                    var horas = calculardiferencia('#horiniprac','#horfinprac');
+                                    if(parseFloat('{{ HORAS_MAX_LABORA }}'.replace(':','.')) < parseFloat(horas.replace(':','.'))){
+                                        $("#phorfinprac").html("Las horas a laborar debe ser menores a {{ HORAS_MAX_LABORA }}");
+                                        $("#horfinprac").val('');
+                                        $("#horfinprac").focus();
+                                    }
+                                }
+                            }else{
+                                $("#phoriniprac").html("");
+                            }
+
+                        }
+                    }
+                    else{
+                          $("#phoriniprac").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                          $("#horiniprac").focus();
+                          $("#horiniprac").val("");
+                        }
+                }
+                else{
+                    $("#phoriniprac").html("");
+                }
+                calcularhoralabor(true);
+            });
+
+            $("#horfinprac").blur(function(){
+                var v = $("#horfinprac").val();
+                var p = tiene_numeros(v);
+                if(v!=''){
+                    if (v.split(':').length == 2 ){
+                        if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                        {
+                          $("#phorfinprac").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                          $("#horfinprac").focus();
+                          $("#horfinprac").val("");
+                        }
+                        else{
+                            if($("#horiniprac").val() != ''){
+                                if(parseFloat($("#horiniprac").val().replace(':','.')) >= parseFloat($("#horfinprac").val().replace(':','.'))){
+                                    $("#phorfinprac").html("Las horas de inicio debe ser menor a las del fin de la practica");
+                                    $("#horfinprac").val('');
+                                    $("#horfinprac").focus();
+                                }else{
+                                    $("#phorfinprac").html("");
+                                    var horas = calculardiferencia('#horiniprac','#horfinprac');
+                                    if(parseFloat('{{ HORAS_MAX_LABORA }}'.replace(':','.')) < parseFloat(horas.replace(':','.'))){
+                                        $("#phorfinprac").html("Las horas a laborar debe ser menores a {{ HORAS_MAX_LABORA }}");
+                                        $("#horfinprac").val('');
+                                        $("#horfinprac").focus();
+                                    }
+                                }
+                            }else{
+                                $("#phorfinprac").html("");
+                            }
+                        }
+                    }
+                    else{
+                          $("#phorfinprac").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60");
+                          $("#horfinprac").focus();
+                          $("#horfinprac").val("");
+                        }
+                }
+                else{
+                    $("#phorfinprac").html("");
+                }
+                calcularhoralabor(true);
+            });
+            $("#feciniciopr").datepicker({format:"yyyy-mm-dd"}).mask("9999-99-99");
+            $("#fecfinpr").datepicker({format:"yyyy-mm-dd"}).mask("9999-99-99");
+            $("#emailtut").blur(function(){
+                if($("#emailtut").val())
+                    if(validarEmail($("#emailtut").val(),"#emailtut")){
+                        $.post("/solicitudpracticas", {"action":'buscartutempr',"emailtut":$("#emailtut").val()}, function(data) {
+                            hideWaiting();
+                            if (data.result=='ok') {
+                                $("#nomtutrec").val(data.supervisor);
+                                $("#cargorec").val(data.cargo);
+                                $("#convenrec").val(data.telefono);
+                                $("#extensionrec").val(data.extension);
+                                $("#celularrec").val(data.celular);
+                            }else{
+                                $("#nomtutrec").val("");
+                                $("#cargorec").val("");
+                                $("#convenrec").val("");
+                                $("#extensionrec").val("");
+                                $("#celularrec").val("");
+                            }
+                        }, "json");
+                    }else{
+                        $("#nomtutrec").val("");
+                        $("#cargorec").val("");
+                        $("#convenrec").val("");
+                        $("#extensionrec").val("");
+                        $("#celularrec").val("");
+                    }
+            });
+
+            function newDate(partes) {
+                var date = new Date(0);
+                date.setHours(partes[0]);
+                date.setMinutes(partes[1]);
+                return date;
+            }
+
+            function prefijo(num) {
+                return num < 10 ? ("0" + num) : num;
+            }
+
+            function calculardiferencia(idhorini,idhorfin){
+              var dateDesde = newDate($(idhorini).val().split(":"));
+              var dateHasta = newDate($(idhorfin).val().split(":"));
+
+              var minutos = (dateHasta - dateDesde)/1000/60;
+              var horas = Math.floor(minutos/60);
+              minutos = minutos % 60;
+
+              return prefijo(horas) + ':' + prefijo(minutos);
+            }
+
+
+            $("#guardfichrecpt").click(function(){
+                $("#guardfichrecpt").hide();
+                $("#cancelfichrecpt").hide();
+                var datos = {};
+                datos.solicitudid = 0;
+                datos.idinscripcion = '{{ inscripcion.id }}';
+                {% if solicitudpractica %}
+                    datos.solicitudid = '{{ solicitudpractica.id }}';
+                {% endif %}
+                datos.fichrecepid = 0;
+                {% if solicitudpractica.fichaentidadrec %}
+                    datos.fichrecepid = '{{ solicitudpractica.fichaentidadrec.id }}';
+                {% endif %}
+                datos.idempresa = $('#rucent').attr("myval");
+                $("#pdiasseman").html("");
+                $("#pfeciniciopr").html("");
+                $("#pfecfinpr").html("");
+                $("#phoriniprac").html("");
+                $("#phorfinprac").html("");
+                $("#pnomtutrec").html("");
+                $("#pcargorec").html("");
+                $("#pconvenrec").html("");
+                $("#pcelularrec").html("");
+                $("#pemailtut").html("");
+                $("#pdiasseman").html("");
+                var idempr = $('#rucent').attr("myval");
+                var valido = true;
+                var diavalid = false;
+                var lunes = false;
+                var martes = false;
+                var miercoles = false;
+                var jueves = false;
+                var viernes = false;
+                var sabado = false;
+                var domingo = false;
+                if($.trim($('#feciniciopr').val()) == '' ){
+                    $('#pfeciniciopr').html("Ingrese la fecha de incio");
+                    valido = false;
+                }
+                if($.trim($('#fecfinpr').val()) == '' ){
+                    $('#pfecfinpr').html("Ingrese la fecha de fin");
+                    valido = false;
+                }
+                if($.trim($('#rucent').val()) == '' ){
+                    $('#prucent').html("Ingrese el ruc de la empresa");
+                    valido = false;
+                }
+                if($.trim($('#horiniprac').val()) == '' ){
+                    $('#phoriniprac').html("Ingrese la hora de inicio");
+                    valido = false;
+                }
+                if($.trim($('#horfinprac').val()) == '' ){
+                    $('#phorfinprac').html("Ingrese la hora de fin");
+                    valido = false;
+                }
+                if( parseFloat($("#horlabprac").val().replace(':','.')) <  parseFloat({{ HORAS_MIN_PRACTICAS }}) ){
+                    smoke.alert("Las horas a laborar deben ser mayor a {{ HORAS_MIN_PRACTICAS }}");
+                    valido = false;
+                }
+                else if(!$("#numprac1").is(':checked') && !$("#numprac2").is(':checked') && !$("#numprac3").is(':checked') ){
+                    valido = false;
+                    smoke.alert('debe seleccionar el número de la práctica')
+                }
+                if($.trim($('#nomtutrec').val()) == '' ){
+                    $('#pnomtutrec').html("Ingrese el nombre del tutor");
+                    valido = false;
+                }
+                if($.trim($('#cargorec').val()) == '' ){
+                    $('#pcargorec').html("Ingrese el cargo del tutor");
+                    valido = false;
+                }
+                if($.trim($('#convenrec').val()) == '' && $.trim($('#celularrec').val()) == ''){
+                    $('#pconvenrec').html("Ingrese el télefono convencional");
+                    valido = false;
+                }
+                if($.trim($('#celularrec').val()) == '' && $.trim($('#convenrec').val()) == '' ){
+                    $('#pcelularrec').html("Ingrese el celular");
+                    valido = false;
+                }
+                if($.trim($('#emailtut').val()) == '' ){
+                    $('#pemailtut').html("Ingrese el email del tutor");
+                    valido = false;
+                }
+                if (parseInt(idempr) == 0){
+                    if($.trim($('#rucent').val()) == '' ){
+                        $('#prucent').html("Ingrese el ruc de la empresa");
+                        valido = false;
+                    }
+                    if($.trim($('#entidadrec').val()) == '' ){
+                        $('#pentidadrec').html("Ingrese el nombre de empresa");
+                        valido = false;
+                    }
+                    if($.trim($('#actividaent').val()) == '' ){
+                        $('#pactividaent').html("Ingrese la actividad economica principal");
+                        valido = false;
+                    }
+                    if($.trim($('#direccionent').val()) == '' ){
+                        $('#pdireccionent').html("Ingrese la dirección de la empresa");
+                        valido = false;
+                    }
+                    if(parseInt($('#provinciarec').attr("myval")) == 0 ){
+                        $('#pprovinciarec').html("Ingrese la provincia de la empresa");
+                        valido = false;
+                    }
+                    if(parseInt($('#ciudadrec').attr("myval")) == 0 ){
+                        $('#pciudadrec').html("Ingrese la ciudad de la empresa");
+                        valido = false;
+                    }
+                }
+                if ($("#lunes").is(':checked')) {
+                    diavalid = true;
+                    lunes = true;
+                }
+                if ($("#martes").is(':checked')) {
+                    diavalid = true;
+                    martes = true;
+                }
+                if ($("#miercoles").is(':checked')) {
+                    diavalid = true;
+                    miercoles = true;
+                }
+                if ($("#jueves").is(':checked')) {
+                    diavalid = true;
+                    jueves = true;
+                }
+                if ($("#viernes").is(':checked')) {
+                    viernes = true;
+                    diavalid = true;
+                }
+                if ($("#sabado").is(':checked')) {
+                    sabado = true;
+                    diavalid = true;
+                }
+                if ($("#domingo").is(':checked')) {
+                    domingo = true;
+                    diavalid = true;
+                }
+                if(!diavalid){
+                    $("#pdiasseman").html("Escoga la jornada laboral");
+                }
+                if(valido && diavalid){
+                    datos.empresa =[];
+                    if(parseInt(idempr)==0){
+                        datos.empresa.push({'ruc':$('#rucent').val(),'entidadrec':$('#entidadrec').val(),
+                            'actividaent':$('#actividaent').val(),'direccionent':$('#direccionent').val(),
+                            'ciudadrec':$('#ciudadrec').attr('myval')});
+                    }
+                    datos.informacion = [];
+                    var numprac = '';
+                    if($("#numprac1").is(':checked')){
+                        if($("#numprac3").is(':checked')){
+                            numprac = '1,2,3'
+                        }else if($("#numprac2").is(':checked')){
+                            numprac = '1,2'
+                        }else{
+                            numprac = '1'
+                        }
+                    }else if($("#numprac2").is(':checked')){
+                        if($("#numprac3").is(':checked')){
+                            numprac = '2,3'
+                        }
+                        else{
+                            numprac = '2'
+                        }
+                    }
+                    else if($("#numprac3").is(':checked')){
+                        if($("#numprac1").is(':checked')){
+                            numprac = '1,2,3'
+                        }else if($("#numprac2").is(':checked')){
+                            numprac = '2,3'
+                        }else{
+                            numprac = '3'
+                        }
+                    }
+                    var horas = calculardiferencia('#horiniprac','#horfinprac');
+                    datos.informacion.push({'feinicio':$('#feciniciopr').val(),'fefin':$('#fecfinpr').val(),'horas':horas,'hini':$('#horiniprac').val(),'hfin':$('#horfinprac').val()
+                                            ,'nomtutot':$('#nomtutrec').val(),'cargotut':$('#cargorec').val()
+                                            ,'numprac':numprac,'convencional':$('#convenrec').val()
+                                            ,'extensionrec':$('#extensionrec').val(),'celularrec':$('#celularrec').val(),'emailtut':$('#emailtut').val()});
+                    datos.jornadalab = [];
+                    datos.jornadalab.push({'lunes':lunes,'martes':martes,'miercoles':miercoles,'jueves':jueves
+                                           ,'viernes':viernes,'sabado':sabado,'domingo':domingo});
+                    showWaiting("Guardando información", "espere un momento por favor...");
+                    $.post("/solicitudpracticas", {"action":'guardarfichrecp', "datos": JSON.stringify(datos),'idesc':'{{ escenariopractica.id }}'}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            smoke.alert("Registro Ingresado");
+                            var idsolg = data.idsol;
+                            setInterval(function(){
+                                $.unblockUI();
+                                location.href='/solicitudpracticas?ides={{ escenariopractica.id }}&idsol='+idsolg+'&fire=1';
+                            }, 1200);
+                        }else{
+                            $("#guardfichrecpt").show();
+                            $("#cancelfichrecpt").show();
+                            smoke.alert("Error al Guardar, intentelo nuevamente");
+                        }
+
+                    }, "json");
+                }else{
+                    $("#guardfichrecpt").show();
+                }
+
+            });
+
+            {% if fire %}
+                $("#tabficharecep").click();
+            {% endif %}
+            {% if reac %}
+                $("#tabregactiv").click();
+            {% endif %}
+{#            //////////////////////BLOQUEAR FICHA RECEPTORA////////////////////////////////////////////////////////////////#}
+{#            //////////////////////////////////////////////////////////////////////////////////////#}
+
+            bloquearfichrecep = function(){
+                $("#guardfichrecpt").hide();
+                $("#cancelfichrecpt").hide();
+                $("#editfichrecpt").show();
+                {% if solicitudpractica.fichaentidadrec %}
+                    $('#rucent').attr("disabled",true);
+                    {% if solicitudpractica.fichaentidadrec.sinconvenio %}
+                        $('#rucent').attr("myval",'{{ solicitudpractica.fichaentidadrec.sinconvenio.id }}');
+                        $('#rucent').val('{{ solicitudpractica.fichaentidadrec.sinconvenio.ruc  }}');
+                        $('#entidadrec').val('{{ solicitudpractica.fichaentidadrec.sinconvenio.nombre  }}');
+                        $('#actividaent').val('{{ solicitudpractica.fichaentidadrec.sinconvenio.activideconomica  }}');
+                        $('#direccionent').val('{{ solicitudpractica.fichaentidadrec.sinconvenio.direccion  }}');
+                        $('#provinciarec').attr('myval','{{ solicitudpractica.fichaentidadrec.sinconvenio.ciudad.provincia.id  }}');
+                        $('#provinciarec').val('{{ solicitudpractica.fichaentidadrec.sinconvenio.ciudad.provincia.nombre  }}');
+                        $('#ciudadrec').attr('myval','{{ solicitudpractica.fichaentidadrec.sinconvenio.ciudad.id  }}');
+                        $('#ciudadrec').val('{{ solicitudpractica.fichaentidadrec.sinconvenio.ciudad.nombre  }}');
+                    {% else %}
+                        $('#rucent').attr("myval",'{{ solicitudpractica.fichaentidadrec.convenio.id }}');
+                        $('#rucent').val('{{ solicitudpractica.fichaentidadrec.convenio.ruc  }}');
+                        $('#entidadrec').val('{{ solicitudpractica.fichaentidadrec.convenio.nombre  }}');
+                        $('#actividaent').val('{{ solicitudpractica.fichaentidadrec.convenio.activideconomica  }}');
+                        $('#direccionent').val('{{ solicitudpractica.fichaentidadrec.convenio.direccion  }}');
+                        $('#direccionent').val('{{ solicitudpractica.fichaentidadrec.convenio.direccion  }}');
+                        $('#provinciarec').attr('myval','{{ solicitudpractica.fichaentidadrec.convenio.ciudad.provincia.id  }}');
+                        $('#provinciarec').val('{{ solicitudpractica.fichaentidadrec.convenio.ciudad.provincia.nombre  }}');
+                        $('#ciudadrec').attr('myval','{{ solicitudpractica.fichaentidadrec.convenio.ciudad.id  }}');
+                        $('#ciudadrec').val('{{ solicitudpractica.fichaentidadrec.convenio.ciudad.nombre  }}');
+                    {% endif %}
+                    $('#feciniciopr').val('{{ solicitudpractica.fichaentidadrec.inicio|date:'Y-m-d' }}').datepicker('update').removeClass('input-small');
+                    $('#feciniciopr').attr("disabled",true);
+                    $('#fecfinpr').val('{{ solicitudpractica.fichaentidadrec.fin|date:'Y-m-d' }}').datepicker('update').removeClass('input-small');
+                    $('#fecfinpr').attr("disabled",true);
+                    $('#horiniprac').val('{{ solicitudpractica.fichaentidadrec.horainicio|time:'H:i' }}');
+                    $('#horiniprac').attr("disabled",true);
+                    $('#horfinprac').val('{{ solicitudpractica.fichaentidadrec.horafin|time:'H:i' }}');
+                    $('#horfinprac').attr("disabled",true);
+                    $('#nomtutrec').val('{{ solicitudpractica.fichaentidadrec.supervisor }}');
+                    $('#nomtutrec').attr("disabled",true);
+                    $('#cargorec').val('{{ solicitudpractica.fichaentidadrec.cargo }}');
+                    $('#cargorec').attr("disabled",true);
+                    {% if solicitudpractica.fichaentidadrec.telefono  %}
+                        $('#convenrec').val('{{ solicitudpractica.fichaentidadrec.telefono }}');
+                        $('#convenrec').attr("disabled",true);
+                    {% endif %}
+                    {% if solicitudpractica.fichaentidadrec.extension  %}
+                        $('#extensionrec').val('{{ solicitudpractica.fichaentidadrec.extension }}');
+                        $('#extensionrec').attr("disabled",true);
+                    {% endif %}
+                    {% if solicitudpractica.fichaentidadrec.celular  %}
+                        $('#celularrec').val('{{ solicitudpractica.fichaentidadrec.celular }}');
+                        $('#celularrec').attr("disabled",true);
+                    {% endif %}
+                    $('#emailtut').val('{{ solicitudpractica.fichaentidadrec.correo }}');
+                    $('#emailtut').attr("disabled",true);
+
+                    $('#lunes').attr("disabled",true);
+                    {% if solicitudpractica.fichaentidadrec.lunes  %}
+                        $('#lunes').val('{{ solicitudpractica.fichaentidadrec.lunes }}');
+                        $('#lunes').attr("checked",true);
+                    {% endif %}
+                    $('#martes').attr("disabled",true);
+                    {% if solicitudpractica.fichaentidadrec.martes  %}
+                        $('#martes').val('{{ solicitudpractica.fichaentidadrec.martes }}');
+                        $('#martes').attr("checked",true);
+                    {% endif %}
+                    $('#miercoles').attr("disabled",true);
+                    {% if solicitudpractica.fichaentidadrec.miercoles  %}
+                        $('#miercoles').val('{{ solicitudpractica.fichaentidadrec.miercoles }}');
+                        $('#miercoles').attr("checked",true);
+                    {% endif %}
+                    $('#jueves').attr("disabled",true);
+                    {% if solicitudpractica.fichaentidadrec.jueves  %}
+                        $('#jueves').val('{{ solicitudpractica.fichaentidadrec.viernes }}');
+                        $('#jueves').attr("checked",true);
+                    {% endif %}
+                    $('#viernes').attr("disabled",true);
+                    {% if solicitudpractica.fichaentidadrec.viernes  %}
+                        $('#viernes').val('{{ solicitudpractica.fichaentidadrec.viernes }}');
+                        $('#viernes').attr("checked",true);
+                    {% endif %}
+                    $('#sabado').attr("disabled",true);
+                    {% if solicitudpractica.fichaentidadrec.sabado  %}
+                        $('#sabado').val('{{ solicitudpractica.fichaentidadrec.sabado }}');
+                        $('#sabado').attr("checked",true);
+                    {% endif %}
+                    $('#domingo').attr("disabled",true);
+                    {% if solicitudpractica.fichaentidadrec.domingo  %}
+                        $('#domingo').val('{{ solicitudpractica.fichaentidadrec.domingo }}');
+                        $('#domingo').attr("checked",true);
+                    {% endif %}
+                    calcularhoralabor(false);
+                    /////////////////horas pract ////////////////////////////////////////
+                    var horprac1 = parseFloat('{{ HORAS_MIN_PRACTICAS }}');
+                    var horprac2 = parseFloat('{{ HORAS_MIN_PRACTICAS }}') * 2;
+                    var horprac3 = parseFloat('{{ HORAS_MIN_PRACTICAS }}') * 3;
+                    var horlabprac = parseFloat($("#horlabprac").val());
+                    var numpract = '{{ solicitudpractica.fichaentidadrec.cantidad }}';
+                    for (let x = 0; x < numpract.split(',').length; x++) {
+                        var numpracfor = parseInt(numpract.split(',')[x]);
+                        if(numpracfor == 1){
+                            $("#numprac1").attr('checked',true);
+                            $("#numprac1").attr('disabled',true);
+                            if(horlabprac >= horprac1 && horlabprac < horprac2){
+                                $("#pract1").show();
+                            }
+                            if(horlabprac >= horprac2 && horlabprac < horprac3){
+                                $("#pract1").show();
+                                $("#pract2").show();
+                                $("#numprac2").attr('checked',false);
+                                $("#numprac2").attr('disabled',true);
+                            }
+                            if(horlabprac >= horprac3){
+                                $("#pract1").show();
+                                $("#pract2").show();
+                                $("#numprac2").attr('checked',false);
+                                $("#numprac2").attr('disabled',true);
+                                $("#pract3").show();
+                                $("#numprac3").attr('checked',false);
+                                $("#numprac3").attr('disabled',true);
+                            }
+                        }
+                        if(numpracfor == 2){
+                            $("#numprac2").attr('checked',true);
+                            $("#numprac2").attr('disabled',true);
+                            if(horlabprac >= horprac2 && horlabprac < horprac3){
+                                $("#pract2").show();
+                            }
+                            if(horlabprac >= horprac3){
+                                $("#pract2").show();
+                                $("#pract3").show();
+                                $("#numprac3").attr('checked',false);
+                                $("#numprac3").attr('disabled',true);
+                            }
+                        }
+                        if(numpracfor == 3){
+                            $("#numprac3").attr('checked',true);
+                            $("#numprac3").attr('disabled',true);
+                            if(horlabprac >= horprac3){
+                                $("#pract3").show();
+                            }
+                        }
+                    }
+                {% endif %}
+            };
+            desbloquearfichrecep = function(){
+                $("#editfichrecpt").hide();
+                $("#cancelfichrecpt").show();
+                $("#guardfichrecpt").show();
+                $('#rucent').attr("disabled",false);
+                $('#feciniciopr').attr("disabled",false);
+                $('#fecfinpr').attr("disabled",false);
+                $('#horiniprac').attr("disabled",false);
+                $('#horfinprac').attr("disabled",false);
+                $('#nomtutrec').attr("disabled",false);
+                $('#cargorec').attr("disabled",false);
+
+                var horprac1 = parseFloat('{{ HORAS_MIN_PRACTICAS }}');
+                var horprac2 = parseFloat('{{ HORAS_MIN_PRACTICAS }}') * 2;
+                var horprac3 = parseFloat('{{ HORAS_MIN_PRACTICAS }}') * 3;
+                var horlabprac = parseFloat($("#horlabprac").val());
+                var numpract = '{{ solicitudpractica.fichaentidadrec.cantidad }}';
+                for (let x = 0; x < numpract.split(',').length; x++) {
+                    var numpracfor = numpract.split(',')[x];
+                    if(numpracfor == 1){
+                        if(horlabprac >= horprac1 && horlabprac < horprac2){
+                            $("#pract1").show();
+                            $("#numprac1").attr('disabled',false);
+                        }
+                        if(horlabprac >= horprac2 && horlabprac < horprac3){
+                            $("#pract1").show();
+                            $("#numprac1").attr('disabled',false);
+                            $("#pract2").show();
+                            $("#numprac2").attr('disabled',false);
+                        }
+                        if(horlabprac >= horprac3){
+                            $("#pract1").show();
+                            $("#numprac1").attr('disabled',false);
+                            $("#pract2").show();
+                            $("#numprac2").attr('disabled',false);
+                            $("#pract3").show();
+                            $("#numprac3").attr('disabled',false);
+                        }
+                    }
+                    if(numpracfor == 2){
+                        if(horlabprac >= horprac2 && horlabprac < horprac3){
+                            $("#pract2").show();
+                            $("#numprac2").attr('disabled',false);
+                        }
+                        if(horlabprac >= horprac3){
+                            $("#pract2").show();
+                            $("#numprac2").attr('disabled',false);
+                            $("#pract3").show();
+                            $("#numprac3").attr('disabled',false);
+                        }
+                    }
+                    if(numpracfor == 3){
+                        if(horlabprac >= horprac3){
+                            $("#pract3").show();
+                            $("#numprac3").attr('disabled',false);
+                        }
+                    }
+                }
+{#                $('#numprac').attr("disabled",false);#}
+                $('#convenrec').attr("disabled",false);
+                $('#extensionrec').attr("disabled",false);
+                $('#celularrec').attr("disabled",false);
+                $('#emailtut').attr("disabled",false);
+                $('#lunes').attr("disabled",false);
+                $('#martes').attr("disabled",false);
+                $('#miercoles').attr("disabled",false);
+                $('#jueves').attr("disabled",false);
+                $('#viernes').attr("disabled",false);
+                $('#sabado').attr("disabled",false);
+                $('#domingo').attr("disabled",false);
+            };
+
+            {% if solicitudpractica.fichaentidadrec %}
+                bloquearfichrecep();
+            {% endif %}
+{#            ////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#            //////////////////////////////////REGISTRO DE ACTIVIDADES//////////////////////////////////////////////////////////////////////#}
+            {% if solicitudpractica.fichaentidadrec %}
+                var inipract = new Date(parseInt('{{ solicitudpractica.fichaentidadrec.inicio|date:'Y' }}'), parseInt('{{ solicitudpractica.fichaentidadrec.inicio|date:'m' }}')-1, parseInt('{{ solicitudpractica.fichaentidadrec.inicio|date:'d' }}'));
+                var finpract = new Date(parseInt('{{ solicitudpractica.fichaentidadrec.fin|date:'Y' }}'), parseInt('{{ solicitudpractica.fichaentidadrec.fin|date:'m' }}')-1, parseInt('{{ solicitudpractica.fichaentidadrec.fin|date:'d' }}'));
+
+            {% endif %}
+            $("#guardregact").click(function(){
+                var datos = {};
+                datos.registroprac = [];
+                var valido = true;
+
+                $("#RegActivAddForm tr").each(function (index) {
+                    if ($(this).attr('con') > 0) {
+                        if($('#fechregact' + $(this).attr('con')).val() =='' || $('#actividadreg' + $(this).attr('con')).val() == '' || $('#observacionreg' + $(this).attr('con')).val() == ''|| $('#hinicioreg' + $(this).attr('con')).val() == ''|| $('#hfinreg' + $(this).attr('con')).val() == ''){
+                            valido = false;
+                            smoke.alert("Faltan datos por ingresar");
+                            return false;
+                        }else{
+                            valido = true;
+                            datos.registroprac.push({"idregact": $('#fechregact' + $(this).attr('con')).attr('myval'), "fechregact": $('#fechregact' + $(this).attr('con')).val(), "actividadreg": $('#actividadreg' + $(this).attr('con')).val(),
+                                        "observacionreg": $('#observacionreg' + $(this).attr('con')).val(),"hinicioreg": $('#hinicioreg' + $(this).attr('con')).val(),"hfinreg":$('#hfinreg' + $(this).attr('con')).val()});
+                        }
+                        var fechregistr = false;
+                        var fechtrreg = nuevafecha($('#fechregact' + $(this).attr('con')).val());
+                        var numcon =  $(this).attr('con');
+                        $("#RegActivAddForm tr").each(function (index) {
+                            if ($(this).attr('con') > 0) {
+                                var fechtr = nuevafecha($('#fechregact' + $(this).attr('con')).val());
+                                if(fechtr.getFullYear()== fechtrreg.getFullYear() && fechtr.getMonth()==fechtrreg.getMonth()&& fechtr.getDate()==fechtrreg.getDate() && $(this).attr('con') != numcon ){
+                                   smoke.alert('Hay fechas registradas dos veces');
+                                   fechregistr = true;
+
+                                }
+                                if(fechtr < inipract || fechtr > finpract){
+                                    smoke.alert('la Fecha debe ser mayor a '+ transformfecha(inipract) +' y menor a '+transformfecha(finpract)+' las fechas ingresadas en la ficha receptora ');
+                                    fechregistr = true;
+                                }
+
+                            }
+                        });
+                        if(fechregistr){
+                            valido = false;
+                            return false;
+                        }
+                    }else{
+                        valido = false;
+                    }
+                });
+                {% if solicitudpractica %}
+                    datos.idsolicitudprac = '{{ solicitudpractica.id }}';
+                {% endif %}
+                if(valido){
+                    showWaiting("Guardando información", "espere un momento por favor...");
+                    $.post("/solicitudpracticas", {"action":'guardarregact', "datos": JSON.stringify(datos),'idesc':'{{ escenariopractica.id }}'}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            smoke.alert("Registro Ingresado");
+                            var idsolg = data.idsol;
+                            setInterval(function(){
+                                $.unblockUI();
+                                location.href='/solicitudpracticas?ides={{ escenariopractica.id }}&idsol={{ solicitudpractica.id }}&reac=1';
+                            }, 1200);
+                        }else{
+
+                            smoke.alert("Error al Guardar, intentelo nuevamente");
+                        }
+
+                    }, "json");
+                }
+            });
+            $("#envsolic").click(function(){
+                smoke.confirm("Esta seguro de enviar la solicitud?", function(e){
+                if (e){
+                    showWaiting("Enviando la solicitud", "espere un momento por favor...");
+                    $.post("/solicitudpracticas", {"action":'enviarsolicict', "idsoli": '{{ solicitudpractica.id }}'}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            smoke.alert("Solicitud Enviada");
+                            var idsolg = data.idsol;
+                            setInterval(function(){
+                                $.unblockUI();
+                                location.href='/solicitudpracticas?ides={{ escenariopractica.id }}&idsol={{ solicitudpractica.id }}';
+                            }, 1200);
+                        }else{
+                            smoke.alert(data.mensaje);
+                        }
+
+                    }, "json");
+                }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+            $("#enviarevalu").click(function(){
+                smoke.confirm("Esta seguro de enviar la evaluacion?", function(e){
+                if (e){
+                    showWaiting("Enviando la evaluacion al supervisor", "espere un momento por favor...");
+                    $.post("/solicitudpracticas", {"action":'enviarevalua', "idsoli": '{{ solicitudpractica.id }}'}, function(data) {
+                        hideWaiting();
+                        if (data.result=='ok') {
+                            smoke.alert("Evaluación Enviada");
+                            var idsolg = data.idsol;
+                            setInterval(function(){
+                                $.unblockUI();
+                                location.href='/solicitudpracticas?ides={{ escenariopractica.id }}&idsol={{ solicitudpractica.id }}';
+                            }, 1200);
+                        }else{
+
+                            smoke.alert("Error al Guardar, intentelo nuevamente");
+                        }
+
+                    }, "json");
+                }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+{#        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#        ///////////////////////////////////////////BLOQUE DE REPORTES  DOCUEMTNO ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+
+{#        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#        ///////////////////////////////////////////ACEPTA PRACTICA ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+            $(".aceppracticaclas").click(function(){
+                var acepta = false;
+                var mensaje = 'Esta seguro de <b style="color:red"> no aceptar </b> la práctica?';
+                var mensajesmoke = 'Práctica no aceptada';
+                if($(this).attr('idval')=='si'){
+                    acepta = true;
+                    mensaje = 'Esta seguro de  <b style="color:red"> aceptar </b>  la práctica?';
+                    mensajesmoke = 'Práctica aceptada';
+                }
+                if(acepta){
+                    smoke.confirm(mensaje, function(e){
+                    if (e){
+                        showWaiting("Ingresando información", "espere un momento por favor...");
+                        $.post("/solicitudpracticas", {"action":'aceppracticaclas',"acepta":acepta, "idsoli": '{{ solicitudpractica.id }}'}, function(data) {
+                            hideWaiting();
+                            if (data.result=='ok') {
+                                location.href=data.url;
+                            }else{
+
+                                smoke.alert("Error al Guardar, intentelo nuevamente");
+                            }
+
+                        }, "json");
+                    }else{
+                        }
+                        }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+                }else{
+                    smoke.prompt("Escriba observación porque no acepta la práctica:", function(v) {
+                        if (v) {
+                            showWaiting("Ingresando información", "espere un momento por favor...");
+                            $.post("/solicitudpracticas", {"action":'aceppracticaclas',"acepta":acepta, "idsoli": '{{ solicitudpractica.id }}',"obser": v}, function(data) {
+                                hideWaiting();
+                                if (data.result=='ok') {
+                                    location.href=data.url;
+                                }else{
+
+                                    smoke.alert("Error al Guardar, intentelo nuevamente");
+                                }
+
+                            }, "json");
+                        }else{
+                            smoke.alert("Debe Ingresar observación");
+                        }
+                        }, {
+                        ok: "GUARDAR",
+                        cancel: "CANCELAR",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+                }
+            });
+
+{#            /////////////////////////////////////EVALUACION SUPERVISOR//////////////////////////////////////////////////////////#}
+{#            ///////////////////////////////////////////////////////////////////////////////////////////////#}
+            $(".indicador").click(function(){
+                var idin = $(this).attr('idin');
+                var idsegdet = $(this).attr('idsegdet');
+                {% for p in puntajeindicador %}
+                    if ($("#indicador"+idsegdet+idin).is(':checked')) {
+                        if(parseInt(idin)!=parseInt('{{ p.id }}')){
+                            $("#indicador"+idsegdet+'{{ p.id }}').attr('checked',false)
+                        }else{
+                            $("#puntaje"+idsegdet).val('{{ p.puntos }}')
+                        }
+                    }
+                    else{
+                        $("#puntaje"+idsegdet).val('0')
+                    }
+                {% endfor %}
+                sumatotal();
+            });
+            sumatotal = function(){
+                var valor = 0;
+                {% for s in segmentoindicadoremp %}
+                    {% for d in s.segdetaindica %}
+                         valor = parseFloat(valor) + parseFloat($('#puntaje'+'{{ d.id }}').val());
+                    {% endfor %}
+                {% endfor %}
+                var valor = (valor / parseFloat('{{ numsegdet }}')).toFixed(1);
+                $("#totpuntaje").html(valor);
+            };
+            var editarevalempre = false;
+            $(".btn-editareval").click(function(){
+                editarevalempre = true;
+                {% for s in segmentoindicadoremp %}
+                    {% for d in s.segdetaindica %}
+                        {% for p in puntajeindicador %}
+                            $("#indicador"+"{{ d.id }}{{ p.id }}").attr("disabled",false);
+                        {% endfor %}
+                    {% endfor %}
+                {% endfor %}
+                $("#divarchsuperempr").show();
+                $(".btn-guardareval").show();
+                $(".btn-editareval").hide();
+                $(".btncancelsupereval").show();
+            });
+            $(".btn-guardareval").click(function(){
+                var idin = $(this).attr('idin');
+                var idsegdet = $(this).attr('idsegdet');
+                var datos = {};
+                var valida = true;
+                datos.indicadores = [];
+                datos.idsolicitud = '{{ solicitudpractica.id }}';
+                {% for s in segmentoindicadoremp %}
+                    {% for d in s.segdetaindica %}
+                        var eleccionin = false;
+                        {% for p in puntajeindicador %}
+                            if ($("#indicador"+"{{ d.id }}"+"{{ p.id }}").is(':checked')) {
+                                eleccionin = true;
+                                datos.indicadores.push({"idindic":"{{ p.id }}","iddetseg":"{{ d.id }}"})
+                            }
+                            if(parseInt("{{ puntajeindicador.count }}") == parseInt("{{ forloop.counter }}")){
+                                if(!eleccionin){
+                                    valida = false;
+                                }
+                            }
+                        {% endfor %}
+                    {% endfor %}
+                {% endfor %}
+                if(valida){
+                    smoke.confirm("Esta seguro de guardar la evaluación de la empresa?", function(e){
+                        if (e){
+                            showWaiting("Guardando la evaluación", "espere un momento por favor...");
+                            inputFileImage = document.getElementById("archsuperempr");
+                            file = inputFileImage.files[0];
+                            var data = new FormData();
+                            if(file || editarevalempre){
+                                data.append('archivo',file);
+                                data.append('action','guardareval');
+                                data.append('datos',JSON.stringify(datos));
+                                var url = "/solicitudpracticas";
+                                showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                                $.ajax({
+                                url:url,
+                                type:"POST",
+                                contentType:false,
+                                data:data,
+                                processData:false,
+                                cache:false,
+                                success: function(data)
+                                   {
+                                    hideWaiting();
+                                    if(data.result=="ok"){
+                                        location.href='/solicitudpracticas?ides={{ escenariopractica.id }}&idsol={{ solicitudpractica.id }}&supem=1';
+                                    }
+                                    else{
+                                        smoke.alert("Error vuelva a intentarlo.");
+                                    }
+
+                                   }
+                                });
+                            }else{
+                                hideWaiting();
+                                smoke.alert("Falta adjuntar archivo.");
+                            }
+
+{#                            $.post("/supervisor", {"action":'guardareval', "datos":  JSON.stringify(datos)}, function(data) {#}
+{#                                hideWaiting();#}
+{#                                if (data.result=='ok') {#}
+{#                                    location.href = '/supervisor?id={{ solicitud.id }}';#}
+{#                                }else{#}
+{#                                    smoke.alert("Error al Guardar, intentelo nuevamente");#}
+{#                                }#}
+{##}
+{#                            }, "json");#}
+                        }else{
+                        }
+                        }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+                }else{
+                    smoke.alert("Debe seleccionar todos los items..");
+                }
+            });
+            var column = parseInt('{{ puntajeindicador.count }}') + 2;
+            {% if solicitudpractica.promedioevasuper %}
+                column = column - 1;
+            {% endif %}
+            $("#tfootform").html('<tr {% if solicitudpractica.promedioevasuper %} class="alert {% if solicitudpractica.promedioevasuper < PUNTAJE_APRUEBA_PRACTICA %}alert-danger{% else %}alert-success{% endif %}" {% endif %}><td colspan="'+column+'">' +
+                    '<h3>TOTAL</h3>{% if solicitudpractica.promedioevasuper %}</td><td style="vertical-align: middle;">{% if solicitudpractica.promedioevasuper >= PUNTAJE_APRUEBA_PRACTICA %}<a class="label label-success">APROBADO</a>{% else %}<a class="label label-important">REPROBADO</a>{% endif %}</td> {% else %} </td>{% endif %}<td ><h3 id="totpuntaje" style="text-align:center">0</h3></td></tr>');
+            {% if supem %}
+                $("#tabsupervisoreval").click();
+            {% endif %}
+            {% if solicitudpractica %}
+                {% if not solicitudpractica.archsupervempresa %}
+                    $("#archsuperempr").val("");
+                {% else %}
+                    var valor = 0;
+                    {% for s in segmentoindicadoremp %}
+                        {% for d in s.segdetaindica %}
+                             valor = parseFloat(valor) + parseFloat($('#puntaje'+'{{ d.id }}').val());
+                        {% endfor %}
+                    {% endfor %}
+                    var valor = (valor / parseFloat('{{ numsegdet }}')).toFixed(1);
+                    $("#totpuntaje").html(valor);
+                {% endif %}
+                {% for s in segmentoindicadoremp %}
+                    {% for d in s.segdetaindica %}
+                        {% with evalsuperemp=d|args:solicitudpractica.id|call:"existe_evalsuperemp" %}
+                            {% if not evalsuperemp %}
+                                {% for p in puntajeindicador %}
+                                    $("#indicador"+"{{ d.id }}{{ p.id }}").attr("checked",false);
+                                {% endfor %}
+                                $("#puntaje"+"{{ d.id }}").val(0);
+                            {% endif %}
+                        {% endwith %}
+                    {% endfor %}
+                {% endfor %}
+            {% endif %}
+
+            $(".archsubir").change(function(){
+                var idnom = "archestudiant"+$(this).attr("idr");
+                var x = document.getElementById(idnom);
+                var fileExt = x.value;
+                var validExts = new Array(".pdf");
+                var fileExt1 = fileExt.substring(fileExt.lastIndexOf('.'));
+                var nombre= fileExt.substring(fileExt.indexOf(x.files[0].name),fileExt.lastIndexOf('.'));
+                if (parseInt(soloLetrasYNum(nombre))==1){
+                    $("#"+idnom).val('');
+                    $($("#"+idnom).get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El Nombre del Archivo contiene Tilde, espacios en blanco o Caracteres Especiales</h6>");
+                }else if (validExts.indexOf(fileExt1) < 0){
+                    $("#"+idnom).val('');
+                    $($("#"+idnom).get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El formato del archivo solo debe ser .pdf</h6>");
+                }else{
+                    readURL(this);
+                    $("#aguardarch"+$(this).attr("idr")).show();
+                    $("#acancelch"+$(this).attr("idr")).show();
+                    $($("#"+idnom).get(0).parentNode).find(".help-text").html("");
+                }
+            });
+
+            $(".aguardarch").click(function(){
+                showWaiting("Guardando archivo", "espere un momento por favor...");
+                var idnom = "archestudiant"+$(this).attr("idr");
+                var idrep = $(this).attr("idr");
+                inputFileImage = document.getElementById(idnom);
+                file = inputFileImage.files[0];
+                var data = new FormData();
+                if(file){
+                    data.append('archivo',file);
+                    data.append('action','guardarreport');
+                    data.append('idrep',idrep);
+                    data.append('idsolic','{{ solicitudpractica.id }}');
+                    var url = "/solicitudpracticas";
+                    showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                    $.ajax({
+                    url:url,
+                    type:"POST",
+                    contentType:false,
+                    data:data,
+                    processData:false,
+                    cache:false,
+                    success: function(data)
+                       {
+                        hideWaiting();
+                        if(data.result=="ok"){
+                            location.href='/solicitudpracticas?ides={{ escenariopractica.id }}&idsol={{ solicitudpractica.id }}&archpra=1';
+                        }
+                        else{
+                            smoke.alert("Error vuelva a intentarlo.");
+                        }
+
+                       }
+                    });
+                }else{
+                    hideWaiting();
+                    smoke.alert("Falta adjuntar archivo.");
+                }
+            });
+
+            $(".editarch").click(function(){
+                $("#adescarch"+$(this).attr("idr")).hide();
+                $("#aeditarch"+$(this).attr("idr")).hide();
+                $("#aguardarch"+$(this).attr("idr")).show();
+                $("#acancelch"+$(this).attr("idr")).show();
+                $("#archestudiant"+$(this).attr("idr")).show();
+                $($("#archestudiant"+$(this).attr("idr")).get(0).parentNode).find(".help-text").show();
+            });
+            {% if archpra %}
+                $("#tabdocument").click();
+            {% endif %}
+
+{#        ////////////////////////////////////////////CALCULAR HORAS LABORADAS POR FECHA Y DIAS /////////#}
+            $("#feciniciopr").on('changeDate', function(){
+                var feinici =  new Date($("#feciniciopr").val().split('-')[0],$("#feciniciopr").val().split('-')[1],$("#feciniciopr").val().split('-')[2])
+                var fefin =  new Date($("#fecfinpr").val().split('-')[0],$("#fecfinpr").val().split('-')[1],$("#fecfinpr").val().split('-')[2])
+                if(feinici >= fefin){
+                    smoke.alert("La fecha de inicio de practica debe ser menor a la de fin")
+                    $("#feciniciopr").focus();
+                }
+
+                calcularhoralabor(true);
+            });
+            $("#fecfinpr").on('changeDate', function(){
+                var feinici =  new Date($("#feciniciopr").val().split('-')[0],$("#feciniciopr").val().split('-')[1],$("#feciniciopr").val().split('-')[2])
+                var fefin =  new Date($("#fecfinpr").val().split('-')[0],$("#fecfinpr").val().split('-')[1],$("#fecfinpr").val().split('-')[2])
+                if(feinici >= fefin){
+                    smoke.alert("La fecha de inicio de practica debe ser menor a la de fin")
+                    $("#feciniciopr").focus();
+                }
+                calcularhoralabor(true);
+            });
+            $(".classchekdias").click(function(){
+                calcularhoralabor(true);
+            });
+            function transfhoras(seconds) {
+                var hour = Math.floor(seconds / 3600);
+                hour = (hour < 10)? '0' + hour : hour;
+                var minute = Math.floor((seconds / 60) % 60);
+                minute = (minute < 10)? '0' + minute : minute;
+                var second = seconds % 60;
+                second = (second < 10)? '0' + second : second;
+                return hour + ':' + minute
+            }
+
+            cantpractfun1 = function(){
+                var cantpract = parseInt('{{ escenariopractica.numero_practica }}');
+                if(cantpract == 1){
+                    $("#pract1").show();
+                    $("#numprac1").attr('disabled',true);
+                    $("#numprac1").attr('checked',false);
+                    $("#pract2").hide();
+                    $("#numprac2").attr('disabled',true);
+                    $("#numprac2").attr('checked',false);
+                    $("#pract3").hide();
+                    $("#numprac3").attr('disabled',true);
+                    $("#numprac3").attr('checked',false);
+                }
+                else if(cantpract == 2){
+                    $("#pract1").hide();
+                    $("#numprac1").attr('disabled',true);
+                    $("#numprac1").attr('checked',false);
+                    $("#pract2").show();
+                    $("#numprac2").attr('disabled',true);
+                    $("#numprac2").attr('checked',false);
+                    $("#pract3").hide();
+                    $("#numprac3").attr('disabled',true);
+                    $("#numprac3").attr('checked',false);
+                }else {
+                    $("#pract1").hide();
+                    $("#numprac1").attr('disabled',true);
+                    $("#numprac1").attr('checked',false);
+                    $("#pract2").hide();
+                    $("#numprac2").attr('disabled',true);
+                    $("#numprac2").attr('checked',false);
+                    $("#pract3").show();
+                    $("#numprac3").attr('disabled',true);
+                    $("#numprac3").attr('checked',false);
+                }
+            };
+
+
+
+            $(".numpraccheck").click(function(){
+                var nomcheck = $(this).attr('id');
+                var cantpract = parseInt('{{ escenariopractica.numero_practica }}');
+                if(nomcheck == 'numprac1'){
+                    if(!$("#numprac1").is(':checked')){
+                        $("#numprac2").attr("checked",false);
+                        $("#numprac3").attr("checked",false);
+                    }
+                }
+                if(nomcheck == 'numprac2'){
+                    if($("#numprac2").is(':checked')){
+                        if(!$("#numprac1").is(':checked') && cantpract == 1){
+                            $("#numprac2").attr("checked",false);
+                            $("#numprac3").attr("checked",false);
+                            smoke.alert('debe seleccionar la primera practica')
+                        }
+                    }
+                    else{
+                        $("#numprac3").attr("checked",false);
+                    }
+                }
+                if(nomcheck == 'numprac3'){
+                    if($("#numprac3").is(':checked')){
+                        if(!$("#numprac1").is(':checked')  && cantpract == 1){
+                            $("#numprac2").attr("checked",false);
+                            $("#numprac3").attr("checked",false);
+                            smoke.alert('debe seleccionar la primera practica')
+                        }
+                        else if(!$("#numprac2").is(':checked')  && cantpract == 2){
+                            $("#numprac3").attr("checked",false);
+                            smoke.alert('debe seleccionar la segunda practica')
+                        }
+                    }
+                }
+            });
+
+            document.onkeydown = function disableKeys() {
+                // Disable F1, F3 and F5 (112, 114 and 116, respectively).
+                //
+                if( typeof event != 'undefined' ) {
+                  if( (event.keyCode == 112) ||
+                      (event.keyCode == 114) ||
+                      (event.keyCode == 116) ) {
+                      var URLactual = window.location.href;
+                      URLactual = URLactual.split('//')[1];
+                      location.href = URLactual.split('/')[1];
+                  }
+                }
+                 if ((event.ctrlKey || event.metaKey) && event.keyCode == 82) // Ctrl-R
+                 {
+                     var URLactual = window.location.href;
+                     URLactual = URLactual.split('//')[1];
+                     location.href = URLactual.split('/')[1];
+                 }
+            };
+{#///////////////////////////////////////////////////////////////////////////////ENVIAR PRACTICA REALIZADA#}
+
+
+            $(".enviarpract").click(function(){
+                var valida = true;
+                {% if not reportcertpracti %}
+                    valida = false;
+                    smoke.alert("Debe ingresar el certificado de práctica");
+                {% endif %}
+                if(valida){
+                        smoke.confirm("Esta seguro de enviar la práctica?", function(e){
+                            if (e){
+                                $.post("/solicitudpracticas", {"action":'enviarpract',"idsolic":  '{{ solicitudpractica.id }}' }, function(data) {
+                                    hideWaiting();
+                                    if (data.result=='ok') {
+                                         var URLactual = window.location.href;
+                                         URLactual = URLactual.split('//')[1];
+                                         location.href = URLactual.split('/')[1];
+                                    }else{
+                                        smoke.alert(data.mensaje);
+                                    }
+
+                                }, "json");
+
+                            }
+                            else{}
+                        },
+                        {
+                            ok: "Si",
+                            cancel: "No",
+                            classname: "custom-class",
+                            reverseButtons: true
+                        });
+                }
+            });
+        });
+    </script>
+    <style type="text/css">
+        .classpront{
+            color: white;
+            background: rgba(91,192,222,0.77);
+            background: -moz-linear-gradient(top, rgba(91,192,222,0.77) 0%, rgba(47,150,180,0.65) 54%, rgba(47,150,180,0.55) 100%);
+            background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(91,192,222,0.77)), color-stop(54%, rgba(47,150,180,0.65)), color-stop(100%, rgba(47,150,180,0.55)));
+            background: -webkit-linear-gradient(top, rgba(91,192,222,0.77) 0%, rgba(47,150,180,0.65) 54%, rgba(47,150,180,0.55) 100%);
+            background: -o-linear-gradient(top, rgba(91,192,222,0.77) 0%, rgba(47,150,180,0.65) 54%, rgba(47,150,180,0.55) 100%);
+            background: -ms-linear-gradient(top, rgba(91,192,222,0.77) 0%, rgba(47,150,180,0.65) 54%, rgba(47,150,180,0.55) 100%);
+            background: linear-gradient(to bottom, rgba(91,192,222,0.77) 0%, rgba(47,150,180,0.65) 54%, rgba(47,150,180,0.55) 100%);
+            filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#5bc0de', endColorstr='#2f96b4', GradientType=0 );
+        }
+        .existecan button[ id|='prompt-ok']{
+            color: #ffffff;
+            background: #161616;
+        }
+        .existecan button[ id|='prompt-cancel']{
+            color: #ffffff;
+            background: #b11f1f;
+        }
+        .existecan input[ id|='dialog-input']{
+            text-transform: uppercase;
+            text-align: center;
+        }
+        .derecha .input-xxlarge{
+            width:95%;
+        }
+        .derecha .input-small{
+            width:20%;
+        }
+        .derecha .input-medium{
+            width:30%;
+        }
+        .derecha>.row-fluid>.span2>b{
+            width:100%;
+        }
+        .bordediv{
+            border-radius: 10px 10px 10px 10px;
+            -moz-border-radius: 10px 10px 10px 10px;
+            -webkit-border-radius: 10px 10px 10px 10px;
+            border: 2px solid #b3a6b3;
+            padding: 1%;
+        }
+        .agregpat{
+            border-radius: 45%;
+            background: green;
+            color:white;
+            font-size: 20px;
+            top: 12%;
+            float: right;
+            cursor: pointer;
+        }
+        .clsremovepat{
+            border-radius: 15%;
+            background: #e11b12;
+            color:white;
+            font-size: 14px;
+            cursor: pointer;
+            float: right;
+        }
+
+        .disabled {
+            pointer-events: none;
+            cursor: default;
+            background: #eeeeee;
+            color: #333333;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+
+    <div class="row-fluid">
+        <div class="span11">
+            <header style="text-align: center">
+                <h2>DATOS DE PRACTICA PRE-PROFESIONALES
+                </h2>
+            </header>
+        </div>
+        <div class="span1">
+            <a href="/escenariopractica" class="btn btn-danger" style="float: right"><i class="icon-arrow-left"></i>Atras</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span12">
+            {% if supervisor %}
+                <h3>Supervisor: {{ supervisor.profesormateria.profesor.persona.nombre_completo_inverso }}</h3>
+            {% endif %}
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span12">
+            {% if solicitudpractica and not solicitudpractica.fecaprobada and not escenariopractica.convenio  and  reportcartcompro and not solicitudpractica.enviada  %}
+                <a  class="btn btn-success" style="float: left" id="envsolic"><i class="icon-caret-left"></i> Enviar Solicitud</a>
+            {% endif %}
+            {% if escenariopractica.convenio and not solicitudpractica.fechaacepta and not solicitudpractica.acepto and  solicitudpractica.fecaprobada and solicitudpractica.aprobada%}
+                <a  class="btn btn-info aceppracticaclas" style="float: left" idval="si"><i class="icon-save"></i> Aceptar Práctica</a>
+                <a  class="btn btn-warning aceppracticaclas" style="float: left" idval="no"><i class="icon-save"></i> No Aceptar Práctica</a>
+            {% endif %}
+            {% if escenariopractica.convenio and solicitudpractica.fechaacepta%}
+                {% if solicitudpractica.acepto %}
+                    <a  class="btn btn-info" style="float: left;cursor: none" idval="si">Practica Aceptada</a>
+                {% else %}
+                    <a  class="btn btn-danger" style="float: left;cursor: none" idval="no">Practica No Aceptada</a>
+                {% endif %}
+            {% endif %}
+            {% if solicitudpractica.fecaprobada and solicitudpractica.rubroespecie and solicitudpractica.rubroespecie.aplicada  and solicitudpractica.promedioevasuper and not solicitudpractica.fechestudfinal  %}
+                <a style="cursor:pointer" class="btn btn-success enviarpract"  nombre="{{ solicitudpractica.matricula.inscripcion.persona.nombre_completo }}" id="{{ s.id }}"><i class="icon-check"></i> Enviar Práctica Realizada </a>
+            {% endif %}
+{#            {% if solicitudpractica.regactividad %}#}
+{#                <a  class="btn btn-info" style="float: left" id="enviarevalu"><i class="icon-caret-left"></i> Enviar Evaluación al Supervisor</a>#}
+{#            {% endif %}#}
+        </div>
+    </div>
+    {% if solicitudpractica.fecfinaliza %}<br><br>
+        <div class="row-fluid">
+            <div class="span3">
+                <h3> PRACTICA FINALIZADA </h3>
+                <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th> ESTADO PRACTICA</th>
+                            <th class="alert {% if solicitudpractica.rechazado %} alert-danger {% else %} alert-success {% endif %}"> {% if solicitudpractica.rechazado %} <a style="color: #b94a48"> RECHAZADA </a>  {% else %}  <a style="color:#468847 "> REALIZADA </a>  {% endif %}</th>
+                        </tr>
+                        <tr>
+                            {% if solicitudpractica.rechazado %}
+                               <th colspan="2" style="text-align: center"> Observación </th>
+                            {% else %}
+                                <th> Número de Práctica</th>
+                                <th> Horas </th>
+                            {% endif %}
+                        </tr>
+                    <thead>
+                    <tbody>
+                        {% if solicitudpractica.rechazado %}
+                            <tr>
+                                <td colspan="2"> {{ solicitudpractica.observrechazado }} </td>
+                            </tr>
+
+                        {% else %}
+                            {% for det in solicitudpractica.detallfinali %}
+                                <tr>
+                                    <td> {{ det.practica }} </td>
+                                    <td> {{ det.horas }} </td>
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+    <hr>
+    <div class="row-fluid">
+        <div class="panel-heading">
+            <ul class="nav nav-tabs">
+                <li class="active">
+                    <a href="#general" data-toggle="tab" id='tabgene'><h4> 1. FICHA ESTUDIANTE </h4> </a>
+                </li>
+                <li >
+                    <a href="#ficharecep" data-toggle="tab" id='tabficharecep' ><h4> 2. FICHA RECEPTORA</h4>
+                    </a>
+                </li>
+                <li >
+                    <a href="#regactiv" data-toggle="tab" id='tabregactiv' {% if not solicitudpractica.rubroespecie.aplicada  %} class="disabled" {% endif %}><h4> 3. REGISTRO ACTIVIDADES</h4>
+                    </a>
+                </li>
+                <li >
+                    <a href="#documento" data-toggle="tab" id='tabdocument' {% if not solicitudpractica %} class="disabled" {% endif %} ><h4> 4. ARCHIVOS DE PRACTICAS </h4>
+                    </a>
+                </li>
+                <li >
+                    <a href="#supervisoreval" data-toggle="tab" id='tabsupervisoreval' {% if not solicitudpractica.regactividad %}  class="disabled" {% endif %}><h4> 5. EVALUACIÓN DEL SUPERVISOR </h4>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="panel-body">
+            <div class="tab-content">
+{#                    ///////////////////////////////////////////GENERAL////////////////////////////////////#}
+{#                    ///////////////////////////////////////////GENERAL////////////////////////////////////#}
+                <div class="tab-pane fade in active" id="general">
+                    <div class="row-fluid" style="text-align: center">
+                        <h3>DATOS GENERALES</h3><br><br>
+                    </div>
+                    <div class="row-fluid">
+                        <div class="span9">
+                            <section class="derecha">
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Apellidos y Nombres <a style="font-size: 20px;color: #000000">*</a>:</b></div>
+                                    <div class="span8"><b>{{ inscripcion.persona.nombre_completo_inverso }} </b> </div>
+                                </div><br/>
+                                <div class="row-fluid" >
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>N° de Indentidad:&nbsp;&nbsp; </b></div>
+                                    <div class="span8">
+                                        <b>{% if inscripcion.persona.cedula %}{{ inscripcion.persona.cedula }}{% else %}{{ inscripcion.persona.pasaporte }}{% endif %}</b>
+                                    </div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Dirección Principal:</b></div>
+                                    <div class="span8">
+                                        <textarea type='text' {% if solicitudpractica.fecaprobada %} readonly {% endif %} id="direccion1" onblur="editarinscrip('direccion1',this)" placeholder="Direcci&oacute;n Principal" style="width:60%;text-transform: uppercase" rows="4" cols="50" >{{ inscripcion.persona.direccion }}</textarea>
+                                    </div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Dirección Secundaria:</b></div>
+                                    <div class="span8">
+                                        <textarea type='text' id="direccion2" {% if solicitudpractica.fecaprobada %} readonly {% endif %} onblur="editarinscrip('direccion2',this)" placeholder="Direcci&oacute;n Secundaria" style="width:60%;text-transform: uppercase" rows="4" cols="50" >{{ inscripcion.persona.direccion2 }}</textarea>
+                                    </div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>N° Domicilio:</b></div>
+                                    <div class="span8">
+                                        <input type="number" class="form-control input-small" {% if solicitudpractica.fecaprobada %} readonly {% endif %}  onblur="editarinscrip('numdom',this)" value="{{ inscripcion.persona.num_direccion }}" id="numdom" autocomplete="off"/>
+                                    </div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Teléfono conv.:</b></div>
+                                    <div class="span8"><input type="text" class="form-control  input-small" {% if solicitudpractica.fecaprobada %} readonly {% endif %} onblur="editarinscrip('telefonogen',this)" id="telefonogen" autocomplete="off" placeholder="9999999999" value="{{ inscripcion.persona.telefono_conv }}" /></div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Teléfono Celular:</b></div>
+                                    <div class="span8"><input type="text" class="form-control  input-small" {% if solicitudpractica.fecaprobada %} readonly {% endif %} onblur="editarinscrip('celulargen',this)" id="celulargen" autocomplete="off" placeholder="9999999999" value="{{ inscripcion.persona.telefono }}"  /></div>
+                                </div><br/>
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b>Email:</b></div>
+                                    <div class="span8"><input type="text" class="form-control input-xxlarge" {% if solicitudpractica.fecaprobada %} readonly {% endif %} onblur="editarinscrip('emailgen',this)" autocomplete="off" id="emailgen" value="{{ inscripcion.persona.email }}" placeholder="Email" /></div>
+                                </div><br/>
+
+                            </section>
+                        </div>
+                        <div class="span3">
+                            <section class="derecha">
+                                {% if not solicitudpractica.fecaprobada %}
+                                    <div class="row-fluid">
+                                        <input type="file" name="fotogen" id="fotogen" >
+                                        <p class="help-text">Tamano Maximo permitido 40Mb, en formato png, jpg </p>
+                                    </div><br/>
+                                {% endif %}
+                                <div class="row-fluid">
+                                    <div class="thumbnail" style="height: 270px">
+                                        {% if solicitudpractica.foto %}
+                                            <img src="{{ solicitudpractica.foto.url }}" id="prefotogen" alt="" style="width: 300px;height: 200px">
+                                        {% else %}
+                                            {% if inscripcion.persona.sexo_id == 1 %}
+                                                <img src="/static/images/nofotofem.jpg" id="prefotogen" alt="" style="height: 200px">
+                                            {% else %}
+                                                <img src="/static/images/nofotomas.jpg" id="prefotogen" alt="" style="height: 200px">
+                                           {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <a class="btn btn-success" id="guardafotogen" style="display: none"><i class="icon-save"></i> Guardar</a>
+                                </div><br/>
+                            </section>
+                        </div>
+                    </div>
+
+                    <div class="row-fluid" style="text-align: center">
+                        <h3>DATOS ACADEMICOS</h3><br><br>
+                    </div>
+                    <div class="row-fluid">
+                        <div class="span9">
+                            <section class="derecha">
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b> Carrera:</b></div>
+                                    <div class="span9"><b>{{ inscripcion.carrera }} </b> </div>
+                                </div><br/>
+                            </section>
+                        </div>
+                    </div>
+                    <div class="row-fluid">
+                        <div class="span9">
+                            <section class="derecha">
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b> Paralelo:</b></div>
+                                    <div class="span9"><b>{{ inscripcion.ultima_matricula_pararetiro.nivel.grupo.nombre }} </b> </div>
+                                </div><br/>
+                            </section>
+                        </div>
+                    </div>
+
+                    <div class="row-fluid">
+                        <div class="span9">
+                            <section class="derecha">
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b> Periodo Académico(Nivel):</b></div>
+                                    <div class="span9"><b>{{ inscripcion.ultima_matricula_pararetiro.nivel.nivelmalla }} - {{ inscripcion.ultima_matricula_pararetiro.nivel.periodo }}  </b>
+                                        {% if inscripcion.ultima_matricula_pararetiro.nivel.cerrado %}
+                                            <a class="label label-important">Cerrado</a>
+                                        {% else %}
+                                            <a class="label label-success">Abierto</a>
+                                        {% endif %}
+                                    </div>
+                                </div><br/>
+                            </section>
+                        </div>
+                    </div>
+
+                    <div class="row-fluid">
+                        <div class="span9">
+                            <section class="derecha">
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span2"><b> Promedio:</b></div>
+                                    <div class="span9">{{ inscripcion.calculopromedio }}</div>
+                                </div><br/>
+                            </section>
+                        </div>
+                    </div>
+
+                    <div class="row-fluid" style="text-align: center">
+                        <div class="span9">
+                            <h3>EXPERIENCIA LABORAL</h3><br><br>
+                        </div>
+                    </div>
+                    <div class="row-fluid">
+                        <div class="span9">
+                            <section class="derecha">
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span11">
+                                        {% if not solicitudpractica.experienciaslabo and not solicitudpractica.fecfinaliza and not solicitudpractica.fecaprobada and not solicitudpractica.fechestudfinal  or not solicitudpractica.fecfinaliza and solicitudpractica.fecaprobada and solicitudpractica.aprobada and not solicitudpractica.fechestudfinal %}
+                                            <p class="alert alert-info" style="text-transform: uppercase" >
+                                                <b> Si la empresa donde laboro   NO TIENE CONVENIO  y no se encuentra al seleccionarla en la columna nombre de la empresa dar,
+                                                <button class='btn btn-success glyphicon glyphicon-trash' id="agregaempresa" > CLICK AQUI </button> para ingresarla y vuelva a seleccionar.</b>
+                                            </p>
+                                        {% endif %}
+                                        <table class='table' cellpadding="0" cellspacing="0" id="tab_logic">
+                                            <thead>
+                                                <tr>
+                                                    <th style="text-align: center;width: 3%"> Convenio </th>
+                                                    <th style="text-align: center;width: 30%"> Últimos lugares donde ha laborado (Nombre de la Empresa) </th>
+                                                    <th style="text-align: center;width: 10%"> Periodo de tiempo (meses) </th>
+                                                    <th style="text-align: center;width: 60%"> Funciones realizadas </th>
+                                                    {% if not solicitudpractica.fecfinaliza and not solicitudpractica.fecaprobada and not solicitudpractica.fechestudfinal or not solicitudpractica.fecfinaliza and solicitudpractica.fecaprobada and solicitudpractica.aprobada and not solicitudpractica.fechestudfinal %}
+                                                        <th style="text-align: center;width: 7%"><a id="add_row" title="Agregar Experiencia laboral" class='btn btn-info'><i class="icon-plus icon-white"></i> </a></th>
+                                                    {% endif %}
+                                                </tr>
+                                            </thead>
+                                            <tbody id="ExpeLabAddForm">
+                                                <tr id='addr0' data-id="0" con="0" class="hidden">
+                                                    <td data-name="convenio"><br>
+                                                        <input type="checkbox" style="width: 50%;height: 2em" class="input input-xxlarge convenioemcla" id="convenio0" alt="0" name="convenio0"/>
+                                                    </td>
+                                                    <td data-name="lugar"><br>
+                                                        <input type="text" class="input input-xxlarge busempresaexp" id="lugar0" alt="0"  idexplab="0" name="lugar0" myval="0"/>
+                                                    </td>
+                                                    <td data-name="tiempo"><br>
+                                                        <input type="number" class="input input-xxlarge" id="tiempo0" name="tiempo0"/>
+                                                    </td>
+                                                    <td data-name="funcion">
+                                                        <textarea type='text'  id="funcion0" name="funcion0" placeholder="Funciones Realizadas" style="width:90%;text-transform: uppercase" rows="4" cols="50" ></textarea>
+                                                    </td>
+                                                    <td data-name="dellex">
+                                                        <button name="dellex0" id="dellex0" class='btn btn-minis btn-danger glyphicon glyphicon-trash row-remove' ><i class="icon-remove icon-white"></i></button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        {% if not solicitudpractica.fecfinaliza and not solicitudpractica.fecaprobada and not solicitudpractica.fechestudfinal or not solicitudpractica.fecfinaliza and solicitudpractica.fecaprobada and solicitudpractica.aprobada and not solicitudpractica.fechestudfinal %}
+                                            <a class="btn btn-success" id="guardexperlab" style="float: right"><i class="icon-save"></i> Guardar</a>
+                                            {% if solicitudpractica and not solicitudpractica.fecaprobada  and not solicitudpractica.finalizada and not solicitudpractica.fechestudfinal %}
+                                                <a class="btn btn-info" id="editexperlab" style="float: right;display: None" onclick="desbloquearexp()"><i class="icon-edit"></i> Editar</a>
+                                            {% endif %}
+                                            <a class="btn btn-danger" id="cancelexperlab" style="float: right;display: None" onclick="location.reload()"><i class="icon-remove"></i> Cancelar</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+{#                      ///////////////////////////////////////////FICHA ENTIDAD RECEPTORA//////////////////////////////////////#}
+{#                      ///////////////////////////////////////////FICHA ENTIDAD RECEPTORA//////////////////////////////////////#}
+                <div class="tab-pane fade" id="ficharecep">
+
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6" style="text-align: center"><h3>FICHA DE ENTIDAD RECEPTORA</h3></div>
+
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            {% if solicitudpractica.fichaentidadrec.convenio %}
+                                <b>Convenio</b><input type="checkbox"  id="convenio" name="convenio" style="width: 10%;height: 2em" disabled checked/><br>
+                            {% endif %}
+                            <b>RUC:</b><br>
+                            <input type="text" placeholder="Número de RUC de la entidad" myval="0" class="input input-large" id="rucent" name="rucent"/>
+                            <p id="prucent" style="color: red"></p>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            <b>Nombre de la entidad receptora:</b><br>
+                            <input type="text" placeholder="Escriba el Nombre de la entidad Receptora" class="input input-xxlarge" style="width: 90%;text-transform: uppercase" id="entidadrec" name="entidadrec" disabled/>
+                            <p id="pentidadrec" style="color: red"></p>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            <b>Actividad económica principal:</b><br>
+                            <input type="text" placeholder="Escriba la actividad económica de la entidad Receptora"  style="width: 90%;text-transform: uppercase" class="input input-xxlarge" id="actividaent" name="actividaent" disabled/>
+                            <p id="pactividaent" style="color: red"></p>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            <b>Dirección:</b><br>
+                            <input type="text" placeholder="Escriba la dirección de la entidad Receptora" class="input input-xxlarge"  style="width: 90%;text-transform: uppercase" id="direccionent" name="direccionent" disabled/>
+                            <p id="pdireccionent" style="color: red"></p>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            <div class="span6">
+                                <b>Provincia:</b><br>
+                                <input type="text" placeholder="Escriba la Provincia de la entidad Receptora" class="input input-xxlarge" autocomplete="off"  style="width: 90%" id="provinciarec" name="provinciarec" disabled/>
+                                <p id="pprovinciarec" style="color: red"></p>
+                            </div>
+                            <div class="span6">
+                                <b>Ciudad:</b><br>
+                                <input type="text" placeholder="Escriba la Ciudad de la entidad Receptora" class="input input-xxlarge" autocomplete="off"  style="width: 90%" id="ciudadrec" name="ciudadrec" disabled/>
+                                <p id="pciudadrec" style="color: red"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6"><hr>
+                            <h4>INFORMACIÓN DE LA PRACTICA</h4>
+                            <hr></div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            <div class="span6">
+                                <b>Fecha de inicio práctica:</b><br>
+                                <input type="text" placeholder="Fecha Inicio" class="input input-xxlarge"  style="width: 90%" id="feciniciopr" value="{{ fechahoy|date:'Y-m-d' }}" name="feciniciopr"/>
+                                <p id="pfeciniciopr" style="color: red"></p>
+                            </div>
+                            <div class="span6">
+                                <b>Fecha de culminación de la práctica:</b><br>
+                                <input type="text" placeholder="Fecha Fin" class="input input-xxlarge"  style="width: 90%" id="fecfinpr"  value="{{ fechahoy|date:'Y-m-d' }}" name="fecfinpr"/>
+                                <p id="pfecfinpr" style="color: red"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            <div class="span6">
+                                <b>Hora Inicio Práctica:</b><br>
+                                <input type="text" placeholder="Hora inico" class="input input-small" id="horiniprac" name="horiniprac"/>
+                                <p id="phoriniprac" style="color: red"></p><br>
+                                <b>Hora Fin Práctica:</b><br>
+                                <input type="text" placeholder="Hora fin" class="input input-small"  id="horfinprac" name="horfinprac"/>
+                                <p id="phorfinprac" style="color: red"></p>
+                                <b>Horas a laborar:</b><br>
+                                <input type="text" placeholder="Hora fin" class="input input-small"  id="horlabprac" name="horlabprac" value="00:00" readonly/>
+                                <p id="phorlabprac" style="color: red"></p>
+                            </div>
+                            <div class="span6" style="border: 1px rgb(204 204 204) solid;padding: 4px;border-radius: 10px;text-align:center;">
+                                <b>Jornada laboral</b>
+                                <div class="row-fluid">
+                                    <div class="span6">
+                                        <b>Lunes:</b><input type="checkbox"  id="lunes" name="convenio" style="width: 25%;height: 2em" class="classchekdias"/><br>
+                                    </div>
+                                    <div class="span6">
+                                        <b>Martes:</b><input type="checkbox"  id="martes" name="convenio" style="width: 25%;height: 2em" class="classchekdias"/><br>
+                                    </div>
+                                </div>
+                                <div class="row-fluid">
+                                    <div class="span6">
+                                        <b>Miercoles:</b><input type="checkbox"  id="miercoles" name="convenio" style="width: 25%;height: 2em" class="classchekdias"/><br>
+                                    </div>
+                                    <div class="span6">
+                                        <b>Jueves:</b><input type="checkbox"  id="jueves" name="convenio" style="width: 25%;height: 2em" class="classchekdias"/><br>
+                                    </div>
+                                </div>
+                                <div class="row-fluid">
+                                    <div class="span6">
+                                        <b>Viernes:</b><input type="checkbox"  id="viernes" name="convenio" style="width: 25%;height: 2em" class="classchekdias"/><br>
+                                    </div>
+                                    <div class="span6">
+                                        <b>Sábado:</b><input type="checkbox"  id="sabado" name="convenio" style="width: 25%;height: 2em" class="classchekdias"/><br>
+                                    </div>
+                                </div>
+                                <div class="row-fluid">
+                                    <div class="span6">
+                                        <b>Domingo:</b><input type="checkbox"  id="domingo" name="convenio" style="width: 25%;height: 2em" class="classchekdias"/><br>
+                                    </div>
+                                </div>
+
+                                <p id="pdiasseman" style="color: red"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            <b>Dirección de correo electrónico del tutor de la entidad receptora:</b><br>
+                            <input type="text" placeholder="Escriba la dirección de correo electrónico del tutor por parte de la entidad receptora" class="input input-xxlarge"  style="width: 90%" id="emailtut" name="emailtut"/>
+                            <p id="pemailtut" style="color: red"></p>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            <b>Nombres y Apellidos del tutor de la entidad receptora:</b><br>
+                            <input type="text" placeholder="Nombres y Apellidos del tutor por parte de la entidad Receptora" class="input input-xxlarge"  style="width: 90%;text-transform: uppercase" id="nomtutrec" name="nomtutrec"/>
+                            <p id="pnomtutrec" style="color: red"></p>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            <div class="span6">
+                                <b>Cargo del tutor de la entidad receptora:</b><br>
+                                <input type="text" placeholder="Escribir el cargo del tutor por parte de la entidad receptora." class="input input-xxlarge"  style="width: 90%;text-transform: uppercase" id="cargorec" name="cargorec"/>
+                                <p id="pcargorec" style="color: red"></p>
+                            </div>
+
+                            <div class="span6">
+                                <b>Número de prácticas:</b><br>
+                                <div class="row-fluid" style="text-align: center">
+                                    <div class="span2" id="pract1" {% if escenariopractica.numero_practica != 1 %} style="display: none" {% endif %}>
+                                        <b> 1 </b><br/>
+{#                                        <input type="number" placeholder="Número de práctica a realizar"  value="{{ escenariopractica.numero_practica }}" class="input input-xxlarge"  style="width: 90%;text-align: center" id="numprac" name="numprac" readonly/>#}
+                                        <input type="checkbox" class="input input-xxlarge numpraccheck"  style="width: 90%;height: 2em;text-align: center" id="numprac1" name="numprac1" disabled/>
+                                        <p id="pnumprac1" style="color: red"></p>
+                                    </div> &nbsp; &nbsp; &nbsp; &nbsp;
+                                    <div class="span2" id="pract2" {% if escenariopractica.numero_practica != 2 %} style="display: none" {% endif %}>
+                                        <b> 2 </b><br/>
+{#                                        <input type="number" placeholder="Número de práctica a realizar"  value="{{ escenariopractica.numero_practica }}" class="input input-xxlarge"  style="width: 90%;text-align: center" id="numprac" name="numprac" readonly/>#}
+                                        <input type="checkbox" class="input input-xxlarge numpraccheck"  style="width: 90%;height: 2em;text-align: center" id="numprac2" name="numprac2" disabled/>
+                                        <p id="pnumprac2" style="color: red"></p>
+                                    </div> &nbsp; &nbsp; &nbsp; &nbsp;
+                                    <div class="span2" id="pract3" {% if escenariopractica.numero_practica != 3 %} style="display: none" {% endif %}>
+                                        <b> 3 </b><br/>
+{#                                        <input type="number" placeholder="Número de práctica a realizar"  value="{{ escenariopractica.numero_practica }}" class="input input-xxlarge"  style="width: 90%;text-align: center" id="numprac" name="numprac" readonly/>#}
+                                        <input type="checkbox" class="input input-xxlarge numpraccheck"  style="width: 90%;height: 2em;text-align: center" id="numprac3" name="numprac3" disabled/>
+                                        <p id="pnumprac3" style="color: red"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6">
+                            <div class="span6">
+                                <b>Número de teléfono institucional:</b><br>
+                                <input type="number" placeholder="Escriba el número de teléfono" class="input input-xxlarge"  style="width: 90%" id="convenrec" name="convenrec"/>
+                                <p id="pconvenrec" style="color: red"></p>
+                                <b>Extension:</b><br>
+                                <input type="number" placeholder="Escriba la extension" class="input input-xxlarge"  style="width: 90%" id="extensionrec" name="extensionrec"/>
+                                <p id="pextensionrec" style="color: red"></p>
+                            </div>
+                            <div class="span6">
+                                <b>Número de teléfono celular:</b><br>
+                                <input type="number" placeholder="Escriba el número de teléfono" class="input input-xxlarge"  style="width: 90%" id="celularrec" name="celularrec"/>
+                                <p id="pcelularrec" style="color: red"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6"><br><br>
+                            <a class="btn btn-success" style="float: right;" id="guardfichrecpt"><i class="icon-save"></i> Guardar</a>
+                            {% if solicitudpractica and not solicitudpractica.fichaentidadrec.convenio and  not solicitudpractica.fecaprobada %}
+                                <a class="btn btn-info" style="float: right;display: none" id="editfichrecpt" onclick="desbloquearfichrecep()"><i class="icon-edit"></i> Editar</a>
+                            {% endif %}
+                            <a class="btn btn-danger" style="float: right;display: none" id="cancelfichrecpt" onclick="bloquearfichrecep();"><i class="icon-remove"></i> Cancelar</a>
+                        </div>
+                    </div>
+                </div>
+{#                      ///////////////////////////////////////////REGISTRO ACTIVIDADES//////////////////////////////////////#}
+{#                      ///////////////////////////////////////////REGISTRO ACTIVIDADES//////////////////////////////////////#}
+                <div class="tab-pane fade" id="regactiv">
+
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <section class="derecha">
+                                <div class="row-fluid">
+                                    <div class="span1"></div>
+                                    <div class="span10">
+                                        <table class='table' cellpadding="0" cellspacing="0" id="tab_logic">
+                                            <thead>
+                                                <tr>
+
+                                                    <th style="text-align: center;width: 15%">Fecha</th>
+                                                    <th style="text-align: center;width: 35%">Actividad</th>
+                                                    <th style="text-align: center;width: 35%">Observación</th>
+                                                    <th style="text-align: center;width: 5%">H. inicio</th>
+                                                    <th style="text-align: center;width: 5%">H. fin</th>
+                                                    <th style="text-align: center;width: 5%">H. Laboradas</th>
+                                                    <th style="text-align: center;width: 7%"><a id="add_rowreg" title="Agregar Experiencia laboral" class='btn btn-info'><i class="icon-plus icon-white"></i> </a></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="RegActivAddForm">
+                                                <tr id='addr0' data-id="0" con="0" class="hidden">
+                                                    <td data-name="fechregact"><br>
+                                                        <input type="text" class="input input-large" id="fechregact0" name="fechregact0" myval='0'/>
+                                                    </td>
+                                                    <td data-name="actividadreg"><br>
+                                                        <textarea type='text'  id="actividadreg0" name="actividadreg0" placeholder="Actividades Realizadas" style="width:90%;text-transform: uppercase" rows="4" cols="50" ></textarea>
+                                                    </td>
+                                                    <td data-name="observacionreg"><br>
+                                                        <textarea type='text'  id="observacionreg0" name="observacionreg0" placeholder="Observacion" style="width:90%;text-transform: uppercase" rows="4" cols="50" ></textarea>
+                                                    </td>
+                                                    <td data-name="hinicioreg"><br>
+                                                        <input type="time" class="input input-xxlarge" id="hinicioreg0" name="hinicioreg0"/>
+                                                    </td>
+                                                    <td data-name="hfinreg"><br>
+                                                        <input type="time" class="input input-xxlarge" id="hfinreg0" name="hfinreg0"/>
+                                                    </td>
+                                                    <td data-name="hlaborreg"><br>
+                                                        <input type="time" class="input input-xxlarge" id="hlaborreg0" name="hlaborreg0" disabled/>
+                                                    </td>
+                                                    <td data-name="dell">
+                                                        <button name="dell0" class='btn btn-minis btn-danger glyphicon glyphicon-trash row-remove' ><i class="icon-remove icon-white"></i></button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+
+                                        </table>
+                                        {% if not solicitudpractica.fecfinaliza %}
+                                            <a class="btn btn-success" id="guardregact" style="float: right"><i class="icon-save"></i> Guardar</a>
+                                            {% if not solicitudpractica.finalizado and not solicitudpractica.fechestudfinal %}
+                                                <a class="btn btn-info" id="editregact" style="float: right;display: None" onclick="desbloquearregact()"><i class="icon-edit"></i> Editar</a>
+                                            {% endif %}
+                                            <a class="btn btn-danger" id="cancelregact" style="float: right;display: None" onclick="location.reload()"><i class="icon-remove"></i> Cancelar</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                </div>
+{#                      ///////////////////////////////////////////REPORTES PRACTICAS//////////////////////////////////////#}
+{#                      ///////////////////////////////////////////REPORTES PRACTICAS//////////////////////////////////////#}
+                <div class="tab-pane fade" id="documento">
+                    <div class="row-fluid">
+                        <div class="span12">
+                            <div class="row-fluid">
+                                <div class="span1"></div>
+                                <div class="span8" style="text-align: center">
+                                    <h3>Archivos de Practicas</h3>
+                                    <table class='table' cellpadding="0" cellspacing="0" id="tab_logic">
+                                        <thead>
+                                            <tr>
+                                                <th ><h3> Nombre </h3></th>
+                                                <th ><h3> Reporte  </h3></th>
+                                                <th ><h3> Archivo Subido  </h3></th>
+                                                <th ><h3> Acciones </h3> </th>
+                                                <th ></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for r in reportepracticas %}
+                                                {% if solicitudpractica %}
+                                                    {% with reportsoli=r|args:solicitudpractica.id|call:"reportepractsolic_existe" %}
+                                                        <tr>
+                                                            <td> {{ r.nombre }} </td>
+                                                            <td>
+                                                                {% if r.estudiante and r.reporte %}
+                                                                    <a href="" class="btn btn-success"> Descargar  </a>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td>
+                                                                {% if reportsoli %}
+                                                                    <div class="row-fluid">
+                                                                        <input type="file" value=""  class="archsubir" idr="{{ r.id }}"  name="archestudiant{{ r.id }}" id="archestudiant{{ r.id }}" style="display: none">
+                                                                        <p class="help-text" style="display: none">Tamano Maximo permitido 40Mb, en formato pdf. </p>
+                                                                    </div>
+                                                                    {% if r.estudiante or  not r.estudiante and solicitudpractica.aprobada %}
+                                                                        <a id="adescarch{{ r.id }}"  href="{{ reportsoli.archivo.url }}" target="_blank" style="text-align: center" class="btn btn-success"> Descargar  </a>
+                                                                    {% endif %}
+
+                                                                {% else %}
+                                                                    {% if r.estudiante %}
+                                                                        <div class="row-fluid">
+                                                                            <input type="file" value="" idr="{{ r.id }}" class="archsubir" name="archestudiant{{ r.id }}" id="archestudiant{{ r.id }}" >
+                                                                            <p class="help-text">Tamano Maximo permitido 40Mb, en formato pdf. </p>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                {% endif %}
+
+                                                            </td>
+                                                            <td>
+                                                                {% if reportsoli and not reportsoli.revisado and r.estudiante and not solicitudpractica.fecaprobada and not solicitudpractica.fechestudfinal or reportsoli and not reportsoli.revisado and r.estudiante and solicitudpractica.fecaprobada and solicitudpractica.aprobada and not solicitudpractica.fechestudfinal %}
+                                                                    <a id="aeditarch{{ r.id }}" idr="{{ r.id }}" reptsolid="{{ reportsoli.id }}" style="text-align: center" class="btn btn-info editarch"> Editar  </a>
+                                                                {% endif %}
+                                                                <a id="aguardarch{{ r.id }}" idr="{{ r.id }}" reptsolid="{{ r.id }}" style="float: right;display: none" class="btn btn-warning aguardarch"> Guardar  </a>
+                                                                <a id="acancelch{{ r.id }}" onclick="location.reload();" idr="{{ r.id }}" reptsolid="{{ r.id }}" style="float: left;display: none" class="btn btn-danger"> Cancelar  </a>
+                                                            </td>
+                                                        </tr>
+                                                    {% endwith %}
+                                                {% else %}
+                                                    <tr>
+                                                        <td> {{ r.nombre }} </td>
+                                                        <td><a href="" class="btn btn-success"> Descargar  </a> </td>
+                                                        <td>
+                                                            {% if r.estudiante and not solicitudpractica.fechestudfinal %}
+                                                                <div class="row-fluid">
+                                                                    <input type="file" idr="{{ r.id }}" class="archsubir" value="" name="archestudiant{{ r.id }}" id="archestudiant{{ r.id }}" >
+                                                                    <p class="help-text">Tamano Maximo permitido 40Mb, en formato pdf. </p>
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if not solicitudpractica.fechestudfinal %}
+                                                                <a id="aguardarch{{ r.id }}" idr="{{ r.id }}" reptsolid="{{ r.id }}" style="float: right;display: none" class="btn btn-warning aguardarch"> Guardar  </a>
+                                                                <a id="acancelch{{ r.id }}" onclick="location.reload();" idr="{{ r.id }}" reptsolid="{{ r.id }}" style="float: left;display: none" class="btn btn-success"> Cancelar  </a>
+                                                            {% endif  %}
+                                                        </td>
+                                                    </tr>
+                                                {% endif %}
+                                            {% endfor %}
+                                            {% if not reportepracticas %}
+                                                <tr><td colspan="2"><h4>NO HAY REPORTES </h4></td></tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div><br/>
+
+                </div>
+{#                      ///////////////////////////////////////////EVALUACION SUPERVISOR//////////////////////////////////////#}
+{#                      ///////////////////////////////////////////EVALUACION SUPERVISOR//////////////////////////////////////#}
+                <div class="tab-pane fade" id="supervisoreval">
+                    <div class="row-fluid ">
+                        <div class="span2"></div>
+                        <div class="span6" style="text-align: center"><h3>Evaluación de las practicas</h3></div>
+                        <div class="span3" style="text-align: center">
+
+                            <div class="row-fluid" id="divarchsuperempr" {% if solicitudpractica.evalsuperempre %} style="display: none" {% endif %}>
+                                <b>ADJUNTAR ARCHIVO: </b><input type="file" name="archsuperempr" id="archsuperempr" >
+                                <p class="help-text">Tamano Maximo permitido 40Mb, en formato png, jpg </p>
+                            </div><br/>
+                            {% if solicitudpractica.evalsuperempre %}
+                                <a href="{{ solicitudpractica.archsupervempresa.url }}" class="btn btn-info"> <i class="icon-download"></i> Descargar Archivo </a>
+                            {% endif %}
+                        </div>
+
+                    </div><br/>
+                    <div class="row-fluid">
+                        <div class="span3"></div>
+                        <div class="span6">
+                            <h4>Indique dando click en la evaluación que usted considere adecuada, basada en el desempeño del estudiante durante la Práctica Pre-profesional laboral, y teniendo en cuenta la siguiente escala:   </h4>
+                            <h6>
+                                {% for p in puntajeindicador %}
+                                    {{ p.puntos }}.- {{ p.descripcion }}&nbsp;&nbsp;&nbsp;&nbsp;
+                                {% endfor %}
+                            </h6>
+                            <table  class='table' cellpadding="0" cellspacing="0" id="tab_logic">
+                                <thead>
+                                    <tr >
+                                        <th colspan="2"><h4 style="text-align: center">INDICADORES:</h4> </th>
+                                        {% for p in puntajeindicador %}
+                                            <th> {{ p.puntos }}</th>
+                                        {% endfor %}
+                                        <th>Puntaje</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodyformulario">
+                                    {% for s in segmentoindicadoremp %}
+                                        <tr alt="{{ forloop.counter }}" segid="{{ s.id }}" idin="0">
+                                            <th rowspan="{{ s.numsegspan }}" style="vertical-align : middle;text-align:center;"> {{ s.descripcion }}</th>
+                                        </tr>
+                                        {% for d in s.segdetaindica %}
+                                            {% with evalsuperemp=d|args:solicitudpractica.id|call:"existe_evalsuperemp" %}
+                                                {% if evalsuperemp %}
+                                                    <tr alt="{{ forloop.counter }}" segid="{{ s.id }}" idin="0">
+                                                        <td> {{ d.descripcion }}</td>
+                                                        {% for p in puntajeindicador %}
+                                                            <td><input type="checkbox" {% if evalsuperemp.puntajeindicador == p %} checked  {% endif %} disabled class="input input-xxlarge indicador" id="indicador{{ d.id }}{{ p.id }}" idin="{{ p.id }}" idsegdet="{{ d.id }}" /></td>
+                                                        {% endfor %}
+                                                        <td><input type="number" value="{% if evalsuperemp %}{{ evalsuperemp.puntajeindicador.puntos }}{% else %}0{% endif %}" id="puntaje{{ d.id }}" style="text-align: center;font-size: 1.5em;font-weight: bold" class="input input-small" disabled/></td>
+                                                    </tr>
+                                                {% else %}
+                                                    <tr alt="{{ forloop.counter }}" segid="{{ s.id }}" idin="0">
+                                                        <td> {{ d.descripcion }}</td>
+                                                        {% for p in puntajeindicador %}
+                                                            <td><input type="checkbox" class="input input-xxlarge indicador" id="indicador{{ d.id }}{{ p.id }}" idin="{{ p.id }}" idsegdet="{{ d.id }}"  /></td>
+                                                        {% endfor %}
+                                                        <td><input type="number" value="0" id="puntaje{{ d.id }}" style="text-align: center;font-size: 1.5em;font-weight: bold" class="input input-small" disabled/></td>
+                                                    </tr>
+                                                {% endif %}
+                                            {% endwith %}
+
+                                        {% endfor %}
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot id="tfootform">
+
+                                </tfoot>
+                            </table>
+                            {% if not solicitudpractica.fecfinaliza and not solicitudpractica.fechestudfinal %}
+                                <a style="cursor: pointer;float: right;{% if solicitudpractica.evalsuperempre %}display: none {% endif %}" class="btn btn-success btn-guardareval"> <b> Guardar</b></a>
+                                <a style="cursor: pointer;float: right;{% if not solicitudpractica.evalsuperempre %}display: none{% endif %}" class="btn btn-info btn-editareval"> <b> Editar</b></a>
+                                <a href="/solicitudpracticas?ides={{ escenariopractica.id }}&idsol={{ solicitudpractica.id }}&supem=1" style="display: none" class="btn btn-danger btncancelsupereval">Cancelar</a>
+                            {% endif %}
+                        </div><br><br>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="panel-footer">
+            <a id="eliminarconsulta" class="btn btn-danger" style="float: right;display: none">Cancelar Consulta</a>
+        </div>
+    </div>
+
+{% endblock %}
+{% block moreblock %}
+    <div class="modal fade static" id="empresapanel" style="width: 20px;">
+            <div class="modal-header">
+                <h4 id="paneltitle">INGRESAR DATOS DE LA EMPRESA</h4>
+            </div>
+            <div class="modal-body">
+                <div id="panelbody">
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <p id="etiquetap"></p>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <b>RUC:</b><br>
+                            <input type="text" placeholder="RUC de la empresa"  style="width: 40%" class="input input-xxlarge" id="rucempre" name="rucempre"/>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <b>Nombre de la empresa:</b><br>
+                            <input type="text" placeholder="Escriba el Nombre de la empresa"  class="input input-xxlarge" style="width: 90%;text-transform: uppercase" id="empresasin" name="empresasin"/>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <b>Actividad económica principal:</b><br>
+                            <input type="text" placeholder="Escriba la actividad económica de la empresa"  style="width: 90%;text-transform: uppercase" class="input input-xxlarge" id="activempres" name="activempres"/>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <div class="span6">
+                                <b>Provincia:</b><br>
+                                <input type="text" placeholder="Escriba la provincia de la empresa" class="input input-xxlarge"  style="width: 90%" id="provinciaempre" name="provinciaempre" autocomplete="off"/>
+                            </div>
+                            <div class="span6">
+                                <b>Ciudad:</b><br>
+                                <input type="text" placeholder="Escriba la ciudad de la empresa" class="input input-xxlarge" readonly  style="width: 90%" id="ciudadempres" name="ciudadempres" autocomplete="off"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row-fluid ">
+                        <div class="span12">
+                            <b>Dirección de la empresa:</b><br>
+                            <input type="text" placeholder="Escriba la dirección de la empresa" class="input input-xxlarge"  style="width: 90%;text-transform: uppercase" id="direcciempres" name="direcciempres"/>
+                        </div>
+                    </div>
+                    <br/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a style="cursor: pointer" class="btn btn-success btn-guardarempr"> <b> Aceptar</b></a>
+                <a style="cursor: pointer" class="btn btn-info btn-cerrarpanel">Salir</a>
+
+            </div>
+    </div>
+
+
+{% endblock %}

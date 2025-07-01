@@ -1,0 +1,86 @@
+<div class='row-fluid'>
+    <div class='span1'></div>
+    <div class='span10' id="content-table">
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Inscripcion</th>
+                <th>Grupo</th>
+                <th style="text-align: center">Gestionado</th>
+                <th style="text-align: center">Rubros Vencidos</th>
+                {% if not asistente %}
+                    <th style="text-align: center">Asistente</th>
+                {% endif %}
+                <th style="width: 50px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for i in inscripciones %}
+                {% if i.tiene_deuda_matricula and not i.tiene_gestion or i.tiene_gestion %}
+                    <tr>
+                        <td>{% if i.ficha_cerrada %}<span class="label label-warning larger" title="Gesti&oacute;n Cerrada"> C </span>{% endif %} {{ i.persona }} </td>
+                        <td>{{ i.grupo.nombre }}</td >
+                        <td style="text-align: center">
+                                {% if i.tiene_gestion%}
+                                    <img src='/static/images/16/true.png' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' border='0'/>
+                                {% endif %}
+                        </td>
+                        <td style="text-align: center">
+                                {% if i.rubros_vencidos_nogestionados %}
+                                    <b style="color:#006400">{{ i.rubros_vencidos_nogestionados }}</b>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' border='0'/>
+                                {% endif %}
+                        </td>
+                        {% if not asistente %}
+                            <td>{{ i.asistente }}</td >
+                        {% endif %}
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    {% if i.tiene_gestion%}
+{#                                                <li><a href="/registros?action=gestiones&id={{ i.id }}"><i class="icon-eye-open"></i> Ver Gesti&oacute;n 2 </a></li>#}
+                                        <li><a href="#" class="vergestion" idins="{{ i.id }}" alumno='{{ i.persona }}'><i class="icon-eye-open"></i> Ver Gesti&oacute;n </a></li>
+                                    {% else %}
+{#                                                {% if perms.sga.change_registroseguimiento %}#}
+{#                                                    <li><a href="#" onclick="reasignar_gestor('{{ i.id }}')"><i class="icon-eye-open"></i> Reasignar Gestor </a></li>#}
+{#                                                {% endif %}#}
+                                    {% endif %}
+                                    {% if persona.usuario.is_superuser or perms.sga.change_registroseguimiento %}
+                                        <li><a href="#" onclick="reasignar_gestor('{{ i.id }}')"><i class="icon-eye-open"></i> Reasignar Gestor </a></li>
+                                    {% endif %}
+                                    {% if i.ficha_cerrada or perms.sga.change_registroseguimiento %}
+                                        <li><a href="/registros?action=gestionar&id={{ i.id }}"><i class="icon-book"></i> Ver Ficha </a></li>
+                                    {% endif %}
+                                    {% if i.tiene_deuda_matricula %}
+                                        {% if asistente == i.asistente %}
+                                                <li><a href="/registros?action=gestionar&id={{ i.id }}"><i class="icon-book"></i> Gestionar </a></li>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if not asistente %}
+                                        <li><a href="#" onclick="habilitaGestion('{{ i.id }}', '{{ i.persona.nombre_completo_inverso }}')"><i class="icon-check"></i> Habilitar para Gestionar</a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    {% if not puede_gestionar and not convenios %}
+        swal.fire('Alerta', 'Tiene trámites pendientes por atender', 'warning').then(function() {
+            location.href = '/registros?fecha={{ fecha|date:'d-m-Y' }}'
+        })
+    {% endif %}
+</script>

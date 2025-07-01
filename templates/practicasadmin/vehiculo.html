@@ -1,0 +1,158 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+
+            $("#detalle_venta #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_venta").modal("hide");
+            });
+
+
+            $(".editvehiculo").click(function() {
+               var id = $(this).attr("id");
+               location.href = "/practicasadmin?action=editvehiculo&id="+id+"&practica="+{{ practica.id }};
+              });
+            $(".delvehiculo").click(function() {
+               var id = $(this).attr("id");
+               location.href = "/practicasadmin?action=delvehiculo&id="+id+"&practica="+{{ practica.id }};
+            });
+
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/practicasadmin?action=vehiculo&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+              Ingreso de Vehiculo
+            </h3>
+
+            <br>
+        </div>
+        <div class='atright'>
+            {% if grupo %}
+                <a href="/practicasadmin" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% else %}
+                <a href="/practicasconduc?action=horario&id={{ grupopractica.id }}&practica={{ practica.id }}" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="row-fluid">
+
+        <div class='span2'>
+                <a href="/practicasadmin?action=vehiculoadd&practica={{ practica.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Vehiculo</a>
+        </div>
+
+
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            </form>
+
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span7'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Placa</th>
+                <th >Codigo</th>
+                <th style="width: 20px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for veh in vehiculo %}
+                    <tr>
+                        <td>{{ veh.placa }}</td>
+                        <td>{{ veh.codigo }}</td>
+
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                        <li><a class="editvehiculo" id="{{ veh.id }}" href='#'> <i class='icon-edit'></i> Editar</a></li>
+                                        {% if not veh.veheexist %}
+                                            <li><a class="delvehiculo"  id="{{ veh.id }}" href='#'> <i class='icon-move'></i> Eliminar</a></li>
+                                        {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span7">
+
+            <a href="/practicasadmin?action=vehiculoadd&practica={{ practica.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Vehiculo</a>
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/practicasadmin?action=vehiculo&page=1">1</a></li>
+                            <li><a href="/practicasadmin?action=vehiculo&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/practicasadmin?action=vehiculo&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/practicasadmin?action=vehiculo&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/practicasadmin?action=vehiculo&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/practicasadmin?action=vehiculo&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "basebs.html" %}
+{% block heading %}
+      <script>
+
+     $(function () {
+
+        $("#cmbgrupo").change(function() {
+                var cid = $("#cmbgrupo").val();
+{#                var cid = $("#cmbgrupo").val();#}
+                if ($("#cmbgrupo").val() >0){
+                    location.href='/alu_evaluaciondocente?mid='+cid+"&acc={{ permisopcion.id }}&id={{ inscripcion.id }}&acc={{ acc }}"+"&op={{ op }}"
+                }else{
+                    smoke.alert("Debe Seleccionar un nivel")
+                }
+
+        });
+        recalificacion= function(id){
+                swal({
+                    title: 'Esta seguro de Solicitar una recalificacion de la evaluacion directivo?',
+                    {#text: "# Número: "+idpersonadobe,#}
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5',
+                    buttonsStyling: false,
+                    allowOutsideClick: false,
+                    }).then(function (isConfirm) {
+                        if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                            showWaiting("Guardando Solicitud");
+                            $("#login-modal4").modal({backdrop: 'static', keyboard: false});
+                             $('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../ube/static/imagen/loader.gif"/><br/> espere un momento...</div>');
+                             var formData = new FormData();
+                             formData.append('action', 'recalificacion');
+                             formData.append('id', id);
+                             $.ajax({
+                                     url: '/doc_evaluaciondocente',
+                                     type: "POST",
+                                     contentType: false,
+                                     data: formData,
+                                     processData: false,
+                                     cache: false,
+                                     success: function (data) {
+
+                                         if (data.result == "ok") {
+                                             swal("Notificacion", "Solicitud de recalificacion ingresada correctamente ", "success");
+                                             location.reload()
+
+                                         } else {
+                                             swal("Error", data.message, "error");
+                                             cambiarTab('base-tab'+data.eje,'tab'+data.eje+'edit');
+                                             $("#login-modal4").remove();//ocultamos el modal
+                                             $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                             $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                             $('#content').html('');
+                                         }
+
+                                     },
+                                     error: function (xhr, ajaxOptions, thrownError) {
+                                         swal("Error", "Error Conexion en el Servidor", "error");
+                                         $("#login-modal4").remove();//ocultamos el modal
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+                                     },
+
+                                     complete: function(){
+                                         $("#login-modal4").remove();//ocultamos el modal
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+
+                                      }
+
+
+                             });
+
+                            }
+
+                         });
+
+
+                }
+        Ver = function(id,eval){
+            location.href="/doc_evaluaciondocente?action=evaluar&acc2=1&eval="+eval+"&id="+id
+        }
+
+        reporte = function(profesor, periodo, permiso){
+            if(permiso==1 || permiso=='1'){
+                $.get("/reportes",{"action": "run","n":'evaluacion_docente', 'rt':'pdf', 'direct':true, 'profesor':profesor, 'periodo':periodo},function(data) {
+                    if(data.result=='ok'){
+                        location.href = data.reportfile;
+                   }else{
+                        alert('Error al generar solicitud');
+                   }
+                },"json");
+            }else{
+                alert('Datos incompletos para generar reporte.')
+            }
+        }
+
+    });
+
+
+
+
+
+
+    </script>
+
+{% endblock %}
+{% block canvas %}
+     <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Evaluaciones del Docente: {{ profesor }}</h3>
+            <br>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Evaluacion</th>
+                        <th>Periodo</th>
+                        <th>Estado</th>
+                        <th></th>
+
+
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in evaluaciones %}
+                            <tr>
+                                <td> {{ e.evaluaciondocente }}</td>
+                                <td> {{ e.periodo }}</td>
+                                {% if  e.finalizado %}
+                                    <td><span class="badge badge-success">Finalizado</span></td>
+                                {% else %}
+                                    <td><span class="badge badge-danger">Pendiente</span></td>
+                                {% endif %}
+                                <td class="text-right">
+                                    <a href="#" class="btn btn-success" onclick="Ver('{{ e.periodo.id }}','{{ e.evaluaciondocente.id }}')">Ver Evaluacion </a>
+{#                                                {% if e.eva_finalizado and e.evaluacion_directivo_periodo.cualitativadirectivo.finalizada %}#}
+{#                                                    <a class="btn btn-primary" href="/reportes?action=run&direct=true&n=evaluacion_docente&rt=pdf&profesor={{ profesor.id }}&periodo={{ e.periodo.id }}" target="_blank" style="color:white">Reporte</a>#}
+{#                                                {% endif %}#}
+{#                                                <a href="#" class="btn btn-info" onclick="reporte('{{ profesor.id }}','{{ e.periodo.id }}','{% if e.eva_finalizado and e.evaluacion_directivo_periodo.cualitativadirectivo.finalizada %}1{% else %}0{% endif %}')">Reporte</a>#}
+                                </td>
+
+                            </tr>
+                    {% endfor %}
+                    {% if not evaluaciones %}
+                            <tr>
+                                <td colspan="5"  align='center'>NO EXISTEN DATOS</td>
+                            </tr>
+                    {% endif %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

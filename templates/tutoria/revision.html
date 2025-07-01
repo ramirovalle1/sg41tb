@@ -1,0 +1,118 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#id_informe").addClass("validate[required]");
+        {% if error %}
+            smoke.alert('{{ error }}');
+        {% endif %}
+
+        $("#addrevision").click(function(){
+            $("#archtesis_id").val("{{ tutoria.id }}");
+            $("#informe_panel").modal({width: '800px', backdrop: 'static'});
+            $("#informe_panel").modal("show");
+            return false;
+        });
+
+        $("#informe_panel .btn-cerrar").click(function() {
+            $("#informe_panel").modal("hide");
+            return false;
+    });
+
+    });
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span11"  style="text-align: center">
+                <h3 >{{ tutoria.profesor }}</h3>
+                <h3 >Revisi&oacute;n de Tesis</h3>
+                <h3 >Inscripci&oacute;n: {{ tutoria.estudiante }}</h3></br>
+        </div>
+        <div class="span1">
+            {% if idprofe %}
+                <a href="/tutoria?id={{ tutoria.profesor.id }}" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+            {% endif %}
+            {% if  estu %}
+                    <a href="/profe_tutoria" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+            {% endif %}
+            {% if  not estu and not idprofe %}
+                <a href="/tutoria?id={{ tutoria.profesor.id }}" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            {% if not tutoria.revision_finalizada and perms.sga.delete_profesor %}
+                <a href="" id='addrevision' class='btn btn-success'><i class="icon-plus icon-white"></i> Adicionar Revisi&oacute;n</a>
+            {% endif %}
+            {% if tutoria.revision_finalizada %}
+                <h3>Se ha finalizado el proceso de revisi&oacute;n</h3>
+            {% endif %}
+        </div>
+    </div><br>
+
+
+     <div class='row-fluid'>
+        <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;width: 20%">Fecha</th>
+                        <th style="text-align: center;width: 40%">Observaci&oacute;n</th>
+                        <th style="text-align: center;width: 10%;">Informe</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in revision %}
+                        <tr>
+                            <td style="text-align: center;">{{ r.fecha|date:'d-m-Y' }}</td>
+                            <td style="text-align: left;"> {{ r.observacion }} </td>
+                           <td>
+                                {% if r.informe %}
+                                    <a href='media/{{ r.informe }}' class='btn btn-success btn-mini'><i class="icon-download  icon-white"></i> Descargar</a>
+                                {% endif %}
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                     {% if not revision %}
+                    <tr>
+                        <td colspan="10">
+                            NO EXISTEN REVISIONES
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="informe_panel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Informe</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/profe_tutoria" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addinforme' />
+                <input type='hidden' id='archtesis_id' name='archtesis_id' value='' />
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton2" >Guardar</button>
+                <a href="#" class="btn btn-cerrar">Salir</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

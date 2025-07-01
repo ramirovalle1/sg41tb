@@ -1,0 +1,211 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+
+            $(".btn-desactivar").click(function() {
+                var ins = $(this).attr("ins");
+                location.href = '/becas_matricula?action=desactivar&id='+ins;
+            });
+
+            $(".desactivarinscripcion").click(function() {
+                var ins = $(this).attr("ins");
+                $(".btn-desactivar").attr("ins",ins);
+                $("#desactivacion").modal("show");
+            });
+
+            $(".resetearusuario").click(function() {
+                var ins = $(this).attr("ins");
+                $(".btn-resetear").attr("ins",ins);
+                $("#resetear").modal("show");
+            });
+
+            $(".btn-resetear").click(function() {
+                var ins = $(this).attr("ins");
+                location.href = '/becas_matricula?action=resetear&id='+ins;
+            });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/practicasconduc?action=consulta&s="+term+"&practica="+{{ practica.id }};
+            });
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/practicasconduc?action=consulta&g='+id+"&practica="+{{ practica.id }};
+                }else{
+                    location.href = '/becas_matricula';
+                }
+
+            });
+
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                Listado de alumnos Practica: {{ practica }}<br>Fecha Inicio: {{ practica.fechainicio|date:"d-m-Y" }}  Fecha Fin:  {{ practica.fechafin|date:"d-m-Y" }}
+            </h3>
+{#            {% if grupo %}#}
+{#                <h3> Grupo: {{ practica }}</h3>#}
+{#                <h3>Inscritos: {{ pract.miembros.count }} </h3>#}
+{#            {% endif %}#}
+            <br>
+        </div>
+        <div class='atright'>
+            {% if grupo %}
+                <a href="/practicasconduc?action=consulta&practica={{ practica.id }}"><i class="icon-arrow-left"></i> Atras</a>
+            {% else %}
+                <a href="/practicasconduc?action=practicas&id={{ practica.grupopracticas.id }}" class="btn"><i class="icon-arrow-left"></i> Atras</a>
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="row-fluid">
+{#        {% if perms.sga.change_inscripcion %}#}
+            <div class='span5'>
+             <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+{# <li><a href="/practicasconduc?action=consulta&practica={{ materia.id }}"><i class='icon-edit'></i> Listado Alumnos </a></li>#}
+
+            <a href="#" id='search'  class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+
+            </form>
+
+            </div>
+{#        {% endif %}#}
+
+        <div class="span2">
+            Grupos:
+            <select id='gruposel' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for t in turno %}
+                    <option value="{{ t.id }}" {% if grupoid == t.id %}selected="selected"{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+
+
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th style="width: 400px">Nombre</th>
+                <th>turno</th>
+                <th> Profesor</th>
+                <th> Vehiculo</th>
+
+                <th style="width: 50px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for alumnolista in alumnolistas %}
+
+                    <tr>
+                        <td>
+
+                              {{ alumnolista.inscripcion.persona }}
+
+                        </td >
+
+                        <td>
+                            {{ alumnolista.claseconduccion.turnopractica }}
+                        </td>
+
+                        <td>
+                            {{ alumnolista.claseconduccion.profesor }}
+                        </td>
+
+                        <td>
+                            {{ alumnolista.claseconduccion.vehiculo }}
+                        </td>
+
+                        <td>
+
+                            <div class="btn-group">
+
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {%if practica.fechainicio >= fecha %}
+                                            <li><a href="/practicasconduc?action=delalumno&id={{ alumnolista.id }}"><i class="icon-adjust icon-white"></i> Eliminar </a></li>
+{#                                        {% else %}#}
+{#                                            {% if not alumnolista.existe_historia %}#}
+{#                                                <li><a href="/practicasconduc?action=nota&id={{ alumnolista.id }}"><i class="icon-adjust icon-edit"></i> Ingresar Notas </a></li>#}
+{#                                            {% else %}#}
+{#                                                <li><a href="/practicasconduc?action=historico&id={{ alumnolista.inscripcion.id }}"><i class="icon-flag"></i> Historico </a></li>#}
+{#                                            {% endif %}#}
+                                        {% endif %}
+
+
+
+                                    </ul>
+
+                            </div>
+                        </td>
+                    </tr>
+
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+
+
+{#            {% if paging.num_pages > 20 %}#}
+{#                <div class='pagination'>#}
+{#                    <ul>#}
+{#                        {% if paging.primera_pagina %}#}
+{#                            <li><a href="/estudiantesxdesertar?page=1">1</a></li>#}
+{#                            <li><a href="/estudiantesxdesertar?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>#}
+{#                        {% endif %}#}
+{#                        {% for pagenumber in paging.paginas %}#}
+{#                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/estudiantesxdesertar?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>#}
+{#                        {% endfor %}#}
+{#                        {% if paging.ultima_pagina %}#}
+{#                            <li><a href="/estudiantesxdesertar?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>#}
+{#                            <li><a href="/estudiantesxdesertar?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>#}
+{#                        {% endif %}#}
+{#                    </ul>#}
+{#                </div>#}
+{#            {% else %}#}
+{##}
+{#                <div class='pagination'>#}
+{#                    <ul>#}
+{#                        {% for pagenumber in paging.page_range %}#}
+{#                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/estudiantesxdesertar?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>#}
+{#                        {% endfor %}#}
+{#                    </ul>#}
+{#                </div>#}
+{##}
+{#            {% endif %}#}
+
+        </div>
+    </div>
+
+
+
+{% endblock %}
+

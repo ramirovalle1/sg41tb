@@ -1,0 +1,249 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+
+            $("#detalle_venta #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_venta").modal("hide");
+            });
+
+
+            $(".editvehiculo").click(function() {
+               var id = $(this).attr("id");
+               location.href = "/admin_vehiculos?action=editvehiculo&id="+id;
+              });
+            $(".delvehiculo").click(function() {
+               var id = $(this).attr("id");
+               location.href = "/admin_vehiculos?action=delvehiculo&id="+id;
+            });
+
+            $("#categoria").change(function() {
+                var id = $(this).val();
+                if (id){
+
+                    location.href = '/admin_vehiculos?cat='+id;
+                }else{
+                    location.href = '/registromedicamento';
+                }
+
+            });
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/admin_vehiculos?&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+            $("#detalle_poliza #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_poliza").modal("hide");
+            });
+            $(".verpoliza").click(function(){
+                var idvehi = $(this).attr('id');
+                var vehiculo = $(this).attr("vehic");
+                $.get("/admin_vehiculos",{"action": "verpoliza","id":idvehi},function(data) {
+                        $("#detalle_poliza .modal-body").html(data);
+                        $("#detalle_poliza #paneltitle1").html(" Poliza del Vehiculo  "+vehiculo);
+                        $("#detalle_poliza").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                        $("#detalle_poliza").modal("show");
+                   }, "html");
+               return false;
+
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span10"  style="text-align: center">
+            <h3>Registros de Vehiculo</br>
+                {% if categoria %}
+                    <h4> Caterogia: {{ categoria }}</h4>
+                {% endif %}
+               </h3></br>
+        </div>
+        <div class="span1">
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+    <div class="row-fluid">
+
+    </div>
+     <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span8'>
+            <div class='span5'>
+                <table class="table table-condensed table-bordered smaller2 tabla">
+{#                    {% if perms.sga.delete_perfilinscripcion %}#}
+                        <thead>
+                            <tr>
+                                <th title="Ingreso de Registro" id="nuevo"  ><a href="/admin_vehiculos?action=vehiculoadd"><i class="icon-share-alt icon-white"></i> Nuevo Vehiculo  </a></th>
+                                <th title="Mantenimiento de Tipo de medicina" id='tipo'><a  href="/admin_vehiculos?action=poliza"><i class="icon-list-alt icon-white"></i> Polizas </a></th>
+                                <th title="Mantenimiento de suministro" id='sumin' ><a  href="/admin_vehiculos?action=personas"><i class="icon-list-alt icon-white" ></i> Personas </a></th>
+                                <th title="Mantenimiento de suministro" id='sumin'><a  href="/admin_vehiculos?action=registro"><i class="icon-list-alt icon-white" ></i> Registro </a></th>
+                            </tr>
+                       </thead>
+{#                    {% endif  %}#}
+                </table>
+            </div>
+            <div class="span4"></div>
+            <div class="span3">
+                <select id='categoria' class="input-xlarge bigger"/>
+                    <option value=''>-----</option>
+                    {% for c in categorias %}
+                        <option value="{{ c.id }}">{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <br>
+
+     <div class="row-fluid">
+         <div class="span1"></div>
+        <div class='span4' {% if search  or categoria%} style="width:30% "{% else %}style="width:25% "{% endif %}>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search or categoria%}
+                <a href="/admin_vehiculos" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+    </div>
+
+    <div class='row-fluid'>
+     <div class="span1"></div>
+        <div class='span9'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th >Codigo</th>
+                <th>Categoria</th>
+                <th>Combustible</th>
+                <th >Valor</th>
+                <th >Placa</th>
+                <th >Marca</th>
+                <th >Modelo</th>
+                <th >Color</th>
+                <th >Chasis</th>
+                <th >A&nacute;o</th>
+                <th style="width: 20px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for veh in vehiculo %}
+                    <tr>
+                        <td>{{ veh.codigo }}</td>
+                        <td>{{ veh.categoria }}</td>
+                        <td>{{ veh.combustible }}</td>
+                        <td>{% if veh.valor %}${{ veh.valor }}{% endif %}</td>
+                        <td>{{ veh.placa }}</td>
+                        <td>{{ veh.marca }}</td>
+                        <td>{{ veh.modelo }}</td>
+                        <td>{{ veh.color }}</td>
+                        <td>{{ veh.chasis }}</td>
+                        <td>{% if veh.anio %}{{ veh.anio }}{% endif %}</td>
+
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                        <li><a class="editvehiculo" id="{{ veh.id }}" href='#'> <i class='icon-edit'></i> Editar</a></li>
+                                        {% if not veh.veheexist and not veh.poliza%}
+                                            <li><a class="delvehiculo"  id="{{ veh.id }}" href='#'> <i class='icon-move'></i> Eliminar </a></li>
+                                        {% endif %}
+                                        {% if veh.poliza %}
+                                            <li><a class="verpoliza"  id="{{ veh.id }}" vehic="{{ veh }}" href='#'> <i class='icon-move'></i> Ver Poliza </a></li>
+                                        {% endif %}
+                                        {% if veh.imagen %}
+                                             <li><a href="/admin_vehiculos?action=verfotovehic&id={{ veh.id }}"><i class="icon-camera"></i> Ver Foto Vehiculo </a></li>
+                                        {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/admin_vehiculos?&page=1">1</a></li>
+                            <li><a href="/admin_vehiculos?&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_vehiculos?&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/admin_vehiculos?&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/admin_vehiculos?&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_vehiculos?&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="detalle_poliza"   >
+    <div class="row-fluid modal-header">
+         <h4  id='paneltitle1'><i> </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div >
+            <a style="float: left" href="#" id="cerrar" class="btn btn-danger  btn-aceptar">  <i  class="icon-remove icon-white"></i> <b> SALIR</b></a>
+        </div>
+    </div>
+    </div>
+
+{% endblock %}

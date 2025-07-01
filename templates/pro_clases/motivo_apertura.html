@@ -1,0 +1,70 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_fecha").datepicker({format:"dd-mm-yyyy"});
+    $("#id_motivo, #id_fecha, #id_especie").addClass("validate[required]");
+    $("#id_especie").addClass("input-medium");
+    $("#id_motivo").focus();
+
+    var caracteres="º\·!|#($~%&¬/<)='?¿¡`]^[+*´¨ç}>;{,:@1234567890";
+
+        function tiene_caracteres(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (caracteres.indexOf(texto.charAt(i),0)!=-1){
+                  num = num + 1;
+              }
+           }
+           return num;
+        }
+
+    $('#id_motivo').change(function(){
+        var v = $("#id_motivo").val();
+        var c = tiene_caracteres(v);
+
+        if($("#id_motivo").val() != ""){
+           if(c == 0 ){
+                if(v.split('').length > 5){
+                  $("#id_motivo").focus();
+                  $($("#id_motivo").get(0).parentNode).find(".help-text").html("");
+                  $("#formbutton").attr("disabled",false)
+                }
+                else{
+                    $($("#id_motivo").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Ingrese motivo v&aacute;lido. </i></span>");
+                    $("#formbutton").attr("disabled",true)
+                    }
+           }
+           else{
+                $($("#id_motivo").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>El motivo no debe contener caracteres especiales, ingresar correctamente. </i></span>");
+                $("#formbutton").attr("disabled",true)
+           }
+        }
+        else{
+                $("#id_motivo").focus();
+                $($("#id_motivo").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>El motivo debe ser ingresado. </i></span>");
+                $("#formbutton").attr("disabled",true)
+            }
+    });
+
+{% endblock %}
+{% block titulo %}
+    <p style="color: red">Estimado Docente: Ha excedido el tiempo limite de apertura de clase <br>
+    Por Favor Ingrese el Motivo del Inconveniente.</p>
+{% endblock %}
+{% block formaction %}/pro_clases{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='nuevaleccion'/>
+    <input type='hidden' name='turno' value="{{ turno.id }}"/>
+    <input type='hidden' name='profesor' value="{{ profesor.id }}"/>
+    <input type='hidden' name='aula' value="{{ aula.id }}"/>
+    <input type='hidden' name='dia' value="{{ dia }}"/>
+    <input type='hidden' name='valida' value="{{ valida }}"/>
+    <input type='hidden' name='claseid' value="{{ claseid }}"/>
+{% endblock %}
+{#{% block formback %}/matriculas?action=matricula&id={{ matricula.nivel.id }}{% endblock %}#}
+{% block formback %}/pro_clases{% endblock %}
+{% block buttonname %}Abrir Clase{% endblock %}

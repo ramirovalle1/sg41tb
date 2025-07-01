@@ -1,0 +1,360 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% load humanize %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $("#inicio, #fin").datepicker({format:"dd-mm-yyyy",language: "es"});
+            $('#btn-rangofechas').click(function(){
+                location.href='/registros?action=estadisticas&inicio='+$('#inicio').val()+'&fin='+$('#fin').val();
+            });
+
+            {% if inicio and fin %}
+                $('#inicio').val("{{ inicio|date:'d-m-Y' }}");
+                $('#fin').val("{{ fin|date:'d-m-Y' }}");
+            {% else %}
+{#                $('#inicio').val('{{ now|date:'d-m-Y' }}');#}
+            {% endif %}
+            function round(num) {
+                return +(Math.round(num + "e+2")  + "e-2");
+            }
+            var contador = 1;
+            var total_asignados = 0;
+            var total_gestionados = 0;
+            var total_rubros_gestionados = 0;
+            var total_rubros_cancelados = 0;
+            var total_valor_rubros_cancelados = 0;
+            var total_valor_rubros_cobrados = 0;
+            var total_valor_comision = 0;
+            {% for g in gestores %}
+                var asignados = ($('#asignados'+contador).html());
+                var gestionados = ($('#gestionados'+contador).html());
+                var rubros_gestionados = ($('#rubros_gestionados'+contador).html());
+                var rubros_cancelados = ($('#rubros_cancelados'+contador).html());
+                var valor_rubros_cancelados = ($('#valor_rubros_cancelados'+contador).html());
+                var valor_rubros_cobrados = ($('#valor_rubros_cobrados'+contador).html());
+                var valor_comision = ($('#valor_comision'+contador).html());
+                valor_rubros_cancelados = round(valor_rubros_cancelados.slice(1))
+                valor_rubros_cobrados = round(valor_rubros_cobrados.slice(1))
+                valor_comision = round(valor_comision.slice(1))
+
+                total_asignados = total_asignados + parseInt(asignados);
+                total_gestionados = total_gestionados + parseInt(gestionados);
+                total_rubros_gestionados = total_rubros_gestionados + parseInt(rubros_gestionados);
+                total_rubros_cancelados = total_rubros_cancelados + parseInt(rubros_cancelados);
+                total_valor_rubros_cancelados = round(total_valor_rubros_cancelados + parseFloat(valor_rubros_cancelados));
+                total_valor_rubros_cobrados = round(total_valor_rubros_cobrados + parseFloat(valor_rubros_cobrados));
+                total_valor_comision = round(total_valor_comision + parseFloat(valor_comision));
+                contador = contador+1;
+            {% endfor %}
+            $('#total_asignados').html(total_asignados);
+            $('#total_gestionados').html(total_gestionados);
+            $('#total_rubros_gestionados').html(total_rubros_gestionados);
+            $('#total_rubros_cancelados').html(total_rubros_cancelados);
+            $('#total_valor_rubros_cancelados').html('$'+total_valor_rubros_cancelados);
+            $('#total_valor_rubros_cobrados').html('$'+total_valor_rubros_cobrados);
+            $('#total_valor_comision').html('$'+total_valor_comision);
+
+            $("#categoriasel").change(function() {
+                var id = $(this).val();
+                if (id!=0){
+                    location.href = '/registros?action=estadisticas&c='+id;
+                }else{
+                    location.href = '/registros?action=estadisticas';
+                }
+            });
+
+            detalle = function(inicio, fin, gestor_id, nombre_asistente){
+                $.get("/registros", {'action': 'detalle_estadisticas', 'inicio': inicio, 'fin': fin, 'id':gestor_id}, function(data){
+                    $("#body_detalle").html(data);
+                }, "html");
+                $("#detalle_panel #paneltitle").html(nombre_asistente+ ' - DETALLE ('+inicio+' - '+fin+')');
+                $("#detalle_panel").modal({"backdrop":"static","width":"40%"});
+                $("#detalle_panel").modal("show");
+            };
+
+            detalle_total = function(inicio, fin){
+                $.get("/registros", {'action': 'detalle_estadisticas', 'inicio': inicio, 'fin': fin }, function(data){
+                    $("#body_detalle").html(data);
+                }, "html");
+                $("#detalle_panel #paneltitle").html('DETALLE CONSOLIDADO ('+inicio+' - '+fin+')');
+                $("#detalle_panel").modal({"backdrop":"static","width":"40%"});
+                $("#detalle_panel").modal("show");
+            };
+
+            verGestiones = (inicio, fin, gestor_id, nombreAsistente) => {
+                $.post("/registros", {'action': 'obtener_gestiones', 'inicio': inicio, 'fin': fin, 'id':gestor_id}, (data) => {
+                    if (data.result == 'ok') {
+                        {#console.log(data)#}
+                        let html = '<table class="table table-hover">' +
+                        '               <tr>' +
+                        '                   <th style="text-align: center">#</th>' +
+                        '                   <th style="text-align: center">Fecha</th>' +
+                        '                   <th>Alumno</th>' +
+                        '                   <th>Rubro</th>' +
+                        '                   <th style="text-align: center">Valor</th>' +
+                        '                   <th style="text-align: center">Categoría</th>' +
+                        '                   <th style="text-align: center">Soporte</th>' +
+                        '               </tr>'
+                        if (data.gestiones.length !== 0) {
+                            counter = 1
+                            data.gestiones.forEach((x) => {
+                                html +='<tr>' +
+                                    '       <td style="text-align: center">'+counter+'</td>' +
+                                    '       <td style="text-align: center">'+x.fecha+'</td>' +
+                                    '       <td style="text-align: left">'+x.nombre+'</td>' +
+                                    '       <td style="text-align: left">'+x.rubro+'</td>' +
+                                    '       <td style="text-align: righ">$'+x.valor+'</td>' +
+                                    '       <td style="text-align: center">'+x.categoria+'</td>' +
+                                    '       <td style="text-align: center"><a href="/media/'+x.soporte+'" target="_blank" class="btn btn-info"><span class="icon-download-alt"></span></a></td>' +
+                                    '   </tr>'
+                                counter++
+                            })
+                        } else {
+                            html +='<tr><td colspan="5">NO EXISTEN REGISTROS.</td></tr>'
+                        }
+                        html += '</table>'
+                        document.querySelector('#detalleGestionesDetalle').innerHTML = html
+                        $("#detalleGestionesTitulo").html('<h4>'+nombreAsistente+'</h4><h5 style="color:#555">GESTIONES REALIZADAS del '+inicio+' AL '+fin+'</h5>');
+                        $("#detalleGestiones").modal({"backdrop":"static","width":"1200px", "height":"80vh"});
+                        $("#detalleGestiones").modal("show");
+                    } else {
+                        swal.fire('Error', data.mensaje, 'warning')
+                    }
+                }, "json");
+            }
+
+            closeModal = (event, idModal) => {
+                event.preventDefault()
+                $("#"+idModal).modal("hide")
+            }
+        });
+    </script>
+{% endblock %}
+{% block atras %}/{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span2'></div>
+        <div class='span7'>
+            <h2>
+                {{ title }}
+                {% if inicio and fin or categoria %}
+                    <span class="alert alert-info">
+                        {% if inicio and fin %}
+                            ({{ inicio|date:'d-m-Y' }} al {{ fin|date:'d-m-Y' }})
+                        {% endif %}
+                        {% if categoria %}
+                            (Categoria: {{ categoria.categoria }})
+                        {% endif %}
+                    </span>
+                {% endif %}
+            </h2>
+
+        </div>
+        <div class='span1' style="text-align: right">
+            <a href="/registros" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+
+    <br/>
+    <div class="row-fluid">
+         <div class='span2'></div>
+                <div class="span5">
+                    <label for="">Desde&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hasta</label>
+                    <form class="form-inline">
+                        <input type="text" id='inicio' value="{{ now|date:'d-m-Y' }}"/>
+                        <input type="text" id='fin' value="{{ now|date:'d-m-Y' }}"/>
+                        <a href="#" id='btn-rangofechas' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Ver por Rango de Fechas</a>
+                        {% if inicio or fin or categoria %}
+                            <a href="/registros?action=estadisticas"class='btn btn-info'><i class="icon-list icon-white"></i> Todos</a>
+                        {% endif %}
+                    </form>
+                </div>
+                <div class="span3" style="text-align: right">
+                    Categoria:
+                    <select id='categoriasel' class="input-medium bigger"/>
+                        <option value='0'>-----</option>
+                        {% for c in categorias %}
+                            <option value="{{ c.id }}" {% if categoria.id == c.id %}selected="selected"{% endif %}>{{ c.categoria }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+    </div>
+    <div class='row-fluid'  style="text-align: right">
+        <div class='span2'></div>
+        <div class='span8'>
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Gestor</th>
+                    <th style="text-align: center"># Inscripciones Asignadas</th>
+                    <th style="text-align: center"># Gestiones Realizadas</th>
+                    <th style="text-align: center"># Rubros con Seguimiento</th>
+                    <th style="text-align: center"># Rubros Cancelados</th>
+                    <th style="text-align: center">Valor Rubros Gestionados</th>
+                    <th style="text-align: center">Valor Rubros Cobrados</th>
+                    <th style="text-align: center">Valor de Comision</th>
+                    {% if inicio and fin%}
+                        <th style="width: 500px"></th>
+                        <th style="width: 500px"></th>
+                    {% endif %}
+                </tr>
+                </thead>
+                <tbody>
+                {% for g in gestores %}
+                    <tr>
+                        <td>{{ g.asistente.nombre_completo_inverso }}</td>
+                        <td style="text-align: right" id='asignados{{ forloop.counter }}'>{{ g.asignados }}</td>
+                        {% if inicio and fin or categoria %}
+                            {% if inicio and fin %}
+                                <td style="text-align: right" id='gestionados{{ forloop.counter }}'>{{ g|args:inicio|args:fin|call:"gestionados_xfecha" }}</td>
+                                <td style="text-align: right" id='rubros_gestionados{{ forloop.counter }}'>{{ g|args:inicio|args:fin|call:"rubros_gestionados_xfecha" }}</td>
+                                <td style="text-align: right" id='rubros_cancelados{{ forloop.counter }}'>{{ g|args:inicio|args:fin|call:"rubros_cancelados_xfecha" }}</td>
+                                <td style="text-align: right" id='valor_rubros_cancelados{{ forloop.counter }}'>${{ g|args:inicio|args:fin|call:"valor_rubros_cancelados_xfecha" }}</td>
+                                <td style="text-align: right" id='valor_rubros_cobrados{{ forloop.counter }}'>${{ g|args:inicio|args:fin|call:"valor_rubros_cobrados_xfecha" }}</td>
+                                <td style="text-align: right" id='valor_comision{{ forloop.counter }}'>${{ g|args:inicio|args:fin|call:"valor_comision_xfecha" }}</td>
+                                <td style="text-align: center;"><button class="btn btn-info" onclick="detalle('{{ inicio|date:'d-m-Y' }}','{{ fin|date:'d-m-Y' }}','{{ g.id }}','{{ g.asistente.nombre_completo_inverso }}')">Detalle</button></td>
+                                <td style="text-align: center;"><button class="btn" onclick="verGestiones('{{ inicio|date:'d-m-Y' }}','{{ fin|date:'d-m-Y' }}','{{ g.id }}','{{ g.asistente.nombre_completo_inverso }}')">Gestiones</button></td>
+                            {% else %}
+                                <td style="text-align: right" id='gestionados{{ forloop.counter }}'>{{ g.gestionados }}</td>
+                                <td style="text-align: right" id='rubros_gestionados{{ forloop.counter }}'>{{ g|args:categoria|call:"rubros_gestionados_xcategoria" }}</td>
+                                <td style="text-align: right" id='rubros_cancelados{{ forloop.counter }}'>{{ g|args:categoria|call:"rubros_cancelados_xcategoria" }}</td>
+                                <td style="text-align: right" id='valor_rubros_cancelados{{ forloop.counter }}'>${{ g|args:categoria|call:"valor_rubros_cancelados_xcategoria" }}</td>
+                                <td style="text-align: right" id='valor_rubros_cobrados{{ forloop.counter }}'>${{ g|args:categoria|call:"valor_rubros_cobrados_xcategoria" }}</td>
+                                <td style="text-align: right" id='valor_comision{{ forloop.counter }}'>${{ g|args:categoria|call:"valor_comision_xcategoria" }}</td>
+                                <td></td>
+                            {% endif %}
+                        {% else %}
+                                <td style="text-align: right" id='gestionados{{ forloop.counter }}'>{{ g.gestionados }}</td>
+                                <td style="text-align: right" id='rubros_gestionados{{ forloop.counter }}'>{{ g.rubros_gestionados }}</td>
+                                <td style="text-align: right" id='rubros_cancelados{{ forloop.counter }}'>{{ g.rubros_cancelados }}</td>
+                                <td style="text-align: right" id='valor_rubros_cancelados{{ forloop.counter }}'>${{ g.valor_rubros_cancelados }}</td>
+                                <td style="text-align: right" id='valor_rubros_cobrados{{ forloop.counter }}'>${{ g.valor_rubros_cobrados }}</td>
+                                <td style="text-align: right" id='valor_comision{{ forloop.counter }}'>${{ g.valor_comision }}</td>
+                                <td></td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <td class="colspan2 alert alert-success" style="text-align: right"><b>TOTALES</b></td>
+                    <td class="colspan2 alert alert-success" style="text-align: right" id='total_asignados'></td>
+                    <td class="colspan2 alert alert-success" style="text-align: right" id='total_gestionados'></td>
+                    <td class="colspan2 alert alert-success" style="text-align: right" id='total_rubros_gestionados'></td>
+                    <td class="colspan2 alert alert-success" style="text-align: right" id='total_rubros_cancelados'></td>
+                    <td class="colspan2 alert alert-success" style="text-align: right" id='total_valor_rubros_cancelados'></td>
+                    <td class="colspan2 alert alert-success" style="text-align: right" id='total_valor_rubros_cobrados'></td>
+                    <td class="colspan2 alert alert-success" style="text-align: right" id='total_valor_comision'></td>
+                    {% if inicio and fin %}
+                        <td style="text-align: center;"><button class="btn btn-success" onclick="detalle_total('{{ inicio|date:'d-m-Y' }}','{{ fin|date:'d-m-Y' }}')">Detalle</button></td>
+                        <td></td>
+                    {% endif %}
+                </tr>
+                {% if not gestores %}
+                    <tr>
+                        <td colspan="14" style="background-color: lightsteelblue"><i> NO HAY ACTIVIDADES PROGRAMADAS PARA EL PERIODO SELECCIONADO</i></td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span8">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/adm_calendario?page=1">1</a></li>
+                            <li><a href="/adm_calendario?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/adm_calendario?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/adm_calendario?{% if search %}s={{ search }}&{% endif %}page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/adm_calendario?{% if search %}s={{ search }}&{% endif %}page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/adm_calendario?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+{% block moreblock %}
+    <div class="modal fade static " id="participante">
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style='float: right' >
+                {% if not persona.pertenece_soporte %}
+                    <a href='#' id='editar' class='btn btn-info  btn-aceptar'>EDITAR</a>
+                {% endif %}
+                <a href='#' id='cerrar' class='btn btn-success  btn-aceptar'>CERRAR</a>
+            </div>
+        </div>
+    </div>
+{#    <div class="modal fade static" id="detalle_panel2">#}
+{#        <div class="modal-header">#}
+{#            <h4 id='paneltitle'><i></i></h4>#}
+{#            <p id='texto'></p>#}
+{#        </div>#}
+{#        <div class="modal-body" style="text-align: left">#}
+{#            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">#}
+{#                <thead>#}
+{#                <tr>#}
+{#                    <th>Categoria</th>#}
+{#                    <th style="text-align: center"># Rubros Cancelados</th>#}
+{#                    <th style="text-align: center">Valor Rubros Cobrados</th>#}
+{#                    <th style="text-align: center">Valor de Comision</th>#}
+{#                </tr>#}
+{#                </thead>#}
+{#                <tbody>#}
+{#                {% for c in categorias %}#}
+{#                    <tr>#}
+{#                        <td style="text-align: right" id='rubros_cancelados{{ forloop.counter }}'>{{ g|args:inicio|args:fin|args:c|args:'asistente'|call:"rubros_cancelados_xfecha" }}</td>#}
+{#                        <td style="text-align: right" id='valor_rubros_cobrados{{ forloop.counter }}'>${{ g|args:inicio|args:fin|call:"valor_rubros_cobrados_xfecha" }}</td>#}
+{#                        <td style="text-align: right" id='valor_comision{{ forloop.counter }}'>${{ g|args:inicio|args:fin|call:"valor_comision_xfecha" }}</td>#}
+{#                    </tr>#}
+{#                {% endfor %}#}
+{#                </tbody>#}
+{#            </table>#}
+{#        </div>#}
+{#        <div class="modal-footer">#}
+{#            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>#}
+{#        </div>#}
+{#    </div>#}
+
+    <div class="modal fade static" id="detalle_panel">
+        <div class="modal-header">
+            <h4 id='paneltitle'><i></i></h4>
+            <p id='texto'></p>
+        </div>
+        <div class="modal-body" style="text-align: left" id='body_detalle'>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-danger" onclick="closeModal(event, 'detalle_panel')">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="detalleGestiones">
+        <div class="modal-header">
+            <div id='detalleGestionesTitulo'></div>
+        </div>
+        <div class="modal-body" style="text-align: left" id='detalleGestionesDetalle'>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-danger" onclick="closeModal(event, 'detalleGestiones')">Cerrar</a>
+        </div>
+    </div>
+{% endblock %}

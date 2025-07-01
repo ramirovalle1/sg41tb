@@ -1,0 +1,378 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+
+        indice = 0;
+        datosOK=false;
+
+{#        $("#chdesde, #chhasta").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");#}
+
+        $("#generar").modal({width: '50%', backdrop: 'static'});
+        $("#generar").modal("show");
+
+        if(new Date().getMonth()>9){
+            mes=1+new Date().getMonth();
+         }else{
+            mes="0"+(1+new Date().getMonth());
+         }
+         if(new Date().getDate()>9){
+           dia=new Date().getDate();
+         }else{
+           dia="0"+(new Date().getDate());
+         }
+         today = new Date().getFullYear()+"-"+mes+"-"+dia;
+        $('#chdesde').datepicker({
+             format: 'yyyy-mm-dd',
+             autoclose: true,
+             value: today
+         });
+
+         $('#chhasta').datepicker({
+             format: 'yyyy-mm-dd',
+             autoclose: true,
+             value: today
+         });
+
+        buscar_prov = function(query, process) {
+            $(".help-textprov").html("");
+            $(".help-textcant").html("");
+            $(".help-textparr").html("");
+            $.get("/reportes", {'action':'data', 'model': 'Provincia',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results.length > 0) {
+                    $("#prov").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }else{
+                    $("#prov").get(0).results = "";
+                    $("#prov").attr("myval",0);
+                    listing = [];
+                    process(listing);
+                }
+            }, 'json');
+         };
+        $('#prov').typeahead({source: buscar_prov, updater: function(item) {
+            var results = $("#prov").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#prov").attr("myval",datos.id);
+                }
+            }
+            return item;
+        }});
+        buscar_cant = function(query, process) {
+            $(".help-textprov").html("");
+            $(".help-textcant").html("");
+            $(".help-textparr").html("");
+            if(parseInt($("#prov").attr("myval"))>0){
+                $.get("/reportes", {'action':'datafilt', 'model': 'Canton:provincia__id='+$("#prov").attr("myval"),
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#cant").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }else{
+                        $("#cant").get(0).results = "";
+                        $("#cant").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            }else{
+                $(".help-textprov").html("Seleccione correctamente la Provincia");
+                $("#prov").focus();
+                $("#cant").val('');
+                $("#cant").attr('myval',0);
+                $("#prov").val('');
+                $("#prov").attr('myval',0);
+            }
+         };
+        $('#cant').typeahead({source: buscar_cant, updater: function(item) {
+            var results = $("#cant").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#cant").attr("myval",datos.id);
+                }
+            }
+            return item;
+        }});
+        buscar_parr = function(query, process) {
+            $(".help-textparr").html("");
+            if(parseInt($("#cant").attr("myval"))>0){
+                $.get("/reportes", {'action':'datafilt', 'model': 'Parroquia:canton__id='+$("#cant").attr("myval"),
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#parr").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }else{
+                        $("#parr").get(0).results = "";
+                        $("#parr").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            }else{
+                $(".help-textcant").html("Seleccione correctamente el Cantón");
+                $("#cant").focus();
+                $("#parr").val('');
+                $("#parr").attr('myval',0);
+                $("#cant").val('');
+                $("#cant").attr('myval',0);
+            }
+         };
+        $('#parr').typeahead({source: buscar_parr, updater: function(item) {
+            var results = $("#parr").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#parr").attr("myval",datos.id);
+                }
+            }
+            return item;
+        }});
+
+
+        $("#generar .btn-adicionar").click(function() {
+
+            var idprov = $("#prov").attr('myval');
+            var idcant = $("#cant").attr('myval');
+            var idparr = $("#parr").attr('myval');
+            $(".help-textprov").html("");
+            $(".help-textcant").html("");
+            $(".help-textparr").html("");
+            var valida = true;
+            if ($("#chcant").is(':checked')) {
+                if(parseInt($("#prov").attr('myval')) == 0){
+                    $(".help-textprov").html("Seleccione Correctamente la Provincia");
+                    valida = false;
+                }
+
+            }else if ($("#chparr").is(':checked')) {
+                if(parseInt($("#cant").attr('myval')) == 0){
+                    $(".help-textcant").html("Seleccione Correctamente el Cantón");
+                    valida = false;
+                }
+            }
+            else if ($("#chsect").is(':checked')) {
+                if(parseInt($("#parr").attr('myval')) == 0){
+                    $(".help-textparr").html("Seleccione Correctamente la Parroquia");
+                    valida = false;
+                }
+            }
+            if(valida){
+                $("#generar").modal("hide");
+                $("#espera").modal({ backdrop: 'static'});
+                $("#espera").modal("show");
+                $.post("/excelprovcanparsec", {"action":"generarexcel","desde":$("#chdesde").val(),"hasta":$("#chhasta").val(),"idprov":idprov,"idcant":idcant,"idparr":idparr}, function(data) {
+                    if (data.result=='ok'){
+                        $("#espera").modal("hide");
+                        setInterval(function(){
+                                location.href = '/reporteexcel';
+                        }, 2500);
+                        location.href=data.url;
+                    }else{
+                        smoke.alert("Error:" + data.result);
+                    }
+                }, "json");
+            }
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+
+        $("#chprov").click(function() {
+            $("#mencant").removeClass("label label-important").html("");
+            $("#menparr").removeClass("label label-important").html("");
+            $("#mensec").removeClass("label label-important").html("");
+            if ($("#chprov").is(':checked')) {
+                $("#prov").attr('disabled',true);
+                $("#chcant").attr("checked", false);
+                $("#cant").attr("disabled", true);
+                $("#prov").val('');
+                $("#prov").attr('myval',0);
+                $("#cant").val('');
+                $("#cant").attr('myval',0);
+                $("#chparr").attr("checked", false);
+                $("#parr").attr("disabled", true);
+                $("#parr").val('');
+                $("#parr").attr('myval',0);
+                $("#chsect").attr("checked", false);
+                $("#sect").attr("disabled", true);
+                $("#sect").val('');
+                $("#sect").attr('myval',0);
+            }else{
+                $("#prov").attr('disabled',true);
+                $("#prov").val('');
+                $("#prov").attr('myval',0);
+            }
+        });
+        $("#chcant").click(function() {
+            $("#mencant").addClass("label label-important").html("Debe seleccionar la Provincia para el reporte");
+            $("#menparr").removeClass("label label-important").html("");
+            $("#mensec").removeClass("label label-important").html("");
+            if ($("#chcant").is(':checked')) {
+                $("#prov").attr('disabled',false);
+                $("#cant").attr('disabled',true);
+                $("#cant").val('');
+                $("#cant").attr('myval',0);
+                $("#chparr").attr("checked", false);
+                $("#chprov").attr("checked", false);
+                $("#parr").attr("disabled", true);
+                $("#parr").val('');
+                $("#parr").attr('myval',0);
+                $("#chsect").attr("checked", false);
+                $("#sect").attr("disabled", true);
+                $("#sect").val('');
+                $("#sect").attr('myval',0);
+            }else{
+                $("#mencant").removeClass("label label-important").html("");
+                $("#menparr").removeClass("label label-important").html("");
+                $("#mensec").removeClass("label label-important").html("");
+                $("#prov").attr('disabled',true);
+                $("#prov").val('');
+                $("#prov").attr('myval',0);
+            }
+        });
+
+        $("#chparr").click(function() {
+            $("#mencant").removeClass("label label-important").html("");
+            $("#menparr").addClass("label label-important").html("Debe seleccionar primero la <b>PROVINCIA</b> luego el <b>CANTON</b> para el reporte");
+            $("#mensec").removeClass("label label-important").html("");
+            if ($("#chparr").is(':checked')) {
+                $("#prov").attr('disabled',false);
+                $("#chprov").attr("checked", false);
+                $("#chcant").attr("checked", false);
+                $("#cant").attr("disabled", false);
+                $("#parr").attr("disabled", true);
+                $("#parr").val('');
+                $("#parr").attr('myval',0);
+                $("#chsect").attr("checked", false);
+                $("#sect").attr("disabled", true);
+                $("#sect").val('');
+                $("#sect").attr('myval',0);
+            }else{
+                $("#mencant").removeClass("label label-important").html("");
+                $("#menparr").removeClass("label label-important").html("");
+                $("#mensec").removeClass("label label-important").html("");
+                $("#prov").attr('disabled',true);
+                $("#prov").val('');
+                $("#prov").attr('myval',0);
+                $("#cant").attr('disabled',true);
+                $("#cant").val('');
+                $("#cant").attr('myval',0);
+            }
+        });
+
+        $("#chsect").click(function() {
+            $("#mencant").removeClass("label label-important").html("");
+            $("#menparr").removeClass("label label-important").html("");
+            $("#mensec").addClass("label label-important").html("Debe seleccionar primero la <b>PROVINCIA</b> despues el <b>CANTON</b> y luego la <b>PARROQUIA </b>para el reporte");
+            if ($("#chsect").is(':checked')) {
+                $("#prov").attr('disabled',false);
+                $("#chprov").attr("checked", false);
+                $("#chcant").attr("checked", false);
+                $("#chparr").attr("checked", false);
+                $("#cant").attr("disabled", false);
+                $("#parr").attr("disabled", false);
+                $("#sect").attr("disabled", true);
+                $("#sect").val('');
+                $("#sect").attr('myval',0);
+            }else{
+                $("#mencant").removeClass("label label-important").html("");
+                $("#menparr").removeClass("label label-important").html("");
+                $("#mensec").removeClass("label label-important").html("");
+                $("#prov").attr('disabled',true);
+                $("#prov").val('');
+                $("#prov").attr('myval',0);
+                $("#cant").attr('disabled',true);
+                $("#cant").val('');
+                $("#cant").attr('myval',0);
+                $("#parr").attr('disabled',true);
+                $("#parr").val('');
+                $("#parr").attr('myval',0);
+            }
+        });
+
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Inscrito por Provincia, Canton, Parroquia o Sector por rangos de fechas</h3>
+            <h4 class="paneltitle">Seleccione los filtros para el reporte </h4>
+        </div>
+        <div class="modal-body ">
+            <div class="row-fluid">
+               <b> Por Provincia: </b><input type="checkbox" name="chprov" id="chprov" style="width: 5%;height: 25px"><br/><br/>
+
+            </div>
+            <div class="row-fluid">
+               <b>Por Canton: </b><input type="checkbox" name="chcant" id="chcant" style="width: 5%;height: 25px"><br/><br/>
+               <p id="mencant"></p>
+               <p>Seleccione la Provincia: </p>
+                <input type="text" name="prov" id="prov" class="input input-xxlarge" myval="0" autocomplete="off" disabled>
+               <p class="help-textprov" style="color: red">{{ field.help_text }} </p>
+            </div>
+            <div class="row-fluid">
+               <b> Por Parroquia: </b><input type="checkbox" name="chparr" id="chparr" style="width: 5%;height: 25px"><br/><br/>
+                <p id="menparr"></p>
+                <p>Seleccione el Cantón</p>
+                <input type="text" name="cant" id="cant" class="input input-xxlarge" myval="0" autocomplete="off"  disabled>
+               <p class="help-textcant" style="color: red">{{ field.help_text }} </p>
+            </div>
+            <div class="row-fluid">
+                   <b> Sector: </b><input type="checkbox" name="chsect" id="chsect" style="width: 5%;height: 25px"><br/><br/>
+                    <p id="mensec"></p>
+                   <p>Seleccione la Parroquia</p>
+                    <h4><input type="text" name="parr" id="parr" class="input input-xxlarge" myval="0" autocomplete="off"  disabled></h4>
+                   <p class="help-textparr" style="color: red">{{ field.help_text }} </p><br/><br/>
+            </div>
+            <div class="row-fluid">
+                <div class="span6">
+                       <b> Fecha Desde: </b><input type="text" name="chdesde" id="chdesde" value="{{ fechahoy.year }}-{% if fechahoy.month < 10 %}0{{ fechahoy.month }}{% else %}{% endif %}-{{ fechahoy.day }}" class="input input-small">
+                       <p class="help-textdesde" style="color: red">{{ field.help_text }} </p><br/><br/>
+                </div>
+                <div class="span6">
+                       <b> Fecha Hasta: </b><input type="text" class="input input-small" name="chhasta" id="chhasta"  value="{{ fechahoy.year }}-{% if fechahoy.month < 10 %}0{{ fechahoy.month }}{% else %}{% endif %}-{{ fechahoy.day }}">
+                       <p class="help-texthasta" style="color: red">{{ field.help_text }} </p><br/><br/>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}
+
+

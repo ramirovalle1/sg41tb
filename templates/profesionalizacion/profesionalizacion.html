@@ -1,0 +1,367 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $("#fecha_inicio").datepicker({format:"dd-mm-yyyy"});
+            $("#fecha_fin").datepicker({format:"dd-mm-yyyy"});
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val();
+                location.href = "/profesionalizacion?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".btn-aprobar").click(function() {
+                inscripcion=$(this).attr("inscripid");
+                $("#aprobacionpanel #id_observacion").val("");
+                $("#aprobacionpanel #id_resolucion").val("");
+                $("#aprobacionpanel #id_aprobado").attr('checked',false);
+                $("#aprobacionpanel #id_reprobado").attr('checked',false);
+                $("#aprobacionpanel").modal('show');
+                return false;
+            });
+
+            $("#aprobacionpanel .btn-success").click(function(){
+                $("#aprobacionpanel").modal('hide');
+                var aprobado = 0;
+                if ( (!$("#id_aprobado").is(':checked')) && (!$("#id_reprobado").is(':checked')) ) {
+                        smoke.alert('DEBE APROBAR O NO EL CAMBIO');
+                    }
+                else{
+                    if ($("#id_aprobado").is(':checked')){
+                        aprobado = 1;
+                    }
+                    if ($("#id_reprobado").is(':checked')){
+                        aprobado = 0;
+                    }
+                    $.post("/profesionalizacion", {'action':'aprobacion','inscripcion': inscripcion,'estado':aprobado,'observacion': $('#id_observacion').val(),'resolucion': $('#id_resolucion').val()}, function(data) {
+                        if (data.result=="ok") {
+                            alert('REGISTRO GUARDADO');
+                        } else {
+                            smoke.alert("Error en ingreso ");
+                        }
+                        location.reload();
+                    }, "json");
+                }
+            });
+
+            $("#aprobacionpanel .btn-cerrar").click(function(){
+                $("#aprobacionpanel #id_respuesta").val("");
+                $("#aprobacionpanel #id_aprobado").attr('checked',false);
+                $("#aprobacionpanel #id_reprobado").attr('checked',false);
+                $("#aprobacionpanel").modal('hide');
+                return false;
+            });
+
+            $("#aprobacionpanel #id_aprobado").change(function(){
+               if ($("#aprobacionpanel #id_aprobado").is(':checked')){
+                   $("#aprobacionpanel #id_reprobado").attr('checked',false);
+               }
+                else{
+                   $("#aprobacionpanel #id_reprobado").attr('checked',false);
+               }
+            });
+
+            $("#aprobacionpanel #id_reprobado").change(function(){
+               if ($("#aprobacionpanel #id_reprobado").is(':checked')){
+                   $("#aprobacionpanel #id_aprobado").attr('checked',false);
+               }
+                else{
+                   $("#aprobacionpanel #id_aprobado").attr('checked',false);
+               }
+            });
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+                $("#eliminar").modal('hide');
+
+            });
+
+            $(".resetearusuario").click(function() {
+                var pro = $(this).attr("pro");
+                $(".btn-resetear").attr("pro",pro);
+                $("#resetear").modal("show");
+            });
+
+            $(".btn-resetear").click(function() {
+                var pro = $(this).attr("pro");
+                $("#resetear").modal("hide");
+                location.href = '/docentes?action=resetear&id='+pro;
+            });
+
+            $(".eliminar").click(function() {
+                var pro = $(this).attr("pro");
+                $(".btn-eliminar").attr("pro",pro);
+                $("#eliminar").modal("show");
+            });
+
+            $(".btn-eliminar").click(function() {
+                var id = $(this).attr("pro");
+                $("#resetear").modal("hide");
+                location.href = '/docentes?action=eliminar&id='+id;
+            });
+
+            $("#param_reporte").click(function() {
+                $('#mensaj').html('').removeClass("alert alert-danger");
+                $("#fecha_inicio").attr('disabled',false);
+                $("#fecha_fin").attr('disabled',false);
+                $("#fecha_inicio").val('');
+                $("#fecha_fin").val('');
+                $("#fechafiltropanel").modal({'backdrop': 'static', 'width': '700'});
+                $("#fechafiltropanel").modal("show");
+            });
+
+            $("#fechafiltropanel .btn-ejecutar").click(function(){
+                var f_inicio = $("#fecha_inicio").val();
+                var f_fin = $("#fecha_fin").val();
+                if ($("#fecha_inicio").val() != '' && $("#fecha_fin").val() != '' ){
+                    $("#fechafiltropanel").modal("hide");
+                    window.open('/reportes?action=run&direct=true&n=listado_materias_cerradas_sinactanotas&rt=pdf&fecha_inicio='+f_inicio+"&fecha_fin="+f_fin);
+                }
+                else
+                {
+                    $('#mensaj').html('INGRESAR FECHAS').addClass("alert alert-danger");
+                }
+
+            });
+
+            $("#fechafiltropanel .btn-cerrar").click(function(){
+                $("#fechafiltropanel").modal("hide");
+                return false;
+            });
+
+            {% if error %}
+                smoke.alert("{{ error }}");
+            {% endif %}
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+
+                if (id){
+                    location.href = 'profesionalizacion?g='+id;
+                }else{
+                    location.href = '/profesionalizacion';
+                }
+            });
+
+            $(".veraprobacion").click(function(){
+                var nom = $(this).attr("nombre");
+                var obs = $(this).attr("obs");
+                var resol = $(this).attr("resol");
+                var autorizado = $(this).attr("autorizado");
+                var usrautoriza = $(this).attr("usrautoriza");
+                $("#aprobacionpanel").modal({width: '600px', backdrop: 'static'});
+                $("#aprobacionpanel").modal("show");
+                $("#id_aprobado").attr("disabled",true);
+                $("#id_reprobado").attr("disabled",true);
+                $("#id_observacion").attr("disabled",true);
+                $("#id_resolucion").attr("disabled",true);
+                $("#id_observacion").val(obs);
+                $("#id_resolucion").val(resol);
+                if( autorizado == "True"){
+                    $("#id_aprobado").attr('checked',true);
+                    $("#id_reprobado").attr('checked',false);
+                }else{
+                    $("#id_reprobado").attr('checked',true);
+                     $("#id_aprobado").attr('checked',false);
+                }
+                $("#aprobacionpanel #paneltitle").html( "VALIDACION PROFESIONAL SOLICITADA POR: " + nom + "<br> Usuario Aprobaci&oacute;n: "+ usrautoriza);
+                $("#aprobacionpanel .btn-guardar").hide();
+               return false;
+            });
+
+            $("#aprobacionpanel .cerrar").click(function() {
+                $("#aprobacionpanel").modal("hide");
+                return false;
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3> Listado de Inscritos Profesionalizaci&oacute;n</h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><span class="icon-arrow-left" style="font-style: italic;"></span> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span2" style="width: 320px" >
+            Seleccionar Grupos:
+            <select id='gruposel' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for g in grupos %}
+                    <option value="{{ g.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ g.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class='span5'>
+            <form class="form-search"> <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search or grupos %}
+                    <a href="/profesionalizacion" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped'>
+            <thead>
+            <tr>
+                <th style="background-color: lightblue;text-align: center">Aspirante</th>
+                <th style="background-color: lightblue;text-align: center">Cedula/Pasap.</th>
+                <th style="background-color: lightblue;text-align: center">Carrera</th>
+                <th style="background-color: lightblue;text-align: center">Email</th>
+                <th style="background-color: lightblue;text-align: center">Tel&eacute;fono</th>
+                <th style="background-color: lightblue;text-align: center">Grupo</th>
+                <th style="background-color: lightblue;text-align: center">Fecha Ingreso</th>
+                <th style="background-color: lightblue;text-align: center">Link Video</th>
+                <th style="background-color: lightblue;text-align: center">Aprobaci&oacute;n</th>
+                <th style="background-color: lightblue;text-align: center"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for inscripcion in inscripciones %}
+                <tr>
+                    <td style="text-align: center">{{ inscripcion.persona.nombre_completo_inverso }}</td>
+                    <td style="text-align: center;">{{ inscripcion.persona.cedula }} <br/> {{ inscripcion.persona.pasaporte }}</td>
+                    <td style="text-align: center;">{{ inscripcion.carrera.alias }}</td>
+                    <td style="text-align: center;">
+                        {% for email in inscripcion.persona.emails %}
+                            <a href="mailto:{{ email }}">{{ email }}</a>{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                        <br/>
+                        {% if inscripcion.persona.emailinst %}<a href="mailto:{{ inscripcion.persona.emailinst }}" style="color: #003bb3">{{ inscripcion.persona.emailinst }}</a><br/>{% endif %}
+                    </td>
+                    <td style="text-align: center;">{{ inscripcion.persona.telefono }} <br> {{ inscripcion.persona.telefono_conv }}</td>
+                    <td style="text-align: center;">{{ inscripcion.grupo.nombre }}</td>
+                    <td style="text-align: center;">{{ inscripcion.fecha|date:"d-m-Y" }}</td>
+                    <td style="text-align: center;">{% if inscripcion.tiene_video.link_enlace %}
+                            <a class="dropdown-item" href="{{  inscripcion.tiene_video.link_enlace }}" target="_blank"> Ver video</a>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+{#                        <a href="{% if perms.sga.change_profesor %}/profesionalizacion?action=activation&id={{ inscripcion.inscripcionprofesionalizacion.id }}{% else %}#{% endif %}">#}
+
+
+                            {% if inscripcion.tiene_video.aprobacion %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                {% if inscripcion.tiene_video and not inscripcion.tiene_video.resolucion %}
+                                    <a href="#"inscripid='{{ inscripcion.id }}' class='btn btn-aprobar btn-success' title="Aprobación de Entrevista"><i class="icon-check"></i></a>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            {% endif %}
+                        {% if inscripcion.tiene_video.usuario %}
+                            <br/><span class="label label-success">Resolución:  {{ inscripcion.tiene_video.usuario }} </span>
+                        {% endif %}
+{#                        </a>#}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            {# cambiar permiso por nueva tabla #}
+                            {% if perms.sga.add_inscripcionprofesionalizacion %}
+                                {% if inscripcion.tiene_video.aprobacion %}
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a href="" class="veraprobacion" eid="{{ inscripcion.tiene_video.id }}"
+                                                      nombre="{{ inscripcion.persona.nombre_completo }}"
+                                                      obs="{{ inscripcion.tiene_video.observacion }}"
+                                                      resol="{{ inscripcion.tiene_video.resolucion }}"
+                                                      autorizado="{{  inscripcion.tiene_video.aprobacion }}"
+                                                      usrautoriza="{{  inscripcion.tiene_video.usuario }}">
+                                        <i class="icon-eye-open"></i> Ver Aprobación </a></li>
+                                    </ul>
+                                {% else %}
+                                    {% if inscripcion.tiene_video.resolucion %}
+                                        <ul class="dropdown-menu pull-right">
+                                            <li><a href="" class="veraprobacion" eid="{{ inscripcion.tiene_video.id }}"
+                                                          nombre="{{ inscripcion.persona.nombre_completo }}"
+                                                          obs="{{ inscripcion.tiene_video.observacion }}"
+                                                          resol="{{ inscripcion.tiene_video.resolucion }}"
+                                                          autorizado="{{  inscripcion.tiene_video.aprobacion }}"
+                                                          usrautoriza="{{  inscripcion.tiene_video.usuario }}">
+                                            <i class="icon-eye-open"></i> Ver No Aprobación </a></li>
+                                        </ul>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/profesionalizacion?page=1{% if search %}&s={{ search }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">1</a></li>
+                            <li><a href="/profesionalizacion?page={{ paging.ellipsis_izquierda }}{% if search %}&s={{ search }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/profesionalizacion?page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/profesionalizacion?page={{ paging.ellipsis_derecha }}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/profesionalizacion?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class="pagination">
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/profesionalizacion?page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if inactivos %}&i=1{% endif %}{% if todos %}&t=1{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="modal fade static" id="aprobacionpanel" style="width: 100px;">
+        <div class="modal-header ">
+            <h3 id="paneltitle">Aprobaci&oacute;n de Entrevista Aspirantes Profesionalizaci&oacute;n</h3>
+            <h5></h5>
+        </div>
+        <div class="modal-body panelbody">
+            <input type='hidden' name='id' id='id'/>
+            <form id="formulario" class='form-horizontal' action="" method="POST"  >
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-guardar btn-success"> <b> Guardar</b></a>
+            <a href="#" class="btn btn-cerrar btn-warning">Cerrar</a>
+        </div>
+    </div>
+
+{% endblock %}

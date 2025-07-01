@@ -1,0 +1,107 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <link type="text/css" rel="stylesheet" href="/static/css/jquery.flexbox.css"/>
+    <script type='text/javascript' src='/static/js/jquery.flexbox.js'></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+        google.load("visualization", "1", {packages:["corechart"]});
+        google.setOnLoadCallback(drawChart);
+
+        coordinaciones = [{% for coordinacion in coordinaciones %}
+            {"id":"{{ coordinacion.id }}","nombre":"{{ coordinacion.nombre }}","becas": {{ coordinacion.cantidad_matriculados_beca }}, "discapacidad": {{ coordinacion.cantidad_matriculados_discapacidad }}}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        ];
+{#        sexos = [{% for sexo in sexos %}#}
+{#            {"id":"{{ sexo.id }}","nombre":"{{ sexo.nombre }}","matriculados": {{ sexo.cantidad_matriculados}}}{% if not forloop.last %},{% endif %}#}
+{#        {% endfor %}#}
+{#        ];#}
+
+
+        function drawChart() {
+            var elements_becados = [];
+            var elements_discapacidad = [];
+{#            var elements_sexos = [];#}
+            elements_becados.push(['Coordinaciones', 'Becados']);
+            elements_discapacidad.push(['Coordinaciones', 'Discapacitados']);
+{#            elements_sexos.push(['Sexos', 'Matriculados']);#}
+            for (var i in coordinaciones) {
+                var coordinacion = coordinaciones[i];
+                elements_becados.push([coordinacion.nombre, coordinacion.becas]);
+                elements_discapacidad.push([coordinacion.nombre, coordinacion.discapacidad]);
+            }
+{#            for (var i in sexos){#}
+{#                var sexo = sexos[i];#}
+{#                elements_sexos.push([sexo.nombre, sexo.matriculados]);#}
+{#            }#}
+            var databecas = google.visualization.arrayToDataTable(elements_becados);
+            var datadiscapacidad = google.visualization.arrayToDataTable(elements_discapacidad);
+{#            var datasexos = google.visualization.arrayToDataTable(elements_sexos);#}
+
+            var optionsbecados = {
+                title: 'BECADOS MATRICULADOS (Total: {{ total_matriculados_beca }})',
+                'is3D':true,
+                'legend': {position: 'bottom', textStyle: {color: 'black', fontSize: 10}},
+                'width':480,
+                'height':350
+
+            };
+
+            var optionsdiscapacidad = {
+                title: 'DISCAPACITADOS MATRICULADOS (Total: {{ total_matriculados_discapacidad }})',
+                'is3D':true,
+                'legend': {position: 'bottom', textStyle: {color: 'black', fontSize: 10}},
+                'width':480,
+                'height':350
+
+            };
+
+            var optionssexos = {
+                title: 'TOTALES MATRICULADOS BECADOS Y DISCAPACITADOS ({{ total_matriculados }})',
+                'is3D':true,
+                'legend': {position: 'bottom', textStyle: {color: 'black', fontSize: 10}},
+                'width':480,
+                'height':350
+
+            };
+
+
+            var chartbecados = new google.visualization.PieChart(document.getElementById('piechart_becados'));
+            var chartdiscapacitados = new google.visualization.PieChart(document.getElementById('piechart_discapacitados'));
+{#            var chartsexos = new google.visualization.PieChart(document.getElementById('piechart_sexos'));#}
+
+            chartbecados.draw(databecas, optionsbecados);
+            chartdiscapacitados.draw(datadiscapacidad, optionsdiscapacidad);
+{#            chartsexos.draw(datasexos, optionssexos);#}
+        }
+
+
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th colspan="3" style="text-align: center;">
+                        <h2>Gr&aacute;ficos por Coordinaciones</h2>
+                        <h3>Total de Estudiantes Matriculados: {{ total_matriculados }}</h3>
+                    </th>
+
+                </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><div class="span4" id="piechart_becados"></div></td>
+                        <td><div class="span4" id="piechart_discapacitados"></div></td>
+{#                        <td><div class="span4" id="piechart_sexos"></div></td>#}
+                    </tr>
+
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

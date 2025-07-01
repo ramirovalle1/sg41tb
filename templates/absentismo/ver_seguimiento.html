@@ -1,0 +1,182 @@
+{% extends "basebs.html" %}
+{% load humanize %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $('.up').hide();
+            $('.tr').hide();
+
+            up = function(id){
+                $('#up'+id).hide();
+                $('#down'+id).show();
+                $('#tr'+id).hide(500);
+                $("#tr_padre"+id).attr({"style":"background-color:safdas"});
+            }
+
+            down = function(id){
+                $('#up'+id).show();
+                $('#down'+id).hide();
+                $('#tr'+id).show(500);
+                $("#tr_padre"+id).attr({"style":"background-color:#ECFFFC"});
+            }
+
+            btn_asistencias = function(absentinso, materia){
+               $.get("/absentismo", {'action':'detalle_asistencias', 'absentismo': absentinso}, function(data) {
+                    $("#detalle_asistencias .modal-body").html(data);
+                    $("#detalle_asistencias").modal({"backdrop":"static","width":"80%"});
+                    $("#detalle_asistencias").modal("show");
+                    $("#detalle_asistencias #titulo").html('ASISTENCIAS - '+materia);
+               }, "html");
+               return false;
+            }
+
+            $(".btn-cerrar").click(function(){
+                $("#detalle_asistencias").modal("hide");
+            })
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="row-fluid">
+        <div class="span11">
+            <h3>ABSENTISMOS DEL ALUMNO: {{ inscripcion }}</h3>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/absentismo?a2" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+{#        <div class='span8'>#}
+{#            <form class="form-search"> <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>#}
+{#            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>#}
+{#            {% if search %}#}
+{#                <a href="/absentismo" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>#}
+{#            {% endif %}#}
+{#            </form>#}
+{#        </div>#}
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered' cellpadding="0" cellspacing="0" id='tabla_prueba'>
+                <thead>
+                <tr>
+                    <th style="text-align: left">Estado Llamada</th>
+                    <th style="text-align: left">Observacion</th>
+                    <th style="text-align: center">Usuario</th>
+                    <th style="text-align: center">Fecha</th>
+                    <th style="text-align: center">Estado</th>
+                    <th style="text-align: center; width: 50px;">Detalle</th>
+                </tr>
+                </thead>
+                <tbody id='body_absentismos'>
+                    {% for s in seguimientos %}
+                        <tr style="" id="tr_padre{{ s.id }}">
+                            <td>{{ s.estadollamada.descripcion }}</td>
+                            <td>{{ s.observacion }}</td>
+                            <td style="text-align: center;">{{ s.usuario.username }}</td>
+                            <td style="text-align: center">{{ s.fecha|date:'d-m-Y' }}</td>
+                            <td style="text-align: center">
+                                {% if s.estado %}
+                                    <img src='/static/images/16/true.png' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if s.seguimiento_detalle %}
+                                    <button class="btn btn-mini down" id="down{{ s.id }}" onclick="down('{{ s.id }}')"><img src='/static/images/arrow_down.png' border='0'/></button>
+                                    <button class="btn btn-mini up" id="up{{ s.id }}" onclick="up('{{ s.id }}')"><img src='/static/images/arrow_up.png' border='0'/></button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr id="tr{{ s.id }}" class="tr">
+                            <td colspan="6">
+                                <table class='table table-bordered' style="background-color: #ECFFFC">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: left">Nivel</th>
+                                            <th style="text-align: left">Grupo</th>
+                                            <th style="text-align: left">Materia</th>
+                                            <th style="text-align: center">Docente</th>
+                                            <th style="text-align: center">Fecha Absentismo</th>
+                                            <th style="text-align: center">Materia Termina</th>
+                                            <th style="text-align: center">Ver Asistencias</th>
+                                            <th style="text-align: center">Estado</th>
+                                            <th style="text-align: center">Fecha Posible Reintegro</th>
+                                            <th style="text-align: center">Comision</th>
+                                            <th style="text-align: center">Fecha Reintegro</th>
+                                            <th style="text-align: center">Categoria</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for d in s.seguimiento_detalle %}
+                                            <tr alt='{{ d.id }}'>
+                                                <td>{{ d.absentismo.materiaasignada.materia.nivel.nivelmalla }} - {{ d.absentismo.id }}</td>
+                                                <td>{{ d.absentismo.materiaasignada.materia.nivel.paralelo }}</td>
+                                                <td style="text-align: left"> {% if d.absentismo.manual %}<span class=" label label-warning larger"> M  </span>{% endif %} {{ d.absentismo.materiaasignada.materia.asignatura }}</td>
+                                                <td style="text-align: left">
+                                                    {% if d.absentismo.materiaasignada.materia.profesormateria_set.count %}
+                                                        {% for profesormateria in d.absentismo.materiaasignada.materia.profesores_materia %}
+                                                                {% if profesormateria.profesor_aux %}
+                                                                   {{ profesormateria.profesor_auxiliar.persona.nombre_completo  }} -
+                                                                {% else %}
+                                                                   {{ profesormateria.profesor.persona.nombre_completo }}
+                                                                {% endif %}
+                                                        {% endfor %}
+                                                    {% endif %}
+                                                </td>
+                                                <td  style="text-align: center"> {{ d.absentismo.fecha|date:'d-m-Y' }}</td>
+                                                <td  style="text-align: center"> {{ d.absentismo.materiaasignada.materia.fin|date:'d-m-Y' }}</td>
+                                                <td style="text-align: center"><button class='btn btn-info' onclick="btn_asistencias('{{ d.absentismo.id }}','{{ d.absentismo.materiaasignada.materia.asignatura.nombre }} - {{ d.absentismo.materiaasignada.materia.nivel }}')"><i class="icon-list"></i></button></td>
+                                                <td style="text-align: center">
+                                                    {% if not d.finalizado %}
+                                                        <img src='/static/images/16/true.png' border='0'/>
+                                                    {% else %}
+                                                        <img src='/static/images/16/false.png' border='0'/>
+                                                    {% endif %}
+                                                </td>
+                                                <td style="text-align: center">{{ d.fecha_posiblereintegro|date:'d-m-Y' }}</td>
+                                                <td style="text-align: center">
+                                                    {% if d.comision %}
+                                                        <img src='/static/images/16/true.png' border='0'/>
+                                                    {% else %}
+                                                        <img src='/static/images/16/false.png' border='0'/>
+                                                    {% endif %}
+                                                </td>
+                                                <td style="text-align: center">{% if d.absentismo.fechareintegro %}{{ d.absentismo.fechareintegro|date:'d-m-Y' }}{% endif %}</td>
+                                                <td style="text-align: center">{% if d.categoria %}{{ d.categoria.categoria }}{% endif %}</td>
+
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade static " id="detalle_asistencias" style="margin-left: -500"  >
+        <div class="row-fluid modal-header">
+            <h4 id="titulo"></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a style="cursor: pointer" id="cerrar" class="btn btn-danger  btn-cerrar">CERRAR</a>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

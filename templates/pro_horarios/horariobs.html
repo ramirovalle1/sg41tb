@@ -1,0 +1,218 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            var valida=0
+
+           function showLocation(pos) {
+{#                          valida = 1;#}
+           }
+
+           function errorHandler(err) {
+              if(err.code == 1) {
+                   valida = 1;
+{#                    alert("Error: Acceso Denegado encienda el gps!");#}
+              }else if( err.code == 2) {
+{#                            alert("Error: la posición no está disponible!");#}
+              }
+           }    
+           getLocation();
+           function getLocation(){
+
+               if(navigator.geolocation){
+                  // timeout at 60000 milliseconds (60 seconds)
+                  var options = {timeout:60000};
+                  navigator.geolocation.getCurrentPosition(showLocation,
+                                                           errorHandler,
+                                                           options);
+               }else{
+                  alert("Lo sentimos, navegador no soporta geolocalización!");
+               }
+           }
+
+            clases = [{% for clase in clases %}
+                {"id":"{{ clase.0.id }}", "realdesde": "{{ clase.1.desde|date:'d-m-Y' }}", "realhasta": "{{ clase.1.hasta|date:'d-m-Y' }}", "sedeid": {% if clase.0.materia.nivel.sede %}{{ clase.0.materia.nivel.sede.id }}{% else %}0{% endif %}, "aulaid": {{ clase.0.aula.id }}, "disponible":{{ clase.0.disponible|lower }}, "sede":"{% if clase.0.materia.nivel.sede %}{{ clase.0.materia.nivel.sede }}{% endif%}", "paralelo":"{{ clase.0.materia.nivel.paralelo }} ", "carrera":"{% if clase.0.materia.nivel.carrera %}{{ clase.0.materia.nivel.carrera }}{% endif %}", "nivelmalla":"{% if clase.0.materia.nivel.nivelmalla %}{{ clase.0.materia.nivel.nivelmalla }}{% endif %}", "asignatura": "{{ clase.0.materia.nombre_completo }}","materiainicio": "{{ clase.0.materia.inicio|date:'d-m-Y'}}", "materiafin": "{{ clase.0.materia.fin|date:'d-m-Y' }}", "profesorid": {{ clase.1.profesor.id }}, "profesor": "{{ clase.0.profesor }}", "turno": "{{ clase.0.turno.id }}", "disponible2":{{ clase.0.disponible2|lower }}, "carrera_clase":"{% if clase.0.materia.nivel.carrera.clase %}{{ clase.0.materia.nivel.carrera.clase }}{% endif %}","dia":"{{ clase.0.dia }}", "aula": "{{ clase.0.aula }}" , "segmento": "{{ clase.0.profesormateria.segmento.descripcion }}", "aceptacion": "{{ clase.1.aceptacion }}"}{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            {% if lecciongrupo %}
+                leccionGrupo = {
+                    "id": {{ lecciongrupo.id }}, "turno": "{{ lecciongrupo.turno.id }}", "dia":"{{ lecciongrupo.dia }}"
+                };
+            {% endif %}
+            findClases = function(d, t) {
+                var l = [];
+                for (i in clases) {
+                    var am = clases[i];
+                    if (am.dia==d && am.turno==t) {
+                        l.push(am);
+                    }
+                }
+                return l;
+            }
+            {% if info %}
+                smoke.alert("{{ info }}");
+            {% endif %}
+            {% if error %}
+                smoke.alert('{{ error }}');
+            {% endif %}
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var dia = $this.attr('dia');
+                var turno = $this.attr('turno');
+                var clase = findClases(dia, turno);
+
+                for (i in clase) {
+                    var c = clase[i];
+                    {% if DEFAULT_PASSWORD == 'itb' %}
+
+                        if (c.aceptacion=='True'){
+                            $(this).append("<strong>"+c.asignatura+"</strong><br/>"+
+                                    "<span class='larger label label-inverse'>" + c.realdesde +" al "+ c.realhasta +"</span><br>"+
+                                    "<span class='smaller2'>"+((c.carrera)?c.carrera+"<br/>":"") +
+                                    ((c.nivelmalla)?c.nivelmalla +" - ": "") + c.paralelo+((c.sede)?" en "+c.sede:"")+"<br/>Aula: "+c.aula+2+"<br/></span>"+
+                                    "<span class='larger label label-success'>"+((c.segmento)?c.segmento+"<br/>":"") +"</span><br>"
+                                    );
+                        }
+                    {% else %}
+                        $(this).append("<strong>"+c.asignatura+"</strong><br/>"+
+                                "<span class='larger label label-inverse'>" + c.realdesde +" al "+ c.realhasta +"</span><br>"+
+                                "<span class='smaller2'>"+((c.carrera)?c.carrera+"<br/>":"") +
+                                ((c.nivelmalla)?c.nivelmalla +" - ": "") + c.paralelo+((c.sede)?" en "+c.sede:"")+"<br/>Aula: "+c.aula+1+"<br/></span>"
+                                );
+                    {% endif %}
+                }
+                {% if periodo.proceso_evaluativo.proceso_activo and  profesor|args:periodo|call:"mi_autoevaluacion" or not periodo.proceso_evaluativo.proceso_activo %}
+{#                {% if not periodo.proceso_evaluativo.proceso_activo %}#}
+                    {% if disponible %}
+                        {% if DEFAULT_PASSWORD == 'itb' %}
+                            if (clase.length>0) {
+                                var c = clase[0];
+                                if (c.aceptacion=='True'){
+                                    if (c.disponible){
+                                    $(this).append(
+                                            ((c.disponible)?" <a  href='/pro_clases?action=nuevaleccion&turno="+c.turno+"&dia="+c.dia+"&valida="+valida+"&claseid="+ c.id+"&aula="+ c.aulaid+"&profesor={{ profesor.id }}' class='btn btn-info btn-mini' onclick='valida(this)'><i class='icon-plus icon-white'></i> Comenzar Clase</a>":"")
+                                            );
+                                    }else{
+                                        if (c.carrera_clase){
+                                           $(this).append(
+                                           ((c.disponible2)?" <a  href='/pro_clases?action=nuevaclase&turno="+c.turno+"&dia="+c.dia+"&valida="+valida+"&claseid="+ c.id+"&aula="+ c.aulaid+"&profesor={{ profesor.id }}' class='btn btn-info btn-mini' onclick='valida(this)'><i class='icon-plus icon-white'></i> Comenzar Clase</a>":"")
+        {#                                     <a href='/adm_docentes?action=addclase&turno="+c.turno+"&dia="+c.dia+"&aula="+c.aulaid+"&sede="+c.sedeid+"&m=1"+"&profesor="+c.profesorid+"&prof="+"{{ profesor.id }}"+"' class='btn btn-success btn-mini'><i class='icon-plus icon-white'></i> Comenzar Clase</a>":""#}
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+
+                        {% else %}
+                            if (clase.length>0) {
+                                var c = clase[0];
+                                if (c.disponible){
+                                $(this).append(
+                                        ((c.disponible)?" <a  href='/pro_clases?action=nuevaleccion&turno="+c.turno+"&dia="+c.dia+"&valida="+valida+"&claseid="+ c.id+"&aula="+ c.aulaid+"&profesor={{ profesor.id }}' class='btn btn-info btn-mini' onclick='valida(this)'><i class='icon-plus icon-white'></i> Comenzar Clase</a>":"")
+                                        );
+                                }else{
+                                    if (c.carrera_clase){
+                                       $(this).append(
+                                       ((c.disponible2)?" <a  href='/pro_clases?action=nuevaclase&turno="+c.turno+"&dia="+c.dia+"&valida="+valida+"&claseid="+ c.id+"&aula="+ c.aulaid+"&profesor={{ profesor.id }}' class='btn btn-info btn-mini' onclick='valida(this)'><i class='icon-plus icon-white'></i> Comenzar Clase</a>":"")
+    {#                                     <a href='/adm_docentes?action=addclase&turno="+c.turno+"&dia="+c.dia+"&aula="+c.aulaid+"&sede="+c.sedeid+"&m=1"+"&profesor="+c.profesorid+"&prof="+"{{ profesor.id }}"+"' class='btn btn-success btn-mini'><i class='icon-plus icon-white'></i> Comenzar Clase</a>":""#}
+                                        );
+                                    }
+                                }
+                            }
+                        {% endif %}
+                    {% else %}
+                        if (leccionGrupo.dia==dia && leccionGrupo.turno==turno && clase.length>0) {
+                            $(this).append(
+                                    "<a href='/pro_clases?action=view&id="+leccionGrupo.id+"&valida="+valida+"' class='btn btn-info'><i class='icon-share-alt icon-white'></i> Continuar o Cerrar Clase</a>"
+                                    )
+                        }
+                    {% endif %}
+                {% endif %}
+
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Horario del profesor: {{ profesor }}</h3>
+            <h4>Periodo: {{ periodo }}</h4>
+            <a href="/reportes?action=run&direct=true&n=lista_clases_impartidas_xdocente&docente={{ profesor.id }}&rt=pdf" class='btn btn-warning'><i class="icon-print"></i> Imprimir</a>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    {% if periodo.proceso_evaluativo.proceso_activo and not profesor|args:periodo|call:"mi_autoevaluacion"%}
+{#    {% if periodo.proceso_evaluativo.proceso_activo and not profesor|args:periodo|call:"mi_autoevaluacion"%}#}
+
+
+        <div class="alert alert-danger ">
+            <a class="close" data-dismiss="alert">×</a>
+            <h3 class="alert-heading">Alerta Importante!</h3>
+            <h3> Ud. No se ha autoevaluado en este per&iacute;odo, no puede comenzar clase. Por favor proceder ha autoevaluarse.</h3>
+        </div>
+    {% endif %}
+    {% if not disponible %}
+        <div class="alert alert-info">
+            <a class="close" data-dismiss="alert">×</a>
+            <h4 class="alert-heading">Alerta Importante!</h4>
+            Ud. ya tiene una Leccion abierta, puede continuar en la misma o cerrarla.
+        </div>
+    {% endif %}
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            {%  for sesion in sesiones %}
+            <table class='table table-bordered' cellpadding="0" cellspacing="0">
+            <tbody>
+                <thead>
+                <tr>
+                    <th colspan="{{ sesion.cantidad_dias_plus_1 }}">{{ sesion }}</th>
+                </tr>
+                <tr>
+                    <th width='10%'> </th>
+                    {% for dia in sesion.semana %}
+                        <th style="text-transform: uppercase;">{{ dia.0 }}</th>
+                    {% endfor %}
+                </tr>
+                </thead>
+                {% for turno in sesion.turnos %}
+                    <tr>
+                        <td>
+                            Turno {{ turno.turno }}
+                            {% if turno.practica %}
+                                <span class="label label-important">Pr&aacute;ctica</span><br/>
+                            {% else %}
+                                <span class="label label-info">Teor&iacute;a</span><br/>
+                            {% endif %}
+                            {{ turno.comienza }} a {{ turno.termina }}<br/>
+                        </td>
+                        {% for dia in sesion.semana %}
+                            <td>
+                                <div class='cell' dia='{{ dia.1 }}' turno='{{ turno.id }}'>
+
+                                </div>
+                            </td>
+                            <script>
+                                valida = function(op){
+                                 $(op).hide();
+                                    };</script>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+                <tr></tr>
+            </tbody>
+            </table>
+            {% endfor %}
+        {% if not sesiones %}
+            <div class="alert alert-info">
+            <h4 class="alert-heading">NO TIENE HORARIOS</h4>
+
+        </div>
+        {% endif %}
+        </div>
+    </div>
+{% endblock %}

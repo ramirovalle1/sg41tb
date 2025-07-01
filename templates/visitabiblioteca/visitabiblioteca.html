@@ -1,0 +1,297 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+
+
+            $("#detalle_venta #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_venta").modal("hide");
+            });
+
+
+            $(".detallevta").click(function() {
+               var vid = $(this).attr("pid");
+                   $.get("/visitabiblioteca", {'action':'detalle', 'visita': vid}, function(data) {
+                        $("#detalle_venta .modal-body").html(data);
+                        $("#detalle_venta").modal({"backdrop":"static"});
+                        $("#detalle_venta").modal("show");
+                   }, "html");
+               return false;
+              });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/visitabiblioteca?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/visitabiblioteca?g='+id;
+                }else{
+                    location.href = '/visitabiblioteca';
+                }
+
+            });
+            $("#gruposede").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/visitabiblioteca?se='+id;
+                }else{
+                    location.href = '/visitabiblioteca';
+                }
+
+            });
+            
+            $("#id_inicio").attr({"autocomplete":"off"});
+            $("#id_fin").attr({"autocomplete":"off"});
+            $("#id_sede").addClass("input-xlarge")
+            $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"});
+            {#  GENERAR REPORTE VISITA A LA BIBLIOTECA  #}
+            $("#reportevisita").click(function() {
+                $("#id_inicio").val('');
+                $("#id_fin").val('');
+                $("#id_sede").val('');
+                $("#modalreportevisita").modal({backdrop: 'static', keyboard: false, width: "20%", height: "15%"});
+                $("#modalreportevisita").modal("show");
+            });
+
+            $("#modalreportevisita .btn-generar").click(function() {
+                $("#modalreportevisita").modal('hide');
+                fechainicio = $("#modalreportevisita #id_inicio").val();
+                fechafin = $("#modalreportevisita #id_fin").val();
+                sede = $("#modalreportevisita #id_sede").val()
+                $("#espera").modal({ backdrop: 'static'});
+                $("#espera").modal("show");
+    
+                $.post("/visitabiblioteca", {"action":"generarexcel","inicio":fechainicio,"fin":fechafin, "sede": sede}, function(data) {
+                    if (data.result=='ok'){
+                        $("#espera").modal("hide");
+                        setInterval(function(){
+                                location.href = '/visitabiblioteca';
+                        }, 2500);
+                        location.href=data.url;
+                    }else{
+                        smoke.alert("Error:" + data.result);
+                    }
+                }, "json");
+            });
+
+            $("#modalreportevisita .btn-cerrar").click(function() {
+                $("#modalreportevisita").modal("hide");
+            });
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                {% if not activos and not inactivos and not todos %} Visitas a Biblioteca{% endif %}
+                {% if todos %}Listado de Inscripciones (TODOS) {% endif %}
+            </h3>
+            {% if grupo %}
+                <h3> Grupo: {{ grupo.descripcion }}</h3>
+
+            {% endif %}
+            {% if grupose %}
+                <h3> Sede: {{ grupose.nombre }}</h3>
+
+            {% endif %}
+            <br>
+        </div>
+        <div class='atright'>
+            {% if grupo %}
+                <a href="/visitabiblioteca" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            {% else %}
+                <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="row-fluid">
+        {% if perms.sga.change_inscripcion %}
+            <div class='span2'>
+                <a href="/visitabiblioteca?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>
+                <a href="/visitabiblioteca?action=addvarios" class='btn btn-success'><i class="icon-plus icon-white"></i> Gen. Nuevas Visitas</a>
+            </div>
+        {% endif %}
+
+        <div class='span4'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/visitabiblioteca" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+        <div class="span2">
+            Grupos:
+            <select id='gruposel' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for g in grupos %}
+                    <option value="{{ g.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ g.descripcion }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="span2">
+            Sede:
+            <select id='gruposede' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for g in gruposede %}
+                    <option value="{{ g.id }}" {% if grupoids == g.id %}selected="selected"{% endif %}>{{ g.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="span2" style="text-align: right">
+            <a href="#" id='reportevisita'  class='btn btn-success'><i class="icon-print icon-white" ></i> Reporte</a>
+
+
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+
+                <th>Cedula</th>
+
+                <th>Tel&eacute;fono</th>
+                <th>Tipo</th>
+                <th style="width: 20px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for visita in visitabiblioteca %}
+                    <tr>
+                        <td>{{ visita.nombre }}</td>
+                        <td>{{ visita.cedula }}</td>
+                        <td>{{ visita.telefono }}</td>
+                        <td>{{ visita.tipopersona }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                        <li><a class="detallevta" pid="{{ visita.id }}" href='#'> <i class='icon-edit'></i> Ver Detalle </a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if perms.sga.change_inscripcion %}
+            <a href="/visitabiblioteca?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>
+            {% endif %}
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/visitabiblioteca?page=1">1</a></li>
+                            <li><a href="/visitabiblioteca?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/visitabiblioteca?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/visitabiblioteca?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/visitabiblioteca?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/visitabiblioteca?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+    <div class="modal fade static" id="detalle_venta"   >
+    <div class="row-fluid modal-header">
+        <h4 ><i> DETALLES DE LA VISITA </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a href="#" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+    {# REPORTE VISITA A LA BIBLIOTECA  #}
+    <div class="modal fade static" id="modalreportevisita" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Visita a la Biblioteca</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in visitaform %}
+                <fieldset class="control-group nomargins">
+                    <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-generar"> Generar</a>
+        </div>
+    </div>
+     <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+
+
+
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>
+    <script type="text/javascript">
+    {% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+
+     $(function() {
+
+           $('#id_director1,#id_director2,#id_nombredocumento,#id_tipo').addClass('input-xxlarge');
+           $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"});
+           $($("#id_director1id").get(0).parentNode.parentNode).hide();
+           $($("#id_director2id").get(0).parentNode.parentNode).hide();
+            $("#id_director1").attr({"autocomplete":"off"});
+            $("#id_director2").attr({"autocomplete":"off"});
+
+         {% if ban  == 2 and documento.tipo.id == 1 or documento.tipo.id == 2 %}
+            $("#id_director1").val('{{ director1 }}');
+            $("#id_director1id").val('{{ director1.id }}');
+            $("#id_director2").val('{{ director2 }}');
+            $("#id_director2id").val('{{ director2.id }}');
+            $("#id_inicio").attr("disabled",false);
+            $("#id_fin").attr("disabled",false);
+         {% else %}
+            $("#id_director1").val('{{ director1 }}');
+            $("#id_director1id").val('{{ director1.id }}');
+            $("#id_director2").val('{{ director2 }}');
+            $("#id_director2id").val('{{ director2.id }}');
+            $("#id_inicio").val("");
+            $("#id_fin").val("");
+            $("#id_inicio").attr("disabled",true);
+            $("#id_fin").attr("disabled",true);
+         {% endif %}
+
+         $($("#id_director1id").get(0).parentNode.parentNode).hide();
+            buscar_profesor = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        if(data.results.length > 0)
+                        {
+                            $("#id_director1").get(0).results = data.results;
+                            listing = [];
+                            for (var i in data.results) {
+                                var dato = data.results[i];
+                                listing.push(dato.name);
+                            }
+                            process(listing);
+                        }
+                        else{
+                            $("#id_director1").attr("myval","");
+                            $("#id_director1").val("");
+                            $("#id_director1").attr("alias","");
+                        }
+                    }
+                }, 'json');
+            };
+
+            $('#id_director1').typeahead({source: buscar_profesor, updater: function(item) {
+            var results = $("#id_director1").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_director1").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_director1id").val(d);
+                }
+            }
+              return item;
+            }});
+
+
+         $($("#id_director2id").get(0).parentNode.parentNode).hide();
+            buscar_profesor = function(query, process) {
+                $.get("/reportes", {'action':'data', 'model': 'Profesor',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        if(data.results.length > 0)
+                        {
+                            $("#id_director2").get(0).results = data.results;
+                            listing = [];
+                            for (var i in data.results) {
+                                var dato = data.results[i];
+                                listing.push(dato.name);
+                            }
+                            process(listing);
+                        }
+                        else{
+                            $("#id_director2").attr("myval","");
+                            $("#id_director2").val("");
+                            $("#id_director2").attr("alias","");
+                        }
+                    }
+                }, 'json');
+            };
+
+            $('#id_director2').typeahead({source: buscar_profesor, updater: function(item) {
+            var results = $("#id_director2").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_director2").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_director2id").val(d);
+                }
+            }
+              return item;
+            }});
+
+         $("#id_tipo").change(function() {
+            var tipoid = $(this).val();
+            if (tipoid==1  || tipoid==2){
+                $("#id_inicio").attr("disabled",false);
+                $("#id_fin").attr("disabled",false);
+            }
+            else
+            {
+                $("#id_inicio").val("");
+                $("#id_fin").val("");
+                $("#id_inicio").attr("disabled",true);
+                $("#id_fin").attr("disabled",true);
+            }
+         });
+
+     });
+    </script>
+
+{% endblock %}
+{% block titulo %}{% if  ban == 2  %}Editar Documento{% else %}Adicionar Documento {% endif %}
+{% if error %}
+    {% if ban == 2 %}
+        </br></br> <span> ERROR AL EDITAR EL DOCUMENTO</span>
+    {% else %}
+        </br></br> <span> ERROR AL CREAR EL DOCUMENTO</span>
+    {% endif %}
+{% endif %}
+{% endblock %}
+
+
+{% block formaction %}/documentos_vinculacion{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='add'/>
+    <input type='hidden' name='ban' value='{{ ban }}'/>
+    <input type='hidden' name='doc' value='{{ documento.id }}'/>
+{% endblock %}
+{% block formback %}/documentos_vinculacion{% endblock %}
+{% block buttonname %}Guardar Cambios{% endblock %}

@@ -1,0 +1,244 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+
+
+        $(function() {
+
+            $("#id_fecha").datepicker({format:"dd-mm-yyyy"}).addClass("input-medium");
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href ="/pagosconduceonline?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+             $(".refound").click(function() {
+                var tid = $(this).attr("tid");
+                smoke.prompt("Motivo de Anulacion", function(v) {
+                        if (v) {
+                             $.post("/pagosconduceonline", {"action":"anular",'tid':tid,"motivo" : v.toUpperCase()}, function(data) {
+                            if (data.result=='ok'){
+                                alert("PAGO ANULADO");
+                                location.href="/pagosconduceonline";
+                            }else{
+                               if (data.result=='bad2'){
+                                    alert("NO SE ANULO EL PAGO Estado: " + data.estado + " Detalle: " +data.detalle);
+                                    location.href="/pagosconduceonline";
+                                  }else {
+                                    alert("OCURRIO UN ERROR... INTENTE NUEVAMENTE" + data.error);
+                                    location.href="/pagosconduceonline";
+                                  }
+                            }
+                        }, "json");
+                        } else {
+                        }
+                    });
+                });
+             
+             $('.editarpago').click(function(){
+                 var pers = $(this).attr('persona');
+                $("#id_estado").val($(this).attr('estado'));
+                $("#id_idref").val($(this).attr('idref'));
+                $("#id_codigo_aut").val($(this).attr('codigo_aut'));
+                $("#id_mensaje").val($(this).attr('mensaje'));
+                $("#id_factura").val('');
+                $($("#id_factura").get(0).parentNode.parentNode).hide();
+                $("#id_monto").val($(this).attr('monto'));
+                $("#id_referencia_dev").val($(this).attr('referencia_dev'));
+                $("#id_detalle_estado").val($(this).attr('detalle_estado'));
+                $("#id_referencia_tran").val($(this).attr('referencia_tran'));
+                $("#id_tipo").val($(this).attr('tipo'));
+                $("#id_rubros").val('');
+                $($("#id_rubros").get(0).parentNode.parentNode).hide();
+                $($("#id_correo").get(0).parentNode.parentNode).hide();
+                $($("#id_nombre").get(0).parentNode.parentNode).hide();
+                $($("#id_direccion").get(0).parentNode.parentNode).hide();
+                $($("#id_ruc").get(0).parentNode.parentNode).hide();
+                $("#id_telefono").val($(this).attr('telefono'));
+                $($("#id_telefono").get(0).parentNode.parentNode).hide();
+                $($("#id_anulado").get(0).parentNode.parentNode).hide();                  
+                $("#id_motivo").val($(this).attr('motivo'));
+                $($("#id_motivo").get(0).parentNode.parentNode).hide(); 
+                $("#id_detalle").val($(this).attr('detalle'));
+                $($("#id_detalle").get(0).parentNode.parentNode).hide();
+                $("#id_fechaanula").val($(this).attr('fechaanula'));
+                $($("#id_lote").get(0).parentNode.parentNode).hide();
+                $("#editarpago #idpagopy").val($(this).attr('editarpago_id'));
+                $("#editarpago #paneltitle2").html('Editar Datos de ' + pers);
+                $("#editarpago").modal({"backdrop":"static","width":"40%"});
+                $("#editarpago").modal("show");
+            });
+            
+            $("#editarpago .btn-cerrar").click(function(){
+               $("#editarpago").modal("hide");
+                return false;
+            }); 
+             
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3 style="text-align: center">REGISTRO DE PAGOS ONLINE </h3>
+
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <br/>
+    <div class='row-fluid'>
+        <div class="span4">
+            <form class='form-search'>
+                <input class='input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/pagosconduceonline" id='allresults' class='btn btn-danger'><i class="icon-remove icon-white"></i> Todos</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <br/>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Secuencia</th>
+                    <th>Estudiante</th>
+                    <th>Observaci&oacute;n</th>
+                    <th>Estado</th>
+                    <th>Referencia</th>
+                    <th>C&oacute;digo Autorizaci&oacute;n</th>
+                    <th>Mensaje</th>
+                    <th>Fecha</th>
+                    <th>Valor</th>
+                    <th>Anulado</th>
+                    <th>Facturado</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for p in pagopy %}
+                    <tr>
+                        <td>{{ p.id }}</td>
+                        <td>{{ p.nombres }}</td>
+                        <td>{{ p.direccion }}</td>
+                        <td>{{ p.estado }}  </td>
+                        <td>
+                            {% if p.idref %}{{ p.idref }}{% endif %}
+                        </td>
+                        <td>
+                            {% if p.codigo_aut %}{{ p.codigo_aut }}{% endif %}
+                        </td>
+                        <td>
+                            {% if p.mensaje %}{{ p.mensaje }}{% endif %}
+                        </td>
+                        <td>{% if p.fechatransaccion %}{{ p.fechatransaccion }}{% endif %}</td>
+                        <td>{{ p.monto|floatformat:2 }}</td>
+                        <td>{% if p.anulado %}<span class="label label-important "> ANULADO </span> {{ p.motivo  }} / Usuario: {{ p.usuarioanula  }}{% endif %}</td>
+                        <td>{% if p.facturado %}<span class="label label-success "> FACTURADO </span> {% endif %}</td>
+
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if  usuario.is_superuser %}
+                                            {% if not p.anulado and not p.facturado %}
+                                                <li><a href="#" class='refound' tid='{{ p.id }}' monto='{{ p.monto }}'><i class="icon-calendar icon-white"></i> Refund </a></li>
+                                                <li><a style="cursor: pointer" editarpago_id="{{ p.id }}" persona="{{ p.nombres }}" 
+                                                   idref="{{ p.idref }}" codigo_aut="{{ p.codigo_aut }}" 
+                                                   mensaje="{{ p.mensaje }}" monto="{{ p.monto }}" estado="{{ p.estado }}"
+                                                   referencia_dev="{{ p.referencia_dev }}"detalle_estado="{{ p.detalle_estado }}"
+                                                   referencia_tran="{{ p.referencia_tran }}" tipo="{{ p.tipo }}"
+                                                   class="editarpago"><i class="icon-edit"></i>Editar</a>
+                                                </li>
+                                            {% endif %}
+                                        {% endif %}
+                                    </ul>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not pagopy %}
+                    <tr>
+                        <td colspan="10">
+                            NO EXISTEN PAGOS
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 30 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/pagosconduceonline?page=1{% if search %}&s={{ search }}{% endif %}">1</a></li>
+                            <li><a href="/pagosconduceonline?page={{ paging.ellipsis_izquierda }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/pagosconduceonline?page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/pagosconduceonline?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/pagosconduceonline?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/pagosconduceonline?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    
+    
+    <div class="modal fade static" id="editarpago">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/pagosconduceonline" method="POST"  >
+                <input type='hidden' name='action' value='editar' />
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='idpagopy' id='idpagopy'/>
+                {% for c in formedit %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+

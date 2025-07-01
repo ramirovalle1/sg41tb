@@ -1,0 +1,70 @@
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            actualizaP = function(id, nombre){
+                Swal.fire({
+                    title: 'Actualiza Vinculaci&oacute;n',
+                    icon: 'warning',
+                    html: '<div ><span>¿Está seguro de <b>Actualizar</b> la vinculaci&oacute;n de</span><br><span><b>'+nombre+'</b>?</span> </div>',
+                    showCancelButton: true,
+                    confirmButtonText: 'Aceptar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    showLoaderOnConfirm: true
+                    }).then(function(result) {
+                        if (result.isConfirmed) {
+                            $.post('inscripciones',{
+                                action : 'actuali_pract',
+                                id : id,
+                                iid : $("#inscrip_actual").val()
+                            },function(data){
+                                if(data.result == 'ok'){
+                                Swal.fire('Vinculaci&oacute;n actualizada Correctamente','Sera redirigida a la nueva inscripcion','success').then(function(){
+                                    location.href ='/inscripciones?action=practicas&id='+data.nueva;
+                                })
+                                }else{
+                                    Swal.fire( 'Error','Error al actualizar la vinculaci&oacute;n','error')
+                                }
+                            })
+                        }
+                    })
+
+            }
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+<div class='row-fluid'>
+    <div class='span12' id="act_pract">
+         <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Grupo</th>
+                    <th>Carrera</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for inscrip in inscripciones %}
+                    <tr>
+                        <td>{{ inscrip.grupo.nombre }}</td>
+                        <td>{{ inscrip.carrera.alias }}</td>
+                        <td>
+                            <a href='#' onclick="actualizaP('{{ inscrip.id }}', '{{ inscrip.persona.nombre_completo }}','{{ inscrip.iid }}') " class='btn btn-success btn-mini cambiar_pract' ><i class="icon-edit icon-white"></i> Cambiar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% if not inscripciones %}
+                    <tr>
+                        <td colspan="8">
+                            NO HAY DATOS DEL ESTUDIANTE
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+    </div>
+</div>
+{% endblock %}

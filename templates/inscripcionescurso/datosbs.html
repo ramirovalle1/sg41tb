@@ -1,0 +1,53 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_nacimiento").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+    $("#id_nombres,#id_apellido1,#id_sexo").addClass("validate[required]");
+
+    {% if utiliza_grupos_alumnos %}
+        $("#id_grupo").addClass("validate[required]");
+        grupos = {
+        {% for grupo in grupos_abiertos %}
+            {{ grupo.id }}: {'carrera': {{ grupo.carrera.id }}, 'sesion': {{ grupo.sesion.id }}, 'modalidad': {{ grupo.modalidad.id }} }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        };
+
+        //$("#id_carrera, #id_modalidad, #id_sesion").attr({'disabled':'disabled'});
+        $("#id_grupo").change(function() {
+        var gid = $(this).val();
+        if (gid) {
+        $("#id_carrera").val(grupos[gid].carrera);
+        $("#id_sesion").val(grupos[gid].sesion);
+        $("#id_modalidad").val(grupos[gid].modalidad);
+        } else {
+        $("#id_carrera").val('');
+        $("#id_sesion").val('');
+        $("#id_modalidad").val('');
+        }
+        });
+
+        {% if matriculado %}
+            $($("#id_grupo").get(0).parentNode.parentNode).hide();
+            $($("#id_carrera").get(0).parentNode.parentNode).hide();
+            $($("#id_modalidad").get(0).parentNode.parentNode).hide();
+            $($("#id_sesion").get(0).parentNode.parentNode).hide();
+        {% endif %}
+    {% endif %}
+
+    $("input,select").attr("disabled","disabled");
+    $("#formbutton").remove();
+
+{% endblock %}
+{% block titulo %}
+    Visualizar Datos de Inscripci&oacute;n del Alumno
+{% endblock %}
+{% block formaction %}/inscripciones{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='edit'/>
+    <input type='hidden' name='id' value="{{ inscripcion.id }}"/>
+{% endblock %}
+{% block formback %}/inscripciones{% endblock %}

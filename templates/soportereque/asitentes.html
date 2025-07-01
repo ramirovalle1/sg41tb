@@ -1,0 +1,80 @@
+<script type="text/javascript">
+    $(function(){
+        $(".editar").click(function(){
+            $("#cabeceramodal").html("Agregar Asistente");
+            $("#editar").val($(this).attr('idedit'));
+            $("#idasist").val($(this).attr('nom'));
+            $("#idasist").attr("myval",$(this).attr('idmyval'));
+            $("#helpidasist").html("");
+            $("#tutorpanel #action").val("addasist");
+            $("#tutorpanel").modal({width: '40%', backdrop: 'static'});
+            $("#tutorpanel").modal("show");
+        });
+
+        $(".eliminar").click(function(){
+                var idreq = $(this).attr('idreq');
+                $("#verasistentepanel").modal("hide");
+                smoke.confirm("Esta seguro de eliminar el asistente", function(e){
+                    if (e){
+
+                        $.post("/verrequerimiento", {action: 'eliminar','idreq':idreq }, function(data) {
+
+                            if (data.result=='ok') {
+                                smoke.alert(data.mensaje);
+                                setInterval(function(){
+                                    $.unblockUI();
+                                    location.href='/verrequerimiento';
+                                }, 4000)
+                            }else{
+                                smoke.alert('OCURRIO UN ERROR')
+
+                            }
+
+                        },'json');
+
+                    }else{
+                        $.get("/verrequerimiento", {'action':'verasitentes'}, function(data) {
+                            $("#verasistentepanel .modal-body").html(data);
+                            $("#verasistentepanel").modal({"backdrop":"static","width":"50%"});
+                            $("#verasistentepanel").modal("show");
+                       }, "html");
+                    }
+                }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+    });
+</script>
+<div class="row-fluid">
+<div class="span12">
+    <table class="table table-condensed table-stripped">
+        <thead>
+            <tr>
+                <th style="text-align: center">Asistente</th>
+                <th style="text-align: center">Fecha</th>
+                <th style="text-align: center"></th>
+                <th style="text-align: center"></th>
+
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in requerimientoasitentes %}
+                <tr>
+
+                    <td style="text-align: center"> {{ r.asistente }}</td>
+                    <td style="text-align: center"> {{ r.fecha|date:'Y-m-d' }}</td>
+                    <td style="text-align: center"><a class="btn btn-info editar" idedit="{{ r.id }}" idmyval="{{ r.asistente.id }}" nom="{{ r.asistente.flexbox_repr }}" ><i class="icon-edit"></i> Editar </a> </td>
+                    <td style="text-align: center"><a class="btn btn-danger eliminar" idreq="{{ r.id }}" ><i class="icon-remove"></i> Eliminar </a> </td>
+
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+
+

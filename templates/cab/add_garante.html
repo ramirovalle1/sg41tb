@@ -1,0 +1,745 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#txt_valoreco").addClass('input-small');
+        $("#txt_descripcioneco").addClass('input-xlarge');
+        $("#txt_ciudad").val('GUAYAQUIL');
+        tipo_infoeconomica = ''
+        list_infoeconomica = []
+
+        valida_list_infoeconomica = []
+
+        info_economica = function(tipo,descripcion){
+            tipo_infoeconomica = tipo
+            $("#info_economica #paneltitle").html(descripcion);
+            $("#info_economica").modal({"backdrop":"static","width":"20%"});
+            $("#info_economica").modal("show");
+            if(tipo=='ingresos'){
+                $("#p_descripcion").html("<b>Descripion</b> (Ingreso recibido por mes)");
+            }else if(tipo=='gastos'){
+                $("#p_descripcion").html("<b>Descripion</b> (Gastos por mes)");
+            }else if(tipo=='activos'){
+                $("#p_descripcion").html("<b>Descripion</b> (Detalle las propiedades que posea, ejemplo Casa, Vehículo, Terrenos, Otros)");
+            }else if(tipo=='pasivos'){
+                $("#p_descripcion").html("<b>Descripion</b> (Detalle las deudas que mantenga con Bancos, Cooperativas, Tarjetas de crédito, Financieras, otros)");
+            }
+
+            limpiar()
+        }
+
+        $("#info_economica .btn-cerrar").click(function(){
+            $("#info_economica").modal("hide");
+        });
+
+        contador = 0
+        $("#info_economica #btn-agregar").click(function(){
+            if($('#txt_descripcioneco').val()!='' && $('#txt_valoreco').val()!=''){
+                $("#tr_"+tipo_infoeconomica).show()
+                var data = {'id':contador,'tipo': tipo_infoeconomica, 'descipcion': $('#txt_descripcioneco').val().toUpperCase(), 'valor':$('#txt_valoreco').val()}
+                list_infoeconomica.push(data)
+                valida_list_infoeconomica.push(tipo_infoeconomica)
+                for(var i = valida_list_infoeconomica.length -1; i >=0; i--){
+                    if(valida_list_infoeconomica.indexOf(valida_list_infoeconomica[i]) !== i) valida_list_infoeconomica.splice(i,1);
+                }
+                $('#body_'+tipo_infoeconomica).append("<tr bgcolor='FFFDC1' id="+contador+">" +
+                                                       "<td><button class='btn btn-danger btn-small' onclick='delete_actecon("+contador+")'><i class='icon-remove'></i></button></td>" +
+                                                       "<td>"+$('#txt_descripcioneco').val().toUpperCase()+"</td>" +
+                                                       "<td>$"+$('#txt_valoreco').val()+"</td></tr>")
+                limpiar()
+{#                alert('Informacion Economica Adicionada Correctamente')#}
+            }else{
+                alert('Faltan datos')
+            }
+            console.log(list_infoeconomica)
+            console.log(valida_list_infoeconomica)
+            contador = contador+1
+        });
+
+        var tipo = ''
+        delete_actecon = function(cont){
+            $("#"+cont).remove()
+            for (let i = 0; i < list_infoeconomica.length; i++) {
+                if(list_infoeconomica[i].id == cont){
+                    tipo = list_infoeconomica[i].tipo
+                    list_infoeconomica.splice(i,1)
+                }
+            }
+            var valida=1;
+            for (let i = 0; i < list_infoeconomica.length; i++) {
+                if(list_infoeconomica[i].tipo == tipo){
+                    console.log('NO BORRAR: '+tipo)
+                    console.log(list_infoeconomica)
+                    valida = 0;
+                }else{
+                    if(valida==1){
+                        console.log('BORRAR: '+tipo)
+                        console.log(list_infoeconomica)
+                        for (let a = 0; a < valida_list_infoeconomica.length; a++){
+                            if(tipo == valida_list_infoeconomica[a]){
+                                valida_list_infoeconomica.splice(a,1)
+                            }
+                        }
+                    }
+
+                }
+            }
+
+            if(list_infoeconomica.length<1){
+                $("#tr_"+tipo_infoeconomica).hide()
+            }
+            console.log(list_infoeconomica)
+            console.log(valida_list_infoeconomica)
+        }
+
+        var cont = 0;
+        $("#btn-agregarreferencia").click(function(){
+            if($('#txt_nombre_referencia').val()!='' && $('#slct_ciudad_referencia').val()!='' && $('#txt_relacion_referencia').val()!='' && $('#txt_telefono_referencia').val()!=''){
+                $("#tr_referencias").show();
+                var nombres = $("#txt_nombre_referencia").val().toUpperCase();
+                var ciudad = $("#slct_ciudad_referencia").val();
+                var ciudad_ref = $(".ciudad_refe"+ciudad).html();
+                var relacion = $("#txt_relacion_referencia").val().toUpperCase();
+                var telefono = $("#txt_telefono_referencia").val();
+
+                var data = {'id':cont, 'nombre': nombres, 'ciudad': ciudad, 'relacion':relacion, 'telefono':telefono}
+                list_referencias.push(data)
+                $('#body_referencias').append("<tr bgcolor='FFFDC1' id=ref"+cont+">" +
+                                                       "<td><button class='btn btn-danger btn-small' onclick='delete_referencia("+cont+")'><i class='icon-remove'></i></button></td>" +
+                                                       "<td>"+nombres+"</td>" +
+                                                       "<td>"+relacion+"</td>" +
+                                                       "<td>"+telefono+"</td>" +
+                                                       "<td>"+ciudad_ref+"</td></tr>")
+                limpiar()
+                alert('Referencia Adicionada Correctamente')
+            }else{
+                alert('Faltan datos')
+            }
+            console.log(list_referencias)
+            cont = cont+1
+        });
+
+        delete_referencia = function(cont){
+            $("#ref"+cont).remove()
+            for (let i = 0; i < list_referencias.length; i++) {
+                if(list_referencias[i].id == cont){
+                    list_referencias.splice(i,1)
+                }
+            }
+            console.log(list_referencias)
+        }
+
+        limpiar = function(){
+            $("#txt_descripcioneco").val('');
+            $("#txt_valoreco").val('');
+        }
+
+        var html = '<option value="" selected="selected"  >---------</option>';
+        $("#slct_cantonresidencia").html(html)
+        $("#slct_parroquiaresidencia").html(html)
+
+        $("#slct_provinciaresidencia").change(function(){
+            $.post("/alumnos_cab",{"action": "consulta_canton", "id":$("#slct_provinciaresidencia").val()},function(data) {
+                if(data.result == "ok"){
+                    var html = '<option value="" >---------</option>';
+                    for (var m in data.canton){
+                        var cant = data.canton[m]
+                        html = html + '<option value="'+ cant['id'] + '" >'+ cant['nombre']+'</option>'
+                    }
+                    $("#slct_cantonresidencia").html(html)
+                    var html = '<option value="" >---------</option>';
+                    $("#slct_parroquiaresidencia").html(html)
+{#                    $("#id_sectorresid").html(html)#}
+                }
+            },"json");
+        });
+
+        $("#slct_cantonresidencia").change(function(){
+            $.post("/alumnos_cab",{"action": "consulta_parroquia", "id":$("#slct_cantonresidencia").val() },function(data) {
+                if(data.result == "ok"){
+                    var html = '<option value="" >---------</option>';
+                    for (var m in data.parroquia){
+                        var parr = data.parroquia[m]
+                        html = html + '<option value="'+ parr['id'] + '" >'+ parr['nombre']+'</option>'
+                    }
+                    $("#slct_parroquiaresidencia").html(html)
+{#                    var html = '<option value="" >---------</option>';#}
+{#                    $("#id_sectorresid").html(html)#}
+                }
+            },"json");
+        });
+
+        limpiar_ht = function(){
+            $('.ht_apellidos').html('')
+            $('.ht_nombre').html('')
+            $('.ht_tipoidentificacion').html('')
+            $('.ht_identificacion').html('')
+            $('.ht_nacionalidad').html('')
+            $('.ht_ciudadnacimiento').html('')
+            $('.ht_fechanacimiento').html('')
+            $('.ht_ecivil').html('')
+            $('.ht_cargas').html('')
+            $('.ht_paisresidencia').html('')
+            $('.ht_provinciaresidencia').html('')
+            $('.ht_cantonresidencia').html('')
+            $('.ht_parroquiaresidencia').html('')
+            $('.ht_email').html('')
+            $('.ht_domicilio').html('')
+            $('.ht_convencional').html('')
+            $('.ht_celular').html('')
+            $('.ht_tipotrabajo').html('')
+            $('.ht_nombreempresa').html('')
+            $('.ht_actividadeconomicaempresa').html('')
+            $('.ht_direcciontrabajo').html('')
+            $('.ht_numerotrabajo').html('')
+        }
+
+        $("#txt_fechanacimiento").datepicker({format:"dd-mm-yyyy"});
+        $("#guardar").click(function(){
+            limpiar_ht();
+            var apellidos = $('#txt_apellidos').val()
+            var nombre = $('#txt_nombre').val()
+            var tipoidentificacion = $('#slct_tipoidentificacion').val()
+            var identificacion = $('#txt_identificacion').val()
+            var nacionalidad = $('#txt_nacionalidad').val()
+            var ciudadnacimiento = $('#txt_ciudadnacimiento').val()
+            var fechanacimiento = $('#txt_fechanacimiento').val()
+            var estado_civil = $('#slct_ecivil').val()
+            var num_cargas = $('#num_cargas').val()
+            var paisresidencia = $('#slct_paisresidencia').val()
+            var provinciaresidencia = $('#slct_provinciaresidencia').val()
+            var cantonresidencia = $('#slct_cantonresidencia').val()
+            var parroquiaresidencia = $('#slct_parroquiaresidencia').val()
+            var email = $('#txt_email').val()
+            var domicilio = $('#txt_domicilio').val()
+            var convencional = $('#txt_convencional').val()
+            var celular = $('#txt_celular').val()
+            var tipotrabajo = $('#txt_tipotrabajo').val()
+            var nombreempresa = $('#txt_nombreempresa').val()
+            var actividadeconomicaempresa = $('#txt_actividadeconomicaempresa').val()
+            var direcciontrabajo = $('#txt_direcciontrabajo').val()
+            var numerotrabajo = $('#txt_numerotrabajo').val()
+            var cargo_politico = 0
+            if ($("#chk_trabajo").is(':checked')){
+                cargo_politico = 1
+            }
+            var estado = 0;
+            if(apellidos!=''){
+                if(nombre!=''){
+                    if(tipoidentificacion!=''){
+                        if(identificacion!=''){
+                            if(nacionalidad!=''){
+                                if(ciudadnacimiento!=''){
+                                    if(fechanacimiento!=''){
+                                        if(estado_civil!=''){
+                                            if(num_cargas!=''){
+                                                if(paisresidencia!=''){
+                                                    if(provinciaresidencia!=''){
+                                                        if(cantonresidencia!=''){
+                                                            if(parroquiaresidencia!=''){
+                                                                if(email!=''){
+                                                                    if(domicilio!=''){
+                                                                        if(convencional!=''){
+                                                                            if(celular!=''){
+                                                                                if(nombreempresa!=''){
+                                                                                    if(actividadeconomicaempresa!=''){
+                                                                                        if(direcciontrabajo!=''){
+                                                                                            if(numerotrabajo!=''){
+                                                                                                            mensaje=''
+                                                                                                            if(valida_list_infoeconomica.length==4){
+                                                                                                                estado=1
+                                                                                                            }else{
+                                                                                                                estado=0
+                                                                                                                if(valida_list_infoeconomica.length!=4){
+                                                                                                                    mensaje = 'Falta Adicionar Informacion Economica'
+                                                                                                                }
+                                                                                                                smoke.alert(mensaje)
+                                                                                                            }
+                                                                                                            if(estado==1){
+                                                                                                                smoke.confirm("Esta Seguro de enviar formulario", function(e){
+                                                                                                                    if (e){
+                                                                                                                        $.post("/alumnos_cab",{"action":"add_garante", 'inscripcion_cab':'{{ inscripcion_cab.id }}', 'apellidos':apellidos, 'nombre':nombre, 'tipoidentificacion':tipoidentificacion,
+                                                                                                                        'identificacion':identificacion, 'nacionalidad':nacionalidad, 'ciudadnacimiento':ciudadnacimiento, 'fechanacimiento':fechanacimiento,
+                                                                                                                        'info_economica':JSON.stringify(list_infoeconomica), 'estado_civil':estado_civil, 'num_cargas':num_cargas,
+                                                                                                                        'paisresidencia':paisresidencia, 'provinciaresidencia':provinciaresidencia, 'cantonresidencia':cantonresidencia, 'parroquiaresidencia':parroquiaresidencia,
+                                                                                                                        'email':email, 'domicilio':domicilio, 'convencional':convencional, 'celular':celular, 'tipotrabajo':tipotrabajo, 'nombreempresa':nombreempresa, 'actividadeconomicaempresa':actividadeconomicaempresa,
+                                                                                                                        'direcciontrabajo':direcciontrabajo, 'numerotrabajo':numerotrabajo, 'cargo_politico':cargo_politico},function(data) {
+                                                                                                                            if(data.result=='ok'){
+                                                                                                                                location.href = '/alumnos_cab';
+                                                                                                                            }else{
+                                                                                                                                alert('Error: '+data.result);
+                                                                                                                            }
+                                                                                                                        },"json");
+                                                                                                                    }else{
+                                                                                                                        location.href = '/alumnos_cab';
+                                                                                                                    }
+                                                                                                                    }, {
+                                                                                                                    ok: "Ok",
+                                                                                                                    cancel: "Cancelar",
+                                                                                                                    classname: "custom-class",
+                                                                                                                    reverseButtons: true
+                                                                                                                 });
+                                                                                                            }
+                                                                                            }else{
+                                                                                                $('#txt_numerotrabajo').focus()
+                                                                                                $('.ht_numerotrabajo').html('Ingrese numero de telefono de trabajo')
+                                                                                            }
+                                                                                        }else{
+                                                                                            $('#txt_direcciontrabajo').focus()
+                                                                                            $('.ht_direcciontrabajo').html('Ingrese direccion de empresa donde trabaja')
+                                                                                        }
+                                                                                    }else{
+                                                                                        $('#txt_actividadeconomicaempresa').focus()
+                                                                                        $('.ht_actividadeconomicaempresa').html('Ingrese actividad economica de empresa')
+                                                                                    }
+                                                                                }else{
+                                                                                    $('#txt_nombreempresa').focus()
+                                                                                    $('.ht_nombreempresa').html('Ingrese nombre de empresa donde trabaja')
+                                                                                }
+                                                                            }else{
+                                                                                $('#txt_celular').focus()
+                                                                                $('.ht_celular').html('Ingrese numero de telefono celular')
+                                                                            }
+                                                                        }else{
+                                                                            $('#txt_convencional').focus()
+                                                                            $('.ht_convencional').html('Ingrese numero de telefono convencional')
+                                                                        }
+                                                                    }else{
+                                                                        $('#txt_domicilio').focus()
+                                                                        $('.ht_domicilio').html('Ingrese su direccion de domicilio')
+                                                                    }
+                                                                }else{
+                                                                    $('#txt_email').focus()
+                                                                    $('.ht_email').html('Ingrese correo electronico')
+                                                                }
+                                                            }else{
+                                                                $('#slct_parroquiaresidencia').focus()
+                                                                $('.ht_parroquiaresidencia').html('Seleccione parroquia de residencia')
+                                                            }
+                                                        }else{
+                                                            $('#slct_cantonresidencia').focus()
+                                                            $('.ht_cantonresidencia').html('Seleccione canton de residencia')
+                                                        }
+                                                    }else{
+                                                        $('#slct_provinciaresidencia').focus()
+                                                        $('.ht_provinciaresidencia').html('Seleccione provincia de residencia')
+                                                    }
+                                                }else{
+                                                    $('#slct_paisresidencia').focus()
+                                                    $('.ht_paisresidencia').html('Seleccione pais de residencia')
+                                                }
+                                            }else{
+                                                $('#num_cargas').focus()
+                                                $('.ht_cargas').html('Seleccione numero de cargas')
+                                            }
+                                        }else{
+                                            $('#slct_ecivil').focus()
+                                            $('.ht_ecivil').html('Seleccione su estado civil')
+                                        }
+                                    }else{
+                                        $('#txt_fechanacimiento').focus()
+                                        $('.ht_fechanacimiento').html('Ingrese fecha de nacimiento del garante')
+                                    }
+                                }else{
+                                    $('#txt_ciudadnacimiento').focus()
+                                    $('.ht_ciudadnacimiento').html('Ingrese ciudad de nacimiento del garante')
+                                }
+                            }else{
+                                $('#txt_nacionalidad').focus()
+                                $('.ht_nacionalidad').html('Ingrese nacionalidad del garante')
+                            }
+                        }else{
+                            $('#txt_identificacion').focus()
+                            $('.ht_identificacion').html('Ingrese numero de identificacion del garante')
+                        }
+                    }else{
+                        $('#slct_tipoidentificacion').focus()
+                        $('.ht_tipoidentificacion').html('Ingrese tipo de identificacion del garante')
+                    }
+                }else{
+                    $('#txt_nombre').focus()
+                    $('.ht_nombre').html('Ingrese nombre de garante')
+                }
+            }else{
+                $('#txt_apellidos').focus()
+                $('.ht_apellidos').html('Ingrese apellidos del garante')
+            }
+
+            console.log(estado)
+        });
+
+{#        --------------------------------------------------------------------CHEQUEA CEDULA---------------------------------------------------------#}
+        chequeaCedula = function(numero){
+            var suma = 0;
+            var residuo = 0;
+            var pri = false;
+            var pub = false;
+            var nat = false;
+            var numeroProvincias = 24;
+            var extranjero = 30;
+            var modulo = 11;
+
+            prov = numero.substr(0,2);
+            if (parseInt(prov)>numeroProvincias || parseInt(prov)<=0){
+                if (parseInt(prov)!= extranjero){
+                    smoke.alert('El código de la provincia (dos primeros dígitos) es inválido');
+                    $("#txt_identificacionconyuge").val("");
+                }
+            }
+
+            /* Aqui almacenamos los digitos de la cedula en variables. */
+            d1 = numero.substr(0,1);
+            d2 = numero.substr(1,1);
+            d3 = numero.substr(2,1);
+            d4 = numero.substr(3,1);
+            d5 = numero.substr(4,1);
+            d6 = numero.substr(5,1);
+            d7 = numero.substr(6,1);
+            d8 = numero.substr(7,1);
+            d9 = numero.substr(8,1);
+            d10 = numero.substr(9,1);
+
+            if (d3==7 || d3==8){
+                smoke.alert('El tercer dígito ingresado es inválido');
+                $("#txt_identificacionconyuge").val("");
+            }
+
+            /* Solo para personas naturales (modulo 10) */
+           {#  OCU 02-feb-2017 para que valide cedulas de extranjeros con tercer digito = 6 #}
+    {#      if (d3 <6){#}
+            if (d3 <=6){
+                nat = true;
+                p1 = d1 * 2; if (p1 >= 10) p1 -= 9;
+                p2 = d2 * 1; if (p2 >= 10) p2 -= 9;
+                p3 = d3 * 2; if (p3 >= 10) p3 -= 9;
+                p4 = d4 * 1; if (p4 >= 10) p4 -= 9;
+                p5 = d5 * 2; if (p5 >= 10) p5 -= 9;
+                p6 = d6 * 1; if (p6 >= 10) p6 -= 9;
+                p7 = d7 * 2; if (p7 >= 10) p7 -= 9;
+                p8 = d8 * 1; if (p8 >= 10) p8 -= 9;
+                p9 = d9 * 2; if (p9 >= 10) p9 -= 9;
+                modulo = 10;
+            }
+
+            /* Solo para sociedades publicas (modulo 11) */
+            /* Aqui el digito verficador esta en la posicion 9, en las otras 2 en la pos. 10 */
+            else if(d3 == 6){
+                pub = true;
+                p1 = d1 * 3;
+                p2 = d2 * 2;
+                p3 = d3 * 7;
+                p4 = d4 * 6;
+                p5 = d5 * 5;
+                p6 = d6 * 4;
+                p7 = d7 * 3;
+                p8 = d8 * 2;
+                p9 = 0;
+            }
+
+            /* Solo para entidades privadas (modulo 11) */
+            else if(d3 == 9) {
+                pri = true;
+                p1 = d1 * 4;
+                p2 = d2 * 3;
+                p3 = d3 * 2;
+                p4 = d4 * 7;
+                p5 = d5 * 6;
+                p6 = d6 * 5;
+                p7 = d7 * 4;
+                p8 = d8 * 3;
+                p9 = d9 * 2;
+            }
+
+            suma = p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+            residuo = suma % modulo;
+
+            /* Si residuo=0, dig.ver.=0, caso contrario 10 - residuo*/
+            digitoVerificador = residuo==0 ? 0: modulo - residuo;
+
+            /* ahora comparamos el elemento de la posicion 10 con el dig. ver.*/
+            if (pub==true){
+                if (digitoVerificador != d9){
+                    smoke.alert('El ruc de la empresa del sector público es incorrecto.');
+                    $("#txt_identificacionconyuge").val("");
+                }
+                /* El ruc de las empresas del sector publico terminan con 0001*/
+                if ( numero.substr(9,4) != '0001' ){
+                    smoke.alert('El ruc de la empresa del sector público debe terminar con 0001');
+                    $("#txt_identificacionconyuge").val("");
+                }
+            }
+
+            else if(pri == true){
+                if (digitoVerificador != d10){
+                    smoke.alert('El ruc de la empresa del sector privado es incorrecto.');
+                    $("#txt_identificacionconyuge").val("");
+                }
+                if ( numero.substr(10,3) != '001' ){
+                    smoke.alert('El ruc de la empresa del sector privado debe terminar con 001');
+                    $("#txt_identificacionconyuge").val("");
+                }
+            }
+
+            else if(nat == true){
+                if (digitoVerificador != d10){
+                    smoke.alert('El número de cédula de la persona natural es incorrecto.');
+                    $("#txt_identificacionconyuge").val("");
+                }
+                if (numero.length >10 && numero.substr(10,3) != '001' ){
+                    smoke.alert('El ruc de la persona natural debe terminar con 001');
+                    $("#txt_identificacionconyuge").val("");
+                }
+            }
+            return true;
+        };
+
+        $("#txt_identificacion").blur(function(){
+            $($("#txt_identificacion").get(0).parentNode).find(".help-text").html("" );
+            $("#formbutton").attr("disabled",false);
+            if ($(this).val() != ''){
+                if($('#slct_tipoidentificacion').val()=='CEDULA'){
+                    chequeaCedula($("#txt_identificacion").val());
+                }
+            }
+        });
+
+        mayus = function(e) {
+            e.value = e.value.toUpperCase();
+        }
+
+        $('#txt_valoreco, #txt_identificacion, #txt_convencional, #txt_celular').on('input', function () {
+            this.value = this.value.replace(/[^0-9]/g,'');
+        });
+
+    });
+</script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span9">
+            <h2>Datos de Garante
+            <h5 class="alert alert-primary">Informaci&oacute;n requerida en caso de solicitar cr&eacute;dito en la Caja de Ahorro Bolivariana (CAB)</h5></h2>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/alumnos_cab" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span10">
+{#            ----------------------------------------------------------------------DATOS PERSONALES---------------------------------------------------------------#}
+            <h4 class='alert alert-info'>DATOS PERSONALES</h4>
+            <table class="table table-condensed" style="width: 100%">
+                <tr>
+                    <th>Apellidos</th>
+                    <th>Nombre</th>
+                    <th>Tipo de Identificaci&oacute;n</th>
+                    <th>Numero de Identificaci&oacute;n</th>
+                    <th>Nacionalidad</th>
+                </tr>
+                <tr>
+                    <td><input type="text" id="txt_apellidos" onkeyup="mayus(this)"/><p class="ht_apellidos" style="color:red"></p></td>
+                    <td><input type="text" id="txt_nombre" onkeyup="mayus(this)"/><p class="ht_nombre" style="color:red"></p></td>
+                    <td><select name="" id="slct_tipoidentificacion">
+                            <option value="">--------</option>
+                            <option value="CEDULA">CEDULA</option>
+                            <option value="PASAPORTE">PASAPORTE</option>
+                        </select>
+                        <p class="ht_tipoidentificacion" style="color:red"></p>
+                    </td>
+                    <td><input type="text" id="txt_identificacion"/><p class="ht_identificacion" style="color:red"></p></td>
+                    <td>
+                        <select name="" id="txt_nacionalidad">
+                            <option value="">--------</option>
+                            {% for p in paises %}
+                                <option value="{{ p.id }}">{{ p.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="ht_nacionalidad" style="color:red"></p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th colspan="1">Ciudad de Nacimiento</th>
+                    <th colspan="1">Fecha de Nacimiento</th>
+                    <th colspan="1">Estado Civil</th>
+                    <th colspan="4"># Cargas Familiares</th>
+                </tr>
+                <tr>
+                    <td colspan="1">
+                        <select name="" id="txt_ciudadnacimiento">
+                            <option value="">--------</option>
+                            {% for c in cantones %}
+                                <option value="{{ c.id }}">{{ c.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="ht_ciudadnacimiento" style="color:red"></p>
+                    </td>
+                    <td colspan="1"><input type="text" id="txt_fechanacimiento"/><p class="ht_fechanacimiento" style="color:red"></p></td>
+                    <td>
+                        <select name="" id="slct_ecivil">
+                            <option value="">--------</option>
+                            <option value="SOLTERO">SOLTERO/A</option>
+                            <option value="CASADO">CASADO/A</option>
+                            <option value="DIVORCIADO">DIVORCIADO/A</option>
+                            <option value="VIUDO">VIUDO/A</option>
+                            <option value="UNION">UNION DE HECHO</option>
+                        </select>
+                        <p class="ht_ecivil" style="color:red"></p>
+                    </td>
+                    <td colspan="4"><input type="number" style="width: 3em" min="0" id="num_cargas" value=""/><p class="ht_cargas" style="color:red"></p></td>
+                </tr>
+            </table>
+            <br>
+{#            -----------------------------------------------------------------DIRECCIÓN DOMICILIARIA DEL SOCIO/CLIENTE---------------------------------------------------------------#}
+            <h4 class='alert alert-info'>DIRECCIÓN DOMICILIARIA DEL SOCIO/CLIENTE</h4>
+            <table class="table table-condensed" style="width: 100%">
+                <tr>
+                    <th colspan="1">Pais de Residencia</th>
+                    <th colspan="1">Provincia</th>
+                    <th colspan="1">Canton</th>
+                    <th colspan="1">Parroquia</th>
+                    <th colspan="1">Correo Electr&oacute;nico</th>
+                </tr>
+                <tr>
+                    <td colspan="1">
+                        <select name="" id="slct_paisresidencia">
+                            <option value="">--------</option>
+                            {% for p in paises %}
+                                <option value="{{ p.id }}">{{ p.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="ht_paisresidencia" style="color:red"></p>
+                    </td>
+                    <td colspan="1">
+                        <select name="" id="slct_provinciaresidencia">
+                            <option value="">--------</option>
+                            {% for p in provincias %}
+                                <option value="{{ p.id }}">{{ p.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="ht_provinciaresidencia" style="color:red"></p>
+                    </td>
+                    <td colspan="1">
+                        <select name="" id="slct_cantonresidencia">
+                            <option value="">--------</option>
+                            {% for c in cantones %}
+                                <option value="{{ c.id }}">{{ c.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="ht_cantonresidencia" style="color:red"></p>
+                    </td>
+                    <td colspan="1">
+                        <select name="" id="slct_parroquiaresidencia">
+                            <option value="">--------</option>
+                            {% for p in parroquias %}
+                                <option value="{{ p.id }}">{{ p.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="ht_parroquiaresidencia" style="color:red"></p>
+                    </td>
+                    <td colspan="1"><input type="text" id="txt_email"/><p class="ht_email" style="color:red"></p></td>
+                </tr>
+                <tr>
+                    <th colspan="2">Direccion de Domicilio</th>
+                    <th colspan="1">Telefono Domicilio</th>
+                    <th colspan="2">Telefono Celular</th>
+                </tr>
+                <tr>
+                    <td colspan="2"><input type="text" id="txt_domicilio" style="width: 92%" onkeyup="mayus(this)"/><p class="ht_domicilio" style="color:red"></p></td>
+                    <td colspan="1"><input type="text" id="txt_convencional" onkeyup="mayus(this)"/><p class="ht_convencional" style="color:red"></p></td>
+                    <td colspan="2"><input type="text" id="txt_celular" onkeyup="mayus(this)"/><p class="ht_celular" style="color:red"></p></td>
+                </tr>
+            </table>
+            <br>
+{#            ----------------------------------------------------------------------ACTIVIDAD ECONOMICA--------------------------------------------------------------#}
+            <h4 class='alert alert-info'>ACTIVIDAD ECON&Oacute;MICA</h4>
+            <table class="table table-condensed" style="width: 100%">
+                <tr>
+                    <th colspan="1">Tipo</th>
+                    <th colspan="1">Nombre de la Empresa</th>
+                    <th colspan="1">Actividad Económica de la Empresa</th>
+                </tr>
+                <tr>
+                    <td colspan="1"><input type="text" id="txt_tipotrabajo" onkeyup="mayus(this)"/><p class="ht_tipotrabajo" style="color:red"></p></td>
+                    <td colspan="1"><input type="text" id="txt_nombreempresa" onkeyup="mayus(this)"/><p class="ht_nombreempresa" style="color:red"></p></td>
+                    <td><input type="text" id="txt_actividadeconomicaempresa" onkeyup="mayus(this)"/><p class="ht_actividadeconomicaempresa" style="color:red"></p></td>
+                </tr>
+                <tr>
+                    <th colspan="1">Dirección  del Trabajo</th>
+                    <th colspan="1">Teléfono del Trabajo</th>
+                    <th colspan="1">Ud. ha ocupado en el último año un cargo de elección popular o de responsabilidad politica y social?</th>
+                </tr>
+                <tr>
+                    <td colspan="1"><input type="text" id="txt_direcciontrabajo" onkeyup="mayus(this)"/><p class="ht_direcciontrabajo" style="color:red"></p></td>
+                    <td colspan="1"><input type="text" id="txt_numerotrabajo" onkeyup="mayus(this)"/><p class="ht_numerotrabajo" style="color:red"></p></td>
+                    <td><input type="checkbox" id="chk_trabajo"/><p class="ht_trabajo" style="color:red"></p></td>
+                </tr>
+            </table>
+            <br>
+{#            ----------------------------------------------------------------------INFORMACIÓN ECONÓMICA---------------------------------------------------------------#}
+            <h4 class='alert alert-info'>INFORMACIÓN ECONÓMICA</h4>
+            <table class="table table-condensed" style="width: 40%" id="tbl_ingresos">
+                <thead>
+                    <tr><th colspan="3"><button class="btn btn-info btn-small" onclick="info_economica('ingresos','Ingresos Mensuales')"><i class="icon-plus"></i></button> Ingresos Mensuales</th></tr>
+                </thead>
+                <tbody id="body_ingresos"><p class="ht_ingresos" style="color:red"></p></tbody>
+            </table><br>
+
+            <table class="table table-condensed" style="width: 40%">
+                <thead>
+                    <tr><th colspan="3"><button class="btn btn-info btn-small" onclick="info_economica('gastos','Gastos Mensuales')"><i class="icon-plus"></i></button> Gastos Mensuales</th></tr>
+                </thead>
+                <tbody id="body_gastos"><p class="ht_gastos" style="color:red"></p></tbody>
+            </table><br>
+
+            <table class="table table-condensed" style="width: 40%">
+                <thead>
+                    <tr><th colspan="3"><button class="btn btn-info btn-small" onclick="info_economica('activos','Activos')"><i class="icon-plus"></i></button> Activos</th></tr>
+                </thead>
+                <tbody id="body_activos"><p class="ht_activos" style="color:red"></p></tbody>
+            </table><br>
+            <table class="table table-condensed" style="width: 40%">
+                <thead>
+                    <tr><th colspan="3"><button class="btn btn-info btn-small" onclick="info_economica('pasivos','Pasivos')"><i class="icon-plus"></i></button> Pasivos</th></tr>
+                </thead>
+                <tbody id="body_pasivos"><p class="ht_pasivos" style="color:red"></p></tbody>
+            </table>
+
+            <br>
+        </div>
+    </div>
+    <br>
+    <div class="row-fluid">
+        <div class="span1"></div>
+        <div class="span10" style="text-align: right">
+            <button class="btn btn-success btn-large" id='guardar'>ENVIAR FORMULARIO</button>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="info_economica">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4 id='paneltitle' style="text-align: center"></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body">
+            <form>
+                <label for="" id="p_descripcion">Descripcion</label>
+                <input type="text" id="txt_descripcioneco"/>
+{#                <p id='p_descripcion'></p>#}
+                <label for=""><b>Valor</b></label>
+                <input type="text" id="txt_valoreco"/>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-success" id="btn-agregar">Agregar</button>
+            <button class="btn btn-cerrar"> Cerrar</button>
+        </div>
+    </div>
+
+{% endblock %}

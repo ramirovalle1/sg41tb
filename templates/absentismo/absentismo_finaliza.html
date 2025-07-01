@@ -1,0 +1,256 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function(){
+
+            $(".detalleabsent").click(function() {
+               var id = $(this).attr("id");
+                   $.get("/finalizaabsent", {'action':'detalleabsent', 'id': id,'n':$(this).attr('n')}, function(data) {
+                        $("#detalle_absent .modal-body").html(data);
+                        $("#detalle_absent").modal({"backdrop":"static","width":"80%"});
+                        $("#detalle_absent").modal("show");
+                   }, "html");
+               return false;
+            });
+
+            $("#detalle_absent #cerrar").click(function() {
+                $("#detalle_absent").modal("hide");
+                {% if not nointegrados %}
+                    location.href='/finalizaabsent'
+                {% endif %}
+
+            });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/finalizaabsent?s="+term+"&{% if nointegrados %}n='1'{% endif %}";
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+
+
+            $("#addpanel .btn-cerrar").click(function(){
+                $("#addpanel").modal("hide");
+                $("#detalle_absent").modal({"backdrop":"static","width":"80%"});
+                $("#detalle_absent").modal("show");
+                return false;
+            });
+
+            $("#addpanel .ingresar").click(function(){
+
+                if($('#observacion').val() != '')
+                {
+                    $("#mensaj").html("").removeClass('alert alert-danger');
+                    $.post("/finalizaabsent", {action: 'addobserva', 'observacion': $('#observacion').val(), 'idmateriasig':$("#idabsent").val(),'reintegro':$("#reintegro").is(":checked")}, function(data) {
+                        if (data.result=='ok') {
+                            $("#addpanel").modal("hide");
+
+                            $.get("/finalizaabsent", {'action':'detalleabsent', 'id': data.idins}, function(data) {
+                                $("#detalle_absent .modal-body").html(data);
+                                $("#detalle_absent").modal({"backdrop":"static","width":"80%"});
+                                $("#detalle_absent").modal("show");
+                            }, "html");
+{#                            smoke.alert("INGRESO REALIZADO CON EXITO");#}
+                            return false;
+
+                        }
+                        else
+                        {
+                            $("#detalle_absent").modal({"backdrop":"static","width":"80%"});
+                            $("#detalle_absent").modal("show");
+{#                            smoke.alert("ERROR EN EL INGRESO");#}
+                            return false;
+                        }
+                    }, "json");
+
+                }
+                else
+                {
+                   $("#mensaj").html("Ingrese observacion").addClass('alert alert-danger');
+                }
+
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+
+    <div class="row-fluid">
+        <div class="span11">
+            <h3>Lista de Alumnos en Absentismo - {% if not nointegrados %} Reintegrados {% else %} No Integrados{% endif %}</h3>
+        </div>
+        <div class="span1">
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+
+
+    </div>
+    <div class="row-fluid">
+        <div class='span5'>
+            <form class="form-search"> <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/finalizaabsent" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% else %}
+                {% if not nointegrados %}
+                    <a href="/finalizaabsent?n=1" id='allresults' class='btn btn-danger'><i class="icon-refresh icon-white"></i> No Integrados</a>
+                {% else %}
+                    <a href="/finalizaabsent" id='allresults' class='btn btn-success'><i class="icon-refresh icon-white"></i> Reintegrados</a>
+                {% endif %}
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span12">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Alumno</th>
+                        <th>Grupo - Nivel</th>
+                        <th>Cedula/Pasap</th>
+                        <th>Emails</th>
+                        <th>Teléfonos</th>
+                        <th>Carrera</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inscripcion in inscripciones %}
+                        <tr>
+                            <td>{{ inscripcion }}</td>
+{#                            <td>#}
+                            {% if not centroexterno %}
+                                {% if utiliza_grupos_alumnos %}
+                                    <td nowrap style="color:#002a80 ">
+                                    {% with matriculado=inscripcion|args:periodo|call:"matriculado_periodo" %}
+                                        {% if matriculado %}
+                                        {% with matricula=inscripcion|args:periodo|call:"matricula_periodo" %}
+                                            {{ matricula.nivel.paralelo }} - {{ matricula.nivel.nivelmalla }}<br>
+                                            <span class="smaller"> ({{ matricula.nivel.inicio|date:'d-m-Y' }} - {{ matricula.nivel.fin|date:'d-m-Y' }})</span>
+                                        {% endwith %}
+                                        {% else %}
+                                            {{ inscripcion.grupo.nombre }}
+                                        {% endif %}
+                                    {% endwith %}
+                                    </td>
+                                {% endif %}
+                            {% endif %}
+{#                            </td>#}
+                            <td>{{ inscripcion.persona.cedula }} <br/> {% if inscripcion.persona.pasaporte %}{{ inscripcion.persona.pasaporte }}{% endif %}</td>
+                            <td>
+                                {% if inscripcion.persona.emailinst %}
+                                    <a href="mailto:{{ inscripcion.persona.emailinst }}" style="color: #003bb3">
+                                        {{ inscripcion.persona.emailinst }}
+                                    </a>
+                                {% else %}
+                                    <a href="mailto:{{ inscripcion.persona.email }}" style="color: #003bb3">
+                                        {{ inscripcion.persona.email }}</a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if inscripcion.persona.telefono %}{{ inscripcion.persona.telefono }}{% endif %}
+                                <br/>{% if inscripcion.persona.telefono_conv %}{{ inscripcion.persona.telefono_conv }}{% endif %}
+                            </td>
+                            <td>{{ inscripcion.carrera.alias }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    <li><a class="detalleabsent" {% if nointegrados %} n='1'{% else %}n='0'{% endif %}id="{{ inscripcion.id }}" style="cursor: pointer"><span class="icon-eye-open"></span> Ver Detalle de Estudiante </a> </li>
+                                </ul>
+                            </div>
+                        </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not inscripciones %}
+                        <tr>
+                            <td colspan="8">NO EXISTEN REGISTROS</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/finalizaabsent?page=1{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">1</a></li>
+                            <li><a href="/finalizaabsent?page={{ paging.ellipsis_izquierda }}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/finalizaabsent?page={{ pagenumber }}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/finalizaabsent?page={{ paging.ellipsis_derecha }}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/finalizaabsent?page={{ paging.num_pages }}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/finalizaabsent?page={{ pagenumber }}{% if inactivos %}&i=1{% endif %}{% if finalizados %}&f=1{% endif %}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="modal fade static " id="detalle_absent" style="margin-left: -500"  >
+    <div class="row-fluid modal-header">
+        <h4 id="nomalumn"><i> Detalles del Alumno</i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a style="cursor: pointer" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+
+
+    <div class="modal fade static" id="addpanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle" >Ingrese Observacion</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <h4>
+                <div style="width:100%;padding-left: 13%">
+                    <b>Observaci&oacute;n:</b> <textarea type='text' id='observacion' style="width:60%;text-transform: uppercase" rows="4" cols="50" > </textarea><br/><br/>
+                    <b>Reintegr&oacute;:</b> <input type="checkbox" name="reintegro" id="reintegro"  /><br/><br/>
+                    <b>Finalizado:</b> <input type="checkbox" name="finaliza" id="finaliza"  disabled checked/>
+                    <input type="hidden" id="idabsent"/>
+                </div>
+            </h4>
+            <div style="padding-left: 13%"> <p id='mensaj' ></p></div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-info ingresar"> Ingresar</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+
+{% endblock %}

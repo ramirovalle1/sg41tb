@@ -1,0 +1,115 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+        $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"});
+        $("#id_inicio").attr({"autocomplete":"off"});
+        $("#id_fin").attr({"autocomplete":"off"});
+        $("#id_tipo").addClass("input-xlarge")
+
+        indice = 0;
+        datosOK=false;
+        todos=0;
+        $("#generar").modal({width: '600px', backdrop: 'static'});
+        $("#generar").modal("show");
+        
+        buscar_programa = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Programa',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_tipo").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+        $('#id_tipo').typeahead({source: buscar_programa, updater: function(item) {
+            var results = $("#id_tipo").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_tipo").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_tipo").val(d);
+                }
+            }
+            return item;
+        }});
+
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+            var programa= $("#id_tipo").attr("myval");
+            var inicio = $("#id_inicio").val();
+            var fin = $("#id_fin").val();
+
+
+            $.post("/listadoproyectosvinculacion", {"action":"generarexcel","programa":programa,"inicio":inicio,"fin":fin}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 2500);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json").fail(function() {
+                $("#espera").modal("hide");
+                smoke.alert('Error de conexi&oacute;n');
+                location.reload();
+            });
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Listado de Estudiantes por Proyecto de Vinculaci&oacute;n</h3>
+        </div>
+
+        <div class="modal-body panelbody">
+            <form id="form" class='form-horizontal' action="" method="POST">
+
+                {% for field in generarform %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+ {% endblock %}
+
+ 

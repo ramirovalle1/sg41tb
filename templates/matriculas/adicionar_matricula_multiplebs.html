@@ -1,0 +1,88 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    $("#id_nivel, #id_inscripcion").addClass("validate[required]");
+    $("#id_inscripcion").height(355);
+    $('#formbutton').click(function(){
+      $("#formbutton").hide()
+    });
+{% endblock %}
+{% block titulo %}
+    Matricular Alumnos en Lote en: {{ nivel.nivelmalla }} de la Carrera: {{ nivel.carrera }} - Grupo: {{ nivel.grupo.nombre }}<br>
+    <h4>Per&iacute;odo: {{ nivel.periodo }}</h4>
+
+{% endblock %}
+{% block formaction %}/matriculas{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='addmatriculamulti'/>
+    <div class="control-group">
+        <label class="control-label">Alumnos</label>
+        <div class="controls">
+        {% for inscripcion in nivel.grupo.miembros %}
+            {% if not inscripcion.suspension %}
+                {% if not inscripcion.matriculado %}
+                    {#OCastillo 05-04-2023 validacion en matricula multiple todas las carreras                   #}
+                    {% if nivel.nivelmalla.id != NIVEL_GRADUACION %}
+                        {% if not inscripcion.tiene_procesodobe or inscripcion.tiene_procesodobe_aprobado or not inscripcion.tiene_procesodoblematricula or inscripcion.tiene_procesodoblematricula_aprobado %}
+                            <label class="checkbox">
+                                {% if not inscripcion.tiene_obscritica %}
+                                    <input type="checkbox" name="ins" value="{{ inscripcion.id }} ">
+                                    {{  inscripcion.persona }} {% if inscripcion.carrera.validacionprofesional %}<br><span style="font-size: 10px" class="label label-info tl" title="Cuidado: ">{{ inscripcion.tiene_aprobado_examen }}</span>{% endif %}
+                                {% else %}
+                                    {{  inscripcion.persona }}{% if inscripcion.carrera.validacionprofesional %}<br><span style="font-size: 10px" class="label label-info tl" title="Cuidado: ">{{ inscripcion.tiene_aprobado_examen }}</span>{% endif %}
+                                    <span class="label label-important tl" title="OBS Critica ">Obs. Critica</span>
+                                {% endif %}
+                            </label>
+                        {% endif %}
+                    {% else %}
+                            {# OCastillo 22-01-2023 excluir esos niveles pedido por correo   #}
+                            {% if nivel.id != 8808 and nivel.id != 8601 %}
+                                {% if not inscripcion.tiene_certificacion_ingles or inscripcion.h_practicas_vinculacion == 0 or inscripcion.inscripcion.h_practicas_vinculacion_segunmalla == 0 or not inscripcion.mallacompleta or not inscripcion.tiene_documentacion %}
+                                    <label class="checkbox">
+                                        {{ inscripcion.persona }}<br>
+                                        {% if not inscripcion.tiene_certificacion_ingles %}
+                                            <span class="label label-important tl" title="Sin Ingl%eacute;s ">Sin ingl&eacute;s</span>
+                                        {% endif %}
+                                        {% if inscripcion.h_practicas_vinculacion == 0 and inscripcion.h_practicas_vinculacion_segunmalla == 0 %}
+                                            <span class="label label-important tl" title="H. incompletas ">Faltan horas pr&aacute;cticas y/o vinculaci&oacute;n </span>
+                                        {% else %}
+                                            {% if inscripcion.h_practicas_vinculacion < inscripcion.h_practicas_vinculacion_segunmalla %}
+                                                <span class="label label-important tl" title="H. incompletas ">Faltan horas pr&aacute;cticas y/o vinculaci&oacute;n </span>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if not inscripcion.mallacompleta %}
+                                            <span class="label label-important tl" title="Malla incompleta ">Malla incompleta </span>
+                                        {% endif %}
+                                        {% if not inscripcion.tiene_documentacion %}
+                                            <span class="label label-important tl" title="Sin documentos ">Faltan documentos </span>
+                                        {% endif %}
+                                    </label>
+                                {% else %}
+                                    <label class="checkbox">
+                                        <input type="checkbox" name="ins" value="{{ inscripcion.id }} ">
+                                        {{ inscripcion.persona }}<br>
+                                    </label>
+                                {% endif %}
+                            {% else %}
+                                <label class="checkbox">
+                                    <input type="checkbox" name="ins" value="{{ inscripcion.id }} ">
+                                    {{ inscripcion.persona }}<br>
+                                </label>
+                            {% endif %}
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        </div>
+    </div>
+
+
+    {% if error %}
+        <div class="alert alert-error">
+            {% if error == "1" %}
+                Ya este alumno esta matriculado !!!!
+           {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}
+{% block formback %}/matriculas{% endblock %}
+{% block buttonname %}Adicionar Matr&iacute;culas{% endblock %}

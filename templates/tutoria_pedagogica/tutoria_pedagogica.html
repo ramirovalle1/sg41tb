@@ -1,0 +1,1655 @@
+{% extends "basenueva.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+<style>
+    body {
+        background-color: #eee
+    }
+    .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+      color: #fff;
+      background-color:  #184679; }
+
+
+    .custom-control-input:checked ~ .custom-control-label::before {
+      color: #fff;
+      border-color:#184679;
+      background-color: #184679;
+    }
+
+     .modal-body-agregar-preguntas  {
+      position: relative;
+      -ms-flex: 1 1 auto;
+      -webkit-box-flex: 1;
+      flex: 1 1 auto;
+      padding: 1rem;
+    }
+     .modal-content {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Estilos del Header del Modal */
+.modal-header {
+    background-color: #67a7afc2;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+.div.dataTables_wrapper div.dataTables_filter, div.dataTables_wrapper div.dataTables_info, div.dataTables_wrapper div.dataTables_paginate,div.dataTables_wrapper div.dataTables_filter label,div.dataTables_wrapper div.dataTables_length label {
+    padding-left: 15px;
+    padding-right: 15px;
+    visibility: hidden;
+}
+
+
+/* Estilos del Título del Modal */
+.modal-title {
+    color: white;
+    font-weight: bold;
+}
+
+/* Estilos del Cuerpo del Modal */
+.modal-body {
+    overflow-y: auto;
+    padding: 20px;
+    background-color: #f7f7f7;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+
+/* Estilos de las Pestañas */
+.nav-tabs .nav-link.active {
+    font-weight: bold;
+    color: black;
+}
+.select2-container {
+    z-index: 99999; /* Asegúrate de que esto sea mayor que el z-index del modal de SweetAlert2 */
+}
+/* Estilos del Texto de Ayuda */
+.help-text {
+    color: #6c757d; /* Color gris claro */
+    font-size: 0.875rem; /* Tamaño de fuente de ayuda */
+    margin-top: 0.25rem;
+}
+
+/* Estilos de la Vía de la Tutoría */
+.form-check-label {
+    font-weight: bold;
+}
+
+/* Estilo para el contenedor de estrategias e instrumentos */
+.estrategias-container, .instrumentos-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 10px;
+    height: 100%; /* Se ajusta para que ocupe el espacio del contenedor */
+    overflow: hidden; /* Se asegura de que no aparezca la barra de desplazamiento */
+}
+
+/* Estilo para los elementos de estrategias e instrumentos */
+.estrategia, .instrumento {
+    flex: 1 1 calc(33.333% - 10px); /* Ajusta el ancho de cada elemento */
+    box-sizing: border-box;
+    margin: 5px 0; /* Ajusta el espacio entre elementos */
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f1f1f1;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 1.2em; /* Tamaño de fuente más grande */
+}
+
+/* Estilo para los elementos seleccionados */
+.estrategia.selected, .instrumento.selected {
+    background-color: #67a7af;
+    color: white;
+}
+}
+
+</style>
+
+<script>
+    $(function () {
+
+    {#$('#fechainicio').datepicker({language: 'es', autoClose: true, dateFormat: 'yyyy-mm-dd'});#}
+    {#$('#fechafin').datepicker({language: 'es', autoClose: true, dateFormat: 'yyyy-mm-dd'});#}
+
+
+     $("#search").click(function() {
+        var term = $("#txtbusqueda").val();
+        location.href = "/pedagogica_tutoria?s="+term;
+      });
+     $('#txtbusqueda').keyup(function(e) {
+        if(e.keyCode == 13) {
+            $("#search").trigger("click");
+        }
+      });
+
+    $("#id_estudiante").attr('autocomplete', 'off');
+    document.getElementById('txthorainicio').addEventListener('change', validateHours);
+    document.getElementById('txthorafin').addEventListener('change', validateHours);
+    document.getElementById("estudiante_individual_id").style.display = "none";
+    document.getElementById("estudiante_grupal_id").style.display = "none";
+    $("#tipo_grupal").click(function(){
+         if (document.getElementById("tipo_grupal").checked){
+             document.getElementById("estudiante_individual_id").style.display = "none";
+             document.getElementById("estudiante_grupal_id").style.display = "block";
+
+         }else{
+            document.getElementById("estudiante_individual_id").style.display = "none";
+             document.getElementById("estudiante_grupal_id").style.display = "none";
+            $("#id_estudiante").val(0)
+            $("#id_estudiante_indi").val(0)
+         }
+     });
+    $("#tipo_individual").click(function(){
+         if (document.getElementById("tipo_individual").checked){
+             document.getElementById("estudiante_grupal_id").style.display = "none";
+             document.getElementById("estudiante_individual_id").style.display = "block";
+         }else{
+            document.getElementById("estudiante_individual_id").style.display = "none";
+             document.getElementById("estudiante_grupal_id").style.display = "none";
+
+
+         }
+     });
+$(document).ready(function() {
+       buscar_materia();
+        $('.estrategia').click(function() {
+            $(this).toggleClass('selected');
+        });
+
+        $('.instrumento').click(function() {
+            $(this).toggleClass('selected');
+        });
+    });
+function validateHours() {
+    const startTime = document.getElementById('txthorainicio').value;
+    const endTime = document.getElementById('txthorafin').value;
+
+    if (startTime >= endTime) {
+        {#alert('La hora de inicio debe ser anterior a la hora de fin.');#}
+        document.getElementById('txthorafin').value = '';
+    }
+}
+
+creartutoria = function () {
+    $("#tutoriaModal").modal("show");
+};
+
+$(".editar").click(function() {
+    $.ajaxSetup({async: false});
+
+    var id_tutoria = $(this).attr("id_tutoria");
+    var materia_id = $(this).attr("materia_id");
+    var profesor_id = $(this).attr("profesor_id");
+    var numero_tutoria = $(this).attr("numero_tutoria");
+    var grupal = $(this).attr("grupal");
+    var fecha_tutoria = $(this).attr("fecha_tutoria");
+    var hora_inicio_tutoria = $(this).attr("hora_inicio_tutoria");
+    var hora_fin_tutoria = $(this).attr("hora_fin_tutoria");
+    var via_tutoria = $(this).attr("via_tutoria");
+    var necesidad = $(this).attr("necesidad");
+    $("#tutoriaModal").modal({width: '600px', backdrop: 'static'});
+    $("#tutoriaModal").modal("show");
+
+    $("#id_nombremateria").val(materia_id);
+    $("#numero_tutoria").val(numero_tutoria);
+    $("#txtfechainicio").val(fecha_tutoria);
+    $("#txthorainicio").val(hora_inicio_tutoria);
+    $("#txthorafin").val(hora_fin_tutoria);
+    $("#id_observacion").val(necesidad);
+
+    if (grupal === 'True') {
+        $("#tipo_grupal").prop("checked", true);
+        $("#tipo_individual").prop("checked", false);
+         document.getElementById("estudiante_grupal_id").style.display = "block";
+         document.getElementById("estudiante_individual_id").style.display = "none";
+    } else {
+        $("#tipo_grupal").prop("checked", false);
+        $("#tipo_individual").prop("checked", true);
+        document.getElementById("estudiante_grupal_id").style.display = "none";
+         document.getElementById("estudiante_individual_id").style.display = "block";
+
+    }
+
+    if (via_tutoria === 'presencial') {
+        $("#tipo_presencial").prop("checked", true);
+        $("#tipo_online").prop("checked", false);
+
+    } else {
+        $("#tipo_presencial").prop("checked", false);
+        $("#tipo_online").prop("checked", true);
+
+    }
+
+    $("#id_profesor").val(profesor_id).trigger('change');
+
+    return false;
+});
+
+
+buscar_materia = function () {
+    $("#id_nombremateria").select2({
+        ajax: {
+            type: "POST",
+            url: "/pedagogica_tutoria",
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term, // search term
+                    page: params.page,
+                    action: "buscar_materia",
+                };
+            },
+            processResults: function (data, params) {
+                // parse the results into the format expected by Select2
+                params.page = params.page || 1;
+
+                return {
+                    results: data.items,
+                    pagination: {
+                        more: (params.page * 30) < data.total_count
+                    }
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 3, // Esta línea asegura que la búsqueda se ejecute solo cuando el término tenga 3 o más caracteres
+        templateResult: formatRepo,
+        templateSelection: formatRepoSelection,
+        placeholder: "Buscar Materia",
+        language: {
+            inputTooShort: function () {
+                return 'Ingrese al menos 3 caracteres';
+            },
+            searching: function () {
+                return "Buscando Materia...";
+            },
+            noResults: function () {
+                return "No se encontró la materia";
+            }
+        }
+    });
+
+    function formatRepo(repo) {
+        if (repo.loading) {
+            return repo.text;
+        }
+
+        var $container = $(
+            "<div class='select2-result-repository clearfix'>" +
+            "<div class='select2-result-repository__meta'>" +
+            "<div class='select2-result-repository__description'></div>" +
+            "</div>" +
+            "</div>"
+        );
+
+        $container.find(".select2-result-repository__description").text(repo.nombre);
+
+        return $container;
+    }
+
+    function formatRepoSelection(repo) {
+        return repo.nombre || repo.text;
+    }
+};
+
+$('#id_nombremateria').on('select2:select', function (e) {
+    Loader.open('');
+    $.ajax({
+        url: '/pedagogica_tutoria',
+        type: "POST",
+        data: {
+            'action': 'verdocentes',
+            'id': e.params.data.id
+        },
+        success: function(data) {
+            if (data.result === "ok") {
+
+                 var  datosdocente = '<option value="0">-Elija el docente-</option>';
+                    for (var x in data.profesor_list) {
+                             datosdocente=datosdocente+'<option  value="'+data.profesor_list[x].id+'"> '+data.profesor_list[x].nombre_completo+'</option>';
+                    }
+                    $("#id_profesor").html(datosdocente)
+
+                var  datosestu = '<option value="0">-Elija el Estudiante-</option>';
+                    for (var x in data.inscripciones_list) {
+                             datosestu=datosestu+'<option  value="'+data.inscripciones_list[x].inscripcion_id+'"> '+data.inscripciones_list[x].alumno_nombre_completo+'</option>';
+                    }
+                    $("#id_estudiante").html(datosestu)
+                    $("#id_estudiante_indi").html(datosestu)
+                }
+
+            else {
+                    swal("Error", data.message, "error");
+                }
+            Loader.close();
+        },
+        error: function(xhr, errmsg, err) {
+            swal("Error", "Error al obtener los docentes", "error");
+        }
+    });
+});
+
+function validarDatos(){
+        if ($("#id_nombremateria").val() ==0) {
+               $("#helpid_nombremateria").html("Debe seleccionar la Materia");
+             return 1;
+        }
+
+        if ($("#id_profesor").val() ==0) {
+             $("#helpid_profesor").html("Debe seleccionar el Profesor");
+             return 1;
+        }
+        if ($("#numero_tutoria").val() =="") {
+               $("#helpnumero_tutoria").html("Debe ingresar el numero de tutorias");
+             return 1;
+        }
+
+        if ($("#txtfechainicio").val() =="") {
+               $("#helptxtfechainicio").html("Debe ingresar la fecha de inicio");
+             return 1;
+        }
+
+        if ($("#txthorainicio").val() =="") {
+             $("#helptxthorainicio").html("Debe ingresar la hora de inicio");
+             return 1;
+        }
+        if ($("#txthorafin").val() =="") {
+               $("#helptxthorafin").html("Debe ingresar la hora de fin");
+             return 1;
+        }
+
+        if ($("#id_observacion").val() =="0") {
+             $("#helpid_observacion").html("Debe ingresar la necesidad");
+             return 1;
+        }
+        return 0;
+    }
+
+
+$("#btnguardatutoria").click(function() {
+    if (validarDatos() == 0) {
+        swal({
+            title: '¿Estás seguro de guardar la información ingresada?',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, Confirmar!',
+            cancelButtonText: 'Cancelar',
+            confirmButtonClass: 'btn btn-success margin-5',
+            cancelButtonClass: 'btn btn-danger margin-5',
+            buttonsStyling: false,
+            allowOutsideClick: false,
+        }).then(function(isConfirm) {
+            if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+                var formData = new FormData();
+                formData.append('action', 'addtutoria');
+                formData.append('materia_id', $("#id_nombremateria").val());
+                formData.append('profesor_id', $("#id_profesor").val());
+                formData.append('numtutoria', $("#numero_tutoria").val());
+                formData.append('inscripcion_id', $("#id_estudiante").val());
+                formData.append('inscripcion_id_indi', $("#id_estudiante_indi").val());
+                formData.append('fecha_tutoria', $("#txtfechainicio").val());
+                formData.append('horainicio', $("#txthorainicio").val());
+                formData.append('horafin', $("#txthorafin").val());
+                formData.append('necesidad', $("#id_observacion").val());
+                formData.append('grupal', document.getElementById("tipo_grupal").checked);
+                formData.append('individual', document.getElementById("tipo_individual").checked);
+                formData.append('via', document.getElementById("tipo_presencial").checked);
+                formData.append('viaonline', document.getElementById("tipo_online").checked);
+
+                $.ajax({
+                    url: '/pedagogica_tutoria',
+                    type: "POST",
+                    contentType: false,
+                    data: formData,
+                    processData: false,
+                    cache: false,
+                    success: function(data) {
+                        if (data.result == "ok") {
+                            swal("Notificación", data.message, "success");
+                            location.reload();
+                        } else if (data.result == 'bad') {
+                            swal("Error", data.message, "warning");
+                            Loader.close();
+                        }
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        swal("Error", "Error de conexión en el servidor", "error");
+                        $('body').removeClass('modal-open');
+                        $('.modal-backdrop').remove();
+                        $('#content').html('');
+                    },
+                    complete: function() {
+                        $("#login-modal4").remove();
+                        $('body').removeClass('modal-open');
+                        $('.modal-backdrop').remove();
+                        $('#content').html('');
+                    }
+                });
+            }
+        });
+    }
+});
+var id_tutoria=0
+aprobartutoria = function (id, nombre) {
+    id_tutoria=id
+    var infoText = 'Aprobar/Rechazar Tutoria de la Materia: ' + nombre  ;
+    $("#infotutoria").html(infoText);
+    $("#aprobartutoriaModal").modal("show");
+
+    };
+
+verdetalletutoria = function (id) {
+    id_tutoria=id
+        {#loader.open();#}
+        $.get("/pedagogica_tutoria", {'action': 'verdetalletutoria', 'id': id_tutoria}, function (data) {
+            $("#Medium-modal").html(data);
+            $("#Medium-modal").modal({"width": "100%"});
+            $("#Medium-modal").modal("show");
+            {#hideWaiting()#}
+        }, "html").fail(function (jqXHR, textStatus, errorThrown) {
+            console.log(errorThrown);
+            console.log('getJSON request failed! ' + textStatus + ' eroro jqk' + jqXHR.responseText);
+            swal("Error", "Error Conexion en el Servidor", "error");
+
+        });
+    };
+
+ingresartutoria = function (id) {
+    id_tutoria=id
+    $("#tutoriaobsmodal").modal("show");
+
+    };
+
+$("#id_aprobar").click(function(){
+         if (document.getElementById("id_aprobar").checked){
+             document.getElementById('id_rechazar').disabled = true;
+         }
+         else{
+             document.getElementById('id_rechazar').disabled = false;
+             document.getElementById('id_aprobar').disabled = false;
+         }
+     });
+$("#id_rechazar").click(function(){
+         if (document.getElementById("id_rechazar").checked){
+             document.getElementById('id_aprobar').disabled = true;
+         }
+         else{
+             document.getElementById('id_rechazar').disabled = false;
+             document.getElementById('id_aprobar').disabled = false;
+         }
+     });
+$("#btnGuardaAprobacion").click(function() {
+        swal({
+            title: '¿Estás seguro de guardar la información ingresada?',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, Confirmar!',
+            cancelButtonText: 'Cancelar',
+            confirmButtonClass: 'btn btn-success margin-5',
+            cancelButtonClass: 'btn btn-danger margin-5',
+            buttonsStyling: false,
+            allowOutsideClick: false,
+        }).then(function(isConfirm) {
+            if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+                var formData = new FormData();
+                formData.append('action', 'aprobartutoria');
+                formData.append('id_tutoria', id_tutoria);
+                formData.append('aceptar', document.getElementById("id_aprobar").checked);
+                formData.append('rechazar', document.getElementById("id_rechazar").checked);
+
+                $.ajax({
+                    url: '/pedagogica_tutoria',
+                    type: "POST",
+                    contentType: false,
+                    data: formData,
+                    processData: false,
+                    cache: false,
+                    success: function(data) {
+                        if (data.result == "ok") {
+                            swal("Notificación", data.message, "success");
+                            location.reload();
+                        } else if (data.result == 'bad') {
+                            swal("Error", data.message, "warning");
+                            Loader.close();
+                        }
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        swal("Error", "Error de conexión en el servidor", "error");
+                        $('body').removeClass('modal-open');
+                        $('.modal-backdrop').remove();
+                        $('#content').html('');
+                    },
+                    complete: function() {
+                        $("#login-modal4").remove();
+                        $('body').removeClass('modal-open');
+                        $('.modal-backdrop').remove();
+                        $('#content').html('');
+                    }
+                });
+            }
+        });
+
+});
+
+ingresarproximatutoria = function (id) {
+    id_tutoria=id
+    swal({
+        title: 'Nueva Tutoria',
+        html: `
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="txtfechainicio2"><b>Fecha de Inicio:</b></label>
+                        <input type="date" id="txtfechainicio2" class="form-control">
+                        <p id="helptxtfechainicio2" class="help-text"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="txthorainicio2"><b>Hora de Inicio:</b></label>
+                        <input type="time" id="txthorainicio2" class="form-control" value="06:00">
+                        <p id="helptxthorainicio2" class="help-text"></p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="txthorafin2"><b>Hora de Fin:</b></label>
+                        <input type="time" id="txthorafin2" class="form-control" value="18:00">
+                        <p id="helptxthorafin2" class="help-text"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label><b>Vía de la Tutoría:</b></label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="tipo_tutoria" id="tipo_presencial2" value="presencial">
+                            <label class="form-check-label" for="tipo_presencial2">Presencial</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="tipo_tutoria" id="tipo_online2" value="online">
+                            <label class="form-check-label" for="tipo_online2">Online</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="id_observacion2"><b>Necesidad Identificada:</b></label>
+                        <textarea id="id_observacion2" class="form-control"></textarea>
+                        <p id="helpid_observacion2" class="help-text"></p>
+                    </div>
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonClass: 'btn btn-success margin-5',
+        cancelButtonClass: 'btn btn-danger margin-5',
+        buttonsStyling: false,
+
+        }).then(function(isConfirm) {
+            if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+                console.log('result.isConfirmed es true');
+                const additionalFormData = new FormData();
+                additionalFormData.append('action', 'guardarHorarioTutoria');
+                additionalFormData.append('id_tutoria',id_tutoria);
+                additionalFormData.append('fecha_tutoria', $("#txtfechainicio2").val());
+                additionalFormData.append('horainicio', $("#txthorainicio2").val());
+                additionalFormData.append('horafin', $("#txthorafin2").val());
+                additionalFormData.append('necesidad', $("#id_observacion2").val());
+                additionalFormData.append('via', document.getElementById("tipo_presencial2").checked);
+                additionalFormData.append('viaonline', document.getElementById("tipo_online2").checked);
+                $.ajax({
+                    url: '/pedagogica_tutoria',
+                    type: 'POST',
+                    data: additionalFormData,
+                    contentType: false,
+                    processData: false,
+                    success: function(data) {
+                        if (data.result == 'ok') {
+                            swal('Éxito', data.message, 'success');
+                            location.reload();
+                        } else {
+                            swal('Error', data.message, 'error');
+                        }
+                    },
+                    error: function() {
+                        swal('Error', 'Error de conexión en el servidor', 'error');
+                    }
+                });
+            }
+        }).catch((error) => {
+            console.error('Error en preConfirm:', error);
+            swal('Error', error, 'error');
+        });
+
+    };
+cambiardocente = function(id) {
+    $.ajax({
+        url: '/pedagogica_tutoria',
+        type: "POST",
+        data: {
+            'action': 'verdocentes',
+            'id_tutoria': id
+        },
+        success: function(data) {
+            if (data.result === "ok") {
+
+                var datosdocente2 = '<option value="0">-Elija el docente-</option>';
+                for (var x in data.profesor_list) {
+                    datosdocente2 += '<option value="' + data.profesor_list[x].id + '"> ' + data.profesor_list[x].nombre_completo + '</option>';
+                }
+
+                var id_tutoria = data.idtutoria;
+                var nombremateria = data.idmateria;
+
+                swal({
+                    title: 'Cambio de Docente para Tutoria de la Asignatura : ' + nombremateria,
+                    html: `
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="id_profesor2"><b>Profesor:</b></label>
+                                    <select id="id_profesor2" name="id_profesor2" class="custom-select2" style="width: 100%;"></select>
+                                    <p id="helpbid_profesor2" style="text-align: center;font-size: 20px;color:red;"></p>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Guardar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5',
+                    buttonsStyling: false,
+                    onOpen: function() {
+                        // Llenar el select después de que el modal se haya mostrado
+                        $("#id_profesor2").html(datosdocente2);
+                        // Inicializar Select2
+                        $("#id_profesor2").select2({
+                            placeholder: "-Elija el docente-",
+                            allowClear: true
+                        });
+                    }
+                }).then(function(isConfirm) {
+                    if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+                        const additionalFormData = new FormData();
+                        additionalFormData.append('action', 'cambio_docente');
+                        additionalFormData.append('id_tutoria', id_tutoria);
+
+                        additionalFormData.append('profesor_id', $("#id_profesor2").val());
+
+                        $.ajax({
+                            url: '/pedagogica_tutoria',
+                            type: 'POST',
+                            data: additionalFormData,
+                            contentType: false,
+                            processData: false,
+                            success: function(data) {
+                                if (data.result == 'ok') {
+                                    swal('Éxito', data.message, 'success');
+                                    location.reload();
+                                } else {
+                                    swal('Error', data.message, 'error');
+                                }
+                            },
+                            error: function() {
+                                swal('Error', 'Error de conexión en el servidor', 'error');
+                            }
+                        });
+                    }
+                }).catch((error) => {
+                    console.error('Error en preConfirm:', error);
+                    swal('Error', error, 'error');
+                });
+            } else {
+                swal("Error", data.message, "error");
+            }
+            Loader.close();
+        },
+        error: function(xhr, errmsg, err) {
+            swal("Error", "Error al obtener los docentes", "error");
+        }
+    });
+};
+
+
+        $("#btningresatutoria").click(function() {
+    $("#tutoriaobsmodal").modal("hide");
+    var temaTratado = $("#id_tema").val();
+    var estrategiaIds = [];
+    $('.estrategia.selected').each(function() {
+        estrategiaIds.push($(this).data('id'));
+    });
+    var instrumentoIds = [];
+    $('.instrumento.selected').each(function() {
+        instrumentoIds.push($(this).data('id'));
+    });
+    var aditionalformData = new FormData();
+    aditionalformData.append('action', 'ver_detalle_tutoria');
+    aditionalformData.append('id', id_tutoria);
+    $.ajax({
+            url: '/pedagogica_tutoria',
+            type: "POST",
+            contentType: false,
+            data: aditionalformData,
+            processData: false,
+            cache: false,
+            success: function(data) {
+                if (data.result == "oknueva") {
+                    swal({
+                        title: 'Nueva Tutoria',
+                        html: `
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="txtfechainicio2"><b>Fecha de Inicio:</b></label>
+                                        <input type="date" id="txtfechainicio2" class="form-control">
+                                        <p id="helptxtfechainicio2" class="help-text"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="txthorainicio2"><b>Hora de Inicio:</b></label>
+                                        <input type="time" id="txthorainicio2" class="form-control" value="06:00">
+                                        <p id="helptxthorainicio2" class="help-text"></p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="txthorafin2"><b>Hora de Fin:</b></label>
+                                        <input type="time" id="txthorafin2" class="form-control" value="18:00">
+                                        <p id="helptxthorafin2" class="help-text"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label><b>Vía de la Tutoría:</b></label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="tipo_tutoria" id="tipo_presencial2" value="presencial">
+                                            <label class="form-check-label" for="tipo_presencial2">Presencial</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="tipo_tutoria" id="tipo_online2" value="online">
+                                            <label class="form-check-label" for="tipo_online2">Online</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="id_observacion2"><b>Necesidad Identificada:</b></label>
+                                        <textarea id="id_observacion2" class="form-control"></textarea>
+                                        <p id="helpid_observacion2" class="help-text"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Guardar',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonClass: 'btn btn-success margin-5',
+                        cancelButtonClass: 'btn btn-danger margin-5',
+                        buttonsStyling: false,
+                    }).then(function(isConfirm) {
+                        if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+                            var formData = new FormData();
+                            formData.append('action', 'ingresartutoria');
+                            formData.append('tema_tratado', temaTratado);
+                            formData.append('id', id_tutoria);
+                            formData.append('estrategias', JSON.stringify(estrategiaIds));
+                            formData.append('instrumentos', JSON.stringify(instrumentoIds));
+
+                            formData.append('fecha_tutoria', $("#txtfechainicio2").val());
+
+                            formData.append('horainicio', $("#txthorainicio2").val());
+                            formData.append('horafin', $("#txthorafin2").val());
+                            formData.append('necesidad', $("#id_observacion2").val());
+                            formData.append('via', document.getElementById("tipo_presencial2").checked);
+                            formData.append('viaonline', document.getElementById("tipo_online2").checked);
+
+                            $.ajax({
+                                url: '/pedagogica_tutoria',
+                                type: 'POST',
+                                data: formData,
+                                contentType: false,
+                                processData: false,
+                                success: function(data) {
+                                    if (data.result == 'ok') {
+                                        swal('Éxito', data.message, 'success').then(() => location.reload());
+                                    } else {
+                                        swal('Error', data.message, 'error');
+                                    }
+                                },
+                                error: function() {
+                                    swal('Error', 'Error de conexión en el servidor', 'error');
+                                }
+                            });
+                        } else if (result.dismiss === 'cancel') {
+                            console.log('Cancelado por el usuario');
+                        }
+                    }).catch((error) => {
+                        console.error('Error en preConfirm:', error);
+                        swal('Error', error.message, 'error');
+                    });
+                } else if (data.result == 'okfin') {
+                    var formData = new FormData();
+                    formData.append('action', 'ingresartutoria');
+                    formData.append('tema_tratado', temaTratado);
+                    formData.append('id', id_tutoria);
+                    formData.append('final', 1);
+                    formData.append('estrategias', JSON.stringify(estrategiaIds));
+                    formData.append('instrumentos', JSON.stringify(instrumentoIds));
+                    $.ajax({
+                        url: '/pedagogica_tutoria',
+                        type: 'POST',
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        success: function(data) {
+                            if (data.result == 'ok') {
+                                swal('Éxito', data.message, 'success').then(() => location.reload());
+                            } else {
+                                swal('Error', data.message, 'error');
+                            }
+                        },
+                        error: function() {
+                            swal('Error', 'Error de conexión en el servidor', 'error');
+                        }
+                    });
+
+                    Loader.close();
+                }
+            },
+        });
+
+});
+
+        eliminartutoria=function (id) {
+        id_tutoria=id
+        swal({
+                title: '¿Estás seguro de eliminar la tutoria pedagogica?',
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, Confirmar!',
+                cancelButtonText: 'Cancelar',
+                confirmButtonClass: 'btn btn-success margin-5',
+                cancelButtonClass: 'btn btn-danger margin-5',
+                buttonsStyling: false,
+                allowOutsideClick: false,
+            }).then(function (isConfirm) {
+            if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss'] != 'esc') {
+                         Loader.open('');
+                         var formData = new FormData();
+                         formData.append('action', 'eliminar_tutoria');
+                         formData.append('id', id_tutoria);
+
+                         $.ajax({
+                                 url: '/pedagogica_tutoria',
+                                 type: "POST",
+                                 contentType: false,
+                                 data: formData,
+                                 processData: false,
+                                 cache: false,
+                                 success: function (data) {
+                                     if (data.result == "ok") {
+                                         swal("! Tutoria Pedagogica", "Se eliminó correctamente ", "success");
+                                         location.reload()
+                                     } else {
+                                         swal("Error", data.message, "error");
+
+                                     }
+                                 },
+                                 error: function (xhr, ajaxOptions, thrownError) {
+                                     swal("Error", "Error Conexion en el Servidor", "error");
+
+                                 },
+                                 complete: function () {
+                                   Loader.close('');
+                                 }
+                         });
+                    }
+                })
+        }
+
+        btngenerarreporte = function(){
+            limpiarfeedback()
+                $("#modal2").modal({backdrop: 'static', keyboard: false});
+                $('#modal2').modal('show');
+        };
+
+        btncancelarreporte = function () {
+            limpiarmodal()
+            $('#modal2').modal('hide');
+        };
+
+{#<----------------------------------- combo activar y desactivar la opcion de checked----------------------------------------------->#}
+
+        cambiarcombodocente = function () {
+            if ($("#estado").is(':checked')) {
+                $("#divdocente").addClass('d-none'); // Mostrar combo
+                $("#divdocente").removeClass('d-none'); // ocultar combo
+            } else {
+                $("#cmbprofesor").val('0');
+                $("#divdocente").addClass('d-none'); // Mostrar combo
+            }
+
+        };
+
+{#<----------------------------------- combo activar y desactivar la opcion de checked----------------------------------------------->#}
+
+        cambiarcomboperiodo = function () {
+            if ($("#filtraperiodo").is(':checked')) {
+                $("#camperiodo").addClass('d-none'); // Mostrar combo
+                $("#camperiodo").removeClass('d-none'); // ocultar combo
+            } else {
+                $("#cmbperiodo").val('0')
+                $("#camperiodo").addClass('d-none'); // Mostrar combo
+            }
+
+        };
+
+        function limpiarfeedback() {
+                $(":input").removeClass('form-control-danger');
+                $('.form-control-findback').addClass('d-none');
+        }
+
+        function limpiarmodal() {
+            $("#fechainicio").val('');
+            $("#fechafin").val('');
+            $("#cmbprofesor").val('0').trigger('change');
+            $("#cmbprofesor").val('0').removeClass('d-none'); // ocultar combo
+            $("#cmbperiodo").val('0').trigger('change');
+            $("#cmbperiodo").val('0').removeClass('d-none'); // ocultar combo
+            $("#estado").prop('checked', false);
+            $("#filtraperiodo").prop('checked', false);
+
+            if ($("#estado").is(':checked')){
+                $("#divdocente").removeClass('d-none'); // ocultar combo
+            }else{
+                $("#divdocente").addClass('d-none'); // Mostrar combo
+            }
+
+
+           if ($("#filtraperiodo").is(':checked')) {
+                $("#camperiodo").removeClass('d-none'); // ocultar combo
+           }else{
+                $("#camperiodo").addClass('d-none'); // Mostrar combo
+
+           }
+        }
+
+
+        $("#modal2 #ingresardatos").click(function() {
+             var valida = true;
+
+             if ($.trim($("#fechainicio").val()) == 0) {
+                    $("#fechainiciofindback").html("Obligatorio ingresar la fecha inicio").removeClass('d-none');
+                    valida = false;
+                }else{
+                    $("#fechainiciofindback").html("").addClass('d-none');
+                }
+
+             if ($.trim($("#fechafin").val()) == 0) {
+                    $("#fechafindback").html("Obligatorio ingresar la fecha fin").removeClass('d-none');
+                    valida = false;
+                }else{
+                    $("#fechafindback").html("").addClass('d-none');
+                }
+
+            if (valida) {
+                var fechainicio = $("#fechainicio").val();
+                var fechafin = $("#fechafin").val();
+                var cmbprofesor = $("#cmbprofesor").val();
+                var cmbperiodo= $("#cmbperiodo").val();
+
+                $.post("/pedagogica_tutoria", {"action":"generarreporte", 'cmbprofesor':cmbprofesor, 'cmbperiodo':cmbperiodo, 'fechainicio':fechainicio, 'fechafin':fechafin,}, function(data) {
+                    limpiarfeedback()
+                    if (data.result=='ok'){
+                        $("#espera").modal("hide");
+
+                        setInterval(function(){
+                        }, 2500);
+                        location.href=data.url;
+                        swal("SE GENERO CORRECTAMENTE");
+                        limpiarmodal()
+                        $('#modal2').modal('hide');
+                    }else{
+                        swal("Error", data.result, "error");
+                        $("#login-modal7").remove();//ocultamos el modal
+                        $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                        $('.modal-backdrop').remove();
+                    }
+                }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                        console.log(errorThrown);
+                        console.log('getJSON request failed! ' + textStatus+ ' error jqk'+jqXHR.responseText);
+                        swal("Error", "ERROR DE CONEXION", "error");
+                        $("#login-modal7").remove();//ocultamos el modal
+                        $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                        $('.modal-backdrop').remove();
+
+                })
+
+            }
+        });
+
+
+    });
+
+
+</script>
+
+{% endblock %}
+{% block canvas %}
+    <div class="pd-ltr-20 xs-pd-20-10">
+        <div class="min-height-50px">
+            <div class="page-header">
+                <div class="row">
+                    <div class="col-md-12 col-sm-12">
+                        <div class="title">>
+                            <h4>Listado de Tutorias Pedagogicas</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-box mb-30">
+                <div class="pd-20">
+                    <div class="row">
+                        <div class="col-md-3" style="margin-top: 5px">
+                            <div class="form-group">
+                                <label><a style="color: #d92550"></a></label>
+                                <input id="txtbusqueda" type="text" class="form-control" value='{{ search }}'>
+                            </div>
+                        </div>
+                        <div class="col-md-7" style="margin-top: 5px">
+                            <label><a style="color: #d92550"></a></label>
+                                <div class="form-group">
+                                    <button type="button" id="search" class="btn" style="margin-right: 10px; background-color: #184679; color: #ffffff;">
+                                        <i class="icon-copy ti-search"></i> Buscar
+                                    </button>
+
+                                    {% if not nover %}
+                                        <button type="button" onclick="creartutoria();" class="btn" style="margin-right: 10px; background-color: #184679; color: #ffffff;">
+                                            <i class="icon-copy ion-plus"></i> Adicionar Tutoria
+                                        </button>
+                                    {% endif %}
+
+                                    {% if search %}
+                                        <a href="/pedagogica_tutoria" class="btn" style="float: right; margin-left: 10px; background-color: #0b132b; color: #ffffff;">
+                                            Todos
+                                        </a>
+                                    {% endif %}
+
+                                    {% if not nover %}
+                                        {% if not rechazada %}
+                                            <a href="/pedagogica_tutoria?rechazadas=1" class="btn" style="float: right; margin-left: 10px; background-color: #ea2e2a; color: #ffffff;">
+                                                <i class="icon-copy ion-close"></i> Rechazadas
+                                            </a>
+                                        {% else %}
+                                            <a href="/pedagogica_tutoria" class="btn" style="float: right; margin-left: 10px; background-color: #0b132b; color: #ffffff;">
+                                                Todos
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+
+                                    <a href="/pedagogica_tutoria?&action=instrumentostutoriapedagogicas" class="btn" style="float: right; margin-left: 10px; background-color: #0b132b; color: #ffffff;" ><i ></i> </i> Instrumento Pedagogica</a>
+
+                                    <a href="/pedagogica_tutoria?&action=estrategia_pedagogica" class="btn" style="float: right; margin-left: 10px; background-color: #0b132b; color: #ffffff;" ><i ></i> </i> Estrategia Pedagogicas</a>
+
+                                </div>
+                        </div>
+
+                        <div class="col-lg-2 col-md-2 col-sm-2" >
+                            <a href="/" class="btn" style="float: right; background-color: #0b132b; color: #ffffff;">
+                                <i class="icon-copy ion-arrow-left-a"></i> Atrás
+                            </a>
+                        </div>
+
+                        <div class="col-lg-1 col-md-1 col-sm-1">
+                            <div class="form-group">
+                                <div class="row">
+                                     <a class="dropdown-item" class="btn" style="float: right; margin-left: 10px; background-color: #0b132b; color: #ffffff;" style="cursor: pointer" onclick="btngenerarreporte()"> Generar Reporte</a>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                    <div class="pb-20">
+                        <div class="row">
+                            <div class="col-lg-12 col-md-12">
+                            <div class="table-responsive">
+                                <table class=" table stripe hover nowra">
+                                        <thead>
+                                            <tr>
+                                                <th >Profesor</th>
+                                                <th >Asignatura</th>
+                                                <th >Periodo</th>
+                                                <th >Carrera</th>
+                                                <th >Numero Tutoria</th>
+                                                <th >Individual</th>
+                                                <th >Grupal</th>
+                                                <th >Aceptada</th>
+                                                <th >Finalizada</th>
+                                                <th>  </th>
+                                            </tr>
+                                        </thead>
+                                    <tbody>
+                                    {% for p in tutoria %}
+
+                                        <tr>
+                                            <td> {% if p.profesor %}{{ p.profesor.persona.nombre_completo_inverso }}{% endif %}</td>
+                                            <td> {% if p.materia %}{{ p.materia.asignatura.nombre }}{% endif %}</td>
+                                            <td> {% if p.materia.nivel %}{{ p.materia.nivel.periodo.nombre }}{% endif %}</td>
+                                            <td> {% if p.materia.nivel.carrera %}{{ p.materia.nivel.carrera.nombre }}{% endif %}</td>
+                                            <td style="text-align: center"> {% if p.numero_tutoria %}{% if p.numdetalle %}{{ p.numdetalle }}/{% endif %}{{ p.numero_tutoria }}{% endif %}</td>
+                                            <td style="text-align: center">
+                                                {% if not p.grupal  %}
+                                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                                {% else %}
+                                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                                {% endif %}
+                                             </td>
+                                            <td style="text-align: center">
+                                                {% if p.grupal  %}
+                                                  <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                                {% else %}
+                                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                                {% endif %}
+                                             </td>
+                                        {% if p.aceptada == null %}
+                                            <td></td>
+                                        {% else %}
+                                        <td style="text-align: center">
+                                                {% if p.aceptada   %}
+                                                  <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                                {% else %}
+                                                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                                {% endif %}
+                                             </td>
+                                        {% endif %}
+                                        <td style="text-align: center">
+                                                {% if p.finalizado  %}
+                                                  <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                                {% else %}
+                                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                                {% endif %}
+                                             </td>
+
+                                            <td>
+                                                <div class="dropdown">
+                                                    <a class="btn btn-link font-24 p-0 line-height-1 no-arrow dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+
+
+                                                    <i class="dw dw-more"></i>
+                                                    </a>
+                                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-icon-list dropup" style="width: 200px; z-index: 9999;">
+                                                {% if p.aceptada is null and profesor%}
+                                                    <a class="dropdown-item" style="cursor: pointer" onclick="aprobartutoria('{{ p.id }}','{{ p.materia.asignatura.nombre }}');"><i class="dw dw-folder-3"></i> Aprobar Tutoria </a>
+                                                {% endif %}
+            {#                                        {% if not acpetada %}#}
+            {#                                            <a href="#" class="dropdown-item editar"#}
+            {#                                               id_tutoria="{{ p.datos_detalle.tutoria.id }}"#}
+            {#                                               materia_id="{{ p.datos_detalle.tutoria.materia.id }}"#}
+            {#                                               profesor_id="{{ p.datos_detalle.tutoria.profesor.id }}"#}
+            {#                                               numero_tutoria="{{ p.datos_detalle.tutoria.numero_tutoria }}"#}
+            {#                                               grupal="{{ p.datos_detalle.tutoria.grupal }}"#}
+            {#                                               fecha_tutoria="{{ p.datos_detalle.fecha_tutoria|date:'Y-m-d' }}"#}
+            {#                                               hora_inicio_tutoria="{{ p.datos_detalle.hora_inicio_tutoria }}"#}
+            {#                                               hora_fin_tutoria="{{ p.datos_detalle.hora_fin_tutoria }}"#}
+            {#                                               via_tutoria="{{ p.datos_detalle.via_tutoria }}"#}
+            {#                                               necesidad="{{ p.datos_detalle.necesidad }}">#}
+            {#                                               <i class="dw dw-edit2"></i> Editar Tutoria#}
+            {#                                            </a>#}
+            {#                                            {% endif %}#}
+
+
+                                                <a class="dropdown-item" style="cursor: pointer" onclick="verdetalletutoria('{{ p.id }}');"><i class="dw dw-folder-3"></i>Ver Detalle Tutoria </a>
+                                                {% if p.aceptada  %}
+                                                    {% if not p.numdetalletutoria %}
+                                                        <a class="dropdown-item" style="cursor: pointer" onclick="ingresartutoria('{{ p.id }}');"><i class="dw dw-folder-3"></i> Ingresar Tutoria</a>
+                                                    {% endif %}
+            {#                                                    {% if p.numestrategia %}#}
+            {#                                                        <a class="dropdown-item" style="cursor: pointer" onclick="ingresarproximatutoria('{{ p.id }}');"><i class="dw dw-folder-3"></i> Ingresar Proxima Tutoria</a>#}
+            {#                                                     {% endif %}#}
+                                                {% endif %}
+
+                                                {% if rechazada %}
+                                                    <a class="dropdown-item" style="cursor: pointer" onclick="cambiardocente('{{ p.id }}');"><i class="dw dw-folder-3"></i> Cambiar Docente</a>
+                                                {% endif %}
+                                                {% if p.aceptada is null and not profesor%}
+                                                    <a class="dropdown-item" style="cursor: pointer" onclick="eliminartutoria('{{ p.id }}');"><i class="dw dw-folder-3"></i> Eliminar</a>
+                                                {% endif %}
+                                                   </div>
+                                                </div>
+                                            </td>
+
+                                        </tr>
+                                    {% endfor %}
+
+                                    {% if not tutoria %}
+                                        <tr>
+                                            <td colspan="10">
+                                                NO EXISTE REGISTRO
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                        </div>
+                    <div >
+                        <div class="text-right" style="margin-left: 10px">
+                             {% if paging.num_pages > 20 %}
+                            <nav aria-label="Page navigation example">
+                                <ul class="pagination" >
+
+                                    {% if paging.primera_pagina %}
+                                        <li class="page-item"><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&page=1">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                                    {% endif %}
+                                    {% for pagenumber in paging.paginas %}
+                                        <li {% if pagenumber == page.number %}class='page-item active'{% else %}class="page-item"{% endif %}><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                                    {% endfor %}
+                                    {% if paging.ultima_pagina %}
+                                        <li class="page-item"><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                                        <li class="page-item"><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                                    {% endif %}
+                                    <h4 class="h4" style="margin-left: 5px;color: #184679"><span class="badge badge-success">Totales Inscritos {{ totalinscrito }} </span> </h4>
+                                </ul>
+                            </nav>
+                      {% else %}
+                            <nav aria-label="Page navigation example">
+                                <ul class="pagination" >
+                                    {% for pagenumber in paging.page_range %}
+                                        <li {% if pagenumber == page.number %}class='page-item active'{% else %}class="page-item"{% endif %}><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </nav>
+                      {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div class="modal fade" id="tutoriaModal" data-backdrop="static" data-keyboard="false" aria-labelledby="staticBackdropLabel" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="height: 60vh; border-radius: 10px; overflow: hidden;">
+            <div class="modal-header" style="background-color: #67a7afc2; border-top-left-radius: 10px; border-top-right-radius: 10px;">
+                <h4 class="modal-title" id="myLargeModalLabel" style="color: white; font-weight: bold;">Adicionar Tutoria Pedagógica</h4>
+            </div>
+            <div class="modal-body" id="id_toast_tutoriapedagogica" style="overflow-y: auto; padding: 20px; background-color: #f7f7f7; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;">
+
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 20px;">
+                    <li class="nav-item">
+                        <a class="nav-link active" style="font-weight: bold; color: black;" data-toggle="tab" href="#tab1">Informacion Docente</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" style="font-weight: bold; color: black;" href="#tab2">Detalle Tutoria</a>
+                    </li>
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content px-1 pt-1" id="tabpanelcontenido">
+
+                    <!-- Tab 1 -->
+                    <div class="tab-pane active" id="tab1" aria-labelledby="base-tab1" aria-expanded="true">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="id_nombremateria"><b>Materia:</b></label>
+                                    <select id="id_nombremateria" name="nombremateria" style="width: 100%;" class="custom-select2 form-control"></select>
+                                    <p id="helpbid_nombremateria"  style="text-align: center;font-size: 20px;color:red;"></p>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="id_profesor"><b>Profesor:</b></label>
+                                    <select id="id_profesor" name="id_profesor" class="custom-select2" style="width: 100%;"></select>
+                                    <p id="helpbid_profesor"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="numero_tutoria"><b>Número de Tutoría:</b></label>
+                                    <input type="number" class="form-control" id="numero_tutoria" name="numero_tutoria">
+                                    <p id="helpnumero_tutoria"  style="text-align: center;font-size: 20px;color:red;"></p>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label><b>Tipo de Tutoría:</b></label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_tutoria" id="tipo_grupal" value="grupal">
+                                        <label class="form-check-label" for="tipo_grupal">
+                                            Grupal
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_tutoria" id="tipo_individual" value="individual">
+                                        <label class="form-check-label" for="tipo_individual">
+                                            Individual
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row" id="estudiante_grupal_id">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="id_estudiante"><b>Seleccione los Estudiantes:</b></label>
+                                    <select id="id_estudiante" name="id_estudiante" multiple='multiple' class="custom-select2" style="width: 100%;"></select>
+                                    <p id="helpid_estudiante"  style="text-align: center;font-size: 20px;color:red;"></p>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" id="estudiante_individual_id">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="id_estudiante_indi"><b>Seleccione el Estudiante:</b></label>
+                                    <select id="id_estudiante_indi" name="id_estudiante_indi"  class="custom-select2" style="width: 100%;"></select>
+                                    <p id="helpid_estudiante"  style="text-align: center;font-size: 20px;color:red;"></p>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2 -->
+                    <div class="tab-pane" id="tab2" aria-labelledby="base-tab2">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="txtfechainicio"><b>Fecha de Inicio:</b></label>
+                                    <input type="date" id="txtfechainicio" class="form-control">
+                                    <p id="helptxtfechainicio" class="help-text"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="txthorainicio"><b>Hora de Inicio:</b></label>
+                                    <input type="time" id="txthorainicio" class="form-control" value="06:00">
+                                    <p id="helptxthorainicio" class="help-text"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="txthorafin"><b>Hora de Fin:</b></label>
+                                    <input type="time" id="txthorafin" class="form-control" value="18:00">
+                                    <p id="helptxthorafin" class="help-text"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                       <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label><b>Vía de la Tutoría:</b></label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_via" id="tipo_presencial" value="presencial">
+                                        <label class="form-check-label" for="tipo_presencial">
+                                            Presencial
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_via" id="tipo_online" value="presencial">
+                                        <label class="form-check-label" for="tipo_online">
+                                            Online
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="id_observacion"><b>Necesidad Identificada:</b></label>
+                                    <textarea id="id_observacion" class="form-control"></textarea>
+                                    <p id="helpid_observacion" class="help-text"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background-color: #f7f7f7; border-top: 1px solid #dee2e6;">
+                <button type="button" id="btnguardatutoria" class="btn btn-success ">Guardar</button>
+{#                <button type="button" class="btn btn-success btnguardatutoria" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff" style="background-color: #FA1D06; color: #ffffff;">Guardar</button>#}
+                    <button type="button" class="btn salir_submodal" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff" style="background-color: #FA1D06; color: #ffffff;" onclick="location.reload();">Salir</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="aprobartutoriaModal" data-backdrop="static" data-keyboard="false" aria-labelledby="staticBackdropLabel" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="height: 36vh; border-radius: 10px; overflow: hidden;">
+            <div class="modal-header" style="background-color: #67a7afc2; border-top-left-radius: 10px; border-top-right-radius: 10px;">
+                <h4 class="modal-title" id="infotutoria" style="color: white;"></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+
+                        <div class="col-md-6 col-lg-6">
+                            <div class="custom-control custom-checkbox mb-3">
+                                <input type="checkbox" id="id_aprobar" name="id_aprobar" class="custom-control-input">
+                                <label class="custom-control-label" for="id_aprobar"><b>APROBAR</b></label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-6">
+                            <div class="custom-control custom-checkbox mb-3">
+                                <input type="checkbox" id="id_rechazar" name="id_rechazar" class="custom-control-input">
+                                <label class="custom-control-label" for="id_rechazar"><b>RECHAZAR</b></label>
+                            </div>
+                        </div>
+
+                    </div>
+
+             <div class="modal-footer">
+                <button type="submit" id="btnGuardaAprobacion" class="btn btn-success">Guardar</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+            </div>
+{#            </form>#}
+        </div>
+    </div>
+</div>
+</div>
+<div class="modal fade" id="Medium-modal" data-backdrop="static" data-keyboard="false" aria-labelledby="staticBackdropLabel" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="height: 80vh; border-radius: 10px; overflow: hidden;">
+            <div class="modal-header" style="background-color: #67a7afc2; border-top-left-radius: 10px; border-top-right-radius: 10px;">
+                <h4 class="modal-title" id="infotutorias" style="color: white;"></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="tutoriaobsmodal" data-backdrop="static" data-keyboard="false" aria-labelledby="staticBackdropLabel" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content" style="height: 80vh; border-radius: 10px; overflow: hidden;">
+            <div class="modal-header" style="background-color: #67a7afc2; border-top-left-radius: 10px; border-top-right-radius: 10px;">
+                <h4 class="modal-title" id="infotutorias" style="color: white;"> Ingresar Informacion de Tutoria Pedagogica</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label>Tema Tratado (*): </label>
+                            <input type="text" id="id_tema" placeholder="Ingrese el Tema Tratado" class="form-control" style="text-transform: uppercase">
+                            <p id="helpid_tema"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label><strong>Estrategias Pedagogicas Empleadas durante la tutoria: </strong></label>
+                            <div class="estrategias-container border p-2">
+                                {% for estrategia in estrategias %}
+                                    <div id="estrategia-{{ estrategia.id }}" class="estrategia" data-id="{{ estrategia.id }}">{{ estrategia.nombre }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label><strong>Instrumentos: </strong></label>
+                            <div class="instrumentos-container border p-2">
+                                {% for instrumento in instrumentos %}
+                                    <div id="instrumento-{{ instrumento.id }}" class="instrumento" data-id="{{ instrumento.id }}">{{ instrumento.nombre }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="btningresatutoria" class="btn btn-success ">Guardar</button>
+
+                <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{#<----------------------------------------------------------------------------------- Apartado del Modal de Generar Reportes--------------------------------------------------->#}
+
+<div class="modal fade" id="modal2" data-backdrop="static" data-keyboard="false" aria-labelledby="myLargeModalLabel" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" >
+        <div class="modal-header">
+            <div class="login-title">
+                <label class="modal-title text-text-bold-600" id="myModalLabel33"> Generar Reporte </label>
+            </div>
+        </div>
+            <form>
+            <div class="modal-body">
+                <input type="text" hidden="hidden" id="id_action" value="add">
+                <div class="row">
+
+                    <div class="col-md-6 col-lg-6">
+                        <div class="form-group ">
+                            <label class="form-control-label ">fecha inicio:</label>
+                            <input type="date" id="fechainicio" class="form-control">
+                            <div id="fechainiciofindback" class="form-control-feedback text-danger d-none"></div>
+                        </div>
+
+                    </div>
+                    <div class="col-md-6 col-lg-6">
+                        <div class="form-group ">
+                            <label class="form-control-label ">fecha fin:</label>
+                            <input type="date" id="fechafin"  placeholder="" autocomplete="off" class="form-control text-uppercase">
+                            <div id="fechafindback" class="form-control-feedback text-danger d-none"></div>
+                        </div>
+                    </div>
+
+
+                    <div class="col-md-6 col-lg-6">
+                        <div class="form-group">
+                            <label class="form-control-label " >Filtra Docente:</label>
+                            <div class="custom-control custom-checkbox mb-5" >
+                                <input class="custom-control-input" name="estado" type="checkbox" id="estado" onchange="cambiarcombodocente ()">
+                                <label class="custom-control-label" for="estado"></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-6">
+                        <div class="form-group   d-none" id="divdocente">
+                        <label class="form-control-label">Nombre del Docente:</label>
+                            <select id="cmbprofesor" name="cmbprofesor" value="0" style="width: 100%" class="custom-select2 form-control">
+                                <option value="0">Escoge Profesor</option>
+                                {% for d in profesor %}
+                                    <option value="{{ d.id }}">{{ d.persona }} {{ d.nombre }} </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+
+                    <div class="col-md-6 col-lg-6">
+                        <div class="form-group" >
+                            <label class="form-control-label " >Filtra Periodo:</label>
+                            <div class="custom-control custom-checkbox mb-5" >
+                                <input class="custom-control-input" name="filtraperiodo" type="checkbox" id="filtraperiodo" onchange="cambiarcomboperiodo ()">
+                                <label class="custom-control-label" for="filtraperiodo"></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-6">
+                        <div class="form-group d-none" id="camperiodo" >
+                            <label class="form-control-label">Nombre del Periodo:</label>
+                            <select id="cmbperiodo" name="cmbperiodo" value="0" style="width: 100%" class="custom-select2 form-control">
+                                <option value="0">Escoge el Periodo</option>
+                                {% for d in periodo %}
+                                    <option value="{{ d.id }}">{{ d.nombre }} </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" onclick="btncancelarreporte()" data-dismiss="modal" class="btn btn-danger btn-min-width " ><i></i> Cancelar</button>
+                <button type="button" id="ingresardatos" class="btn btn-success btn-min-width "><i ></i> Generar Reporte</button>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+
+{% endblock %}

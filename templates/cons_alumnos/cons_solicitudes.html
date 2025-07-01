@@ -1,0 +1,127 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+<script src="/static/js/notificacionpanel.js"></script>
+<link type="text/css" rel="stylesheet" href="/static/css/datepicker.css"/>
+<script type='text/javascript' src='/static/js/bootstrap-datepicker.js'></script>
+
+<script type="text/javascript">
+
+
+
+    $(function() {
+        $(".ver").click(function(){
+            var obs = $(this).attr('resolucion');
+            smoke.alert(obs);
+        })
+
+    });
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class='span6'>
+            <h2 style="text-align: center">Listado de Tr&aacute;mites Solicitados por Estudiante</h2>
+            <hr/>
+        </div>
+        <div class='span1'>
+             <a href="/cons_alumnos?action=segmento2&id={{ matricula.id}}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <br/>
+    <div class="row-fluid">
+        <div class="span1"></div>
+        <div class="span10">
+            <table class="table table-condensed table-bordered">
+                <thead>
+                    <tr class="alert alert-info">
+                        <th colspan="11" style="text-align: center; font-size: 17px;"><b> LISTADO DE TR&Aacute;MITES</b></th>
+                    </tr>
+                    <tr class="alert alert-info">
+                        <th style="font-size: 16px;text-align: center"> Fecha </th>
+                        <th style="font-size: 16px;text-align: center"> Tipo </th>
+                        <th style="font-size: 16px;text-align: center"> Observaci&oacute;n </th>
+                        <th style="font-size: 16px;text-align: center"> Tr&aacute;mite Asignado </th>
+                        <th style="font-size: 16px;text-align: center"> Serie </th>
+                        <th style="font-size: 16px;text-align: center"> Pagado </th>
+                        <th style="font-size: 16px;text-align: center"> Autorizada </th>
+                        <th style="font-size: 16px;text-align: center"> Resoluci&oacute;n </th>
+                        <th style="font-size: 16px;text-align: center"> Aplicada </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in solicitudes %}
+                    <tr style="height: 50px;">
+                         <td class="bigger" style="vertical-align: middle;text-align: center">{{ s.fecha|date:'d-m-Y' }}</td>
+                         <td class="bigger" style="vertical-align: middle;"> {{ s.tipoe.nombre }}{% if s.es_solicitud %}{% if s.es_solicitud.comprobante %}<a href='{{  s.es_solicitud.descargar }}' title="Descargar"> <img src="/static/images/16/down_document.png"></a>{% endif %}{% endif %}</td>
+                         <td class="bigger" style="vertical-align: middle;"> {{ s.observacion }} </td>
+                         <td style="vertical-align: middle;text-align: center">
+                             {% if s.rubro.especie_valorada.usuarioasignado  %}
+                                 {{ s.rubro.especie_valorada.usuarioasignado }}
+                             {% endif %}
+                             {% if s.es_solicitud %}
+                                {{  s.es_solicitud.personaasignada.nombre_completo_inverso  }}
+                             {% endif %}
+                         </td>
+                         <td class="bigger" style="vertical-align: middle;"> {{ s.rubro.especie_valorada.serie }} </td>
+                         <td style="vertical-align: middle;text-align: center">
+                             {% if s.rubro %}
+                                 {% if not s.rubro.cancelado %}
+                                        <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                     {% else %}
+                                         <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                     {% endif %}
+                             {% else %}
+                                 Libre
+                             {% endif %}
+                         </td>
+                         <td class="bigger" style="vertical-align: middle;text-align: center;" >
+                             {% if s.tipoe.es_especie %}
+                                 {% if s.rubro.especie_valorada.autorizado %}
+                                     <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                 {% else %}
+                                     <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                 {% endif %}
+                             {% else%}
+                                 <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                             {% endif %}
+                         </td>
+                         <td class="bigger" style="vertical-align: middle;text-align: center;cursor: pointer" >
+                             {% if s.rubro.especie_valorada.obsautorizar %} <a class="ver"  resolucion="{{  s.rubro.especie_valorada.obsautorizar  }}">Ver Resoluci&oacute;n</a> {% endif %}
+                             {% if s.es_solicitud.observacion %} <a class="ver"  resolucion="{{  s.es_solicitud.observacion   }}">Ver Resoluci&oacute;n</a> {% endif %}
+                         </td>
+                         <td class="bigger" style="vertical-align: middle;text-align: center;" >
+                             {% if s.rubro.especie_valorada.materia  %}
+                                 {% if s.rubro.especie_valorada.disponible %}
+                                    <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                 {% else %}
+                                     <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                 {% endif %}
+                             {% else%}
+                                 {% if s.rubro.especie_valorada.aplicada %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% if s.rubro.especie_valorada.archivo %}
+                                        <br>   <a href='{{  s.rubro.especie_valorada.descargar }}' title="Descargar"> <img src="/static/images/16/down_document.png">Descargar Archivo</a>
+                                    {% endif %}
+                                    {% else %}
+                                        {% if not s.es_solicitud %}
+                                            <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                        {% endif %}
+                                 {% endif %}
+                             {% endif %}
+                         </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="span1"></div>
+    </div>
+
+{% endblock %}
+
+

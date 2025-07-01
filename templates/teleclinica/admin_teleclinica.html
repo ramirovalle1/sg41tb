@@ -1,0 +1,755 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <link rel="stylesheet" type="text/css" href="../../static/vendors/sweetalert/sweetalert2.css">
+    <script type="text/javascript">
+        $(function() {
+            var tituloexamenacademico=0;
+            $('form').validationEngine();
+            $('#numero,#pregunta,#puntos,#titulo,#tiempo,#descripcion,#asignatura').addClass('validate[required]');
+
+            $($("#id_examencomplex").get(0).parentNode.parentNode).hide();
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/admin_teleclinica?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".addtitulos").click(function(){
+                $("#asignatura").val("");
+                $("#carrera").val("");
+
+                $("#asignaturase").val("");
+                $("#carrerase").val("");
+
+                $("#nombre_asignatura").hide();
+                {#$("#asignaturase2").hide();#}
+                if($("#convalida").is(':checked')){
+                    $("#convalida").attr('checked',false);
+                    $("#carreralabel").show();
+                    $("#carrerase").show();
+                    $("#cmbasignatura").show();
+                    $("#asignaturase2").hide();
+                }
+{#                $("#paneltitle2").html($(this).attr('mensaje'));#}
+                $("#titulospanel").modal({"backdrop":"static","width":"40%"});
+                $("#titulospanel").modal("show");
+                $("#titulospanel .help-text").html('');
+            });
+
+            $(".edittitulos").click(function(){
+
+                $("#asignatura").val($(this).attr('asigna'));
+                $("#carrera").val($(this).attr('carreraasig'));
+                $("#editar").val($(this).attr('idtitut'));
+                $("#titulo").val($(this).attr('tituloexamen'));
+                $("#link_televideo").val($(this).attr('link_televideo'));
+                $("#tiempo").val($(this).attr('tiempo'));
+                $("#numeropreguntas").val($(this).attr('numeropreguntas'));
+                $("#descripcion").val($(this).attr('descripcion'));
+                if($(this).attr('activo') == 'True')
+                {
+                    $("#activo").attr('checked',true);
+                }
+                else{
+                    $("#activo").attr('checked',false);
+                }
+                if($(this).attr('convalida') == 'True')
+                {
+                    $("#asignaturase2").val($(this).attr('asigna'));
+                    $("#asignaturase2").show();
+                    {#$("#asignaturase").hide();#}
+                    $("#convalida").attr('checked',true);
+
+                    {#SI EN EDITAR ESTA EL CHECK CONVALIDADO #}
+                    $("#nombre_asignatura").hide();
+                    $("#cmbasignatura").hide();
+                    $("#carreralabel").hide();
+                    $("#carrerase").hide();
+                }
+                else{
+                    {#SI PRESENTO#}
+                    $("#carreralabel").show();
+                    $("#carrerase").show().val($(this).attr('carreraasig'));
+                    $("#nombre_asignatura").show().val($(this).attr('nombre_asigna'));
+
+                    $("#cmbasignatura").hide();
+                    $("#asignaturase2").hide();
+                    {#$("#asignaturase").show();#}
+                    {#$("#asignaturase").val($(this).attr('asigna'));#}
+                    $("#convalida").attr('checked',false);
+                }
+                $("#cabeceramodal").html('Editar Evaluación');
+                $('#continuar').addClass('hidden');
+                $("#titulospanel").modal({"backdrop":"static","width":"40%"});
+                $("#titulospanel").modal("show");
+                $("#titulospanel .help-text").html('');
+            });
+
+            $("#titulospanel .btn-cerrar").click(function(){
+                $("#cabeceramodal").html('Crear Examen');
+                $('#continuar').removeClass('hidden');
+                $("#editar").val('0');
+                $("#titulo").val('');
+                $("#subtitulo").val('');
+                $("#tiempo").val('');
+                $("#descripcion").val('');
+                $("#activo").attr('checked',false);
+
+                $("#titulospanel").modal("hide");
+                $(".formError").removeClass('aparece');
+                $(".formError").addClass('oculta');
+                return false;
+            });
+
+            var numerost="0123456789:";
+
+            function tiene_numeros(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numerost.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+            $("#tiempo").blur(function(){
+                var v = $("#tiempo").val();
+                var p = tiene_numeros(v);
+                $($("#tiempo").get(0).parentNode).find(".help-text").html("");
+                if(v!=''){
+                    if( v.split(':').length == 2){
+                        if (p != v.length  |  v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | parseInt(v.split(':')[1])> 59 | parseInt(v.split(':')[0]) >= 24 )
+                        {
+                          $($("#tiempo").get(0).parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60 y la hora menor a 24");
+
+                          $("#tiempo").focus();
+                        }
+                        else{
+                            $($("#tiempo").get(0).parentNode).find(".help-text").html("");
+                        }
+                    }
+                    else{
+                        $($("#tiempo").get(0).parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00 y los minutos deben ser  menor a 60 y la hora menor a 24");
+
+                        $("#tiempo").focus();
+                    }
+                }
+
+            });
+
+            {% if continuar or continuarpregu %}
+                $("#preguntapanel").modal({"backdrop":"static","width":"50%"});
+                $("#preguntapanel").modal("show");
+                $("#preguntapanel .help-text").html('');
+            {% endif %}
+
+            var numerosdec="0123456789.";
+
+            function solo_numerosdec(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+            $("#puntos").blur(function(){
+                var v = $("#puntos").val();
+                var p = solo_numerosdec(v);
+                $($("#puntos").get(0).parentNode).find(".help-text").html("");
+                if(v!=''){
+                    if(p != v.length){
+                        $($("#puntos").get(0).parentNode).find(".help-text").html("Ingresar solo  Numeros");
+                        $("#puntos").val('');
+                        $("#puntos").focus();
+                    }
+                    else{
+                        $($("#puntos").get(0).parentNode).find(".help-text").html("");
+                    }
+
+                }
+            });
+            var numeros="0123456789";
+
+            function solo_numeros(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+            $("#numero").blur(function(){
+                var v = $("#numero").val();
+                var p = solo_numeros(v);
+                $($("#numero").get(0).parentNode).find(".help-textnum").html("");
+                if(v!=''){
+                    if(p != v.length){
+                        $($("#numero").get(0).parentNode).find(".help-textnum").html("Ingresar solo  Numeros");
+                        $("#numero").val('');
+                        $("#numero").focus();
+                    }
+                    else{
+                        $($("#numero").get(0).parentNode).find(".help-textnum").html("");
+                    }
+
+                }
+            });
+{#            /////////////////////////////////////////////////////////////////////////////////////////#}
+{#            /////////////////////////////////////////////////////////////////////////////////////////#}
+            $(".addrespuestas").on("click", function() {
+                var newid = 0;
+
+                $.each($("#respuestas div"), function () {
+
+                    if (parseInt($(this).data("id")) > newid) {
+                        newid = parseInt($(this).data("id"));
+                    }
+                });
+
+                if(newid != 0){
+                    document.getElementById('elimina'+newid).style.display='none';
+                }
+
+
+                newid++;
+
+
+
+                var div = $("<div ></div>", {
+                    id: "agrega" + newid,
+                    con: newid,
+                    "data-id": newid,
+                    "style":'border-bottom: 1px ridge #ebe4eb;'
+                });
+                var col=0;
+
+                $.each($("#respuestas div:nth(0) section"), function () {
+                    var cur_td = $(this);
+                    var children = cur_td.children();
+                    // Añade el nuevo Elemento en la tabla.
+                    if ($(this).data("name") != undefined) {
+                        col++;
+
+                        var section = $("<section></section>", {
+                            "data-name": $(cur_td).data("name")
+                        });
+
+                        var c = $(cur_td).find($(children[1]).prop('tagName')).clone().val("");
+                        c.attr("name", $(cur_td).data("name") + newid);
+                        c.attr("num",newid);
+                        c.attr("id", $(cur_td).data("name") + newid);
+                        c.appendTo($(section));
+{#                        section.appendTo($(div));#}
+                        if($(cur_td).data("name") == 'respuestas')
+                        {
+                            c = $(cur_td).find($(children[2]).prop('tagName')).clone().val("");
+                            c.attr("name", $(cur_td).data("name") + newid);
+                            c.attr("num",newid);
+                            c.attr("style","text-transform: none");
+                        }
+                        else{
+                            c = $(cur_td).find($(children[2]).prop('tagName')).clone().val("");
+                            c.attr("name", $(cur_td).data("name") + newid);
+                            c.attr("num",newid);
+                        }
+                        c.appendTo($(section));
+                        section.appendTo($(div));
+
+
+                    }else{
+                        var section = $("<section></section>", {
+                            'text': $('#respuestas div').length
+                        }).appendTo($(div));
+                    }
+                });
+
+                // Añade la nueva fila.
+                $(div).appendTo($('#respuestas'));
+
+                $(div).find("section a.eliminar").on("click", function (){
+
+                    $(this).closest("div").remove();
+
+                    newid = newid - 1;
+                    $("#cantresp").val(newid);
+                    if(newid != 0){
+                        document.getElementById('elimina'+newid).style.display='block';
+                    }
+                });
+                $('input[name=respuesta'+newid+']').addClass('validate[required]');
+
+                $("#cantresp").val(newid);
+                // document.getElementsByName('nombre'+newid).val($('#ProductoNombre').val());
+
+            });
+
+            $(".addpregu").click(function(){
+                $("#idcreaexamen").val($(this).attr('idtitut'));
+                $("#numero").val($(this).attr('numero'));
+                $("#preguntapanel").modal({"backdrop":"static","width":"50%"});
+                $("#preguntapanel").modal("show");
+                $("#preguntapanel .help-text").html('');
+            });
+
+
+            $("#preguntapanel .btn-cerrar").click(function(){
+                $("#pregunta").val('');
+                $("#puntos").val('');
+                $("#preguntapanel").modal("hide");
+                $(".formError").removeClass('aparece');
+                $(".formError").addClass('oculta');
+                return false;
+            });
+
+            $("#guardarbutt").click(function(){
+                $(".formError").removeClass('oculta');
+                $(".formError").addClass('aparece');
+
+            });
+
+            $(".deletepreg").click(function(){
+                    var idtitu = $(this).attr('idtit');
+                    smoke.confirm( 'Esta seguro de eliminar este examen?', function(e){
+                        if (e){
+                              location.href = '/admin_teleclinica?action=eliminarpreg&id='+idtitu;
+                        }
+                        else{
+                        }
+                        }, {
+                        ok: "CONTINUAR",
+                        cancel: 'CANCELAR',
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+            });
+
+            $("#id_examendemo").change(function() {
+                var complex = $(this).val();
+                $.post("/admin_examencondu", {action: 'buscarexamen',complexivo: complex}, function(data) {
+                    if (data.result=='ok') {
+                        var html = '<option value="" >---------</option>';
+                        $($("#id_examendemo").get(0).parentNode.parentNode).hide();
+                        $($("#id_examencomplex").get(0).parentNode.parentNode).show();
+                        for (var m in data.examen){
+                             var cant = data.examen[m]
+                             html = html + '<option value="'+ cant['id'] + '" >'+ cant['titulo']+' '+ cant['subtitulo']+'</option>'
+                        }
+                        $("#id_examencomplex").html(html)
+                    }
+                    else{
+                        smoke.alert("No existe el examen en el demo");
+                        }
+                }, "json");
+            });
+
+            $("#id_examencomplex").change(function() {
+                $("#titexamen").val(tituloexamenacademico);
+            });
+
+            
+
+            $("#complexivo_panel .btn-cerrar").click(function(){
+                $("#complexivo_panel").modal("hide");
+                $("#id_examendemo").val('');
+                $($("#id_examencomplex").get(0).parentNode.parentNode).hide();
+                $($("#id_examendemo").get(0).parentNode.parentNode).show();
+                return false;
+            });
+
+            $('#cmbasignatura').change(function(){
+                var asignatura =$("#cmbasignatura").val()
+                $("#asignatura").val(asignatura);
+            });
+
+            {#$('#carrerase').change(function(){#}
+            {#    $("#carrera").val($("#carrerase").val());#}
+            {# });#}
+
+            $('#asignaturase2').change(function(){
+                $("#asignatura").val($("#asignaturase2").val());
+
+            });
+            {% if info %}
+                {#smoke.alert('{{ info }}');#}
+                Swal.fire("Atencion!", {{info}});
+            {% endif %}
+
+            $("#convalida").click(function(){
+                if($("#convalida").is(':checked')){
+                    $("#asignaturase2").show();
+                    {#$("#asignaturase").hide();#}
+                    $("#asignaturase2").val("");
+                    $("#asignaturase").val("");
+                    {# CIERRA#}
+                    $("#nombre_asignatura").hide()
+                    $("#cmbasignatura").hide();
+                    $("#carrerase").hide();
+                    $("#carreralabel").hide();
+
+                }
+                else{
+                    $("#asignaturase2").val("");
+                    $("#asignaturase").val("");
+                    {#$("#asignaturase").show();#}
+                    $("#asignaturase2").hide();
+                    {#PRESENTA CARRERA#}
+                    $("#carrerase").show().val("");
+                    $("#carreralabel").show();
+                    {# Y PRESENTA COMBO DE ASIGNATURA POR CARRERA #}
+                    $("#cmbasignatura").show().val('');
+                }
+            });
+
+            $("#carrerase").change(function(){
+                var carrera= $("#carrerase").val()
+                $.post("/admin_teleclinica", { "action": "consultaasignatura", idcarrera:carrera}, function (data) {
+                    if (data.result == 'ok') {
+                       var html='<option value="">-------</option>';
+                       for (var p in data.asignaturas) {
+                           html = html + '<option value=' + data.asignaturas[p].id + '>' + data.asignaturas[p].asignatura + ' </option>'
+                       }
+                       $("#cmbasignatura").html(html);
+                    }
+                }, "json");
+                $("#carrera").val(carrera);
+                {#$("#asignaturase2").hide();#}
+                $("#cmbasignatura").show();
+                $("#nombre_asignatura").hide()
+            });
+
+
+
+        });
+    </script>
+
+    <style>
+        .oculta{
+            display: none;
+        }
+        .aparece{
+            display: block;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span11" style="text-align: center">
+            <h3> Evaluaciones de Telecl&iacute;nica </h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br/>
+    <div class='row-fluid'>
+        {% if not persona.pertenece_soporte %}
+            <div class="span3">
+                <a class="btn btn-success addtitulos" style="cursor: pointer"><b><span class="icon-plus"></span> Agregar Evaluaci&oacute;n</b></a>
+            </div>
+            <div class='span4' style="width: 400px">
+                <form class="form-search"> <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/admin_teleclinica" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+                </form>
+            </div>
+        {% endif %}
+    </div><br/>
+    <div class="row-fluid">
+        <div class="span12" >
+            <table class="table table-condensed table-bordered smaller2 tabla" id='tblreferencia' >
+               <thead>
+                   <tr>
+                       <th><h4>Instituci&oacute;n</h4></th>
+                       <th><h4>Titulo Telecl&iacute;nica</h4></th>
+                       <th><h4>Asignatura</h4></th>
+                       <th><h4>Carrera</h4></th>
+                       <th><h4>Mensaje</h4></th>
+                       <th><h4>Link Video</h4></th>
+                       <th><h4>Fecha</h4></th>
+                       <th><h4># Preguntas</h4></th>
+                       <th><h4>Tiempo</h4></th>
+                       <th><h4>Activo</h4></th>
+                       <th><h4>Acciones</h4></th>
+                    </tr>
+
+               </thead>
+               <tbody>
+
+                    {% for t in  evaluacionteleclinica %}
+                        <td>
+                            {{ t.nombreinstitucion }}
+                        </td>
+                        <td>
+                            {{ t.tituloexamen }}
+                        </td>
+                        <td>
+                            {{ t.asignatura }}
+                        </td>
+                        <td>
+                            {% if t.carrera %} {{ t.carrera }} {% endif %}
+                        </td>
+                        <td>
+                            {% if t.descripcion %} {{ t.descripcion }} {% endif %}
+                        </td>
+                        <td style="text-align: center;">
+                            {% if t.link_televideo %}
+                                <a class="dropdown-item" href="{{  t.link_televideo }}" target="_blank"> Ver video</a>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ t.fecha|date:'d-m-Y' }}
+                        </td>
+                        <td>
+                           {% if t.numeropreguntas %} {{ t.numeropreguntas }} {% endif %}
+                        </td>
+                        <td>
+                            {{ t.tiempo|time:'H:i' }}
+                        </td>
+                        <td>
+                            {% if t.activo %}
+                                <a {% if DEFAULT_PASSWORD != "itb" %}href="/admin_teleclinica?action=activa&id={{ t.id }}"{% endif %}><img src='/static/images/16/true.png' alt='' border="0"/></a>
+                            {% else %}
+                                <a {% if DEFAULT_PASSWORD != "itb" %}href="/admin_teleclinica?action=activa&id={{ t.id }}"{% endif %}><img src='/static/images/16/false.png' alt='' border="0"/></a>
+                            {% endif %}
+                        </td>
+
+
+                        <td>
+
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                {% if not t.activo %}
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if not persona.pertenece_soporte %}
+                                            <li><a style="cursor: pointer" idtitut="{{ t.id }}" numero="{{ t.numeropregunta }}"  class="addpregu" ><i class="icon-plus"></i> Add Pregunta</a></li>
+                                            <li><a href="/admin_teleclinica?action=examen&id={{ t.id }}"><i class="icon-eye-open"></i> Ver Preguntas</a></li>
+                                            {% if not t.exist_inscripex %}
+                                                <li>
+                                                    <a  idtit="{{ t.id }}" class="deletepreg" style="cursor: pointer"><i class="icon-remove"></i> Eliminar Telecl&iacute;nica</a>
+                                                </li>
+                                            {% endif %}
+{#                                            {% if  t.carrera != None and  t.carrera.id > 0 %}#}
+{#                                                {% if t.carrera.coordinacion_pertenece.id == 1 %}#}
+{#                                                    {% if not t.existen_preguntas %}#}
+{#                                                        <li>#}
+{#                                                            <a  idtit="{{ t.id }}" class="consultarexamen" style="cursor: pointer"><i class="icon-list"></i> Importar Examen desde Demo</a>#}
+{#                                                        </li>#}
+{#                                                    {% endif %}#}
+{#                                                {% endif %}#}
+{#                                            {% endif %}#}
+                                            <li><a style="cursor: pointer" class="edittitulos" idtitut="{{ t.id }}" asigna="{{ t.asignatura.id }}" carreraasig="{{ t.carrera.id }}"
+                                                   tituloexamen="{{ t.tituloexamen }}" link_televideo="{{ t.link_televideo }}" nombreinstitucion="{{ t.nombreinstitucion }}"
+                                                   descripcion="{{ t.descripcion }}" tiempo="{{ t.tiempo|time:'H:i' }}" activo="{{ t.activo }}"  numeropreguntas="{{ t.numeropreguntas }}" nombre_asigna="{{ t.asignatura }}"  ><i class="icon-edit"></i> Editar Evaluaci&oacute;n</a></li>
+                                        {% else %}
+                                            <li><a href="/admin_teleclinica?action=examen&id={{ t.id }}"><i class="icon-eye-open"></i> Ver Preguntas</a></li>
+                                        {% endif %}
+                                    </ul>
+                                {% else %}
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if not persona.pertenece_soporte %}
+                                            <li>Desactivar examen para ver mas acciones</li>
+                                        {% endif %}
+                                    </ul>
+                                {% endif %}
+                            </div>
+                        </td>
+                        </tr>
+                    {% endfor %}
+
+                        {% if not evaluacionteleclinica %}
+                            <tr>
+                               <td colspan="10">
+                                    NO EXISTEN REGISTROS
+                                </td>
+                            </tr>
+                        {% endif %}
+
+               </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="titulospanel">
+        <div class="modal-header" style="word-wrap: break-word;text-align: center">
+            <h3 id="cabeceramodal">Agregar Evaluaci&oacute;n de  Telecl&iacute;nica</h3><br/>
+            <h4 style="text-align: center" type="text" name='nombreinstitu'/> {{ NOMBRE_INSTITUCION_EXAMEN }} </h4>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/admin_teleclinica" method="POST"  >
+                <input type='hidden' name='action' value='guardar'/>
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='asignatura' id='asignatura' value="0"/>
+                <input type='hidden' name='carrera' id='carrera' value="0"/>
+
+                <div class="controls" style="margin-left: 1%">
+{#                    {% if DEFAULT_PASSWORD == "itb" %}<b>Telecl&iacute;nica:</b>{% else %}{% endif %} <input style="width:10%;" type="checkbox" name='convalida' id="convalida" /><br/><br/>#}
+                    <label for="" id="carreralabel">Carrera</label>
+                    <select id='carrerase' />
+                        <option value=''>-----</option>
+                        {% for c in carreras %}
+                            <option value="{{ c.id }}" >{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                    Asignatura:
+                    <input type="text" disabled id="nombre_asignatura">
+                    <select name="" id="cmbasignatura" >
+                        <option value="0">-------</option>
+                    </select>
+                    <select id='asignaturase2' style="display: none" />
+                        <option value=''>-----</option>
+                        {% for a in asignatura2 %}
+                            <option value="{{ a.id }}" >{{ a }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <b>Evaluaci&oacute;n:</b> <input type="text" name='titulo' id="titulo"/><br/><br/>
+{#                    <b>Subtitulo:</b> <input  type="text" name='subtitulo' id="subtitulo"/><br/><br/>#}                 
+                    <b>Link de video:</b> <input  type="text" name='link_televideo' id="link_televideo"/><br/><br/>
+                    <b>Cantidad de  Preguntas:</b> <input style="width:10%;" type="text" name='numeropreguntas' id="numeropreguntas"/>
+                    <b>Tiempo:</b> <input style="width:10%;" type="text" name='tiempo' id="tiempo"/>
+                    <p class="help-text">{{ field.help_text }} </p><br/><br/>
+                    <b>Mensaje:</b><textarea type='text' id='descripcion' style="width:98%;text-transform: uppercase" rows="6" cols="50" name='descripcion'> </textarea><br/><br/>
+                    {% if DEFAULT_PASSWORD != "itb" %}<b>Activo:</b> <input style="width:10%;" type="checkbox" name='activo' id="activo" /><br/><br/>{% endif %}
+
+                </div>
+                <br/><br/><button type="submit" id="guard" class="btn btn-success" style="float: right">Guardar</button>&nbsp;&nbsp;
+                <button type="submit" class="btn btn-warning"  style="float: right" name="continuar" id="continuar">Guardar y continuar</button>&nbsp;&nbsp;
+                <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="preguntapanel">
+        <div class="modal-header" style="word-wrap: break-word;text-align: center">
+            <h3>Ingresar Preguntas y Respuestas</h3><br/>
+{#            <h4 style="text-align: center" type="text" name='nombreinstitu'/> {{ NOMBRE_INSTITUCION_EXAMEN }} </h4>#}
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' enctype="multipart/form-data" action="/admin_teleclinica" method="POST"  >
+                <input type='hidden' name='action' value='guardarpreg'/>
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='cantresp' id='cantresp' value="0"/>
+
+                <input type='hidden' name='idcreaexamen' id='idcreaexamen' {% if continuar %} value="{{ continuar }}" {% endif %}/>
+
+                {% if continuarpregu %}
+                    <input type='hidden' name='idpregunexamen' id='idpregunexamen' value="{{ continuarpregu.id }}"/>
+                {% endif %}
+
+                <div class="controls" style="margin-left: 1%">
+                    <b>N&uacute;mero:</b> <input type="text" name='numero' id="numero" style="width: 5%" {% if preguntaex %} value="{{ preguntaex }}" {% endif %}/>
+                    <p class="help-textnum">{{ field.help_text }} </p>
+                    <b>Pregunta:</b> {% if DEFAULT_PASSWORD == "itb" %} <textarea type="text" name='pregunta' id="pregunta" rows="6" cols="50"  style="text-transform: none" ></textarea>{% else %}<input type="text" name='pregunta' id="pregunta" style="text-transform: none" />{% endif %}<br/><br/>
+                    <b>Imagen:</b><input type="file" name="imagenpr" id="imagenpr" /><br/><br/>
+                    <b>puntos:</b> <input  type="text" name='puntos' id="puntos" style="width: 5%" /><br/><br/>
+                    <b>Activo:</b> <input style="width:10%;" type="checkbox" name='activo' id="activo" />
+                    <p class="help-text">{{ field.help_text }} </p>
+                    <a class="btn btn-info addrespuestas"  style="cursor:pointer;float: right"><b><span class="icon-plus"></span> Respuestas</b></a>
+                    <br/><br/><hr style="border: 1px ridge #ebe4eb;">
+                    <div id="respuestas" style="padding-left: 5%">
+                        <div id='agrega0'  data-id="0" con="0" class="hidden">
+                            <section  data-name="respuesta">
+                                <br/><b name="resp0" id="resp0">Respuesta:</b>
+                                <input type="text" name="respuesta0" id="respuesta0" style="text-transform: none"/><br/>
+                            </section>
+                            <section  data-name="imagen">
+                                <br/><b name="img0" id="img0">Imagen:</b>
+                                <input type="file" name="imagen0" id="imagen0"/>
+                            </section>
+                            <section  data-name="valida">
+                                <br/><b name="vali0" id="vali0">Correcta:</b>
+                                <input style="width:10%;" type="checkbox" name="valida0" name="valida0" /><br/>
+                            </section>
+                            <section  data-name="elimina">
+                                <br/>
+                                <a  class="btn btn-danger eliminar" num="0" style="float: right" name="elimina0" id="elimina0">Eliminar</a>
+                                <br/>
+
+                            </section>
+
+                        </div>
+                    </div>
+                </div>
+                <br/><br/><button type="submit" class="btn btn-success" style="float: right">Guardar</button>&nbsp;&nbsp;
+                <button type="submit" class="btn btn-warning" style="float: right" name="continuar">Guardar y continuar</button>&nbsp;&nbsp;
+                <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="complexivo_panel"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Buscar Ex&aacute;menes en Demo</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario" style="overflow-y: auto"  class='well' action="/admin_teleclinica" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='importardemo'/>
+                <input type='hidden' name='titexamen' id='titexamen' value=""/>
+                {% for field in demoform %}
+                    <fieldset class="control-group nomargins">
+                    <label style="text-align: left;width: 40%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                        <div class="controls" style="width: 98%">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">{% block buttonname %}Aceptar{% endblock %}</button>
+                {% block extrabuttons %}
+                    <a href="#" class="btn btn-cerrar"> Cerrar</a>
+                {% endblock %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 15 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/admin_teleclinica?page=1{% if search %}&s={{ search }}{% endif %}{% if todos %}&t=1{% endif %}">1</a></li>
+                            <li><a href="/admin_teleclinica?page={{ paging.ellipsis_izquierda }}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t=1{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_teleclinica?page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t=1{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/admin_teleclinica?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/admin_teleclinica?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t=1{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class="pagination">
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_teleclinica?page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t=1{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

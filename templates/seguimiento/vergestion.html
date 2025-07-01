@@ -1,0 +1,171 @@
+    <script type="text/javascript">
+        var seguimientos = []
+        aprobar_descuento = function(id){
+            if ($("#chkx"+id).is(':checked')){
+                seguimientos.push({'id':id})
+                $(".guarda_descuentosadd").show()
+            }else{
+                for (var i in seguimientos) {
+                    if(seguimientos[i]['id']==id){
+                        seguimientos.splice(i,1)
+                    }
+                }
+            }
+            if(seguimientos.length==0){
+                $(".guarda_descuentosadd").hide()
+            }
+
+        }
+
+        descuentos = []
+        aprobar_descuentocategoria = function(id){
+            if ($("#chkdescat"+id).is(':checked')){
+                descuentos.push({'id':id})
+                $(".guarda_descuentos").show()
+            }else{
+                for (var i in descuentos) {
+                    if(descuentos[i]['id']==id){
+                        descuentos.splice(i,1)
+                    }
+                }
+            }
+            console.log(descuentos)
+        }
+
+        $(".fechaposiblepago").datepicker({format:"yyyy-mm-dd"});
+
+        cambiarfecha = function(id){
+            var nuevafecha = $("#fechaposiblepago"+id).val();
+            $.post("/registros", {'action': 'edit_fechaposiblepago', 'id': id, 'nuevafecha': nuevafecha}, function(data){
+                    if (data.result=='ok'){
+                        alert('SE MODIFICO LA FECHA POSIBLE DE PAGO AL '+String(nuevafecha));
+                    }
+                }, "json");
+        }
+
+        delete_rubroseguimiento = function(id){
+{#            smoke.confirm("Desea desactivar el seguimiento de este rubro?", function(e){#}
+{#                if (e){#}
+                    $.post("/registros", {'action': 'desactiva_rubroseguimiento', 'id': id}, function(data){
+                        if (data.result=='ok'){
+                            alert('SEGUIMIENTO DE RUBRO INACTIVO');
+                            location.href = '/registros?s='+data.identificacion
+                        }
+                    }, "json");
+{#                }#}
+{#            }, {#}
+{#                ok: "Si",#}
+{#                cancel: "No",#}
+{#                classname: "custom-class",#}
+{#                reverseButtons: true#}
+{#            });#}
+        };
+
+
+
+    </script>
+<div class="row-fluid">
+    <div class="span12">
+        {% for ll in registrollamada %}
+            <table class="table table-condensed table-stripped table-bordered">
+                <thead>
+                    <th>Estado Llamada</th>
+                    <th style="text-align: center" colspan="4">Observacion</th>
+                    <th style="text-align: center" colspan="2">Motivo de Cierre</th>
+                    <th style="text-align: center">Fecha</th>
+                    <th style="text-align: center" colspan="2">Usuario</th>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ ll.estadollamada }}</td>
+                        <td colspan="4">{{ ll.observacion }}</td>
+                        <td colspan="2">{% if ll.tiporespuesta %}{{ ll.tiporespuesta }}{% endif %}</td>
+                        <td style="text-align: center">{{ ll.fecha|date:'Y-m-d' }}</td>
+                        <td style="text-align: center" colspan="2">{{ ll.usuario }}</td>
+                    </tr>
+
+{#                    -------------------------------------------------------------SEGUIMIENTO RUBRO A RUBRO---------------------------------------------#}
+                    {% if ll.tiene_rubros %}
+                        <tr><td colspan="10"></td></tr>
+                        <tr>
+                            <td style="font-weight: bold;;color: #0081c2 ">Rubros Gestionados</td>
+                            <td style="font-weight: bold;color: #0081c2; text-align: center;">Tipo</td>
+                            <td style="font-weight: bold;color: #0081c2; text-align: center;">Categoria</td>
+                            <td style="font-weight: bold;color: #0081c2; text-align: center;">Factor</td>
+                            <td style="font-weight: bold;color: #0081c2; text-align: center;">Valor Gestionado</td>
+                            <td style="font-weight: bold;color: #0081c2; text-align: center;">Descuento Categoria</td>
+                            <td style="font-weight: bold;text-align: center;color: #0081c2; text-align: center">Fecha Posible Pago</td>
+                            <td style="font-weight: bold;text-align: center;color: #0081c2; text-align: center">Pagado</td>
+                            <td style="font-weight: bold;text-align: center;color: #0081c2; text-align: center">{% if asistente %}Aprobar descuento adicional{% else %}Descuento Adicional{% endif %}</td>
+                            <td>{% if perms.sga.change_registroseguimiento and not rubro.rubro.cancelado and rubro.estado %}{% endif %}</td>
+                        </tr>
+
+                        {% for rubro in ll.rubros %}
+                            <tr {% if not rubro.estado %}style="background-color: lightsalmon" {% else %}{% if rubro.rubro.cancelado and rubro.fechapago %}style="background-color: #d6ffbe" {% endif %}{% endif %}>
+                                <td><span title="Seguimiento de rubro dado de baja">{% if not rubro.estado %} <img src='/static/images/16/false.png' border='0'/> {% endif %} {{ rubro.rubro.nombre }}</span></td>
+                                <td style="text-align: center">{{ rubro.rubro.tipo }}</td>
+                                <td style="text-align: center">{{ rubro.categoria.categoria }}</td>
+                                <td style="text-align: center">{{ rubro.categoria.factor }}</td>
+                                <td style="text-align: center">${{ rubro.valorgestionado }}</td>
+                                <td style="text-align: center">
+                                    {% if rubro.aplicadescuentocategoria %}
+                                        {{ rubro.categoria.porcentaje }}%
+                                        {% if not rubro.aprobardescuentoadd %}
+                                            <b style="color: #006400">(${{ rubro.calcula_descuento }})</b>
+                                        {% else %}
+                                            <b style="color: darkred">(${{ rubro.calcula_descuento }})</b>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if not rubro.rubro.cancelado and rubro.estado and rubro.categoria.porcentaje > 0 and not perms.sga.change_registroseguimiento %}
+                                           {{ rubro.categoria.porcentaje }}%
+                                           <input type="checkbox" onclick="aprobar_descuentocategoria('{{ rubro.id }}')" id="chkdescat{{ rubro.id }}"/>
+                                        {% else %}
+                                            <img src='/static/images/16/false.png' border='0'/>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center">
+                                    {% if not rubro.rubro.cancelado and rubro.estado %}
+                                        <input type="text" id='fechaposiblepago{{ rubro.id }}' class="fechaposiblepago" value="{{ rubro.fechaposiblepago|date:'Y-m-d' }}" onblur="cambiarfecha('{{ rubro.id }}')"/>
+                                    {% else %}
+                                        {{ rubro.fechaposiblepago|date:'Y-m-d' }}
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center">
+                                    {% if rubro.rubro.cancelado %}
+                                        {{ rubro.fechapago|date:'d-m-Y' }}
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' border='0'/>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center">
+                                    {% if rubro.aprobardescuentoadd %}
+                                        <img src='/static/images/16/true.png' border='0'/>
+                                        <span>{{ rubro.porcentajedescuentoadd }}% </span>
+                                        <b style="color: #006400">(${{ rubro.calcula_descuento_adicional }})</b>
+                                    {% else %}
+                                        {% if rubro.porcentajedescuentoadd %}
+                                            {% if not rubro.rubro.cancelado and perms.sga.change_registroseguimiento and rubro.estado %}
+                                                {{ rubro.porcentajedescuentoadd }}%
+                                                <input type="checkbox" onclick="aprobar_descuento('{{ rubro.id }}')" id="chkx{{ rubro.id }}" class="chkx"/>
+                                            {% else %}
+                                                <img src='/static/images/16/false.png' border='0'/>
+                                            {% endif %}
+                                        {% else %}
+                                            NO APLICA
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center">
+                                    {% if perms.sga.change_registroseguimiento and not rubro.rubro.cancelado and rubro.estado %}
+                                        <a href="#" class="btn" onclick="delete_rubroseguimiento('{{ rubro.id }}')"><img src='/static/images/16/delete2.png' border='0'/></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table><br>
+        {% endfor %}
+    </div>
+</div>

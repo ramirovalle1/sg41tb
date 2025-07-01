@@ -1,0 +1,417 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src="../../ube/static/src/scripts/bootstrap3-typeahead.js"></script>
+    <script>
+        $(function () {
+
+
+
+             $(".salirinstrucciones").click(function(){
+                $("#modal_instrucciones").modal("hide");
+                return false;
+            });
+            Responder=function (pregid,respid,evacargo) {
+
+                     $("#login-modal4").modal({backdrop: 'static', keyboard: false});
+                     $('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../ube/static/imagen/loader.gif"/><br/> espere un momento...</div>');
+                     var formData = new FormData();
+                     formData.append('action', 'evaluarpregunta');
+                     formData.append('pregid', pregid);
+                     formData.append('respid', respid);
+                     formData.append('evacargo', evacargo);
+                     formData.append('evaluaciondirectivo', {{ evaluaciondirectivo.id }});
+
+                     formData.append('val',  document.getElementById("check"+pregid+respid+evacargo).checked);
+                     var valor = document.getElementById("check"+pregid+respid+evacargo).checked;
+                         var obj = $(this);
+
+                         if (valor == true){
+                             $(".chk"+pregid+evacargo).prop('checked',false)
+                             {#alert(obj)#}
+                             document.getElementById("check"+pregid+respid+evacargo).checked=true
+                             {#document.getElementById("check"+pregid+respid).prop('checked',true)#}
+                         }
+
+                     $.ajax({
+                             url: '/evaluacionesdirectivo',
+                             type: "POST",
+                             contentType: false,
+                             data: formData,
+                             processData: false,
+                             cache: false,
+                             success: function (data) {
+
+                                 if (data.result == "ok") {
+
+
+                                 } else {
+                                     swal("Error", data.message, "error");
+                                     $("#login-modal4").remove();//ocultamos el modal
+                                     $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                     $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                     $('#content').html('');
+                                 }
+
+                             },
+                             error: function (xhr, ajaxOptions, thrownError) {
+                                 swal("Error", "Error Conexion en el Servidor", "error");
+                                 $("#login-modal4").remove();//ocultamos el modal
+                                 $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                 $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                 $('#content').html('');
+                             },
+
+                             complete: function(){
+                                 $("#login-modal4").remove();//ocultamos el modal
+                                 $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                 $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                 $('#content').html('');
+
+                              }
+
+
+                     });
+
+            }
+
+            Finalizar= function(){
+                swal({
+                    title: 'Esta seguro de finalizar la evaluación?',
+                    {#text: "# Número: "+idpersonadobe,#}
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si!',
+                    cancelButtonText: 'No',
+                    confirmButtonClass: 'btn btn-success margin-5',
+                    cancelButtonClass: 'btn btn-danger margin-5',
+                    buttonsStyling: false,
+                    allowOutsideClick: false,
+                    }).then(function (isConfirm) {
+                        if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                            showWaiting("Guardando Datos");
+
+                            $("#login-modal4").modal({backdrop: 'static', keyboard: false});
+                             $('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../ube/static/imagen/loader.gif"/><br/> espere un momento...</div>');
+                             var formData = new FormData();
+                             formData.append('action', 'finalizar');
+                             formData.append('evaluaciondirectivo', {{ evaluaciondirectivo.id }});
+                             $.ajax({
+                                     url: '/evaluacionesdirectivo',
+                                     type: "POST",
+                                     contentType: false,
+                                     data: formData,
+                                     processData: false,
+                                     cache: false,
+                                     success: function (data) {
+
+                                         if (data.result == "ok") {
+                                             location.reload()
+
+                                         } else {
+                                             hideWaiting();
+                                             swal("Error", data.message, "error");
+                                             cambiarTab('base-tab'+data.eje,'tab'+data.eje+'edit');
+                                             $("#login-modal4").remove();//ocultamos el modal
+                                             $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                             $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                             $('#content').html('');
+                                         }
+
+                                     },
+                                     error: function (xhr, ajaxOptions, thrownError) {
+                                         hideWaiting();
+                                         swal("Error", "Error Conexion en el Servidor", "error");
+                                         $("#login-modal4").remove();//ocultamos el modal
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+                                     },
+
+                                     complete: function(){
+                                         hideWaiting();
+                                         $("#login-modal4").remove();//ocultamos el modal
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+
+                                      }
+
+
+                             });
+
+                            }
+
+                         });
+
+
+                }
+                var evaid=0
+        evaluacioncualitativa = function(id){
+            evaid=id
+            $("#evaluacioncualitativamodal").modal("show");
+        }
+
+
+        vercualitativa=function () {
+
+
+             $("#btnguardacualitativa").hide();
+             $("#evaluacioncualitativamodal").modal("show");
+
+          };
+        $("#btnguardacualitativa").click(function() {
+
+                  {#$("#helpcmbmalla").html("");#}
+                var fortaleza = $("#txtfortaleza").val();
+                var recomendacion = $("#txtrecomendacion").val();
+                var asunto = $("#txtasuntos").val();
+
+                var acc = '{{ acc }}'
+              showWaiting("Guardando Respuestas de Evaluacion Cualitativa");
+                 $.post("/evaluacionesdirectivo", {
+                        "action": "addresultadoeva",
+                       "fortaleza": fortaleza,
+                        "recomendacion":recomendacion,
+                        "asunto":asunto,
+                        "evaid":evaid,
+                        "acc":acc
+                        {#id:idmallaasi#}
+
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            swal("Notificacion", "Evaluacion Cualitatica Guardada Correctamente ", "success");
+                            hideWaiting();
+                            location.reload()
+
+                        } else {
+                         hideWaiting();
+                           swal("Error",data.result, "error");
+                        }
+                        hideWaiting();
+         }, 'json');
+             });
+            $("#reporteexcel").click(function() {
+
+
+            var acc = '{{ acc }}'
+
+
+            $.post("/docentestutor", {"action":"generarexcel", "acc":acc, 'id':{{ evaluaciondirectivo.id }}}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    location.href=data.url;
+                    swal("Notificación",'Reporte Ejecutado','success');
+
+                }else{
+                    swal("Error", data.result, "error");
+                    $("#login-modal7").remove();//ocultamos el modal
+                    $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                    $('.modal-backdrop').remove();
+                    location.href = '/maestria?acc={{ acc }}';
+                }
+            }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                    console.log(errorThrown);
+                    console.log('getJSON request failed! ' + textStatus+ ' eroro jqk'+jqXHR.responseText);
+                    swal("Error", "ERROR DE CONEXION", "error");
+                    $("#login-modal7").remove();//ocultamos el modal
+                    $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                    $('.modal-backdrop').remove();
+                    location.href = '/maestria?acc={{ acc }}';
+            });
+         });
+
+            function cambiarTab(tab,div){
+                $("#tabpanelprospecto a").removeClass('active');
+                $("#tabpanelcontenido div").removeClass('active');
+                $('#'+tab).addClass('active');
+                $('#'+div).addClass('active');
+            }
+
+
+        });
+    </script>
+{% endblock %}
+{% block containertype %}{% endblock %}
+{% block canvas %}
+    <div class="pd-ltr-20 xs-pd-20-10">
+        <div class="min-height-200px">
+            <div class="page-header">
+                <div class="row">
+                    <div class="col-lg-7 col-md-7 col-sm-7">
+                        <div class="title">
+                            <h4 class="card-title" id="basic-layout-colored-form-control">Evaluacion Directivo de {{evaluaciondirectivo.personaevaluada.nombre_completo_inverso }} </br> Calificación Grado de Importancia: {{ evaluaciondirectivo.resultado.nombre }} </br> Calificación Nivel de Desempeño: {{ evaluaciondirectivo.resultadonivel.nombre }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-3 col-sm-3">
+                        <div class="title">
+                            {% if  not  evaluaciondirectivo.cualitativadirectivocargo.finalizada and evaluaciondirectivo.finalizado%}
+{#                        <button type="button" id="reporteexcel"  class="btn btn-success"><i class="icon-floppy-disk icon-white"></i> Reporte</button>#}
+                                <button type="button"  onclick="evaluacioncualitativa('{{ evaluaciondirectivo.id }}')" class="btn btn-success"><i class="icon-floppy-disk icon-white"></i> Evaluacion Cualitativa</button>
+                            {% endif %}
+                            {% if evaluaciondirectivo.cualitativadirectivocargo.finalizada %}
+                                <button type="button"  onclick="vercualitativa()" class="btn btn-warning"><i class="icon-floppy-disk icon-white"></i> Ver Evaluacion Cualitativa</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-2 col-sm-2">
+                            <a href="/evaluacionesdirectivo?action=evaluardirectivo&acc={{ acc }}"style="float: right;color: white;background: #0b132b" class="btn btn-black"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                    </div>
+
+                </div>
+            </div>
+            <div class="card-box mb-30">
+                <div class="pd-20">
+                    <form id="frmprospecto"  class="form" enctype="multipart/form-data">
+                        <div class="form-body">
+                            <ul class="nav nav-tabs" id="tabpanelprospecto">
+                                {% for e in ejes %}
+                                    <li class="nav-item">
+                                        <a class="nav-link  {% if forloop.first %}active {% endif %}" alt="tabedit{{e.id }}" id="base-tab{{e.id }}" style="font-size: 15px;color:black;" data-toggle="tab" aria-controls="tabedit{{e.id }}" href="#tab{{ e.id }}edit" aria-expanded="true"><b>{{ e.descripcion }}</b></a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            <div class="tab-content px-1 pt-1" id="tabpanelcontenido" >
+                                {% for e in ejes %}
+
+                                    <div class="tab-pane {% if forloop.first %}active {% endif %}" id="tab{{ e.id }}edit" aria-labelledby="base-tab{{ e.id }}" aria-expanded="true">
+                                         <div class="pb-20">
+                                             <div id="DataTables_Table_0_wrapper" class="dataTables_wrapper dt-bootstrap4 no-footer">
+                                                <div class="row">
+                                                    <div class="col-lg-12">
+                                                        <table  class="data-table table stripe hover nowrap">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <th ></th>
+                                                                     {% for r in rescargo  %}
+                                                                          <td colspan="6" style="text-align: center">
+                                                                            {% for re  in  r.ejerespuestascargo_general %}
+                                                                            {{ re.puntaje }}={{ re.nombre }}<br>
+                                                                            {% endfor %}
+                                                                          </td>
+                                                                        {% endfor %}
+                                                                </tr>
+                                                                <tr >
+                                                                    <td></td>
+                                                                        {% for r in rescargo  %}
+                                                                            <td {% if forloop.last  %}colspan="6"{% else %}colspan="5"{% endif %} style="text-align: center">  <b >{{ r.descripcion }}</b></td>
+                                                                    {% endfor %}
+                                                                </tr>
+                                                                <tr>
+                                                                    <td ><b>{{ e.descripcion }}</b></td>
+                                                                    {% for r in rescargo  %}
+                                                                        {% for re  in  r|args:e|call:'ejerespuestascargo' %}
+                                                                            <td style="text-align: center" {% if forloop.last  %}{% endif %}> <b >{{ re.respuesta.nombre }}</b></td>
+                                                                        {% endfor %}
+                                                                    {% endfor %}
+                                                                </tr>
+                                                                {% for p in e.preguntas_directivocargo  %}
+                                                                    <tr>
+                                                                        <td {% if p.area %} style="background: {{ p.area.color }}" {% endif %}> {{ p.nombre }}</td>
+                                                                        {% for r in rescargo  %}
+                                                                          {% for re  in  r|args:e|call:'ejerespuestascargo' %}
+                                                                                <td style="text-align: center {% if p.area %} ;background: {{ p.area.color }} {% endif %}">
+                                                                                <div class="custom-control custom-checkbox mb-5">
+                                                                                {% with respuesta=p|args:evaluaciondirectivo|args:r|call:'tiene_respuesta_directivocargo' %}
+                                                                                    {% if  evaluaciondirectivo.finalizado %}
+                                                                                        {% if respuesta and  respuesta.respuesta == re and respuesta.ejecargo == r %}<img src='../../ube/static/vendors/images/check-mark-green.png' width="14px" alt='' border="0"/>{% else %}<img src='../../ube/static/vendors/images/cross.png' width="14px"  alt='' border="0"/>{% endif %}
+                                                                                    {% else %}
+                                                                                        <input type="checkbox" class="custom-control-input chk{{ p.id }}{{ r.id }}" {% if respuesta and  respuesta.respuesta == re and respuesta.ejecargo == r %}checked="true"{% endif %}  onclick="Responder('{{ p.id }}','{{ re.id }}',{{ r.id }})"  id='check{{ p.id }}{{ re.id }}{{ r.id }}'>
+                                                                                        <label class="custom-control-label" for='check{{ p.id }}{{ re.id }}{{ r.id }}'></label>
+                                                                                    {% endif %}
+                                                                                {% endwith %}
+                                                                            {% endfor %}
+                                                                        {% endfor %}
+                                                                     </div>
+                                                                            </td>
+                                                                    </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                              </div>
+                                          </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="form-actions left">
+                            {% if  not evaluaciondirectivo.finalizado %}
+                                <button type="button" id="finalizar" onclick="Finalizar()" class="btn btn-success"><i class="icon-floppy-disk icon-white"></i> Finalizar </button>
+                            {% else %}
+                                <h4> Evaluacion finalizada el {{  evaluaciondirectivo.fecha|date:'d-m-Y' }}</h4    >
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+     <div class="modal fade" id="login-modal4"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="row">
+                    <div id="content" class="col-lg-12">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div  class="modal fade " id="evaluacioncualitativamodal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="width: 1000px;left: -100px">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">EVALUACIÓN CUALITATIVA DEL  DIRECTIVO ACADÉMICO:</h4>
+                </div>
+
+                <div class="modal-body" >
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <h6>FORTALEZAS DEL DIRECTIVO: </h6>
+                            <textarea type="text" id="txtfortaleza"  class="form-control" {% if evaluaciondirectivo.cualitativadirectivocargo.fortaleza %}disabled="disabled" {% endif %} value="">{% if evaluaciondirectivo.cualitativadirectivocargo.fortaleza %}{{ evaluaciondirectivo.cualitativadirectivocargo.fortaleza }} {% endif %}</textarea>
+                             <p id="helptxtfortaleza"  style="text-align: center;font-size: 20px;color:red;"></p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+{#                            <h6>RECOMENDACIONES PARA MEJORAR SU EFICACIA </h6></br>#}
+                            <h6>RECOMENDACIONES PARA MEJORAR SU EFICACIA</h6>
+                             <textarea type="text" id="txtrecomendacion"  class="form-control" {% if evaluaciondirectivo.cualitativadirectivocargo.recomendacio %}disabled="disabled" {% endif %} value="" >{% if evaluaciondirectivo.cualitativadirectivocargo.recomendacio %}{{ evaluaciondirectivo.cualitativadirectivocargo.recomendacio }} {% endif %}</textarea>
+                             <p id="helptxtrecomendacion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <h6>¿QUE ASUNTOS NECESITAN ATENCIÓN PRIORITARIA EN EL AREA A SU CARGO SURANTE EL PROXIMO PERIODO ACADEMICO? </h6>
+                             <textarea type="text" id="txtasuntos"  class="form-control" {% if evaluaciondirectivo.cualitativadirectivocargo.asunto %}disabled="disabled" {% endif %}  value="" >{% if evaluaciondirectivo.cualitativadirectivocargo.asunto %}{{ evaluaciondirectivo.cualitativadirectivocargo.asunto }} {% endif %}</textarea>
+                             <p id="helptxtaciertos"  style="text-align: center;font-size: 20px;color:red;"></p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+                <div class="modal-footer">
+                <button type="button" id="btnguardacualitativa" class="btn btn-success btn-min-width "><i class="icon-floppy-disk icon-white"></i> Guardar</button>
+
+                    <button type="button"  class="btn" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff">Salir</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

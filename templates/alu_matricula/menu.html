@@ -1,0 +1,267 @@
+{% extends "basebs.html" %}
+
+{% block heading %}
+<script type="text/javascript" >
+    $(function() {
+        var pos = [];
+        var materiassel = [];
+        var materiaspendientes = [];
+        var materiaspendientes2 = [];
+
+        $("#espera").show();
+        posponer = function(idm,indice){
+            var nuevamet =materiassel ;
+
+            materiassel=[];
+            $("#bodipendiente").empty();
+             $("#bodimateria").empty();
+            for (var n in nuevamet){
+                if (nuevamet[n].id == idm){
+                    materiaspendientes.push({'id':nuevamet[n].id ,'nombre':nuevamet[n].nombre});
+                }else{
+                    materiassel.push({'id':nuevamet[n].id ,'nombre':nuevamet[n].nombre});
+                }
+            }
+
+            materias();
+            pendientes();
+
+        };
+
+        verificamatricula= function(){
+            if ((materiassel.length) ==0 ){
+                $("#matricular").hide();
+            }else{
+                $("#matricular").show();
+            }
+        };
+
+        $("#cerrar").click(function(){
+            location.href='/';
+        });
+        seleccionar = function(idm,indice){
+            var nuevamet =materiaspendientes ;
+
+            materiaspendientes=[];
+            $("#bodipendiente").empty();
+             $("#bodimateria").empty();
+            for (var n in nuevamet){
+                if (nuevamet[n].id == idm){
+                    materiassel.push({'id':nuevamet[n].id ,'nombre':nuevamet[n].nombre});
+                }else{
+                    materiaspendientes.push({'id':nuevamet[n].id ,'nombre':nuevamet[n].nombre});
+                }
+            }
+
+            materias();
+            pendientes();
+
+
+        };
+        {% if info %}
+            smoke.alert("{{ info }}");
+        {%endif %}
+
+
+
+        $("#matricular").click(function(){
+            $("#matricular").hide();
+            $("#espera").show();
+            smoke.confirm('ESTA SEGURO DE MATRICULARSE', function(e){
+            if (e){
+                  $.post("/alu_matricula",{"action": "matricular",'inscripcion':{{ inscripcion.id }},'nivel':{{ nivel.id }},
+                                        "ver": JSON.stringify(materiassel),'pendientes': JSON.stringify(materiaspendientes),
+                                        'pendientes2': JSON.stringify(materiaspendientes2)},function(data) {
+                      if(data.result=='ok'){
+                         setInterval(function(){
+                                location.href = '/consultaalumno';
+                      }, 2500);
+                            $("#espera").hide();
+                            smoke.alert("MATRICULA REALIZADA CON EXITO")
+                      }else{
+                            $("#matricular").show();
+                            smoke.alert("OCURRIO UN ERROR" + data.error)
+                      }
+                  },"json");
+            }else{
+                  $("#espera").hide();
+                  $("#matricular").show();
+
+            }
+
+            }, {
+            ok: "SI",
+            cancel: 'NO',
+            classname: "custom-class",
+            reverseButtons: true
+            });
+
+        });
+
+       materias = function() {
+            var i =(materiassel.length);
+            for (var ms in materiassel){
+                $("#bodimateria").append('<tr><td >'+ materiassel[ms].nombre+'</td> <td><a class="btn btn-danger posponer" onclick=posponer('+materiassel[ms].id+','+i+') mid='+materiassel[ms].id+' id="pos'+materiassel[ms].id +'"indice='+i +'>Posponer</a></td></tr>');
+            }
+
+            verificamatricula();
+        };
+        $(".enviar").click(function(){
+                materia = $(this).attr('idacta');
+
+
+                $("#solicitud").modal({backdrop: 'static',width:"-80% !important",keyboard: false});
+                $("#solicitud").modal("show");
+                $("#id_observaciones").val("");
+            });
+
+             $(".cerrarsoli").click(function(){
+                $("#solicitud").modal("hide")
+             });
+
+
+       pendientes = function() {
+            var i =(materiaspendientes.length);
+            for (var mp in materiaspendientes){
+                $("#bodipendiente").append('<tr><td >'+ materiaspendientes[mp].nombre+'</td> <td><a class="btn btn-info seleccionar" onclick=seleccionar('+materiaspendientes[mp].id+','+i+') mid='+materiaspendientes[mp].id+' id="sel'+materiaspendientes[mp].id +'"indiceel='+i +'>Seleccionar</a></td></tr>');
+            }
+
+        };
+        cargarDatos = function() {
+            $.post("/alu_matricula",{"action": "consultanivel",'idnivel' : "{{ nivel.id }}" ,'inscripcion':{{ inscripcion.id }} },function(data) {
+                    if(data.result=='ok'){
+
+                         for (var n in data.materias){
+                              materiassel.push({'id':data.materias[n].id,'nombre':data.materias[n].nombre});
+                         }
+                        materias();
+
+                        for (var mp in data.materiaspendientes){
+                             materiaspendientes2.push({'id':data.materiaspendientes[mp].id,'nombre':data.materiaspendientes[mp].nombre});
+                              $("#footpendiente").append('<tr><td >'+ data.materiaspendientes[mp].nombre+'</td> <td>NO PUEDE VER ESTA MATERIA</td></tr>');
+
+                         }
+                        $("#espera").show();
+                   }else{
+                        smoke.alert("OCURRIO UN ERROR" + data.error)
+                   }
+                },"json");
+        };
+
+        cargarDatos();
+
+        verificamatricula();
+
+
+    })
+</script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span10'>
+            <h2 style="text-align: center"> {{ inscripcion }} </h2>
+
+            <hr/>
+            <h3 style="text-align: center">MATRICULA </h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span10'>
+            <h3 style="text-align: center">Nivel: {{ nivel.nivelmalla }} - {{ nivel.paralelo }}  </h3>
+
+        </div>
+        <div class='span10'>
+            <h3 style="text-align: center"> Si tienes algun inconveniente puedes enviar una solicitud a secretar&iacute;a <a href="#" class="enviar btn btn-warning"> Enviar</a>  </h3>
+
+        </div>
+
+    </div>
+
+    <br/>
+    <div class="row-fluid" >
+        <div class="span1"></div>
+        <div class="span10">
+            <table class="table table-condensed table-bordered">
+                <thead>
+                    <tr class="alert alert-info">
+                        <th colspan="4 " style="text-align: center; font-size: 17px;"><b>Materias a Matricularse</b></th>
+                    </tr>
+                    <tr class="alert alert-info">
+                        <th style="font-size: 16px;text-align: center">Materia</th>
+                        <th style="font-size: 16px;">Posponer</th>
+                    </tr>
+                </thead>
+                <tbody id="bodimateria">
+                </tbody>
+
+           </table>
+           <div class="modal-footer">
+                <a style="cursor: pointer" id="matricular" class="btn btn-success"><i class=""></i> Matricularse</a>
+                <a style="cursor: pointer" id='cerrar' class="btn btn-warning"><i class=""></i> Cancelar</a>
+            </div>
+        </div>
+    </div> <br> <br>
+
+    <div class="row-fluid">
+        <div class="span1"></div>
+        <div class="span10">
+            <table class="table tblpost table-condensed table-bordered">
+                <thead>
+                    <tr class="alert alert-info">
+                        <th colspan="4" style="text-align: center; font-size: 17px;"><b>Pendientes</b></th>
+                    </tr>
+                    <tr class="alert alert-info">
+                        <th style="font-size: 16px;text-align: center">Materia</th>
+                        <th style="font-size: 16px;"></th>
+
+                    </tr>
+                </thead>
+                <tbody id="bodipendiente">
+                </tbody>
+                <tfoot id="footpendiente">
+            </table>
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: lightblue">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+    <div class="modal fade static" id="solicitud"  style="display: none;width: 500px;left: -110px;margin-left: 20%;margin-top: -97.0104px;" >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Solicitud de Secretaria </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario" style="overflow-y: auto"  class='well' action="/alu_matricula" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addsolicitud' />
+
+
+            {% for field in form %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 40%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+              <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">{% block buttonname %}Enviar{% endblock %}</button>
+                {% block extrabuttons %}
+                    <a href="#" class="btn cerrarsoli"> Cerrar</a>
+                {% endblock %}
+            </form>
+        </div>
+    </div>
+
+
+{% endblock %}
+
+

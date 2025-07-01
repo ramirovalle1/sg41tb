@@ -1,0 +1,351 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+{#    <script src="../../ube/static/src/scripts/bootstrap3-typeahead.js"></script>#}
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(function () {
+            Responder=function (pregid,respid) {
+
+                     var formData = new FormData();
+{#                     var formData = new FormData();#}
+                     formData.append('action', 'evaluarpregunta');
+                     formData.append('pregid', pregid);
+                     formData.append('respid', respid);
+                     formData.append('evaluacioncoordinador', {{ evaluacioncargo.id }});
+                     formData.append('val',  document.getElementById("check"+pregid+respid).checked);
+                     var valor = document.getElementById("check"+pregid+respid).checked;
+                         var obj = $(this);
+
+                         if (valor == true){
+                             $(".chk"+pregid).prop('checked',false)
+                             {#alert(obj)#}
+                             document.getElementById("check"+pregid+respid).checked=true
+                             {#document.getElementById("check"+pregid+respid).prop('checked',true)#}
+                         }
+
+                     $.ajax({
+                             url: '/evaluaciondecano',
+                             type: "POST",
+                             contentType: false,
+                             data: formData,
+                             processData: false,
+                             cache: false,
+                             success: function (data) {
+
+                                 if (data.result == "ok") {
+{#                                        location.href='/dire_evaluaciondocente?action=verevaluaciondocente&id='+'{{ periodoeval.id }}'+'&eva='+'{{ evaluaciondoc.id }}'#}
+
+                                 } else {
+                                     swal.fire("Error", data.message, "error");
+
+                                     $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                     $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                     $('#content').html('');
+                                 }
+
+                             },
+                             error: function (xhr, ajaxOptions, thrownError) {
+                                 swal.fire("Error", "Error Conexion en el Servidor", "error");
+
+                                 $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                 $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+
+                             }
+
+
+                     });
+
+            }
+
+            Finalizar= function(id){
+                swal.fire({
+                    title: 'Esta seguro de finalizar la evaluación?',
+                    {#text: "# Número: "+idpersonadobe,#}
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Si',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33'
+                    }).then(function (isConfirm) {
+                        if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+
+                             var formData = new FormData();
+                             formData.append('action', 'finalizar');
+                             formData.append('evaluacioncargo', {{ evaluacioncargo.id }});
+                             $.ajax({
+                                     url: '/evaluaciondecano',
+                                     type: "POST",
+                                     contentType: false,
+                                     data: formData,
+                                     processData: false,
+                                     cache: false,
+                                     success: function (data) {
+
+                                         if (data.result == "ok") {
+                                             location.href='/evaluaciondecano?action=verevaluaciondecano&id={{ evaluaciondoc.id }}&per={{ periodoeval.id }}'
+
+                                         } else {
+                                             swal.fire("Error", data.message, "error");
+                                             cambiarTab('base-tab'+data.eje,'tab'+data.eje+'edit');
+
+                                             $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                             $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+
+                                         }
+
+                                     },
+                                     error: function (xhr, ajaxOptions, thrownError) {
+                                         swal.fire("Error", "Error Conexion en el Servidor", "error");
+
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+
+                                     }
+                             });
+
+                            }
+
+                         });
+
+
+                }
+
+
+
+            function cambiarTab(tab,div){
+                $("#tabpanelprospecto a").removeClass('active');
+                $("#tabpanelcontenido div").removeClass('active');
+                $('#'+tab).addClass('active');
+                $('#'+div).addClass('active');
+            }
+
+
+        });
+    </script>
+    <style>
+/* Estilos generales para la pestaña de contenido */
+.tab-content {
+    background-color: #ffffff; /* Fondo blanco */
+    padding: 20px; /* Espaciado interno */
+    border-radius: 8px; /* Bordes redondeados */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra para un efecto de elevación */
+}
+
+/* Estilos para las tablas */
+.data-table {
+    width: 100%; /* Ancho completo */
+    border-collapse: separate; /* Dejar separación para bordes */
+    border-spacing: 0 10px; /* Espaciado entre filas */
+    font-family: 'Arial', sans-serif; /* Fuente limpia y legible */
+    background-color: #f8f9fa; /* Fondo claro para la tabla */
+}
+
+/* Estilos para las celdas */
+.data-table th, .data-table td {
+    padding: 15px 20px; /* Espaciado interno */
+    background-color: #ffffff; /* Fondo blanco para celdas */
+    border-bottom: 2px solid #e0e0e0; /* Borde inferior */
+    vertical-align: middle; /* Alinear verticalmente */
+    transition: background-color 0.3s ease; /* Transición para el fondo */
+}
+
+/* Estilo para las preguntas (nombre de las preguntas) */
+.data-table td:first-child {
+    text-align: left; /* Alinear texto a la izquierda */
+    font-weight: bold; /* Texto en negrita */
+    color: #333; /* Color del texto */
+}
+
+/* Estilo para las respuestas */
+.data-table td:not(:first-child) {
+    text-align: center; /* Centrar las respuestas */
+}
+
+/* Estilo para el encabezado */
+.data-table th {
+    background-color: #007bff; /* Fondo azul */
+    color: white; /* Texto blanco */
+    font-weight: bold; /* Texto en negrita */
+    border-top-left-radius: 8px; /* Bordes redondeados superiores */
+    border-top-right-radius: 8px;
+}
+
+/* Efecto hover en filas */
+.data-table tr:hover td {
+    background-color: #f1f1f1; /* Fondo más claro al pasar el mouse */
+}
+
+/* Estilo para los checkboxes */
+.custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #007bff; /* Fondo azul cuando está seleccionado */
+    border-color: #007bff; /* Borde azul cuando está seleccionado */
+}
+
+.custom-control-input:focus ~ .custom-control-label::before {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Efecto de enfoque */
+}
+
+/* Estilo para las imágenes de true/false */
+.data-table img {
+    margin: 0 auto; /* Centrar imágenes */
+    display: block;
+}
+
+/* Sombra para las celdas al pasar el mouse */
+.data-table tr:hover td {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Sombra para filas */
+}
+
+/* Bordes redondeados para las celdas */
+.data-table tr:first-child td:first-child {
+    border-top-left-radius: 8px; /* Borde superior izquierdo */
+}
+
+.data-table tr:first-child td:last-child {
+    border-top-right-radius: 8px; /* Borde superior derecho */
+}
+
+.data-table tr:last-child td:first-child {
+    border-bottom-left-radius: 8px; /* Borde inferior izquierdo */
+}
+
+.data-table tr:last-child td:last-child {
+    border-bottom-right-radius: 8px; /* Borde inferior derecho */
+}
+
+/* Responsividad para dispositivos móviles */
+@media (max-width: 768px) {
+    .data-table, .data-table thead, .data-table tbody, .data-table th, .data-table td, .data-table tr {
+        display: block; /* Mostrar tabla como bloques */
+    }
+
+    .data-table tr {
+        margin-bottom: 15px; /* Espaciado entre filas */
+    }
+
+    .data-table td {
+        text-align: right; /* Alinear texto a la derecha */
+        padding-left: 50%; /* Alinear contenido */
+        position: relative; /* Posicionamiento relativo */
+    }
+
+    .data-table td::before {
+        content: attr(data-label); /* Mostrar etiqueta */
+        position: absolute; /* Posición absoluta */
+        left: 0;
+        width: 50%;
+        padding-left: 15px;
+        font-weight: bold; /* Texto en negrita */
+        text-align: left; /* Texto alineado a la izquierda */
+    }
+}
+
+
+
+
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span9">
+           <div class="title">
+                <h4 class="card-title" id="basic-layout-colored-form-control">Evaluacion Decano de {{ personaevaluada.nombre_completo }}</h4>
+           </div>
+        </div>
+         <div class="span1">
+                <div class="title">
+                    {% if resultado %}
+                        <a href="/resultadosevaluacion?periodo={{ periodo.id }}" class="btn"><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+                    {% else %}
+                        <a href="/evaluaciondecano?action=verevaluaciondecano&id={{ evadi.id }}&per={{ periodoeval.id }}" class="btn"><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+                    {% endif %}
+                </div>
+            </div>
+    </div>
+     <div class="row-fluid">
+        <div class="span1"></div>
+            <div class="span10">
+{#                <div class="pd-20">#}
+                    <form id="frmprospecto"  class="form" enctype="multipart/form-data">
+                        <div class="form-body">
+                            <ul class="nav nav-tabs" id="tabpanelprospecto">
+                                {% for e in ejes %}
+                                    <li class="nav-item">
+                                        <a class="nav-link  {% if forloop.first %}active {% endif %}" alt="tabedit{{e.id }}" id="base-tab{{e.id }}" style="font-size: 15px;color:black;" data-toggle="tab" aria-controls="tabedit{{e.id }}" href="#tab{{ e.id }}edit" aria-expanded="true"><b>{{ e.descripcion }}</b></a>
+                                    </li>
+                                {% endfor %}
+{#                                <li class="nav-item">#}
+{#                                    <a class="nav-link" alt="tabedit2" id="base-tab2" style="font-size: 15px;color:black;" data-toggle="tab" aria-controls="tabedit2" href="#tab2edit" aria-expanded="false">Información Personal</a>#}
+{#                                </li>#}
+                            </ul>
+                            <div class="tab-content px-1 pt-1" id="tabpanelcontenido" >
+                                {% for e in ejes %}
+                                    <div class="tab-pane {% if forloop.first %}active {% endif %}" id="tab{{ e.id }}edit" aria-labelledby="base-tab{{ e.id }}" aria-expanded="true">
+                                         <div class="row-fluid">
+                                                <div class="span12">
+                                                        <table  class="data-table table stripe hover nowrap">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td colspan="1"></td>
+                                                                    {% for r in e.respuestas  %}
+                                                                            <td style="text-align: center" title="{{ r.respuesta.alias  }}"> <b>{{ r.respuesta.nombre }}</b></td>
+                                                                    {% endfor %}
+                                                                </tr>
+                                                                    {% for p in e.preguntas_decano  %}
+                                                                        <tr>
+                                                                            <td> {{ p.nombre }}</td>
+                                                                            {% for r in e.respuestas  %}
+                                                                                <td style="text-align: center">
+                                                                                    <div class="custom-control custom-checkbox mb-5">
+                                                                                        {% with respuesta=p|args:evaluacioncargo|call:'tiene_respuesta_decano' %}
+                                                                                            {% if   evaluacioncargo.finalizado %}
+                                                                                                {% if respuesta and  respuesta.respuesta == r %}<img src='/static/images/16/true.png' width="14px" alt='' border="0"/>{% else %}<img src='/static/images/16/false.png' width="14px"  alt='' border="0"/>{% endif %}
+                                                                                            {% else %}
+                                                                                                <input type="checkbox" class="custom-control-input chk{{ p.id }}" {% if respuesta and  respuesta.respuesta == r %}checked="true"{% endif %}  onclick="Responder('{{ p.id }}','{{ r.id }}')"  id='check{{ p.id }}{{ r.id }}'>
+                                                                                                <label class="custom-control-label" for='check{{ p.id }}{{ r.id }}'></label>
+                                                                                            {% endif %}
+                                                                                        {% endwith %}
+                                                                                    </div>
+                                                                                </td>
+                                                                            {% endfor %}
+                                                                        </tr>
+                                                                    {% endfor %}
+{#                                                                {% endif %}#}
+
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                            </div>
+                                      </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="form-actions left">
+                            {% if  not evaluacioncargo.finalizado %}
+                                <button type="button" id="finalizar" onclick="Finalizar()" class="btn btn-success"><i class="icon-floppy-disk icon-white"></i> Finalizar </button>
+                            {% else %}
+                                <h4> Evaluacion finalizada el {{  evaluacioncargo.fecha|date:'d-m-Y' }}</h4    >
+                            {% endif %}
+
+                        </div>
+                    </form>
+{#                </div>#}
+            </div>
+        </div>
+{#    </div>#}
+
+     <div class="modal fade static" id="login-modal4"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-body panelbody ">
+                <div class="row">
+                    <div id="content" class="span12">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

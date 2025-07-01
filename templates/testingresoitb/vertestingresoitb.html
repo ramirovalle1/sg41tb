@@ -1,0 +1,338 @@
+{% extends "basebs.html" %}
+{% block heading %}
+<script src="../../static/vendors/sweetalert/sweetalert2.all.js"></script>
+<script src="../../static/vendors/sweetalert/sweet-alert.init.js"></script>
+<script type="text/javascript">
+    $(function() {
+        {#BUSQUEDA#}
+        $("#search").click(function () {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/vertestingresoitb?s=" + term;
+        });
+
+        $('#searchfield').keyup(function (e) {
+            if (e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+        verdetalle=function (idpersona,nombre) {
+            $.get("/vertestingresoitb", {'action':'detalleingreso', 'pid': idpersona}, function(data) {
+                $("#modaldetalle .modal-body").html(data);
+                $("#modaldetalle").modal({width: '800px', height:'600px',backdrop: 'static', keyboard: false});
+                $("#modaldetalle #paneltitle2").html('DETALLE DE ENCUESTA DE INGRESO ' +nombre);
+                }, "html");
+                return false;
+           }
+        
+        $("#modaldetalle .cerrar").click(function (){
+            $("#modaldetalle").modal("hide");
+
+        })
+
+        vertest_ingreso = function (idpersona,encuesta) {
+            $.get("/vertestingresoitb", {'action':'detalle_testsingreso', 'pid': idpersona, 'encuestaid':encuesta}, function(data) {
+                $("#modaldetalle_testingreso .modal-body").html(data);
+                $("#modaldetalle_testingreso").modal({width:"80%", backdrop: 'static', keyboard: false});
+                $("#modaldetalle_testingreso #paneltitle2").html('TEST DE INGRESO');
+                }, "html");
+                return false;
+           }
+
+        $("#modaldetalle_testingreso .cerrar").click(function (){
+            $("#modaldetalle_testingreso").modal("hide");
+
+        })
+
+        $("#informexgrupo").attr({"autocomplete":"off"});
+        {# generar reportes    #}
+        $("#generainforme").click(function (){
+            $("#modal_informeporgrupo #paneltitle2").html('Informe');
+            $("#informexgrupo").val('')
+            $("#modal_informeporgrupo").modal("show");
+        })
+
+        buscargrupo= function(query, process) {
+            $.get("/reportes", {'action':'datafilt', 'model': 'Grupo:id__in={{ grupos }}',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#informexgrupo").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+        idgrupo =0;
+        $("#informexgrupo").typeahead({source: buscargrupo, updater: function(item) {
+            var results = $("#informexgrupo").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#informexgrupo").attr("myval",datos.id);
+                    idgrupo=datos.id;
+                    $("#informexgrupo").val(idgrupo);
+                    $("#grupoid").val(idgrupo)
+                }
+            }
+            return item;
+        }});
+
+        $(".btn-generar").click(function (){
+             var idgrupo = $("#grupoid").val()
+             var ruta='';
+             console.log(idgrupo)
+             var game=document.getElementById("informexgrupo");
+             game.setAttribute("src","");
+             if (idgrupo){
+                 $.post("/vertestingresoitb", {
+                     "action": "generarinforme",
+                     id: idgrupo
+                 }, function (data) {
+                     if (data.result == 'ok') {
+                         ruta = data.reportfile;
+                         window.open(ruta, '_blank');
+                         $("#modal_informeporgrupo").modal("hide");
+                     }else{
+                           swal("Error", data.message, "error");
+                     }
+    
+                 }, 'json').always(function() {
+                      $("#login-modal4").modal('hide');//ocultamos el modal
+    
+                 });
+    
+    
+                 return false;
+             }else{
+                 swal("", "Ingrese el grupo", "error");
+             }
+             
+          })
+
+        $("#modal_informeporgrupo .btn-cerrar").click(function (){
+            $("#modal_informeporgrupo").modal("hide");
+        })
+
+        $("#inicio, #fin").datepicker({format:"dd-mm-yyyy"});
+        {# REPORTE EN EXCEL#}
+        $("#reporte_xls").click(function (){
+            $("#modal_generareporte").modal({width: '300px', backdrop: 'static'});
+            $("#modal_generareporte").modal("show");
+            $("#modal_generareporte #paneltitle2").html('Reporte Excel');
+            $("#informexgrupo").val('')
+        })
+
+        $("#actualizar").click(function (){
+            showWaiting("Actualizando Puntaje","Espere unos segundos por favor...");
+            $.post("/inscripciontest",{"action": "actualizar_puntaje"},function(data) {
+                if(data.result=='ok'){
+                    swal("","Puntaje Actualizados","success").then(function (){
+                        location.reload()
+                    });
+               }else{
+                    swal("",data.result,"warning");
+               }
+             hideWaiting();
+            },"json");
+        })
+    });
+</script>
+{% endblock %}
+{% block canvas %}
+<div class='row-fluid'>
+    <div class='span11'>
+        <h3>Encuestas de Ingreso a ITB</h3>
+    </div>
+    <div class='span1'>
+        <a href="/" class='btn'><i class="icon-arrow-right"></i> Atr&aacute;s</a>
+    </div>
+</div>
+<br>
+<div class='row-fluid'>
+
+    <div class="span3">
+        <form class='form-search'>
+            <b>Estudiante: </b>
+            <input class='input-medium' type='text' id='searchfield' value='{{ search }}' />
+            <a href="#" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> </a>
+            {% if search %}
+                <a href="/vertestingresoitb" id='allresults' class='btn btn-danger'><i class="icon-remove icon-white"></i> Todos</a>
+            {% endif %}
+        </form>
+    </div>
+    <div class="span2"><h4>Total:{{ contador }}</h4></div>
+    <div class="span2">
+        <a href="/cons_encuestaingreso" class='btn btn-success'> <img src="/static/images/16/chart_bar.png"/> Estad&iacute;sticas </a>
+    </div>
+    <div class="btn-group">
+    <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+        Reportes
+        <span class="caret"></span>
+    </a>
+    <ul class="dropdown-menu pull-right">
+        <li><a href="#" id='generainforme'><i class="icon-print icon-white" ></i> Generar Informe </a></li>
+{#        <li><a href="#" id='reporte_xls'><i class="icon-print icon-white" ></i> Reporte Excel</a></li>#}
+    </ul>
+    </div>
+
+{#    <div class="span2">#}
+{#        <a href="#" class='btn' id="generainforme"> Generar Informe </a>#}
+{#    </div>#}
+
+    {% if usuario.is_superuser %}
+        <div class="span2">
+            <a href="#" class='btn' id="actualizar"> Actualizar Puntaje</a>
+        </div>
+
+    {% endif %}
+</div>
+<div class='row-fluid'>
+    <div class='span12'>
+        <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Identificaci&oacute;n</th>
+                <th>Estudiante</th>
+                <th>Carrera</th>
+                <th>Grupo</th>
+                <th>Correo</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for e in encuesta %}
+                <tr>
+                    <td>{{ e.persona.cedula }}</td>
+                    <td>{{ e.apellidos }} {{ e.nombres }}</td>
+                    <td>{{ e.carrera.nombre }}</td>
+
+                    <td>{% if e.grupo %}{{ e.grupo.nombre }}{% endif %}</td>
+                    <td>{{ e.correo }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                                <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+                                <li><a class="dropdown-item"  onclick="verdetalle('{{ e.persona.id }}','{{ e.persona.nombre_completo_inverso }}')"><i class="icon-eye-open"></i> Ver Detalle</a></li>
+                                {% if e.tiene_testingreso %}
+                                <li><a class="dropdown-item"  onclick="vertest_ingreso('{{ e.persona.id }}', '{{ e.id }}')"><i class="icon-eye-open"></i> Ver Resultado Test</a></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not encuesta %}
+                <tr>
+                    <td colspan="10">
+                        NO HA REALIZADO CONSULTA
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class='row-fluid'>
+    <div class="span12">
+
+        <div class='pagination'>
+            <ul>
+                {% if paging.primera_pagina %}
+                    <li><a href="/vertestingresoitb?page=1">1</a></li>
+                    <li><a href="/vertestingresoitb?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                {% endif %}
+                {% for pagenumber in paging.paginas %}
+                    <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/vertestingresoitb?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                {% endfor %}
+                {% if paging.ultima_pagina %}
+                    <li><a href="/vertestingresoitb?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                    <li><a href="/vertestingresoitb?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade static" id="modaldetalle">
+    <div class="modal-header " style="word-wrap: break-word">
+        <h4  id='paneltitle2'> </h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div >
+            <a style="float: left" href="#" class="btn btn-danger cerrar">  <b> Cerrar</b></a>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade static" id="modaldetalle_testingreso">
+    <div class="modal-dialog " role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="word-wrap: break-word">
+                <h4  id='paneltitle2'> </h4>
+                <h5></h5>
+            </div>
+            <div class="modal-body" >
+
+            </div>
+            <div class="modal-footer">
+                <div >
+                    <a style="float: left" href="#" class="btn btn-danger cerrar">  <b> Cerrar</b></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade static" id="modal_informeporgrupo"  style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="paneltitle2"></h3>
+        </div>
+        <div class="modal-body panelbody">
+            <input type='hidden' name='grupoid' id="grupoid" value=""/>
+            <div class="form-group">
+                Grupo:<input type="text" id="informexgrupo" />
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-generar"> Generar</a>
+        </div>
+    </div>
+
+</div>
+{# GENERAR EXCEL #}
+<div class="modal fade static" id="modal_generareporte"  style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="paneltitle2"></h3>
+        </div>
+        <div class="modal-body panelbody">
+            <input type='hidden' name='grupoid' id="grupoid" value=""/>
+            <div class="form-group">
+                <label for="">Nivel: </label><input type="text" id="txt_nivel" />
+                <label for="">Fecha Inicio: </label><input type="text" id="inicio">
+                <label for="">Fecha Fin:</label> <input type="text" id="fin">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-generar"> Generar</a>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

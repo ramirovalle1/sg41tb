@@ -1,0 +1,440 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+    <script type="text/javascript">
+            $(function() {
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+            $("#btn_turno").click(function() {
+                $("#idturno").val('Selecione Especialidad');
+                $('#id_especialidad').val('');
+                $("#pnl_turno").modal({backdrop: 'static'});
+                $("#pnl_turno").modal("show");
+            });
+
+            $("#detalle_venta #cerrar").click(function() {
+                $("#detalle_venta").modal("hide");
+            });
+
+            $(".detallevta").click(function() {
+               var vid = $(this).attr("pid");
+                   $.get("/visitabox", {'action':'detalle', 'visita': vid}, function(data) {
+                        $("#detalle_venta .modal-body").html(data);
+                        $("#detalle_venta").modal({"backdrop":"static"});
+                        $("#detalle_venta ").modal("show");
+                   }, "html");
+               return false;
+            });
+
+            {# ************************************** Atender Turnos  ******************************* #}
+            $("#btn_cerrar").click(function() {
+                $("#pnl_turno").modal("hide");
+                return false;
+            });
+
+            $("#btn_atender").click(function() {
+                var valor = $('#id_especialidad').val();
+                if(valor.length<1){
+                    alert('Seleccione Especialidad!!');
+                }else{
+                    $.post("/visitabox", {"action":'atender', "id":valor}, function(data) {
+                   if (data.result=='ok') {
+                    $("#pnl_turno").modal("hide");
+                   }else{
+                       if(data.result=='nada'){
+                            alert('No hay Turnos por atender!');
+                       }else{
+                            alert('Error. Intente de nuevo!');
+                       }
+                   }
+                   }, "json");
+                }
+            return false;
+            });
+
+
+            $('select#id_especialidad').on('change',function(){
+                var valor = $(this).val();
+               $.post("/visitabox", {"action":'cuantos', "id":valor}, function(data) {
+                   if (data.result=='ok') {
+                    $("#idturno").val("Turnos: "+data.turno+" de "+data.totales);
+                   }else{
+                       if(data.result=='nada'){
+                            $("#idturno").val("No hay Turnos por atender!");
+                       }else{
+                            alert('Error. Intente de nuevo!');
+                       }
+                   }
+            }, "json");
+            });
+
+            {#********************************************************************************************#}
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/visitabox?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/visitabox?g='+id;
+                }else{
+                    location.href = '/visitabox';
+                }
+            });
+
+            $("#gruposede").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/visitabox?se='+id;
+                }else{
+                    location.href = '/visitabox';
+                }
+            });
+
+            var firmidvisi = 0;
+            $('.firma').click(function(e) {
+                firmidvisi = $(this).attr("idvisita");
+                $("#nuevopanel #action").val("addfirma");
+                $("#nuevopanel").modal({width: '40%', backdrop: 'static'});
+                $("#nuevopanel").modal("show");
+            });
+
+            $('.editfirma').click(function(e) {
+                firmidvisi = $(this).attr("idvisita");
+                $("#nuevopanel #action").val("editfirma");
+                $("#nuevopanel").modal({width: '40%', backdrop: 'static'});
+                $("#nuevopanel").modal("show");
+            });
+
+            $('#nuevopanel #firmcerrar').click(function(e) {
+                $("#id_archivo").val("");
+                $("#nuevopanel").modal("hide");
+                return false;
+            });
+
+            $('#nuevopanel #ingresarfirm').click(function(e) {
+                var valida = false;
+                $('#nuevopanel #ingresarfirm').hide();
+                var inputFileImage = document.getElementById("id_archivo");
+                var file = inputFileImage.files[0];
+                if(file){
+                    valida = true
+                }
+
+                if(valida){
+                    inputFileImage = document.getElementById("id_archivo");
+                    file = inputFileImage.files[0];
+                    var data = new FormData();
+
+                    data.append('archivo',file);
+                    data.append('action',$("#nuevopanel #action").val());
+                    data.append('idvisita',firmidvisi);
+                    var url = "/visitabox";
+                    $.ajax({
+                    url:url,
+                    type:"POST",
+                    contentType:false,
+                    data:data,
+                    processData:false,
+                    cache:false,
+                    success: function(data)
+                       {
+                        if(data.result=="ok")
+                            location.reload();
+                        else
+                            $($("#id_archivo").get(0).parentNode).find(".help-textr").html("<h6 class='alert alert-danger'>Error Intentelo Nuevamente</h6>");
+                       }
+                    });
+                    $('#nuevopanel #ingresarfirm').show();
+                    return false;
+                }
+                else{
+                    $('#nuevopanel #ingresarfirm').show();
+                    $($("#id_archivo").get(0).parentNode).find(".help-textr").html("<h6 class='alert alert-danger'>Ingrese Imagen</h6>");
+                }
+            });
+
+            $('#id_archivo').change(function(e){
+                var num = document.getElementById("id_archivo").files[0].name;
+                if(num.split(".")[1]=='jpg' || num.split(".")[1]=='png'){
+                    $($("#id_archivo").get(0).parentNode).find(".help-textr").html("");
+                }
+                else{
+                    $("#id_archivo").val('');
+                    $($("#id_archivo").get(0).parentNode).find(".help-textr").html("<h6 class='alert alert-danger'>Ingrese el formato correcto de la imagen solo jpg,png</h6>");
+                }
+            });
+
+        });
+    </script>
+
+    <style type="text/css">
+        .turno{
+            background: #a7c7dc; /* Old browsers */
+            background: -moz-linear-gradient(top,  #a7c7dc 0%, #85b2d3 100%); /* FF3.6+ */
+            background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#a7c7dc), color-stop(100%,#85b2d3)); /* Chrome,Safari4+ */
+            background: -webkit-linear-gradient(top,  #a7c7dc 0%,#85b2d3 100%); /* Chrome10+,Safari5.1+ */
+            background: -o-linear-gradient(top,  #a7c7dc 0%,#85b2d3 100%); /* Opera 11.10+ */
+            background: -ms-linear-gradient(top,  #a7c7dc 0%,#85b2d3 100%); /* IE10+ */
+            background: linear-gradient(to bottom,  #a7c7dc 0%,#85b2d3 100%); /* W3C */
+            filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#a7c7dc', endColorstr='#85b2d3',GradientType=0 ); /* IE6-9 */
+            -webkit-border-radius:7px ;
+            -moz-border-radius:7px ;
+            -o-border-radius:7px ;
+            border-radius:7px ;
+            color: #3D4048;
+            font-size: 20px;
+            border: 1px solid #8385A2;
+            padding:5px;
+            width: 80%;
+            max-width:300px;
+            margin-left:35%;
+        }
+    .control-label{
+        font-size: 24px;
+        font-weight:bold;
+    }
+    </style>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                {% if not activos and not inactivos and not todos %} Visitas a Box{% endif %}
+                {# {% if todos %}Listado de Inscripciones (TODOS) {% endif %}#}
+            </h3>
+            {% if grupo %}
+                <h3> Grupo: {{ grupo.descripcion }}</h3>
+            {% endif %}
+            {% if grupose %}
+                <h3> Sede: {{ grupose.nombre }}</h3>
+            {% endif %}
+
+            <br>
+        </div>
+        <div class='atright'>
+            {% if grupo %}
+                <a href="/visitabox" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% else %}
+                <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="row-fluid">
+
+        {% if perms.med.change_personafichamedica %}
+            <div class='span4'>
+                <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>
+                <a href="#" id="btn_turno" class='btn btn-success'><i class="icon-plus icon-white"></i> Atender</a>
+                 <a href="/visitabox?action=listar" class='btn btn-warning'><i class="icon-plus icon-white"></i> Box Externo</a>
+                 <a href="/visitabox?action=buscarpagadas" class='btn btn-info'><i class="icon-money icon-white"></i> Consultas Pagadas</a>
+            </div>
+        {% endif %}
+
+        <div class='span4'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/visitabox" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+        <div class="span2">
+            Grupos:
+            <select id='gruposel' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for g in grupos %}
+                    <option value="{{ g.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ g.descripcion }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="span2">
+                Sede:
+                <select id='gruposede' class="input-medium bigger"/>
+                    <option value=''>-----</option>
+                    {% for g in gruposede %}
+                        <option value="{{ g.id }}" {% if grupoids == g.id %}selected="selected"{% endif %}>{{ g.nombre }}</option>
+                    {% endfor %}
+                </select>
+        </div>
+
+        <div class="span3" style="text-align: right">
+
+
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Nombre</th>
+                <th>C&eacute;dula</th>
+                <th>Tel&eacute;fono</th>
+                <th>Direcci&oacute;n</th>
+                <th style="width: 20px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for visita in visitabox %}
+                    <tr>
+                        <td>{{ visita.tipopersona }}</td>
+                        <td>{{ visita.nombre }} {% if visita.firma %}<i class="icon-camera verfirma" title="Ver Firma" style="cursor: pointer" data-toggle="modal" data-target="#imagenModal{{ visita.id }}"></i>{% endif %} </td>
+                        <td>{{ visita.cedula }}</td>
+                        <td>{{ visita.telefono }}</td>
+                        <td>{{ visita.direccion }}</td>
+
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                        <li><a  href='/visitabox?action=detalle&visita={{ visita.id }}'> <i class='icon-edit'></i> Ver Detalle </a></li>
+                                        {% if not persona.pertenece_soporte %}
+                                            {% if not visita.firma %}
+                                                <li><a style="cursor: pointer" class="firma" idvisita='{{ visita.id }}' ><i class="icon-upload"></i> Subir Firma </a></li>
+                                            {% else %}
+                                                <li><a style="cursor: pointer" class="editfirma" idvisita='{{ visita.id }}' ><i class="icon-upload"></i> Editar Firma </a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+
+            {% if perms.med.change_personafichamedica %}
+            <a href="/visitabox?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>
+            {% endif %}
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/visitabox?page=1">1</a></li>
+                            <li><a href="/visitabox?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/visitabox?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/visitabox?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/visitabox?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/visitabox?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    {% for visita in visitabox %}
+        {% if visita.firma %}
+            <div class="modal fade static" id="imagenModal{{ visita.id }}" tabindex="-1" role="dialog" style="top:30%;display:none">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <h4 class="modal-title" id="gridSystemModalLabel">FIRMA DE {{ visita.nombre }}</h4>
+                        </div>
+                        <div class="modal-body text-center" >
+                            <img src="{{ visita.firma.url }}" class="img-responsive">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    <div class="modal fade static " id="detalle_venta" style="margin-left: -500"  >
+        <div class="row-fluid modal-header">
+            <h4 ><i> DETALLES DE LA VISITA </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body">
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a href="#" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="pnl_turno" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">ATENDER CONSULTA</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="formulario" class='form-horizontal' action="" method="POST">
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+            <output id="idturno" class="turno" >Turnos: Seleccione Especialidad</output>
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="btn_atender" class="btn btn-atender btn-warning">Atender</a>
+            <a href="#" id="btn_cerrar" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="nuevopanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle1"> Ingresar Imagen</h3>
+        </div>
+        <div class="modal-body">
+            <input type="file" name="archivo" id="id_archivo" >
+            <p class="help-text">Tamano Maximo permitido 40Mb, en formato  png, jpg </p>
+            <p class="help-textr"></p>
+            <input type='hidden' id='action' value='addfirma'/>
+
+        </div>
+        <div class="modal-footer">
+            <a  style="cursor: pointer;" id="firmcerrar" class="btn btn-cerrar">Cerrar</a>
+            <a style="cursor: pointer;" id="ingresarfirm" class="btn btn-primary btn-resetear"> Ingresar</a>
+        </div>
+    </div>
+{% endblock %}

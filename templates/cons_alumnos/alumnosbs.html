@@ -1,0 +1,84 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            actualizaAlumnos = function(id) {
+                if (id) {
+                    showWaiting("Buscando Datos del Alumno","Espere unos segundos por favor...");
+                    $.get("/cons_alumnos",{action:'segmento', 'id': id}, function(data) {
+                        $("#segmento").html(data);
+                        hideWaiting();
+                    }, 'html');
+                }
+            };
+            {% if op %}
+                actualizaAlumnos("{{ matricula.id }}");
+                $("#searchfield").val("{{ inscripcion.persona.nombre_completo }}")
+            {% endif %}
+
+            $("#alumnossel").change(function() {
+                var id = $(this).val();
+                actualizaAlumnos(id);
+            });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                $("#segmento").html('');
+                //showWaiting("Buscando Alumnos", "Espere unos segundos por favor...");
+                $.get("/cons_alumnos", {action: 'search', term: term}, function(data) {
+                    //hideWaiting();
+                    $("#selector").html(data);
+                    $("#alumnossel").change(function() {
+                        var id = $(this).val();
+                        actualizaAlumnos(id);
+                    });
+
+                    actualizaAlumnos($("#alumnossel").val());
+                }, 'html');
+            });
+{#            .keypress(function(e) {#}
+{#                if(e.which == 13) {#}
+{#                    $(this).blur().trigger("click");#}
+{#                }#}
+{#            });#}
+
+            $('#searchfield').keypress(function(e) {
+                if(e.which == 13) {
+                    $("#search").trigger("click");
+
+                }
+            });
+
+            //actualizaAlumnos($("#alumnossel").val());
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span11">
+            <h3>Consulta de Alumnos Matriculados</h3>
+            <h5>Per&iacute;odo: {{ periodo }}</h5>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <div class="form-search well">
+            <input class='input-large search-query' type='text' id='searchfield' style="text-transform: uppercase" value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> Buscar</a>
+            <span id='selector'>
+
+            </span>
+        </div>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12' id="segmento">
+            {% autoescape off %}
+                {{ listadoprecargado }}
+            {% endautoescape %}
+        </div>
+    </div>
+{% endblock %}

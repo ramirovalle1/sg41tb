@@ -1,0 +1,142 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_porcientobeca, #id_tipobeneficio, #id_tipobeca, #id_motivobeca, #id_fechabeca").addClass("validate[required]");
+    $("#id_fechabeca").datepicker({format:"dd-mm-yyyy"});
+
+    function desbloqueo(){
+         $("#id_porcientobeca").attr("disabled", false);
+         $("#id_motivobeca").attr("disabled", false);
+         $("#id_tipobeca").attr("disabled", false);
+         $("#id_tipobeneficio").attr("disabled", false);
+         $("#id_observaciones").attr("disabled", false);
+         $("#id_fechabeca").attr("disabled", false);
+         $("#id_becaparcial").attr("disabled", false);
+         $("#id_becado").attr("disabled", false);
+
+    }
+
+
+     $("#id_porcientobeca").attr("disabled", true);
+     $("#id_motivobeca").attr("disabled", true);
+     $("#id_tipobeca").attr("disabled", true);
+     $("#id_tipobeneficio").attr("disabled", true);
+     $("#id_observaciones").attr("disabled", true);
+     $("#id_fechabeca").attr("disabled", true);
+     $("#id_becaparcial").attr("disabled", true);
+     $("#id_becado").attr("disabled", true);
+
+     $("#id_becado").attr('checked',true);
+
+
+
+    $('#id_tipobeneficio').val('{{ infsolicitudbeca.tiposolicitud }}');
+    $('#id_tipobeca').val('{{ datosanalisis.tipobeca.id }}');
+    $('#id_motivobeca').val('{{ datosanalisis.motivobeca.id }}');
+
+    $('#id_porcientobeca').val('{{ datosanalisis.porcentajebeca }}');
+
+    if ($('#id_porcientobeca').val()==0){
+        $('#id_porcientobeca').val('');
+    }
+
+
+   $("#formbutton").click(function(){
+
+            desbloqueo();
+
+   });
+
+
+
+    $("#id_becaparcial").click(function(){
+    if ($("#id_tipobeneficio").val()!=1 && $("#id_tipobeneficio").val()!=3 && $("#id_tipobeneficio").val()!=2 ){
+        var tipo = $("#id_tipobeca").val();
+        var beneficio = $("#id_tipobeneficio").val();
+        var porcientobeca = $("#id_porcientobeca").val();
+        var motivobeca =  $("#id_motivobeca").val();
+        var fechabeca = $("#id_fechabeca").val();
+        var observaciones = $("#id_observaciones").val();
+        var becado = $("#id_becado").val();
+        var becaparcial = $("#id_becaparcial").val();
+
+        if (tipo && beneficio && porcientobeca && motivobeca && fechabeca && observaciones  ){
+             smoke.confirm( 'Va a realizar el proceso de Beca Parcial?', function(e){
+                if (e){
+                       chequeaBecaParcial();
+                       location.href='/matriculas?action=descuento&id={{matricula.inscripcion.id }}&nivel={{ matricula.nivel.id }}&matricula={{ matricula.id }}&becado='+becado+'&becaparcial='+becaparcial+'&tipobeca='+tipo+'&tipobeneficio='+beneficio+'&porcientobeca='+porcientobeca+'&motivobeca='+motivobeca+'&observaciones='+observaciones+'&fechabeca='+fechabeca
+                    }else{
+                       chequeaBecaParcial();
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                    });
+        }else{
+              alert("Faltan datos por llenar");
+              }
+    }else{
+
+        $.post("/matriculas", {"action":'consutabladescuento', "idmatricula":{{matricula.id }}}, function(data) {
+                if (data.result=='ok') {
+                    if (data.aplicarcontabla=='1') {
+                        smoke.alert( 'No se puede aplicar beca parcial, estos valores son asignado por el departamento de Dobe');
+                    }else{
+
+                        var tipo = $("#id_tipobeca").val();
+                        var beneficio = $("#id_tipobeneficio").val();
+                        var porcientobeca = $("#id_porcientobeca").val();
+                        var motivobeca =  $("#id_motivobeca").val();
+                        var fechabeca = $("#id_fechabeca").val();
+                        var observaciones = $("#id_observaciones").val();
+                        var becado = $("#id_becado").val();
+                        var becaparcial = $("#id_becaparcial").val();
+
+                        if (tipo && beneficio && porcientobeca && motivobeca && fechabeca && observaciones  ){
+                             smoke.confirm( 'Va a realizar el proceso de Beca Parcial?', function(e){
+                                if (e){
+                                       chequeaBecaParcial();
+                                       location.href='/matriculas?action=descuento&id={{matricula.inscripcion.id }}&nivel={{ matricula.nivel.id }}&matricula={{ matricula.id }}&becado='+becado+'&becaparcial='+becaparcial+'&tipobeca='+tipo+'&tipobeneficio='+beneficio+'&porcientobeca='+porcientobeca+'&motivobeca='+motivobeca+'&observaciones='+observaciones+'&fechabeca='+fechabeca
+                                    }else{
+                                       chequeaBecaParcial();
+                                    }
+                                    }, {
+                                    ok: "CONTINUAR",
+                                    cancel: 'CANCELAR',
+                                    classname: "custom-class",
+                                    reverseButtons: true
+                                    });
+                        }else{
+                              alert("Faltan datos por llenar");
+                              }
+
+                    }
+
+
+                }else{
+                   smoke.alert( 'No se puede aplicar beca parcial, estos valores son asignado por el departamento de Dobe por medio de una solicitud de beca');
+                }
+
+        }, "json");
+
+
+    }
+    return false;
+
+    });
+
+{% endblock %}
+{% block titulo %}Aplicar % de Beca al Estudiante: {{ matricula.inscripcion }} <br/><h4>{{ matricula.nivel.carrera }} ({{ matricula.nivel.nivelmalla }} - {{ matricula.nivel.paralelo }})</h4><br/>{% endblock %}
+{% block formaction %}/matriculas{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='beca'/>
+    <input type='hidden' name='id' value='{{ matricula.id }}'/>
+{% endblock %}
+{% block formback %}/matriculas?action=matricula&id={{ matricula.nivel.id }}{% endblock %}
+{% block buttonname %}Aplicar Beca{% endblock %}

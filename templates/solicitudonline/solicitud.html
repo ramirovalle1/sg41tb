@@ -1,0 +1,464 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            var idsol=0;
+            var nom="";
+            var tipo = "";
+            var deuda;
+            var id=0;
+            var especienum=0;
+            $("#id_respuesta").addClass("validate[required]");
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/solicitudonline?tiposol={{ solicitud.id }}&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+           $($("#id_departamento").get(0).parentNode.parentNode).hide();
+           $(".responder").click(function(){
+                $("#respuesta_panel").modal({width: '600px', backdrop: 'static'});
+                $("#respuesta_panel").modal("show");
+                $("#id_aprobado").attr("disabled",false);
+                $("#id_respuesta").attr("disabled",false);
+                $("#id_aprobado").attr('checked',false);
+                $("#respuesta_panel .adicionar").show();
+                nom = $(this).attr('nom');
+                var tienedeuda ="";
+                var carrera= $(this).attr('carrera');
+                tipo= $(this).attr('tipo');
+
+                var tipoid= $(this).attr('tipoid');
+                if (tipo){
+                    tipo = "Tipo: " + tipo;
+                }
+                deuda = $(this).attr('deuda');
+                if (deuda == 'True'){
+                   tienedeuda ='<br> <a style="color:red;font-size:13px">' +  "Estudiante Tiene Deuda" + '</a>' ;
+                }
+                var html= '<br>'+ nom +  tienedeuda + '<br><br> <p style="color:blue">' + tipo + '</p> ' ;
+                if (tipo){
+                    html = html +'<select id="tipoc" class="input-large bigger" > '+
+                    '<option value="">-----</option>';
+                     var opc = '';
+                    {% for t in tipoculminacion %}
+
+                            $.post("/solicitudonline",{"action": "consultatipos", "carrera":carrera, "tipo":"{{ t.id }}" },function(data) {
+                            if(data.result == "ok"){
+                                 if (parseInt("{{ t.id }}") != parseInt(tipoid)){
+                                  opc = opc+  '<option value="{{ t.id }}" >{{ t.nombre }}</option>';
+                                }
+                            }
+                            {% if forloop.last %}
+                                html = html+ opc+ '</select>';
+                                $("#respuesta_panel #paneltitle1").html( html);
+                            {% endif %}
+
+                            },"json");
+{#                        }#}
+
+
+                    {% endfor %}
+                }else{
+                    $("#respuesta_panel #paneltitle1").html( html);
+                }
+
+                $('#id_respuesta').val("");
+                idsol = $(this).attr('sid');
+
+               return false;
+            });
+            $(".ver").click(function(){
+                $("#respuesta_panel").modal({width: '600px', backdrop: 'static'});
+                $("#respuesta_panel").modal("show");
+                idsol = $(this).attr('sid');
+                nom = $(this).attr('nom');
+                var tipo = $(this).attr('tipo');
+                var nuevot = $(this).attr('nuevotipo');
+                var msj ='';
+                if (nuevot != 0)
+                     msj = '<br><br> <a style="color:red;font-size:15px">' +  " SE CAMBIÓ DE " + tipo + " A " + nuevot + '</a>' ;
+                var respuesta = $(this).attr('resp');
+                var apro = $(this).attr('apro');
+                $("#respuesta_panel #paneltitle1").html(nom + msj);
+                $('#id_respuesta').val(respuesta);
+
+                if( apro == "True"){
+                    $("#id_aprobado").attr('checked',true);
+                }else{
+                     $("#id_aprobado").attr('checked',false);
+                }
+                $("#id_aprobado").attr("disabled",true);
+                $("#id_respuesta").attr("disabled",true);
+                $("#respuesta_panel .adicionar").hide();
+
+
+
+               return false;
+            });
+
+            $("#respuesta_panel .cerrar").click(function() {
+                $("#respuesta_panel").modal("hide");
+                 return false;
+
+            });
+            {% if error %}
+                smoke.alert("{{ error }}");
+            {% endif %}
+
+           $("#respuesta_panel .adicionar").click(function() {
+                $("#respuesta_panel").modal("hide");
+                var aprobado = 0;
+                 if ($("#id_aprobado").is(':checked')){
+                    aprobado = 1;
+                }
+               if  (aprobado == 0 && tipo != "" && $("#tipoc").val() == "") {
+                   smoke.alert("Favor Seleccione el Nuevo Tipo");
+               }else if(aprobado == 1 && tipo != "" && $("#tipoc").val() != ""){
+                   smoke.alert("No se puede cambiar el tipo, Estado Aprobado");
+               }
+               else{
+                   $.post("/solicitudonline",{"action": "responder", "idsol":idsol,"respuesta": $('#id_respuesta').val(),"aprobado": aprobado,"nuevotipo": $("#tipoc").val() },function(data) {
+                   if(data.result=='ok'){
+                       alert('REGISTRO GUARDADO');
+                        location.reload();
+                   }if(data.result=='bad'){
+                       smoke.alert('OCURRIO UN ERROR: ' + str(data.error));
+                   }
+                },"json");
+               }
+           });
+            $("#resolucion_panel .adicionar").click(function() {
+                $("#resolucion_panel").modal("hide");
+               if  ($("#id_resolucion").val() == "") {
+                   smoke.alert("Favor ingrese la resolucion");
+
+               }else{
+                   $.post("/solicitudonline",{"action": "resolucion", "idsol":idsol,"resolucion": $('#id_resolucion').val() },function(data) {
+                   if(data.result=='ok'){
+                       alert('REGISTRO GUARDADO');
+                        location.reload();
+                   }if(data.result=='bad'){
+                       smoke.alert('OCURRIO UN ERROR: ' + str(data.error));
+                   }
+                },"json");
+               }
+           });
+             $(".resolucion").click(function(){
+                $("#resolucion_panel").modal({width: '600px', backdrop: 'static'});
+                $("#resolucion_panel").modal("show");
+                $("#id_resolucion").attr("disabled",false);
+                $("#resolucion_panel .adicionar").show();
+                nom = $(this).attr('nom');
+                var tienedeuda ="";
+                var carrera= $(this).attr('carrera');
+                tipo= $(this).attr('tipo');
+
+                var tipoid= $(this).attr('tipoid');
+                if (tipo){
+                    tipo = "Tipo: " + tipo;
+                }
+
+               var msj ='<br> <a style="color:red;font-size:13px">' +  "RESOLUCION DE SOLICITUD " + '</a> <br>' + nom ;
+
+                $("#resolucion_panel #paneltitle1").html( msj);
+                $('#id_resolucion').val("");
+                idsol = $(this).attr('sid');
+
+               return false;
+            });
+
+           $("#resolucion_panel .cerrar").click(function() {
+                $("#resolucion_panel").modal("hide");
+                 return false;
+
+           });
+            $(".verres").click(function(){
+                $("#resolucion_panel").modal({width: '600px', backdrop: 'static'});
+                $("#resolucion_panel").modal("show");
+                idsol = $(this).attr('sid');
+                nom = $(this).attr('nom');
+                var fechares = $(this).attr('fechares');
+                var msj ='<br> Fecha Resolucion: ' +  fechares;
+                var resol = $(this).attr('resol');
+
+                $("#resolucion_panel #paneltitle1").html(nom + msj);
+
+                $('#id_resolucion').val(resol);
+                  $("#id_resolucion").attr("disabled",true);
+                $("#resolucion_panel .adicionar").hide();
+
+               return false;
+           });
+           $(".justificar").click(function(){
+               $("#materiasel").val("");
+               $("#profesorsel").val("");
+                $("#materia").modal({width: '600px', backdrop: 'static'});
+                $("#materia").modal("show");
+                id=$(this).attr("insc_id");
+                especienum=$(this).attr("especienum");
+                 $.post("/solicitudonline",{"action": "consultamateria", "id":id },function(data) {
+                    if(data.result == "ok"){
+                        var html = '<option value="0" >---</option>';
+                        for (var m in data.materias){
+                            var mat = data.materias[m]
+                            html = html + '<option value="'+ mat['id'] + '" >'+ mat['asig']+'</option>'
+                        }
+                        $("#materiasel").html(html)
+                    }
+                },"json");
+           });
+           $("#materia .cerrar").click(function() {
+                $("#materia").modal("hide");
+                 return false;
+
+           });
+            $("#materiasel").change(function(){
+               $.post("/solicitudonline",{"action": "consultaprofesor", "id":$("#materiasel").val() },function(data) {
+                    if(data.result == "ok"){
+                        var html = '<option value="0" >---</option>';
+                        for (var m in data.profesor){
+                            var mat = data.profesor[m]
+                            html = html + '<option value="'+ mat['id'] + '" >'+ mat['nombre']+'</option>'
+                        }
+                        $("#profesorsel").html(html)
+                    }
+                },"json");
+            });
+
+
+           $("#materia .adicionar").click(function() {
+
+
+               if  (($("#materiasel").val() != 0 && $("#profesorsel").val() != 0 && $("#materiasel").val() != '' && $("#profesorsel").val() != '' )) {
+                   $("#materia").modal("hide");
+                   location.href='/adm_docentes?action=asistencias&a=1&idmateria='+$("#materiasel").val()+'&ins_id='+id+'&prof_id='+$("#profesorsel").val()+"&especienum="+especienum+"&op=on"
+               }else{
+                   $("#mensaje").html("Debe Seleccionar la Materia y el Profesor");
+{#                   smoke.alert("Debe Seleccionar la Materia y el profesor");#}
+
+
+
+               }
+           });
+
+        });
+    </script>
+    <style>
+        .oculta {
+            display: none;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+     <div class="span1"></div>
+        <div class='span10'>
+            <h3>
+                REGISTRO DE SOLICITUDES DE {{ solicitud }}
+            </h3>
+            <br>
+        </div>
+
+        <div class='span1' >
+            <a href="/solicitudonline" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span1"></div>
+        <div class='span6'>
+            <form class="form-search">
+                <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if solicitud.libre %}
+                    <a href="/solicitudonline?tiposol={{ solicitud.id }}&pendientes=1{% if search %}&s={{ search }}{% endif %}"  class='btn btn-danger'><i class="icon-check-empty icon-white"></i> Pendientes </a>
+                    <a href="/solicitudonline?tiposol={{ solicitud.id }}&atendidas=1{% if search %}&s={{ search }}{% endif %}"class='btn btn-success'><i class="icon-check icon-white"></i> Atendidas </a>
+                {% endif %}
+                {% if search or pendientes or atendidas  %}
+                    <a href="/solicitudonline?tiposol={{ solicitud.id }}" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i>Todos</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1">
+        </div>
+        <div class='span9'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nombres</th>
+                        <th style="text-align: center">Fecha</th>
+                        <th colspan="2"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for s in solicitudes %}
+                    <tr>
+                        <td> {{ s.inscripcion.persona }}
+                            {% if s.tipoe %}<br><span class="label label-success">{{ s.tipoe.nombre }}  #{{ s.rubro.especie_valorada.serie  }}</span>
+{#                                {% if   s.rubro.cancelado %}#}
+                                {% if  not s.rubro.cancelado %}
+                                    <span class="label label-important">Pendiente de Pago</span>
+                                {% else %}
+                                    <a href="/reportes?action=run&direct=true&rid={{ s.tipoe.reporte.id }}&rt=pdf&rubro={{ s.rubro.id }}"  class="btn btn-primary btn-mini"><i class="icon-print"></i> Print </a>
+                                {% endif %}
+                        {% endif %}
+                        </td>
+                        <td style="text-align: center;vertical-align: middle;"> {{ s.fecha|date:'Y-m-d' }} </td>
+                        {% if s.tema %}<td> Tema: {{ s.tema }} </td>{% endif %}
+                        <td style="vertical-align: middle;">
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    {% if perms.sga.add_solicitudestudiante %}
+                                        {% if not s.respuesta  %}
+                                            {% if  s.inscripcion.tiene_deuda and VALIDAR_ENTRADA_SISTEMA_CON_DEUDA  %}
+                                                <li><a><i class='icon-money'></i>Tiene Deuda</a></li>
+                                            {% else %}
+                                                {% if not s.solicitud.libre  %}
+                                                    <li><a class="responder" carrera = "{{ s.nivel.carrera.id }}" tipo="{{ s.tipo.nombre }}" tipoid="{{ s.tipo.id }}" deuda="{{ s.inscripcion.tiene_deuda  }}" sid="{{ s.id }}" nom="{{ s.inscripcion.persona }}"><i class='icon-edit icon-white'></i> Responder</a></li>
+                                                {% else %}
+                                                    {% if s.rubro.adeudado == 0 and s.resolucion  and s.rubro.especie_valorada.aplicada %}
+                                                        <li><a class="responder" carrera = "{{ s.nivel.carrera.id }}" tipo="{{ s.tipo.nombre }}" tipoid="{{ s.tipo.id }}" deuda="{{ s.inscripcion.tiene_deuda  }}" sid="{{ s.id }}" nom="{{ s.inscripcion.persona }}"><i class='icon-edit icon-white'></i> Responder</a></li>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% else %}
+                                            <li><a class="ver" sid="{{ s.id }}"  nom="{{ s.inscripcion.persona }}" resp="{{ s.respuesta }}" apro="{{ s.aprobado }}" tipo = "{{ s.tipo }}" nuevotipo =" {% if s.nuevotipo %}{{ s.nuevotipo }} {% else %}0{% endif %}" ><i class='icon-edit icon-white'></i> Ver Respuesta </a></li>
+                                        {% endif %}
+                                        {% if not s.resolucion  %}
+                                            {% if s.rubro.adeudado == 0 %}
+                                                <li><a class="resolucion" carrera = "{{ s.nivel.carrera.id }}" tipo="{{ s.tipo.nombre }}" tipoid="{{ s.tipo.id }}" deuda="{{ s.inscripcion.tiene_deuda  }}" sid="{{ s.id }}" nom="{{ s.inscripcion.persona }}"><i class='icon-edit icon-white'></i> Resolución </a></li>
+                                            {% endif %}
+                                        {% else %}
+                                            <li><a class="verres" sid="{{ s.id }}"  nom="{{ s.inscripcion.persona }}" resol="{{ s.resolucion }}" fechares="{{ s.fecharesol|date:'d-m-Y' }}" ><i class='icon-edit icon-white'></i> Ver Resoluci&oacute;n </a></li>
+                                        {% endif %}
+                                        <li><a  href="/solicitudonline?versolicitud&id={{ s.id }}&tipo={{ s.solicitud.id }}"><i class='icon-search'></i> Ver Solicitud </a></li>
+                                    {% endif %}
+                                {% if s.tipoe and s.resolucion %}
+                                    {% if s.tipoe.id == ESPECIE_CAMBIO_PROGRAMACION  and not s.rubro.especie_valorada.aplicada and  s.rubro.especie_valorada.vencida <= DIAS_ESPECIE and  not s.rubro.especie_valorada.aplicada   %}
+                                        <li><a  href="/controlespecies?action=registro&especie={{ s.rubro.especie_valorada.id }}&op=sol"><i class='icon-search'></i> Realizar Cambio </a></li>
+                                    {% endif %}
+                                    {% if s.tipoe.id == ESPECIE_RETIRO_MATRICULA  and not s.rubro.especie_valorada.aplicada and  s.rubro.especie_valorada.vencida <= DIAS_ESPECIE  and  not s.rubro.especie_valorada.aplicada %}
+                                        <li><a  href="/controlespecies?action=registro&especie={{ s.rubro.especie_valorada.id }}&op=sol"><i class='icon-search'></i> Realizar Retiro </a></li>
+                                    {% endif %}
+                                    {% if s.tipoe.id == ESPECIE_JUSTIFICA_FALTA or s.tipoe.id == ESPECIE_JUSTIFICA_FALTA_AU  and not s.rubro.especie_valorada.aplicada and  s.rubro.especie_valorada.vencida <= DIAS_ESPECIE  and  not s.rubro.especie_valorada.aplicada %}
+                                        <li><a class="justificar" especie="{{ s.rubro.especie_valorada.id }}" insc_id="{{ s.rubro.inscripcion.id }}" op="sol" especienum ="{{ s.rubro.especie_valorada.serie }}" ><i class='icon-search'></i> Justificar </a></li>
+{#                                        <li><a  href="/controlespecies?action=registro&especie={{ s.rubro.especie_valorada.id }}&op=sol"><i class='icon-search'></i> Justificar </a></li>#}
+                                    {% endif %}
+                                    {% if s.tipoe.id != ESPECIE_RETIRO_MATRICULA and  s.tipoe.id != ESPECIE_CAMBIO_PROGRAMACION and  s.tipoe.id != ESPECIE_JUSTIFICA_FALTA and  s.tipoe.id != ESPECIE_JUSTIFICA_FALTA_AU and not s.rubro.especie_valorada.aplicada and  s.rubro.especie_valorada.vencida <= DIAS_ESPECIE  %}
+                                        <li><a  href="/controlespecies?action=registro&especie={{ s.rubro.especie_valorada.id }}&op=sol"><i class='icon-search'></i> Realizar </a></li>
+                                    {% endif %}
+                                {% endif %}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not  solicitudes %}
+                    <td colspan="4">NO HAY REGISTROS </td>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span10">
+            <div class="pagination">
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/solicitudonline?tiposol={{ solicitud.id }}{% if search %}&s={{ search }}{% endif %}{% if pendientes %}&pendientes=1{% endif %}{% if atendidas %}&atendidas=1{% endif %}&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="respuesta_panel" style="display: none;"  >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>  </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in respform %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="resolucion_panel" style="display: none;"  >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>  </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in reolform %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="materia" style="display: none;"  >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i>  </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+           <table>
+               <thead></thead>
+               <tbody>
+               <tr>
+                   <th>Materia</th>
+               </tr>
+               <tr>
+                   <td>
+                        <select id='materiasel'> </select>
+                    </td>
+                <tr>
+                   <th>Profesor</th>
+               <tr>
+                   <td>
+                        <select id='profesorsel'> </select>
+                       <p id="mensaje" style="color: red;font-weight: bold"></p>
+                    </td>
+               </tr>
+
+               </tbody>
+
+           </table>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Buscar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,169 @@
+{#{% extends "formbs.html" %}#}
+{% extends "inscripciones/formbs_inscripcion.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email #id_email1 #id_email2{ text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+{#    <script >#}
+    $("#id_nacimiento, #id_fecha").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+    $("#id_cedula").mask("9999999999");
+    $("#id_nombres,#id_apellido1,#id_provinciaresid, #id_cantonresid,#id_sexo, #id_nacimiento, #id_nacionalidad, #id_anuncio,#id_estcolegio").addClass("validate[required]");
+    $("#id_email,#id_email1,#id_email2").css({'text-transform': 'lowercase'});
+
+    $($("#id_ciudad").get(0).parentNode.parentNode).hide();
+    $($("#id_ciudad").get(0).parentNode.parentNode).hide();
+    $($("#id_nombres").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-success'>DATOS PERSONALES</h4>");
+    $($("#id_grupo").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-info'>DATOS REGISTRO</h4>");
+{#    $($("#id_grupo").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-info'>DATOS REGISTRO</h4>");#}
+
+
+    $("#id_nombres, #id_apellido1, #id_apellido2, #id_madre, #id_padre").addClass("input-block-level");
+    $("#id_direccion, #id_direccion2, #id_sector, #id_ciudad").addClass("input-block-level");
+    $("#id_cedula, #id_pasaporte, #id_nacionalidad, #id_identificador,#id_tipo_licencia").addClass("input-large");
+    $("#id_provincia, #id_canton,#id_provinciaresid, #id_cantonresid, #id_parroquia, #id_email, #id_telefono, #id_telefono_conv").addClass("input-xxlarge");
+    $("#id_sexo, #id_nacimiento,  #id_num_direccion, #id_sangre").addClass("input-medium");
+    {#OCU 30-sep-2016 campo colegio disabilitado#}
+    $("#id_colegio").attr("disabled",true);
+    $("#id_tipo_licencia").attr("disabled",true);
+    $("#id_estcolegio").attr({"autocomplete":"off"});
+
+
+    {% if  inscripcion.estcolegio %}
+        $('#id_estcolegio').val('{{ inscripcion.estcolegio }}');
+        $("#id_estcolegio").attr("myval",'{{ inscripcion.estcolegio.id }}');
+        $("#id_estcolegio_id").val('{{ inscripcion.estcolegio.id }}');
+    {% endif %}
+    $($("#id_estcolegio_id").get(0).parentNode.parentNode).hide();
+        buscar_colegio = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Colegio',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    if(data.results.length > 0)
+                    {
+                        $("#id_estcolegio").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#id_estcolegio").attr("myval","");
+                        $("#id_estcolegio").val("");
+                        $("#id_estcolegio").attr("alias","");
+
+                    }
+                }
+            }, 'json');
+        };
+
+        $('#id_estcolegio').typeahead({source: buscar_colegio, updater: function(item) {
+            var results = $("#id_estcolegio").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_estcolegio").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_estcolegio_id").val(d);
+                }
+            }
+            return item;
+        }});
+        $('#formbutton').click(function(){
+            $("#id_especialidad").attr("disabled", false);
+            $("#id_sexo").attr("disabled", false);
+            $("#id_estcolegio").val($("#id_estcolegio").attr("myval"));
+        });
+        $($("#id_grupo").get(0).parentNode.parentNode).hide();
+        $($("#id_carrera").get(0).parentNode.parentNode).hide();
+        $("#id_nacionalidad").attr("disabled", true);
+        $("#id_provincia").attr("disabled", true);
+        $("#id_canton").attr("disabled", true);
+        $("#id_sexo").attr("disabled", true);
+{#        $("#id_provinciaresid").attr("disabled", true);#}
+{#        $("#id_cantonresid").attr("disabled", true);#}
+        $("#id_ciudad").attr("disabled", true);
+{#        $("#id_parroquia").attr("disabled", true);#}
+{#        $("#id_sectorresid").attr("disabled", true);#}
+{#        $("#id_sangre").attr("disabled", true);#}
+{#        $("#id_grupo").attr("disabled", true);#}
+{#        $("#id_carrera").attr("disabled", true);#}
+        $("#id_especialidad").attr("disabled", true);
+{#        $("#id_anuncio").attr("disabled", true);#}
+        $("#id_promocion").attr("disabled", true);
+{#        $("#id_telefono").attr("disabled", true);#}
+{#        $("#id_telefono_conv").attr("disabled", true);#}
+{#        $("#id_email").attr("disabled", true);#}
+{#        $("#id_email1").attr("disabled", true);#}
+{#        $("#id_email2").attr("disabled", true);#}
+        $("#idaccion").attr("disabled", true);
+        $("#id_nacimiento").attr("disabled", true);
+        $("#id_madre").attr("disabled", true);
+        $("#id_padre").attr("disabled", true);
+{#        $("#id_apellido1").attr("disabled", true);#}
+{#        $("#id_apellido2").attr("disabled", true);#}
+{#        $("#id_nombres").attr("disabled", true);#}
+        $("#id_cedula").attr("disabled", true);
+        $("#id_pasaporte").attr("disabled", true);
+        $("#id_extranjero").attr("disabled", true);
+{#        $("#id_direccion").attr("disabled", true);#}
+{#        $("#id_direccion2").attr("disabled", true);#}
+{#        $("#id_num_direccion").attr("disabled", true);#}
+{#        $("#id_estcolegio").attr("disabled", true);#}
+        $("#id_observacion").attr("disabled", true);
+        $("#id_identificador").attr("disabled", true);
+
+
+    var numerosdec="0123456789";
+    $($("#id_anuncio").get(0).parentNode.parentNode).hide();
+    $("#formbutton").show();
+
+    {# AJUSTE DE FORMULARIO EN DEPENDENCIA SI ES EXTRANJERO O NACIONAL   #}
+    {# OCU 05-sep-2017 validacion checked discapacidad #}
+    {% if inscripcion.tienediscapacidad %}
+        $($("#id_tienediscapacidad").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Estudiante tiene discapacidad no se puede modificar. </i></span>");
+        $("#id_tienediscapacidad").attr("disabled",true);
+    {% endif %}
+
+    {% if inscripcion.matriculado %}
+        $($("#id_tienediscapacidad").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Estudiante se encuentra matriculado. Cont&aacute;ctese con Secretar&iacute;a </i></span>");
+        $("#id_tienediscapacidad").attr("disabled",true);
+    {% endif %}
+
+{% endblock %}
+{% block titulo %}
+   Editar Inscripci&oacute;n del Alumno
+{% endblock %}
+
+{#OCU 08-agosto-2016 para presentar la foto institucional#}
+{% block imagen %}
+    {% if inscripcion %}
+        {% if fotoinst.foto %}
+            <tr>
+                <div class="thumbnail" style="height: 150px">
+                    <img src="{{ fotoinst.foto.url }}" alt="" style="width: 150px;height: 150px">
+                </div>
+                <td>
+                </td>
+            </tr>
+        {% endif %}
+    {% endif %}
+{% endblock %}
+
+
+{% block formaction %}/alum_tutorias{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='edit'/>
+    <input type='hidden' name='id' value="{{ inscripcion.id }}"/>
+
+<div class="row-fluid">
+    {% if error %}
+        <div style="color: red; font-size: 12px; font-weight: bolder"> Ocurieron errores {{ error }}</div>
+    {% endif %}
+</div>
+{% endblock %}
+{% block formback %}/alum_tutorias?s={{ inscripcion.persona.cedula }}{% endblock %}

@@ -1,0 +1,223 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("form").validationEngine();
+        $("#id_empresaconvenio, #id_descripcion, #id_descuento").addClass("validate[required]");
+        $("#id_descuento").prop("type","number");
+        $("#id_descuento").attr("max","100");
+        $("#id_descuento").addClass('input-small');
+
+
+
+    {#------------------------------------------------------ ADD CONVENIO----------------------------------------------------------------#}
+    $('.nuevo_descuento').click(function(){
+        $("#id_descripcion").val('');
+        $("#id_empresaconvenio").val('');
+        $("#id_descuento").val('');
+        $("#id_activo").attr('checked',true);
+        $("#agregar_descuento #paneltitle2").html('Nuevo Descuento por Convenio');
+        $("#agregar_descuento").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_descuento").modal("show");
+    });
+
+    {#------------------------------------------------------ MODIFICAR DESCUENTO----------------------------------------------------------------#}
+    $('.modificar_descuento').click(function(){
+        $("#id_descripcion").val($(this).attr('descripcion'));
+        $("#id_descuento").val($(this).attr('descuento'));
+        $("#id_empresaconvenio").val($(this).attr('empresaconvenio'));
+        if (($(this).attr('estado')) == "True"){
+            $("#id_activo").attr('checked',true);
+        }else{
+            $("#id_activo").attr('checked',false);
+        }
+
+        $("#agregar_descuento #iddescuento").val($(this).attr('iddescuento'));
+        $("#agregar_descuento #paneltitle2").html('Descuento Empresa ');
+        $("#agregar_descuento").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_descuento").modal("show");
+    });
+
+    $("#agregar_descuento .btn-cerrar").click(function(){
+        $("#agregar_descuento").modal("hide");
+    });
+
+    $("#formbutton").click(function(){
+        $(".formError").removeClass('oculta');
+        $(".formError").addClass('aparece');
+    });
+
+    {#------------------------------------------------------ ELIMINAR DESCUENTO----------------------------------------------------------------#}
+    $(".eliminar").click(function(){
+        var id = $(this).attr("iddescuento");
+        var descripcion = $(this).attr("descripcion");
+        smoke.confirm('Esta seguro de eliminar el descuento "'+descripcion+'"', function(e){
+        if (e){
+            $.post("/mantenimiento",{"action":"eliminar_descuento","iddescuento":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Registro Eliminado");
+               }else{
+                    alert(data.result);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+
+
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if error %}
+        smoke.alert('{{ error }}');
+        setInterval(function(){
+        }, 5000);
+    {% endif %}
+
+
+    });
+</script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span7"  >
+            <h3 >Listado de Descuentos de Convenios con Empresas</h3></br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/mantenimiento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span2'>
+            <a href="#" class='btn btn-success nuevo_descuento'><i class="icon-plus icon-white"></i> Nuevo Descuento</a>
+        </div>
+    </div><br>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th> Descripcion</th>
+                        <th> Empresa Convenio </th>
+                        <th style="text-align: center"> Descuento </th>
+                        <th style="text-align: center"> Estado</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for d in descuentos %}
+                        <tr>
+                            <td> {{ d.descripcion|upper }} </td>
+                            <td> {{ d.empresaconvenio }} </td>
+                            <td style="text-align: center"> {{ d.descuento }}%  </td>
+                            <td style="text-align: center">
+                                {% if d.activo %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a style="cursor: pointer" class="modificar_descuento" descripcion="{{ d.descripcion }}" descuento="{{ d.descuento }}" estado="{{ d.activo }}" empresaconvenio="{{ d.empresaconvenio.id }}" iddescuento="{{ d.id }}"><i class="icon-edit"></i>  Editar Descuento</a></li>
+                                        {% if d.puede_eliminar %}
+                                            <li><a style="cursor: pointer" iddescuento="{{ d.id }}" descripcion="{{ d.descripcion }}" empresa="{{ d.empresaconvenio }}" class="eliminar"><i class="icon-remove"></i> Eliminar</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not descuentos %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class="span8">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/empresaconvenio?page=1">1</a></li>
+                            <li><a href="/empresaconvenio?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/empresaconvenio?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/empresaconvenio?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/empresaconvenio?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/empresaconvenio?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_descuento">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/mantenimiento" method="POST">
+                <input type='hidden' name='action' value='add_descuento' />
+                <input type='hidden' name='iddescuento' id='iddescuento' />
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}

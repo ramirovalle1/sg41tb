@@ -1,0 +1,475 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+{#            ////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#            /////////////////////////////INICIO PANTALLA///////////////////////////////////////////////////////////////////////////////#}
+            buscar_carrera = function(query, process) {
+                $("#carrera").attr("myval",0);
+                $("#nivel").attr("disabled",true);
+                $.get("/reportes", {'action':'data', 'model': 'Carrera',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#carrera").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#carrera").get(0).results = "";
+                        $("#carrera").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#carrera').typeahead({source: buscar_carrera, updater: function(item) {
+                var results = $("#carrera").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#carrera").attr("myval",datos.id);
+                        $("#nivel").attr("disabled",false);
+                    }
+                }
+                return item;
+            }});
+
+            buscar_nivel = function(query, process) {
+                $("#nivel").attr("myval",0);
+                $.get("/reportes", {'action':'datafilt', 'model': 'Nivel:carrera__id='+$("#carrera").attr("myval"),
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#nivel").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#nivel").get(0).results = "";
+                        $("#nivel").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#nivel').typeahead({source: buscar_nivel, updater: function(item) {
+                var results = $("#nivel").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#nivel").attr("myval",datos.id);
+                        location.href = '/tutorcongreso?idniv='+$("#nivel").attr("myval");
+                    }
+                }
+                return item;
+            }});
+{#            ////////////////////////////////////////////////////////////////////////////////////////////////////////////#}
+{#            /////////////////////////////MODAL PANTALLA///////////////////////////////////////////////////////////////////////////////#}
+            buscar_carreram = function(query, process) {
+                $("#idcarr").attr("myval",0);
+                $("#idnivel").attr("disabled",true);
+                $.get("/reportes", {'action':'data', 'model': 'Carrera',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#idcarr").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#idcarr").get(0).results = "";
+                        $("#idcarr").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#idcarr').typeahead({source: buscar_carreram, updater: function(item) {
+                var results = $("#idcarr").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#idcarr").attr("myval",datos.id);
+                        $("#idnivel").attr("disabled",false);
+                    }
+                }
+                return item;
+            }});
+
+            buscar_nivelm = function(query, process) {
+                $("#idnivel").attr("myval",0);
+                $.get("/reportes", {'action':'datafilt', 'model': 'Nivel:carrera__id='+$("#idcarr").attr("myval"),
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#idnivel").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#idnivel").get(0).results = "";
+                        $("#idnivel").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#idnivel').typeahead({source: buscar_nivelm, updater: function(item) {
+                var results = $("#idnivel").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#idnivel").attr("myval",datos.id);
+                    }
+                }
+                return item;
+            }});
+
+            buscar_tutor = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Persona:id__in={{ idperso }}',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#idtutor").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }else{
+                        $("#idtutor").get(0).results = "";
+                        $("#idtutor").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#idtutor').typeahead({source: buscar_tutor, updater: function(item) {
+                var results = $("#idtutor").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        $("#idtutor").attr("myval",datos.id);
+                        $.post("/tutorcongreso", {"action":'existe', "idnivel":$("#idnivel").attr("myval"),"idtutor":datos.id }, function(data) {
+                            if (data.result=='bad') {
+                              $('#helptutor').html(data.mensaj);
+                                $("#idtutor").attr("myval",0);
+                                $("#idtutor").val("");
+                            }
+                            else
+                            {
+                                $("#helptutor").html("");
+                            }
+                        }, "json");
+                    }
+                }
+
+                return item;
+            }});
+
+            {% if nivel %}
+                $("#carrera").attr("myval",'{{ nivel.carrera.id }}');
+                $("#nivel").attr("disabled",false);
+                $("#nivel").attr("myval",'{{ nivel.id }}');
+            {% endif %}
+
+            $(".addtitulos").click(function(){
+                $("#editar").val(0);
+                {% if nivel %}
+                    $("#idcarr").val('{{ nivel.carrera.nombre }}');
+                    $("#helpcarr").html('');
+                    $("#idcarr").attr('myval','{{ nivel.carrera.id }}');
+
+                    $("#idnivel").val('{{ nivel.flexbox_repr }}');
+                    $("#helpniv").html('');
+                    $("#idnivel").attr('myval','{{ nivel.id }}');
+                {% else %}
+{#                    $("#idcarr").val('');#}
+{#                    $("#helpcarr").html('');#}
+{#                    $("#idcarr").attr('myval',0);#}
+
+                    $("#idnivel").val('');
+                    $("#helpniv").html('');
+                    $("#idnivel").attr('myval',0);
+                {% endif %}
+
+                $("#idtutor").val('');
+                $("#helptutor").html('');
+                $("#idtutor").attr('myval',0);
+
+                $("#numasign").val(0);
+                $("#helpnumasign").html('');
+
+                $("#tutorpanel").modal({"backdrop":"static","width":"60%"});
+                $("#tutorpanel").modal("show");
+
+            });
+
+            $("#tutorpanel .btn-cerrar").click(function(){
+                location.href = '/tutorcongreso{% if nivel %}?idniv={{ nivel.id }}{% endif %}'
+            });
+
+            $("#numasign").change(function(){
+                if($("#numasign").val() > 0){
+                    if($("#numasign").val().split('.').length > 1){
+                        $("#helpnumasign").html('Ingrese solo numeros');
+                        $("#numasign").val(0);
+                        $("#numasign").focus();
+                    }else{
+                        $("#helpnumasign").html('');
+                    }
+                }
+            });
+
+            $("#guardarmod").click(function(){
+                $("#helpcarr").html('');
+                $("#helpniv").html('');
+                $("#helpnumasign").html('');
+                var valida = true;
+                if(parseInt($("#idcarr").attr('myval')) == 0){
+                    $("#helpcarr").html('Seleccione una carrera');
+                    valida = false;
+                }
+                if(parseInt($("#idnivel").attr('myval')) == 0){
+                    $("#helpniv").html('Seleccione un nivel');
+                    valida = false;
+                }
+                if(parseInt($("#numasign").val()) == 0){
+                    $("#helpnumasign").html('Ingrese numero de alumnos maximo a asignar');
+                    valida = false;
+                }
+                if(valida){
+                    showWaiting("Guardando informacion","Espere unos segundos por favor...");
+                    $.post("/tutorcongreso", {"action":'guardar', "editar":$("#editar").val(), "idnivel":$("#idnivel").attr("myval"),"idtutor":$("#idtutor").attr("myval"),"cant":$("#numasign").val() }, function(data) {
+                        if (data.result=='ok') {
+                          location.href = '/tutorcongreso?idniv='+$("#idnivel").attr("myval");
+                        }
+                        else
+                        {
+                            hideWaiting();
+                            $("#helpnumasign").html(data.mensaj);
+                        }
+                    }, "json");
+                }
+            });
+
+            $(".editartut").click(function(){
+                $("#editar").val($(this).attr('id'));
+                $("#idcarr").val($(this).attr('carr'));
+                $("#helpcarr").html('');
+                $("#idcarr").attr('myval',$(this).attr('idcarr'));
+                $("#idnivel").val($(this).attr('nivel'));
+                $("#helpniv").html('');
+                $("#idnivel").attr('myval',$(this).attr('idniv'));
+                $("#idtutor").val($(this).attr('tutor'));
+                $("#helptutor").html('');
+                $("#idtutor").attr('myval',$(this).attr('idtuttor'));
+                $("#numasign").val($(this).attr('cant'));
+                $("#helpnumasign").html('');
+                $("#tutorpanel").modal({"backdrop":"static","width":"60%"});
+                $("#tutorpanel").modal("show");
+            });
+
+            $(".elimintuto").click(function(){
+                var idtut = $(this).attr('idtut');
+                var idniv = $(this).attr('idniv');
+                smoke.confirm("Esta seguro de eliminar el tutor?", function(e){
+                    if (e){
+                        $("#espera").modal({ backdrop: 'static'});
+                        $("#espera").modal("show");
+
+                        $.post("/tutorcongreso", {action: 'eliminar', idtut: idtut }, function(data) {
+
+                            if (data.result=='ok') {
+                                smoke.alert('Registro eliminado');
+                                setInterval(function(){
+                                    $.unblockUI();
+                                    location.href='/tutorcongreso?idniv='+idniv;
+                                }, 4000);
+                            }else{
+                                smoke.alert('OCURRIO UN ERROR');
+                            }
+
+                        },'json');
+
+                    }else{
+                    }
+                }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                });
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span9" style="text-align: center">
+               <h3> Listado de Tutores por Nivel</h3>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br/>
+    <div class='row-fluid' style="display: block">
+        <div class="span1"></div>
+        <div class="span10" style="text-align: center">
+            <b>Carrera</b>:
+            <input type="text"  value="" id="carrera" class="searchinput input-xxlarge search-query" myval="0" data-provide="typeahead"/>&nbsp;&nbsp;
+        </div>
+    </div><br/>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span10" style="text-align: center">
+            <b>Nivel</b>:
+                <input type="text" id="nivel" {% if nivel %} value="{{ nivel }}" {% endif %} class="searchinput input-xxlarge search-query" myval="0" data-provide="typeahead" />&nbsp;&nbsp;
+                {% if nivel %}<a
+                    href="/tutorcongreso" class="btn btn-info">Limpiar</a>
+                {% endif %}
+        </div>
+    </div><br/><br/>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span3">
+            <a class="btn btn-info addtitulos" style="cursor: pointer"><b><span class="icon-plus"></span> Agregar Tutor</b></a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class='span10'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;width: 25%">Tutor</th>
+                        <th style="text-align: center;width: 35%">Grupo - Carrera</th>
+                        <th style="text-align: center;width: 15%">Cant. Asignar</th>
+                        <th style="text-align: center;width: 5%;">Fecha</th>
+                        <th style="text-align: center;width: 7%;">Asignados</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tutorcongresos %}
+                        <tr>
+                            <td>
+                                <a {% if t.numasignado == 0 %} style="cursor: pointer" class="edit" {% endif %}>
+                                    {{ t.persona.flexbox_alias }}
+                                </a>
+                            </td>
+                            <td style="text-align: center;"> {{ t.nivel.grupo.nombre }} - {{ t.nivel.carrera }} </td>
+                            <td style="text-align: center;">{{ t.cantidad }}</td>
+                            <td style="text-align: center;">{{ t.fecha|date:'d-m-Y' }}</td>
+                            <td style="text-align: center;">{{ t.numasignado }}</td>
+                           <td >
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if t.numasignado == 0 %}
+                                            <li><a class="editartut" idtuttor="{{ t.persona.id }}"
+                                                   id="{{ t.id }}" tutor="{{ t.persona.flexbox_alias }}"
+                                                   idcarr="{{ t.nivel.carrera.id }}" carr="{{ t.nivel.carrera.flexbox_repr }}"
+                                                   idniv="{{ t.nivel.id }}" nivel="{{ t.nivel.flexbox_repr }}"
+                                                   cant="{{ t.cantidad }}"
+                                                   style="cursor: pointer"><span class="icon-edit"></span> Editar </a> </li>
+                                            <li><a class="elimintuto" idtut="{{ t.id }}" idniv="{{ t.nivel.id }}" style="cursor: pointer"><span class="icon-remove"></span> Eliminar </a> </li>
+                                        {% else %}
+                                            <li><a href="/tutorcongreso?action=veralumnos&id={{ t.id }}" style="cursor: pointer"><span class="icon-eye-open"></span> Ver Alumnos </a> </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                           </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span11">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page=1{% if search %}&s={{ search }}{% endif %}">1</a></li>
+                            <li><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page={{ paging.ellipsis_izquierda }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tutorcongreso?{% if nivel %}idniv={{ nivel.id }}&{% endif %}page={{ pagenumber }}{% if search %}&s={{ search }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="modal fade static" id="tutorpanel">
+        <div class="modal-header" style="word-wrap: break-word;text-align: center">
+            <h3 id="cabeceramodal">Agregar Tutor</h3><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/tutorcongreso" method="POST"  >
+                <input type='hidden' name='action' value='guardar'/>
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='tutcongrsoid' id='tutcongrsoid' value=""/>
+                <div class="controls" style="margin-left: 1%">
+                    <b >Carrera: </b>
+                    <input  type="text" id="idcarr" class="searchinput input-xxlarge search-query" autocomplete="off" value=""  myval="" data-provide="typeahead"/>
+                    <p style="color: red" id="helpcarr"></p>&nbsp;&nbsp;<br>
+                    <b>Nivel</b>:
+                    <input type="text" id="idnivel" class="searchinput search-query" style="width: 90%" autocomplete="off" myval="0" data-provide="typeahead" />
+                    <p style="color: red" id="helpniv"></p>&nbsp;&nbsp;<br>
+                    <b>Tutor</b>:
+                    <input type="text" id="idtutor" class="searchinput input-xxlarge search-query" autocomplete="off" myval="0" data-provide="typeahead"/>
+                    <p style="color: red" id="helptutor"></p>&nbsp;&nbsp;<br>
+                    <b>Cant. Alumno</b>:
+                    <input type="number" id="numasign" class="input input-small" autocomplete="off" value="0" data-provide="typeahead"/>
+                    <p style="color: red" id="helpnumasign"></p>&nbsp;&nbsp;<br>
+
+                    <br/><br/><a id="guardarmod" class="btn btn-success" style="float: right">Guardar</a>&nbsp;&nbsp;
+                    <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+{% endblock %}

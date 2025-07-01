@@ -1,0 +1,215 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript">
+    $(function() {
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/alumnos_cab?s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+        estado = function(id){
+            smoke.confirm("Formulario agregado a la Caja de Ahorro?", function(e){
+                if (e){
+                    $.post("/alumnos_cab",{"action":"cambiar_estado", 'id':id},function(data) {
+                        if(data.result=='ok'){
+                            location.href = '/alumnos_cab?s='+data.identificacion;
+                        }else{
+                            alert('Error');
+                        }
+                    },"json");
+                }else{
+                    location.href = '/alumnos_cab';
+                }
+                }, {
+                ok: "Ok",
+                cancel: "Cancelar",
+                classname: "custom-class",
+                reverseButtons: true
+             });
+        }
+
+        var solicitud_cab = ''
+        desafiliacion = function(id, ruta){
+            $("#desafiliar #paneltitle1").html('Solicitud de Desafiliacion');
+            $("#desafiliar").modal({width: '600px', backdrop: 'static'});
+            $("#desafiliar").modal("show");
+            $(".pdf_view").attr("src", ruta);
+            solicitud_cab = id
+        }
+
+        $("#desafiliar .btn-cerrar").click(function() {
+            $("#desafiliar").modal("hide");
+        });
+
+        $("#form_rechazo").hide();
+        $(".btn_rechazar").click(function() {
+            if($("#txt_motivorechazo").val()==''){
+                $("#form_rechazo").show();
+                $("#txt_motivorechazo").focus();
+            }else{
+                $("#desafiliar").modal("hide");
+                smoke.confirm("Seguro de rechazar formulario de desafiliacion?", function(e){
+                    if (e){
+                        $.post("/alumnos_cab",{"action":"rechazar_desafiliacion", 'id':solicitud_cab, 'motivo':$("#txt_motivorechazo").val()},function(data) {
+                            if(data.result=='ok'){
+                                location.reload;
+                            }else{
+                                alert('Error');
+                            }
+                        },"json");
+                    }else{
+                        location.reload;
+                    }
+                    }, {
+                    ok: "Ok",
+                    cancel: "Cancelar",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            }
+        });
+
+        $(".btn_aprobar").click(function() {
+            $("#desafiliar").modal("hide");
+            smoke.confirm("Seguro de aprobar formulario de desafiliacion?", function(e){
+                if (e){
+                    $.post("/alumnos_cab",{"action":"aprobar_desafiliacion", 'id':solicitud_cab},function(data) {
+                        if(data.result=='ok'){
+                            location.reload;
+                        }else{
+                            alert('Error');
+                        }
+                    },"json");
+                }else{
+                    location.reload;
+                }
+                }, {
+                ok: "Ok",
+                cancel: "Cancelar",
+                classname: "custom-class",
+                reverseButtons: true
+            });
+        });
+
+        $('.principal').addClass("active");
+
+    });
+</script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span9">
+            <h3 >Afiliados a la Caja de Ahorro</h3></br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span1'></div>
+        <div class='span5'>
+             <form class="form-search">
+                <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search or estado %}
+                    <a href="/alumnos_cab" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+            </form>
+        </div>
+        <div class='span5' style="text-align: right">
+            <a href="/alumnos_cab?e=0" id='search' class='btn btn-danger'><i class="icon-lock icon-white"></i> Pendientes</a>
+            <a href="/alumnos_cab?e=1" id='search' class='btn btn-success'><i class="icon-check icon-white"></i> En CAB</a>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span1"></div>
+        <div class="span10">
+{#            <ul class="nav nav-tabs">#}
+{#                <li class="nav-item"><a href="/alumnos_cab?acc={{ acc }}&tipo=ins" class="pl-5 pr-5 nav-link principal {% if inscripciones %}active{% endif %}">Inscripciones</a></li>#}
+{#                <li class="nav-item"><a href="/alumnos_cab?acc={{ acc }}&tipo=doc" class="pl-5 pr-5 nav-link {% if docentes %}active{% endif %}">Docentes</a></li>#}
+{#                <li class=" nav-item"><a href="/alumnos_cab?acc={{ acc }}&tipo=adm" class="pl-5 pr-5 nav-link {% if administrativos %}active{% endif %}">Administrativos</a></li>#}
+{#            </ul>#}
+            <ul class="nav nav-tabs nav-justified">
+                <li><a href="alumnos_cab?acc={{ acc }}&tipo=ins" class="ins principal {% if inscripciones %}active{% endif %}">Inscripciones</a></li>
+                <li><a href="alumnos_cab?acc={{ acc }}&tipo=doc" class="doc {% if docentes %}active{% endif %}">Docentes</a></li>
+                <li><a href="alumnos_cab?acc={{ acc }}&tipo=adm" class="adm {% if administrativos %}active{% endif %}">Administrativos</a></li>
+
+            </ul>
+        </div>
+    </div>
+
+    {% if inscripciones %}
+                    {% include "cab/admin/cab_inscripciones.html" %}
+                {% else %}
+                    {% if docentes %}
+                        {% include "cab/admin/cab_docentes.html" %}
+                    {% else %}
+                        {% include "cab/admin/cab_administrativos.html" %}
+                    {% endif %}
+                {% endif %}
+
+
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class="span8">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/pago_sustentaciones_docente?page=1">1</a></li>
+                            <li><a href="/pago_sustentaciones_docente?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/pago_sustentaciones_docente?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/pago_sustentaciones_docente?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/pago_sustentaciones_docente?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/pago_sustentaciones_docente?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="desafiliar">
+        <div class="modal-header">
+            <h4 id='paneltitle1'></h4>
+        </div>
+        <div class="modal-body panelbody">
+            <embed class="pdf_view" src="" type="application/pdf" width="100%" height="600px" /><br><br>
+            <form action="" id="form_rechazo">
+                <label for=""><b>Motivo Rechazo:</b></label>
+                <textarea name="" id="txt_motivorechazo" style="width: 95%" placeholder="Ingrese Motivo de Rechazo de Solicitud"></textarea>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn_aprobar btn-success">APROBAR SOLICITUD</button>
+            <button class="btn btn_rechazar btn-danger">RECHAZAR SOLICITUD</button>
+            <button class="btn btn-cerrar btn-warning">Cerrar</button>
+        </div>
+    </div>
+
+{% endblock %}

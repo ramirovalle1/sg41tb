@@ -1,0 +1,389 @@
+
+<style>
+
+body {
+    background-color: #eee
+
+}
+</style>
+
+<script>
+
+$(function () {
+
+
+
+
+     $("#txtpreguntaedit").val('{{ preguntatest.pregunta }}');
+     {% if preguntatest.descripcion %}
+        $("#txtdescripcioncortaedit").val('{{ preguntatest.descripcion }}');
+     {% else %}
+         $("#txtdescripcioncortaedit").val('');
+     {% endif %}
+     $("#txtnumerordenedit").val('{{ preguntatest.orden }}');
+     $("#txtpuntajeedit").val('{{ preguntatest.puntaje }}');
+
+    {% if preguntatest.cantidadrespuesta != None %}
+        $("#txtnumerorespuestaedit").val('{{ preguntatest.cantidadrespuesta }}');
+    {% else %}
+        $("#txtnumerorespuestaedit").val(0);
+    {% endif %}
+    {% if preguntatest.cajatexto %}
+        document.getElementById("chkcajatextedit").checked=true;
+    {% else %}
+        document.getElementById("chkcajatextedit").checked=false;
+    {% endif %}
+
+    {% if preguntatest.combobox %}
+        document.getElementById("chkcomboedit").checked=true;
+    {% else %}
+        document.getElementById("chkcomboedit").checked=false;
+    {% endif %}
+
+
+     {% if preguntatest.fecha %}
+        document.getElementById("chkfechaedit").checked=true;
+    {% else %}
+        document.getElementById("chkfechaedit").checked=false;
+    {% endif %}
+
+    {% if preguntatest.marquesina %}
+        document.getElementById("chkmarquesinaedit").checked=true;
+    {% else %}
+        document.getElementById("chkmarquesinaedit").checked=false;
+    {% endif %}
+
+    {% if preguntatest.arrastarsoltar %}
+        document.getElementById("checkarrastarsoltar").checked=true;
+    {% else %}
+        document.getElementById("checkarrastarsoltar").checked=false;
+    {% endif %}
+    {% if preguntatest.checkbox %}
+        document.getElementById("checkboxseleccionedit").checked=true;
+    {% else %}
+        document.getElementById("checkboxseleccionedit").checked=false;
+    {% endif %}
+    {% if preguntatest.radiobox %}
+        document.getElementById("chkradioedit").checked=true;
+    {% else %}
+        document.getElementById("chkradioedit").checked=false;
+    {% endif %}
+    {% if preguntatest.cajatextoleyenda %}
+        document.getElementById("chkcajatextleyendaedit").checked=true;
+    {% else %}
+        document.getElementById("chkcajatextleyendaedit").checked=false;
+    {% endif %}
+
+
+
+
+
+
+
+function limpiarDatosPreguntas() {
+        $("#txtpreguntaedit").val("");
+        $("#txtnumerordenedit").val(0);
+        $("#txtnumerorespuestaedit").val(0);
+        document.getElementById("chkcajatextedit").checked=false;
+        document.getElementById("chkcomboedit").checked=false;
+        $('#cmbareaedit').trigger('change.select2');
+    }
+
+    function limpiarHelpDatosPreguntas() {
+        $("#helptxtpreguntaedit").html("");
+        $("#helptxtnumerordenedit").html("");
+        $("#helptxtnumerorespuestaedit").html("");
+    }
+
+    $("#btncancelarpreguntaedit").click(function() {
+        limpiarDatosPreguntas();
+        $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+        $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+        $("#editpregunta").modal('hide');
+    });
+
+    function validarDatosPregunta() {
+
+        if ($("#txtpreguntaedit").val() == "") {
+             $("#helptxtpreguntaedit").html("Debe ingresar la pregunta");
+             return 1;
+        }
+
+
+        if ($("#txtnumerordenedit").val() ==0) {
+             $("#helptxtnumerordenedit").html("El número orden debe ser mayor a 0 ");
+             return 1;
+        }
+
+        if (  document.getElementById("chkcajatextedit")== false && document.getElementById("chkcomboedit").checked==false) {
+             $("#helpcajacombo").html("Debe seleccionar caja de texto o cambo ");
+             return 1;
+        }
+
+
+
+        if ($("#txtnumerorespuestaedit").val() ==0) {
+             $("#helptxtnumerorespuestaedit").html("El número respuesta debe ser mayor a 0 ");
+             return 1;
+        }
+
+        if ($("#dominio").val() ==0) {
+             $("#helptxtdominioacademico").html("Ingrese un Dominio Académico ");
+             return 1;
+        }
+        return 0;
+
+    }
+
+
+    $("#btnguardarpreguntaedit").click(function() {
+
+        limpiarHelpDatosPreguntas();
+
+        if(validarDatosPregunta()==0) {
+                 Loader.open();
+
+                var formData = new FormData();
+                formData.append('action', 'editarpregunta');
+                formData.append('pregunta', $("#txtpreguntaedit").val());
+                formData.append('orden', $("#txtnumerordenedit").val());
+                formData.append('descripcioncorta', $("#txtdescripcioncortaedit").val());
+                formData.append('dominio', $("#dominio").val());
+                formData.append('numerorespuesta', $("#txtnumerorespuestaedit").val());
+                formData.append('cajatext',document.getElementById("chkcajatextedit").checked);
+                formData.append('cajatextleyenda',document.getElementById("chkcajatextleyendaedit").checked);
+                formData.append('cmbobox',document.getElementById("chkcomboedit").checked);
+                formData.append('txtfecha',document.getElementById("chkfechaedit").checked);
+                formData.append('marquesina',document.getElementById("chkmarquesinaedit").checked);
+                formData.append('checkbox',document.getElementById("checkboxseleccionedit").checked);
+                formData.append('radiocheck',document.getElementById("chkradioedit").checked);
+                formData.append('arrastrar',document.getElementById("checkarrastarsoltar").checked);
+
+                formData.append('idpregunta', '{{ preguntatest.id }}');
+                if ($("#archivoimagen").val() != "") {
+                 var formarchivoarchivoimagen = document.getElementById('archivoimagen');
+                 var filerchivoarchivoimagen = formarchivoarchivoimagen.files[0];
+                 formData.append('filerchivoarchivoimagen', filerchivoarchivoimagen);
+                }
+
+
+                $.ajax({
+                    url: '/preguntatestingreso',
+                    type: "POST",
+                    contentType: false,
+                    data: formData,
+                    processData: false,
+                    cache: false,
+                    success: function (data) {
+                        if (data.result == "ok") {
+                            swal("! Pregunta Test", "Los datos de la preguta se registrarón correctamente", "success");
+                            location.href = "/preguntatestingreso?idtest={{ test.id }}&s=" + $("#txtbusqueda").val().toUpperCase();
+
+
+                        } else {
+                            swal("Error", data.message, "error");
+
+
+                        }
+
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        swal("Error", "Error Conexion en el Servidor", "error");
+
+                    },
+                    complete: function () {
+                       Loader.close();
+                    }
+
+
+
+
+                });
+
+
+            }
+
+
+    });
+
+
+
+
+
+});
+
+
+</script>
+
+  <div class="pd-20 card-box mb-30" style="margin-top: 10px; background-color: #eee">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label >Pregunta <a style="color: #d92550">(*)</a>: </label>
+                    <input id="txtpreguntaedit" type="text" class="form-control" >
+                     <p id="helptxtpreguntaedit"  style="text-align: center;font-size: 20px;color:red;"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label >Descripción Corta <a style="color: #d92550"></a>: </label>
+                    <input id="txtdescripcioncortaedit" type="text" class="form-control" >
+                     <p id="helptxtdescripcioncortaedit"  style="text-align: center;font-size: 20px;color:red;"></p>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label >Dominio Academico <a style="color: #d92550"></a>: </label>
+                        <select id="dominio" value="0" style="width: 100%" class="custom-select2 form-control">
+                            <option value="0">------</option>
+                            {% for d in dominios %}
+                                <option value="{{ d.id }}">{{ d.nombre }}</option>
+                            {% endfor %}
+                        </select>
+    {#                    <a data-toggle="modal" data-target="#id_modaldominio" href="#" title="Adicionar Dominio Academico">+</a>#}
+    {#                    <input type='hidden' name='idproducto'  id='idproducto' value='0'/>#}
+                        <p id="helptxtdominioacademico"  style="text-align: center;font-size: 20px;color:red;"></p>
+                    </div>
+                </div>
+        </div>
+
+        <div class="row">
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label >Orden <a style="color: #d92550">(*)</a>: </label>
+                    <input id="txtnumerordenedit" type="text" value="0" name="demo_vertical2" class="form-control" onKeyPress="return soloNumeros2(event)">
+                     <p id="helptxtnumerordenedit"  style="text-align: center;font-size: 20px;color:red;"></p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label >Número de Respuesta <a style="color: #d92550">(*)</a>: </label>
+                    <input id="txtnumerorespuestaedit" type="text" value="0" name="demo_vertical2" class="form-control" onKeyPress="return soloNumeros2(event)">
+                     <p id="helptxtnumerorespuestaedit"  style="text-align: center;font-size: 20px;color:red;"></p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row">
+            <div class="col-md-3">
+                <div class="form-group">
+                     <div class="custom-control custom-checkbox mb-5">
+                        <input type="checkbox" class="custom-control-input" id="chkcajatextedit">
+                        <label class="custom-control-label" for="chkcajatextedit">Caja de Texto</label>
+                     </div>
+
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                     <div class="custom-control custom-checkbox mb-5">
+                        <input type="checkbox" class="custom-control-input" id="chkcomboedit">
+                        <label class="custom-control-label" for="chkcomboedit">Combo</label>
+                     </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                     <div class="custom-control custom-checkbox mb-5">
+                        <input type="checkbox" class="custom-control-input" id="chkfechaedit">
+                        <label class="custom-control-label" for="chkfechaedit">Fecha</label>
+                     </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                     <div class="custom-control custom-checkbox mb-5">
+                        <input type="checkbox" class="custom-control-input" id="chkmarquesinaedit">
+                        <label class="custom-control-label" for="chkmarquesinaedit">Marquesina</label>
+                     </div>
+                </div>
+            </div>
+
+
+
+
+
+
+        </div>
+
+        <div class="row">
+             <div class="col-md-3">
+                <div class="form-group">
+                     <div class="custom-control custom-checkbox mb-5">
+                        <input type="checkbox" class="custom-control-input" id="checkboxseleccionedit">
+                        <label class="custom-control-label" for="checkboxseleccionedit">CheckBox</label>
+                     </div>
+                </div>
+            </div>
+             <div class="col-md-3">
+                <div class="form-group">
+                     <div class="custom-control custom-checkbox mb-5">
+                        <input type="checkbox" class="custom-control-input" id="checkarrastarsoltar">
+                        <label class="custom-control-label" for="checkarrastarsoltar">Arrastar y Soltar</label>
+                     </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                     <div class="custom-control custom-checkbox mb-5">
+                        <input type="checkbox" class="custom-control-input" id="chkcajatextleyendaedit">
+                        <label class="custom-control-label" for="chkcajatextleyendaedit">Caja de Texto con Leyenda</label>
+                     </div>
+
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                     <div class="custom-control custom-checkbox mb-5">
+                        <input type="checkbox" class="custom-control-input" id="chkradioedit">
+                        <label class="custom-control-label" for="chkradioedit">Radio Buton</label>
+                     </div>
+
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="row">
+             <label >Imagen <a style="color: #d92550"></a>: </label>
+             <input id="archivoimagen" type="file" style="background-color: #eee" class="form-control-file form-control height-auto">
+             <p id="helparchivoimagen"  style="text-align: center;font-size: 20px;color:red;"></p>
+             <p style="margin-top: 10px;font-size: 11px;color: red">Formato JPG, tamaño max 2MB</p>
+
+        </div>
+
+
+
+
+
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" id="btncancelarpreguntaedit" style="background: #FA1D06;color: white" class="btn" data-bgcolor="#FA1D06" data-color="#ffffff">Cancelar</button>
+    <button type="button" id="btnguardarpreguntaedit" style="background: #63A836;color: white" class="btn" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>
+  </div>
+
+   <div class="modal fade" id="login-modal"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="row">
+                    <div id="content" class="col-lg-12">
+                        Guardando Información espero un momento...
+                    </div>
+                </div>
+            </div>
+        </div>
+   </div>

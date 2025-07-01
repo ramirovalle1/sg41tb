@@ -1,0 +1,398 @@
+{% extends "layout/basebs.html" %}
+{% load sga_extras %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+{% endblock %}
+{% block more_javascript %}
+    <script src="/static/aulavirtual/script.js?v={{ version }}"></script>
+
+    <script type="text/javascript">
+        const viewDetalleRecurso = (action, ids, id) => {
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><p class="fw-bold text-warning">Calculando Evaluaciones</p><p class="text-warning">Estamos procesando su solicitud, espere unos segundos por favor...</p></div>`,
+            });
+            AjaxLayout.call('GET', '{{ request.path }}', { action: action, ids: ids, id: id }, (response) => {
+                LoadingLayout.hide();
+                if (response.isSuccess){
+                    $(".modal-title", $("#modalVerRecuerso")).html(response.title);
+                    $(".modal-body", $("#modalVerRecuerso")).html(response.html);
+                    $("#modalVerRecuerso").modal({backdrop: 'static', keyboard: false}).modal("show");
+                    $("#modalVerRecuerso").modal("show").off('shown.bs.modal').on('shown.bs.modal', function () {
+                        $(".action-close", $("#modalVerRecuerso")).off('click').on('click', function () {
+                            $(this).closest('.modal').modal('hide');
+                        });
+
+                    });
+                }
+                else{
+                    AlertLayout.danger(response.message);
+                }
+            }, () => {
+                console.log('Failed');
+                LoadingLayout.hide();
+            });
+        }
+
+        const confirmar_actualizar_eva = (pk, title, accion) => {
+            Swal.fire({
+                title: `<h4>${title}</h4>`,
+                text: "Confirmar acualización en EVA",
+                type: 'warning',
+                showCancelButton: true,
+                allowOutsideClick: false,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Si, deseo hacerlo',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.value) {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    $.ajax({
+                        type: "POST",
+                        url: "{{ request.path }}",
+                        data: {'action': accion, 'id': pk},
+                        success: function (response) {
+                            LoadingLayout.hide();
+                            if (response.isSuccess) {
+                                swal.fire({
+                                    title: response.message,
+                                    {#text: "# Número: "+idpersonadobe,#}
+                                    type: 'info',
+                                    showCancelButton: false,
+                                    confirmButtonText: 'Aceptar',
+                                    cancelButtonText: 'No',
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#d33'
+                                }).then(function (isConfirm) {
+                                    if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                                        LoadingLayout.show({
+                                            message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Espere, estamos recuperando nuevos datos...</div>`,
+                                        });
+                                        location.reload();
+                                    }
+
+                                });
+                            }else{
+                                AlertLayout.danger(`${response.message}`);
+                            }
+                        },
+                        error: function () {
+                            LoadingLayout.hide();
+                            AlertLayout.danger(`No se pudo actualizar en EVA`);
+                        },
+                        dataType: "json"
+                    });
+                }
+            });
+        }
+
+        const loadChangeBanner = (id, title, action) => {
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><p class="fw-bold text-warning">Calculando Evaluaciones</p><p class="text-warning">Estamos procesando su solicitud, espere unos segundos por favor...</p></div>`,
+            });
+            AjaxLayout.call('GET', '{{ request.path }}', { action: action, id: id }, (response) => {
+                LoadingLayout.hide();
+                if (response.isSuccess){
+                    $(".modal-title", $("#modalBanner")).html(title);
+                    $(".modal-body", $("#modalBanner")).html(response.html);
+                    $("#modalBanner").modal({backdrop: 'static', keyboard: false}).modal("show");
+                    $("#modalBanner").modal("show").off('shown.bs.modal').on('shown.bs.modal', function () {
+                        $(".action-close", $("#modalBanner")).off('click').on('click', function () {
+                            $(this).closest('.modal').modal('hide');
+                        });
+                        $(".action-save", $("#modalBanner")).off('click').on('click', function () {
+                            const data = formGetData('frmUploadBanner', 'modalBanner');
+                            LoadingLayout.show({
+                                message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                            });
+                            AjaxLayout.multipart('POST', '{{ request.path }}', data, (response) => {
+                                LoadingLayout.hide();
+                                if (response.isSuccess){
+                                    Swal.fire({
+                                        title: 'Operación Exitosa',
+                                        text: `${response.message}`,
+                                        icon: 'success'
+                                    }).then(function() {
+                                        LoadingLayout.show();
+                                        location.reload();
+                                    });
+                                }
+                                else{
+                                    AlertLayout.danger(response.message);
+                                    if (response.forms?.errors){
+                                        formSetErrors(response.forms.errors, 'modalBanner');
+                                    }
+                                }
+
+                            }, () => {
+                                console.log('Failed');
+                                LoadingLayout.hide();
+                            });
+                        });
+                    });
+                }
+                else{
+                    AlertLayout.danger(response.message);
+                }
+            }, () => {
+                console.log('Failed');
+                LoadingLayout.hide();
+            });
+        }
+
+        $(function() {
+            $(".action_delete").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const question = `Al eliminar el registro no podra volver a recuperar los datos. <br>¿Está seguro de eliminar el registro <span class="text-info">${name}</span>?`;
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            });
+
+            $(".action_migrate").click(function () {
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                const action = $(this).data('action');
+                const question = `¿Está seguro de migrar el recurso <span class="text-info">${name}</span>?`;
+                console.log(question);
+                QuestionLayout(question, ()=> {
+                    LoadingLayout.show({
+                        message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                    });
+                    AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                        LoadingLayout.hide();
+                        if (response.isSuccess) {
+                            Swal.fire({
+                                title: 'Operación Exitosa',
+                                text: `${response.message}`,
+                                icon: 'success'
+                            }).then(function() {
+                                LoadingLayout.show();
+                                location.reload();
+                            });
+                        } else {
+                            AlertLayout.danger(`${response.message}`);
+                        }
+                    });
+                }, ()=>{})
+            });
+        });
+    </script>
+
+{% endblock %}
+{% block atras %}{{ request.path }}?action=silabo&id={{ silabo.materia.id }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid">
+        <div class='row'>
+            <div class='col-12 col-md-8 col-lg-8 col-xxl-9'>
+                <div class="page_title">
+                    {% with materia=silabo.materia %}
+                        <h3 class="fw-semibold mb-0">{{ title }}</h3>
+                        <h6 class="mb-0"><b class="fw-semibold">Periodo:</b> {{ materia.nivel.periodo }}</h6>
+                        {% if materia.nivel.carrera.coordinacion %}
+                            <h6><b class="fw-semibold">Facultad:</b> {{ materia.nivel.carrera.coordinacion }}</h6>
+                        {% endif %}
+                        <h6 class="mb-0"><b class="fw-semibold">Carrera:</b> {{ materia.nivel.carrera }}</h6>
+                        <h6 class="mb-0"><b class="fw-semibold">Profesor:</b> {{ profesor }}</h6>
+                        <h6 class="mb-0"><b class="fw-semibold">Nivel:</b> {{ materia.nivel.nivelmalla }}</h6>
+                        <h6 class="mb-0"><b class="fw-semibold">Asignatura:</b> {{ materia.asignatura }}</h6>
+                        <h6 class="mb-0"><b class="fw-semibold">Paralelo:</b> {{ materia.nivel.paralelo }}</h6>
+                        {#                    <h6>Materia ID: {{ materia.id }}</h6>#}
+                        {#                    <h6>Moodle ID: {{ materia.id_moodle_course }}</h6>#}
+                    {% endwith %}
+                </div>
+            </div>
+            <div class='col-12 col-md-4 col-lg-4 col-xxl-3 '>
+                <table width="100%" border="0" cellspacing="0" cellpadding="0" class="table table-bordered">
+
+                    <tr>
+                        <td style="text-align: center">
+                            <a style="color: #3a87ad; font-size: 18px" href="#"><i class="fa fa-circle"></i></a>
+                        </td>
+                        <td style="text-align: center">Ingresado</td>
+                        <td style="text-align: center">
+                            <a style="color: #b94a48; font-size: 18px" href="#"><i class="fa fa-circle"></i></a>
+                        </td>
+                        <td style="text-align: center">Rechazado</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: center">
+                            <a style="color: #faa732; font-size: 18px" href="#"><i class="fa fa-circle"></i></a>
+                        </td>
+                        <td style="text-align: center">Aprobado</td>
+                        <td style="text-align: center">
+                            <a style="color: #5bb75b; font-size: 18px" href="#"><i class="fa fa-circle"></i></a>
+                        </td>
+                        <td style="text-align: center">En moodle</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-lg-4 col-md-12 col-12">
+                <div class="card border-1 shadow-none mb-3">
+                    <div class="card-header" style="background-color: aliceblue;">
+                        <h6 class="card-title fs-4 fw-semibold m-0"><i class="fa fa-list-alt"></i> Detalle Planificación</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-0">
+                            {% if silabo.materia.id_moodle_course == 0 %}
+                                <div class="alert alert-warning">
+                                    <b>Nota:</b> Puede crear los recursos pero no podrá migrar a mooodle mientras la asignatura no exista en el Aula Virtual.
+                                </div>
+                            {% endif %}
+                            {% if silabo.materia.banner %}
+                                <img src="{{ silabo.materia.banner.url }}" class="img-fluid img-thumbnail rounded p-0 border-0">
+                            {% else %}
+
+                                {% if silabo.materia.id_moodle_course and not silabo.materia.cerrado %}
+                                    <a class=""
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="Actualizar Portada"
+                                       href="javascript:void(0)"
+                                       onclick="loadChangeBanner({{ silabo.materia.id }}, 'Portada del curso {{ silabo.materia.nombre_completo }}', 'loadChangeBanner')"
+                                    >
+                                        <div class="card m-0 p-0 border border-2 shadow-none card-dashed-hover" style="height: 75px;">
+                                            <div class="card-body  m-0 p-0 d-flex flex-column justify-content-center text-center">
+                                                <i class="fa fa-plus text-secondary fs-5" aria-hidden="true"></i>
+                                            </div>
+                                        </div>
+                                    </a>
+                                {% else %}
+                                    <img src="/static/images/imagen.png" class="img-fluid img-thumbnail rounded p-0 border-0">
+                                {% endif %}
+                            {% endif %}
+                            <div class="align-items-center text-center mt-3">
+                                {% if silabo.materia.id_moodle_course %}
+                                    <div class="btn-group">
+                                        {% if not silabo.materia.cerrado %}
+                                            <button type="button" class="btn btn-block btn-default btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <i class="ti ti-settings me-2" aria-hidden="true"></i> Acciones
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a href="javascript:void(0)" class="dropdown-item" onclick="confirmar_actualizar_eva({{ silabo.materia.id }}, 'Esta seguro(a) que desea actualizar sílabo de la materia:\n {{ silabo.materia.asignatura.nombre }} de {{ silabo.materia.nivel.nivelmalla.nombre|lower }}', 'actualizar_silabo_eva')"><i class="ti ti-refresh me-2"></i>Actualizar Sílabo EVA</a>
+                                                {#                                        <a tipo="1" ids="{{ silabo.id }}" href="javascript:void(0)" class="duplicar_recurso_periodo_paralelo dropdown-item" nombretitulopanel="Replicar a otros paralelos"><i class="fa fa-clone"></i>&nbsp;Replicar</a>#}
+                                                {#                                        <a href="javascript:void(0)" class="dropdown-item" onclick="migrarmasivo('{{ silabo.id }}')"><i class="fa fa-upload"></i>&nbsp;Migrar Recursos a Moodle</a>#}
+                                                {#                                        <a class="dropdown-item" href="/media/htmlmoodlestatic/{{ silabo.materia.namehtml }}"><i class="fa fa-arrow-down"></i>&nbsp;Url sílabo moodle</a>#}
+                                                {% if silabo.materia.banner %}
+                                                    <a class="dropdown-item"
+                                                       href="javascript:void(0)"
+                                                       onclick="loadChangeBanner({{ silabo.materia.id }}, 'Portada del curso {{ silabo.materia.nombre_completo }}', 'loadChangeBanner')"
+                                                    >
+                                                        <i class="ti ti-photo-edit me-2"></i> Actualizar Portada
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                                {#                                <a class="btn btn-info btn-sm" onclick="verresumen('{{ silabo.id }}')" href="javascript:void(0)">#}
+                                {#                                    <i class="ti ti-calendar me-2"></i> Ver Resumen#}
+                                {#                                </a>#}
+                                {% if silabo.materia.id_moodle_course %}
+                                    <a class="btn btn-warning btn-sm"
+                                       href="{{ silabo.materia.nivel.eva.url }}course/view.php?id={{ silabo.materia.id_moodle_course }}" target="_blank">
+                                        <i class="ti ti-link me-2"></i> Ir a EVA
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="navbar navbar-expand-md navbar-light shadow-sm m-0 p-0" style="display:block">
+                    <div class="card border-1 shadow-none">
+                        <div class="card-header" style="background-color: aliceblue;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <h6 class="card-title fs-4 fw-semibold m-0"><i class="ti ti-calendar me-2"></i> Semanas</h6>
+                                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidenav" aria-controls="sidenav" aria-expanded="false" aria-label="Toggle navigation">
+                                    <span class="navbar-toggler-icon"></span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body m-0 p-0">
+                            <div class="collapse navbar-collapse m-0 p-0 border-0" id="sidenav">
+                                <div class="list-group border-0" style="width: 100%">
+                                    {% for semana in semanasSilabos %}
+                                        <a href="{{ request.path }}?action=planrecursoclasevirtual&id={{ semana.silabo.id }}&ids={{ semana.id }}" class="fs-2 list-group-item list-group-item-action {% if semana.id == id_sem %} list-group-item-primary active{% endif %} rounded-0">
+                                            <i class="ti ti-calendar-check me-2"></i> [Semana {{ semana.numsemana }}]  {% if semana.examen %}(Examen parcial){% endif %}
+                                            <span class="ms-2 fs-2 {% if semana.id != id_sem %}text-muted{% endif %}">
+                                                    ({{ semana.fechainiciosemana|date:"Y-m-d" }} - {{ semana.fechafinsemana|date:"Y-m-d" }})
+{#                                                    {% if semana.tieneactividadplanificada %}&nbsp;<i class="fa fa-info-circle tr" title="Tiene planificado actividad en el sílabo para esta semana"></i>{% endif %}#}
+                                                </span>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+            <div class="col-lg-8 col-md-12 col-12">
+                {% include 'pro_aulavirtual/plansemanalrecursodetalle.html' %}
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade opacity" id="modalVerRecuerso" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg modal-fullscreen-lg-down" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"></h5>
+                </div>
+                <div class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <a href="javascript:void(0);" class="btn bg-danger text-white action-close">Cerrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade opacity" id="modalBanner" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-md modal-fullscreen-md-down" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"></h5>
+                </div>
+                <div class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <a href="javascript:void(0);" class="btn bg-primary text-white action-save">Guardar</a>
+                    <a href="javascript:void(0);" class="btn bg-danger text-white action-close">Cerrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+{% endblock %}

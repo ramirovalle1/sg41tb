@@ -1,0 +1,149 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src="/static/js/smoke.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/solicitud_practicasadm?aplazam=1&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/solicitud_practicasadm?aplazam=1&g='+id;
+                }else{
+                    location.href = '/solicitud_practicasadm?aplazam=1';
+                }
+            });
+            $("#carrerasel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/solicitud_practicasadm?aplazam=1&c='+id;
+                }else{
+                    location.href = '/solicitud_practicasadm?aplazam=1';
+                }
+            });
+
+            $(".aplazadosclass").click(function(){
+                var idins = $(this).attr('id');
+                $.get("/solicitud_practicasadm", {'action':'veraplazado', 'id': idins}, function(data) {
+                    $("#veraplazamodal .modal-body").html(data);
+                    $("#veraplazamodal").modal({"backdrop":"static","width":"50%"});
+                    $("#veraplazamodal").modal("show");
+                    $("#mensgestion").html('');
+                }, "html");
+            });
+            $("#cerraraplaza").click(function(){
+                $("#veraplazamodal").modal("hide");
+            });
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                Lista de alumnos aplazados.
+            </h3>
+            <br>
+        </div>
+        <div class='atright'>
+            <a href="/solicitud_practicasadm?" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span2' style="width: 95%">
+            <form class="form-search"> <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/solicitud_practicasadm?aplazam=1" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class="span4">
+            <b>Carrera</b>:
+            <select id='carrerasel' class="input-medium bigger" style="width: 85%"/>
+                <option value=''>-----</option>
+                {% for c in carreras %}
+                    <option value="{{ c.id }}" {% if carreraid == c.id %}selected="selected"{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="span2">
+            <b>Grupos</b>:
+            <select id='gruposel' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for g in grupos %}
+                    <option value="{{ g.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ g.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'><br/>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th> N° </th>
+                        <th> Carrera </th>
+                        <th> Nombre </th>
+                        <th>Tel&eacute;fonos</th>
+                        <th>Emails</th>
+                        <th> </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in inscripciones %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ i.carrera }}</td>
+                            <td>{{ i.persona }}</td>
+                            <td>{{ i.persona.telefono }} - {{ i.persona.telefono_conv }}</td>
+                            <td>{{ i.persona.email }}<br>
+                                {{ i.persona.email1 }}<br>
+                                {{ i.persona.email2 }}<br>
+                                {{ i.persona.emailinst }}<br>
+                            </td>
+                            <td>
+                                <a class="btn btn-info aplazadosclass" style="cursor: pointer" id="{{ i.id }}"> Ver prácticas aplazadas</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+{% block moreblock %}
+    <div class="modal fade static " id="veraplazamodal" style="margin-left: -500"  >
+        <div class="row-fluid modal-header">
+            <div class="row-fluid">
+                <div class="span6"></div>
+                <div class="span6"  id="mensgestion">
+
+                </div>
+            </div>
+            <div class="row-fluid">
+                <h4 id="nomalumn"><i> Matriculas aplazadas</i></h4>
+            </div>
+
+
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a style="cursor: pointer" id="cerraraplaza" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

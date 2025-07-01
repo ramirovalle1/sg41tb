@@ -1,0 +1,227 @@
+    {% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+
+            var idp = 0;
+            $("#id_nombre").attr({"autocomplete":"off"});
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/mtto_sectores?action=parroquias&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".editar").click(function() {
+                idp = $(this).attr('pid');
+                var nombre = $(this).attr('nombre');
+                var cantid = $(this).attr('cantid');
+                 $('#parroquia_panel #id_nombre').val(nombre);
+                 $('#parroquia_panel #id_canton').val(cantid);
+                $("#parroquia_panel").modal({"backdrop":"static","width":'40%','hight':'250px'});
+                $('#parroquia_panel').show();
+            });
+             $(".add").click(function() {
+                idp= 0;
+                 $('#parroquia_panel #id_nombre').val("");
+                 $('#parroquia_panel #id_canton').val('0');
+                $("#parroquia_panel").modal({"backdrop":"static","width":'40%','hight':'250px'});
+                $('#parroquia_panel').show();
+            });
+
+
+
+            $("#parroquia_panel .btn-buscar").click(function(){
+                  $.post("/mtto_sectores",{"action": "editaparr", "id":idp, "nombre": $("#id_nombre").val(), "canton": $("#id_canton").val()},function(data) {
+                   if(data.result=='ok'){
+                       if (idp == 0){
+                           alert("Parroquia Adicionada Correctamente");
+                       }else{
+                            alert("Parroquia Editada Correctamente");
+                       }
+
+                       location.reload();
+                   }else{
+                       alert("Ocurrio un Error... Intentelo Nuevamente");
+                   }
+                },"json");
+
+            });
+
+            $("#parroquia_panel .btn-cerrar").click(function(){
+              $('#parroquia_panel').modal('hide');
+                return false;
+            });
+
+
+
+
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span10"  style="text-align: center">
+            <h3>Parroquias </br>
+            </h3></br>
+        </div>
+        <div class="span1">
+            <a href="/mtto_sectores" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+    <div class="row-fluid">
+
+    </div>
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <div class='span5'>
+                <table class="table table-condensed table-bordered smaller2 tabla">
+                    <thead>
+                        <tr>
+                            <th title="Mantenimiento de Provincias" ><a href="/mtto_sectores"><i class="icon-list-alt icon-white"></i> Provincias </a></th>
+                            <th title="Mantenimiento de Cantones" ><a href="/mtto_sectores?action=cantones"><i class="icon-list-alt icon-white"></i> Cantones </a></th>
+                            <th title="Mantenimiento de Parroquias" id='sumin'><a  href="/mtto_sectores?action=parroquias"><i class="icon-list-alt icon-white" ></i> Parroquias </a></th>
+                            <th title="Mantenimiento de Sectores" id='sumin'><a  href="/mtto_sectores?action=sectores"><i class="icon-list-alt icon-white" ></i> Sectores </a></th>
+                        </tr>
+                   </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+    <br>
+
+
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+         <div class='span4'>
+{#     <div class='span2' style="width: 400px">#}
+            <form class="form-search"> <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/mtto_sectores?action=parroquias" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+     <div class='span4' style="text-align: right">
+{#     <div class='span2' style="width: 400px">#}
+         {% if not persona.pertenece_soporte %}
+            <a  style="cursor:pointer" class='btn btn-success add'><i class='icon-plus-sign'></i> Nueva Parroquia</a>
+         {% endif %}
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+         <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Provincia</th>
+                        <th style="text-align: center;">Canton</th>
+                        <th style="text-align: center;">Parroquia</th>
+                        <th style="text-align: center;width:10%;"></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for p in parroquias %}
+                        <tr>
+                            <td style="text-align: left;">{{ p.canton.provincia }}</td>
+                            <td style="text-align: left;">{{ p.canton }}</td>
+                            <td style="text-align: left;">{{ p.nombre }}</td>
+                            <td style="text-align: center;">
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                    </a>
+                                    <ul class="dropdown-menu pull-right" style="text-align: left">
+                                        {% if not persona.pertenece_soporte %}
+                                            <li><a style="cursor: pointer" class="editar" pid="{{ p.id }}" cantid="{{ p.canton_id }}" nombre="{{ p.nombre }}"> <i class='icon-edit'></i> Editar </a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not parroquias %}
+                        <tr>
+                            <td colspan="5">NO HAY REGISTROS</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class="span8">
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/mtto_sectores?action=parroquias&page=1">1</a></li>
+                            <li><a href="/mtto_sectores?action=parroquias&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/mtto_sectores?action=parroquias&page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/mtto_sectores?action=parroquias&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/mtto_sectores?action=parroquias&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/mtto_sectores?action=parroquias&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+     <div class="modal fade static" id="parroquia_panel"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Parroquia </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in frmparroquia %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+{% endblock %}

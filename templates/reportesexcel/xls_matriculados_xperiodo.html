@@ -1,0 +1,137 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+        indice = 0;
+        datosOK=false;
+
+        buscar_nivel = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Carrera', 'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#txt-carrera").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json')
+         };
+        
+         $('#txt-carrera').typeahead({source: buscar_nivel, updater: function(item) {
+                var results = $("#txt-carrera").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#txt-carrera").attr("myval",datos.id);
+                    }
+                }
+                return item;
+            }});
+
+        $("#generar").modal({width: '500px', backdrop: 'static'});
+        $("#generar").modal("show");
+
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            
+            
+
+            var carrera = $("#txt-carrera").attr('myval');
+            var periodo = $("#txt-periodo").val();
+            
+            if (!carrera) {
+                $("#tiempo-ejecucion").html('Tiempo de ejecucion promedio: 40 minutos')
+            }
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+            $.post("/xls_matriculados_xperiodo", {"action":"generarexcel", "carrera":carrera, "periodo":periodo}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 2500);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json").fail(function (jqXHR, textStatus, errorThrown) {
+                            console.log(errorThrown);
+                            console.log('getJSON request failed! ' + textStatus + ' eroro jqk' + jqXHR.responseText);
+                            $("#espera").modal("hide");
+                            Swal.fire("Error", "Error de conexión", 'error').then(function () {
+                                location.reload()
+                            });
+                    });
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+
+        $('#txt-carrera').prop('disabled', true)
+        $('#chk-carrera').click(() => {
+            if ($('#chk-carrera').is(':checked')) {
+                $('#txt-carrera').prop('disabled', false)
+            } else {
+                $('#txt-carrera').prop('disabled', true)
+            }
+        })
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="generar" style="display: none; position: relative">
+        <a href="#" style="text-decoration: none; font-size: 1.2rem; position: absolute; top: .5em; right: 1em" class="btn-cerrar">x</a>
+        <div class="modal-header">
+            <h3 class="paneltitle">Matriculados por Periodo</h3>
+        </div>
+        <div class="modal-body panelbody">
+            <form id="form" class='form-horizontal' action="" method="POST">
+                <div class="row-fluid">
+                    <div class="span12">
+                        <label for="txt-periodo">Periodo:</label>
+                        <select name="" id="txt-periodo">
+                            <option value="0">---</option>
+                            {% for p in periodo %}
+                                <option value="{{ p.id }}">{{ p.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row-fluid" style="margin-top: 1em; width: 97%">
+                    <div class="span12">
+                        <div style="display: flex; align-items: center; gap: .5em">
+                            <input type="checkbox" style="margin: 0" id="chk-carrera">
+                            <label for="chk-carrera" style="margin: 0">Carrera:</label>
+                        </div>
+                        <input type="text" id="txt-carrera">
+                    </div>
+                </div>
+
+
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+            <p id="tiempo-ejecucion"></p>
+        </div>
+    </div>
+{% endblock %}
+
+

@@ -1,0 +1,764 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript">
+
+        $(function() {
+
+            $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy",language: "es"});
+            $("#id_finicio, #id_ffin").datepicker({format:"dd-mm-yyyy",language: "es"});
+
+            var idregistro=0;
+            var nombrereferido="";
+            var nombrepersonarefiere="";
+
+            {% if error == 1 %}
+            $("#idmensaje").html('<h5 class="alert alert-danger">'+'{{ info }}'+' </h2>');
+            {% else %}
+             $("#idmensaje").html('');
+            {% endif %}
+
+
+            function validateDecimal(valor) {
+                var RE = /^\d*(\.\d{1})?\d{0,1}$/;
+                if (RE.test(valor)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+
+
+            pagarcomision = function(id,personareferido,referidoinscrito){
+              idregistro=id;
+              nombrereferido=referidoinscrito;
+              nombrepersonarefiere = personareferido
+
+              $("#registrarpago").modal({backdrop: 'static', keyboard: false, width: "25%", height: "20%"});
+              $("#registrarpago").modal('show');
+
+
+            }
+
+              vercomprobante = function(id,personareferido,referidoinscrito){
+              idregistro=id;
+              window.open('/reportes?action=run&direct=true&n=comprobantepago&rt=pdf&idreferido='+idregistro+'&personarefiere='+personareferido+'&referidoinscrito='+referidoinscrito);
+              location.href = '/referidos';
+
+              }
+
+             $("#idcerrar").click(function() {
+                 limpiarDatos();
+                $("#registrarpago").modal("hide");
+            });
+
+
+
+
+
+            function limpiarDatos(){
+                $("#helpvalor").html("");
+                $("#helpmotivo").html("");
+                $("#total").val(25);
+                $("#motivo_dev").val("");
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/referidos?s="+term;
+            }
+
+            $("#idregistrar").click(function() {
+                     $($("#total").get(0).parentNode).find(".help-text").html("");
+                     $($("#motivo_dev").get(0).parentNode).find(".help-motivo").html("");
+                     if ($("#total").val()>0) {
+                         if (validateDecimal($("#total").val())) {
+                             if ($("#motivo_dev").val()) {
+                                 showWaiting("Registrando Pago", "<i class='icon-refresh'></i> Espere unos segundos por favor...");
+                                 $("#registrarpago").modal("hide");
+                                 $.post("/referidos", {
+                                     "action": "pago_comision",
+                                     "total": $('#total').val(),
+                                     "motivo": $('#motivo_dev').val(),
+                                     "sesion_id": '{{ sesion.id }}',
+                                     "idreferido":idregistro
+                                 }, function (data) {
+                                     if (data.result == 'ok') {
+
+                                       window.open('/reportes?action=run&direct=true&n=comprobantepago&rt=pdf&idreferido='+idregistro+'&personarefiere='+nombrepersonarefiere+'&referidoinscrito='+nombrereferido,'_blank');
+                                       limpiarDatos();
+                                     } else {
+                                         smoke.alert(data.message);
+                                     }
+                                     hideWaiting();
+                                 }, "json");
+                             }else{
+                                 $($("#motivo_dev").get(0).parentNode).find(".help-motivo").html("Debe ingresar un observación");
+                             }
+
+
+                         } else {
+                             $($("#total").get(0).parentNode).find(".help-text").html("Solo números y debe tener maximo 2 decimales");
+                         }
+                     }else{
+                         $($("#total").get(0).parentNode).find(".help-text").html("El valor debe ser mayor a 0");
+                     }
+
+            });
+
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/referidos?s="+term;
+            });
+
+            $('#searchfield').bind('keyup', function (e) {
+                var key = e.keyCode || e.which;
+                if (key === 13) {
+                    var term = $("#searchfield").val().toUpperCase();
+                    location.href = "/referidos?s="+term;
+                };
+            });
+
+            $("#descargarchivo").click(function() {
+                $("#num_reporte").val(1);
+                accion = $(this).attr("ac");
+                $("#id_inicio").val('');
+                $("#id_fin").val('');
+                $("#pregunta").modal({backdrop: 'static', keyboard: false, width: "15%", height: "15%"});
+                $("#pregunta").modal("show");
+
+            });
+            $(".aprobar").click(function() {
+                var estado = $(this).attr("estado");
+                var rid = $(this).attr("rid");
+                if (estado == 'False'){
+                    est = 'Aprobar';
+                }else{
+                    est = 'Desaprobar';
+                }
+
+
+                smoke.confirm("Esta Seguro de "+ est +" el Pago " , function(e){
+
+                    if (e){
+                        showWaiting("Espere un momento por favor",'Verificando Registro');
+                         $.post("/referidos", {"action": "cambiaestado", "rid" : rid}, function (data) {
+                                if (data.result == 'ok') {
+                                    smoke.alert("REGISRTRO GUARDADO CORRECTAMENTE");
+                                    location.reload();
+
+                                }else{
+
+                                    smoke.alert(data.mensaje );
+                                }
+                             hideWaiting();
+                         }, 'json');
+                        }
+                        }, {
+                            ok: "Si",
+                            cancel: "No",
+                            classname: "custom-class",
+                            reverseButtons: true
+                        });
+
+            });
+
+            function cargarHistorial(data){
+                   var ins="";
+                   var pag="";
+                    $("#listahistorial").html("");
+                   for (var m in data.listahistorial) {
+                       if(data.listahistorial[m].inscripcion){
+                          ins= 'Si';
+                       }else{
+                          ins= 'No';
+                       }
+
+
+                       $("#listahistorial").append("<tr><td>"+data.listahistorial[m].fecharegistro +"</td><td>"+data.listahistorial[m].gestor +"</td><td>" + data.listahistorial[m].efectivo + "</td><td>" + data.listahistorial[m].razonestado + "</td>" +
+                           "<td style='text-align: center'>" + ins + "</td>" +
+                           "<td>"+data.listahistorial[m].fechainscripcion+"</td><td>"+data.listahistorial[m].observacion+"</td></tr>");
+                   }
+            }
+
+            vergestion = function(id,apellido1,apellido2,nombre) {
+
+                $.post("/referidos", {
+                        "action": "ver_gestionreferido",
+                         idpreregistro:id
+                    }, function (data) {
+                        if (data.result == 'ok') {
+
+                               cargarHistorial(data);
+                               $("#lblnombreestudiante").html(apellido1+" "+" "+apellido2+" "+nombre);
+                               $("#vergestionreferido").modal({backdrop: 'static',width:"-50% !important",keyboard: false});
+                               $("#vergestionreferido").modal("show");
+                        } else {
+                           smoke.alert(data.message);
+                        }
+                        hideWaiting();
+                }, 'json');
+
+            }
+
+
+             $("#vergestionreferido .btn-cerrar").click(function() {
+                $("#vergestionreferido").modal('hide');
+
+            });
+
+            $("#selector").change(function() {
+                var reporte = $("#selector").val();
+                descarga_reporte(reporte);
+            });
+
+            descarga_reporte = function(reporte) {
+                if(reporte=="down1"){
+                    $("#id_inicio").val('');
+                    $("#id_fin").val('');
+                    $("#pregunta").modal({backdrop: 'static', keyboard: false, width: "15%", height: "15%"});
+                    $("#pregunta").modal("show");
+                }
+                else if(reporte=='down2'){
+                    $("#id_finicio").val('');
+                    $("#id_ffin").val('');
+                    $("#id_inscripcion").val('');
+                    $("#id_administrativo").val('');
+                    $("#reporte2").modal({backdrop: 'static', keyboard: false, width: "30%", height: "50%"});
+                    $("#reporte2").modal("show");
+                }
+            };
+
+            $("#pregunta .btn-consultar").click(function() {
+                $("#pregunta").modal('hide');
+                var inicio = $("#id_inicio").val();
+                var fin = $("#id_fin").val();
+                showWaiting("Generando el Archivo","Espere un Momento");
+                 $.post("/referidos", {"action":"generararchivo","fechainicio":inicio,"fechafinal":fin}, function(data) {
+                        if (data.result == 'ok') {
+                            location.href=data.url;
+                        }else{
+                            smoke.alert("Problema para Generar el Archivo ( "+ data.message + ")");
+                        }
+                     hideWaiting();
+                 }, 'json');
+            });
+
+            $("#pregunta .btn-cerrar").click(function() {
+                $("#pregunta").modal('hide');
+
+            });
+
+            $("#reporte2 .btn-consultar").click(function() {
+                $("#reporte2").modal('hide');
+                    var finicio = '';
+                    var ffin = '';
+                    var esadmin = 0;
+                    var rangofechas = 0;
+                if ($("#id_rangofechas").is(':checked')){
+                    rangofechas = 1;
+                    finicio = $("#id_finicio").val();
+                    ffin = $("#id_ffin").val();
+                }
+                if ($("#id_esadmin").is(':checked')){
+                    esadmin = 1;
+                }
+                var inscripcion = $("#id_inscripcion").val();
+                var administrativo = $("#id_administrativo").val();
+                showWaiting("Generando el Archivo","Espere un Momento");
+                 $.post("/referidos", {"action":"generar_reporte2","fechainicio":finicio,"fechafinal":ffin,"inscripcion":inscripcion,"administrativo":administrativo,"esadmin":esadmin,"rangofechas":rangofechas}, function(data) {
+                        if (data.result == 'ok') {
+                            location.href=data.url;
+                        }else{
+                            smoke.alert("Problema para Generar el Archivo ( "+ data.message + ")");
+                        }
+                     hideWaiting();
+                 }, 'json');
+            });
+
+            $("#reporte2 .btn-cerrar").click(function() {
+                $("#reporte2").modal('hide');
+
+            });
+
+            $($("#id_administrativo").get(0).parentNode.parentNode).hide()
+            $("#id_esadmin").click(function(){
+                if ($("#id_esadmin").is(':checked')){
+                    $($("#id_inscripcion").get(0).parentNode.parentNode).hide()
+                    $($("#id_administrativo").get(0).parentNode.parentNode).show()
+                }else{
+                    $($("#id_inscripcion").get(0).parentNode.parentNode).show()
+                    $($("#id_administrativo").get(0).parentNode.parentNode).hide()
+                }
+            });
+
+            $($("#id_finicio").get(0).parentNode.parentNode).hide()
+            $($("#id_ffin").get(0).parentNode.parentNode).hide()
+            $("#id_rangofechas").click(function(){
+                if ($("#id_rangofechas").is(':checked')){
+                    $($("#id_finicio").get(0).parentNode.parentNode).show()
+                    $($("#id_ffin").get(0).parentNode.parentNode).show()
+                }else{
+                    $($("#id_finicio").get(0).parentNode.parentNode).hide()
+                    $($("#id_ffin").get(0).parentNode.parentNode).hide()
+                }
+            });
+
+
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                Listado de Referidos
+            </h3>
+            <br>
+        </div>
+    </div>
+
+    <div class='row-fluid' id="idmensaje">
+    </div>
+    <div class="row-fluid">
+
+            <div class='span12'>
+                <div class='span6'>
+                    <form class="form-search"> <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                    <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                    {% if search %}
+                        <a href="/referidos" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+                    {% endif %}
+                   {% if  perms.sga.delete_referidosinscripcion or perms.sga.add_referidos %}
+                        <a href="#" id='descargarchivo' hidden class='btn btn-success'><i class="icon-arrow-down icon-white"></i> Descargar</a>
+                   {% endif %}
+
+                    </form>
+                </div>
+                <div class='span5' style="text-align: right">
+                    <b>Descargar Reportes</b>
+                    <select id="selector" class="form-control">
+                        <option value="">-----</option>
+{#                        <option value="{{ t.id }}" {% i tipo_id  %}{% if tipo_id.id == t.id %}selected="selected"{% endif %}{% endif %}>{{ t.nombre }}</option>#}
+                        <option value="down1">Por rango de fechas (Posible inscripcion)</option>
+{#                        <option value="down2">Descargar por fecha (Comisionan)</option>#}
+                        <option value="down2">Por persona que refiere (Comisiona)</option>
+                    </select>
+                </div>
+            </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Fecha Registro</th>
+                <th>Nombres</th>
+                <th>Cedula</th>
+                <th style="width: 100px">Tel&eacute;fonos</th>
+                <th>Email</th>
+                <th>Persona que Refiere</th>
+                <th>Vendedor</th>
+                <th style="text-align: center">Inscripción Pagada</th>
+                <th style="text-align: center">Matrícula Pagada</th>
+                <th style="text-align: center">Pago de Comisión</th>
+                <th style="text-align: center">Online</th>
+                <th style="text-align: center">Conducciòn</th>
+                <th style="text-align: center">Estado</th>
+                <th style="text-align: center">Pago Aprobado</th>
+                <th style="width: 50px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for r in referidos %}
+                    <tr>
+                        <td> {{ r.fecha|date:'Y-m-d' }} </td >
+                        <td> {{ r.apellido1 }} {{ r.apellido2 }} {{ r.nombres }}   </td >
+                        <td>{{ r.cedula }} {% if r.pasaporte %} <br/> {{ r.pasaporte }} {% endif %}</td>
+                        <td>
+                            {% if r.telefono %}{{ r.telefono }}{% endif %}  {% if r.telefono_conv %} - {{ r.telefono_conv }}{% endif %}
+                            <br/>{% if r.celular %}{{ r.celular }}{% endif %}
+                        </td>
+                        <td>
+                            {% if r.email %}
+                                <a href="mailto:{{ r.email }}" style="color: #003bb3">
+                                    {{ r.email }}
+                                </a>
+                            {% endif %}
+{#                            <br/>{{ inscripcion.persona.emails }}#}
+                        </td>
+                        <td>{% if r.inscripcion %} {{ r.inscripcion }} <span class="badge badge-warning" title="ALUMNO">AL</span> {% else %} {{  r.administrativo }} <span class="badge badge-success" title="ADMINISTRATIVO">AD</span>  {% endif %} </td >
+                        {% if  r.online %}
+                            <td> {{  r.verficarNombreVendedor }}   </td >
+                        {% else %}
+                             {% if  r.conduccion %}
+                                <td> {{  r.verficarNombreVendedorConduccion }}   </td >
+                             {% else %}
+                                <td> {% if  r.verficarNombreVendedor %}{{ r.verficarNombreVendedor.nombre_completo }} {{ r.verficarNombreVendedor.telefono }} {% else %}No tiene Gestor {% endif %} </td >
+                             {% endif %}
+
+                        {% endif %}
+                        {% if  r.online %}
+                            <td style="text-align: center">
+                                {% if  r.verificar_inscrip_online %}
+                                    <img src='/static/images/16/true.png' width="14px" alt='' border="0"/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' width="14px" alt='' border="0"/>
+                                {% endif %}
+                            </td >
+                        {% else %}
+                            {% if  r.conduccion %}
+                                <td style="text-align: center">{% if  r.verificar_inscrip_conduccion %}
+                                    <img src='/static/images/16/true.png' width="14px" alt='' border="0"/> </td >
+                                {% else %}
+                                    <img src='/static/images/16/false.png' width="14px" alt='' border="0"/> </td >
+                                {% endif %}
+                            {% else %}
+                                <td style="text-align: center">{% if  r.inscrito %}
+                                    <img src='/static/images/16/true.png' width="14px" alt='' border="0"/> </td >
+                                {% else %}
+                                    <img src='/static/images/16/false.png' width="14px" alt='' border="0"/> </td >
+                                {% endif %}
+                            {% endif %}
+
+                        {% endif %}
+
+                        {% if  r.online %}
+                            <td style="text-align: center">{% if  r.verificar_pago_online %}
+                                <img src='/static/images/16/true.png' width="14px" alt='' border="0"/> </td >
+                            {% else %}
+                                <img src='/static/images/16/false.png' width="14px" alt='' border="0"/> </td >
+                            {% endif %}
+
+                        {% else %}
+
+                        {% if  r.conduccion %}
+
+                            <td style="text-align: center">{% if  r.verificar_pago_conduccion %}
+                                <img src='/static/images/16/true.png' width="14px" alt='' border="0"/> </td >
+                                {% else %}
+                                <img src='/static/images/16/false.png' width="14px" alt='' border="0"/> </td >
+                            {% endif %}
+
+                        {% else %}
+                            <td style="text-align: center">{% if  r.verificar_pago_matricula %}
+                                <img src='/static/images/16/true.png' width="14px" alt='' border="0"/> </td >
+                                {% else %}
+                                <img src='/static/images/16/false.png' width="14px" alt='' border="0"/> </td >
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                        <td style="text-align: center">{% if  r.pagocomision %}
+                            <img src='/static/images/16/true.png' width="14px" alt='' border="0"/> </td >
+                            {% else %}
+                            <img src='/static/images/16/false.png' width="14px" alt='' border="0"/> </td >
+                            {% endif %}
+                        <td style="text-align: center">{% if  r.online %}
+                            SI
+                            {% else %}
+                            NO
+                            {% endif %}
+                        <td style="text-align: center">{% if  r.conduccion %}
+                            SI
+                            {% else %}
+                            NO
+                            {% endif %}
+                        <td style="text-align: center">{% if  r.activo %}
+                            <img src='/static/images/16/true.png' width="14px" alt='' border="0"/> </td >
+                            {% else %}
+                            <img src='/static/images/16/false.png' width="14px" alt='' border="0"/> </td >
+                            {% endif %}
+                        <td
+                            {% if perms.sga.change_referidosinscripcion  and  not r.pagocomision  %}
+                                style="text-align: center;cursor: pointer"  class="aprobar" rid='{{ r.id }}' estado="{{ r.aprobado_pago  }}"
+                            {% else %}
+                                style="text-align: center;"
+                            {% endif%}>
+                            {% if  r.aprobado_pago %}
+                                <img src='/static/images/16/true.png' width="14px" alt='' border="0"/>
+                            {% else %}
+                                 <img src='/static/images/16/false.png' width="14px" alt='' border="0"/>
+                            {% endif %}
+                            <br>
+                            {% if r.online %}
+                                {% if r.verificar_promocion_rsonrisas_online %}
+                                    {% if verificar_pago_cuota1_online %}
+                                        <span class="label label-success tl" title="Promocion Regala Sonrisas (Cuota 1 pagada)">RS</span>
+                                    {% else %}
+                                        <span class="label label-important tl" title="Promocion Regala Sonrisas (Cuota 1 no pagada)">RS</span>
+                                    {% endif %}
+                                {% endif %}
+                            {% else %}
+                                {% if r.inscripcionref.promocion.id == 13 %}
+                                    {% if r.verificar_pago_1 %}
+                                        <span class="label label-success tl" title="Promocion Regala Sonrisas (Cuota 1 pagada)">RS</span>
+                                    {% else %}
+                                        <span class="label label-important tl" title="Promocion Regala Sonrisas (Cuota 1 no pagada)">RS</span>
+                                    {% endif %}
+                               {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+
+                            <div class="btn-group">
+
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+
+                                        {% if not  r.inscrito %}
+                                           {%  if  perms.sga.delete_referidosinscripcion %}
+                                                <li><a href="/referidos?action=eliminar_referido&id={{ r.id }}"><i class="icon-remove"></i> Eliminar</a></li>
+                                           {% endif %}
+                                        {% endif %}
+                                        <li><a href="#" onclick="vergestion('{{ r.id }}','{{ r.apellido1 }}', '{{ r.apellido2 }}','{{ r.nombres }}')"   ><i class="icon-eye-close"></i> Ver Gestion</a></li>
+                                        {% if sesion %}
+                                            {% if  r.online %}
+                                                {% if r.verificar_inscrip_online and r.verificar_pago_online %}
+                                                    {% if not  r.pagocomision and r.aprobado_pago %}
+                                                        <li><a onclick="pagarcomision('{{ r.id }}','{{ r.nomreferido }}','{{ r.nompersonarefiere }}');" ><i class="icon-money"></i> Pago Comisión</a></li>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% else %}
+                                                {% if  r.conduccion %}
+                                                    {% if  r.verificar_inscrip_conduccion and r.verificar_pago_conduccion  %}
+                                                        {% if not  r.pagocomision and r.aprobado_pago %}
+                                                            <li><a onclick="pagarcomision('{{ r.id }}','{{ r.nomreferido }}','{{ r.nompersonarefiere }}');" ><i class="icon-money"></i> Pago Comisión</a></li>
+                                                        {% endif %}
+                                                    {% endif %}
+
+                                                {% else %}
+                                                    {% if r.inscrito and r.verificar_pago_matricula %}
+                                                        {% if not  r.pagocomision  and r.aprobado_pago %}
+                                                            <li><a onclick="pagarcomision('{{ r.id }}','{{ r.nomreferido }}','{{ r.nompersonarefiere }}');" ><i class="icon-money"></i> Pago Comisión</a></li>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
+
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if r.pagocomision %}
+                                              <li><a href="#" onclick="vercomprobante('{{ r.id }}','{{ r.nomreferido }}','{{ r.nompersonarefiere }}');" ><i class="icon-pinterest"></i> Comprobante Pago Comisión</a></li>
+                                        {% endif %}
+                                    </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            {% if not referidos %}
+                <tr>
+                    <td colspan="10">
+                        NO HAY REFERIDOS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/referidos?page=1">1</a></li>
+                            <li><a href="/referidos?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/referidos?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/referidos?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/referidos?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/referidos?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="desactivacion" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> ¿Est&aacute; seguro de inactivar a este alumno?</h3>
+        </div>
+        <div class="modal-body">
+            <p> Este usuario no podr&aacute; ingresar al sistema ...</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-desactivar"> Desactivar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="motivodesactivacion" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> Motivo de Desactivacion</h3>
+        </div>
+        <div class="modal-body">
+{#            {% if inscripcion.tiene_inactivacion %}#}
+{#                  <p> dkajdkjsadkjsafhkjdsfhksjdf}</p>#}
+            {{ inscripcion }}
+{#            {% endif %}#}
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="resetear" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle1"> ¿Desea Resetear la Clave al Usuario?</h3>
+        </div>
+        <div class="modal-body">
+            <p> El usuario ingresar&aacute; nuevamente al sistema con la clave por defecto {% if clave %}<b>{{ clave }}</b>{% endif %}</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-resetear"> Resetear</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="registrarpago" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle1"> Registro del Pago</h3>
+        </div>
+        <div class="modal-body">
+
+                 <label class="control-label" style="text-align: left;font-size: 15px" > <b>Valor:</b></label>
+                  <div class="controls">
+                      <input type="text" id='total'  class="span2" style="text-align: right;font-size: 20px;resize:none" value="25"/>
+                      <p class="help-text" id="helpvalor" style="text-align: center;font-size: 20px;color:red;"> </p>
+                 </div>
+                 <label class="control-label" style="text-align: left;font-size: 15px" > <b>Observación:</b></label>
+                  <div class="controls">
+                  <textarea id='motivo_dev' rows="5" class="span4" style="text-align: left;font-size: 20px;resize:none" ></textarea>
+                  <p class="help-motivo" id="helpmotivo" style="text-align: center;font-size: 20px;color:red;"> </p>
+                 </div>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar" id="idcerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-resetear" id="idregistrar"> Registrar</a>
+        </div>
+    </div>
+
+
+
+
+
+
+     <div class="modal fade static" id="vergestionreferido" style="width: 1020px;left: -110px;margin-left: 20%;margin-top: -97.0104px;">
+
+            <div class="modal-header">
+                <h3 id="paneltitle1" style="text-align: center"> Ver Gestión</h3>
+                <h3 id="lblnombreestudiante" style="text-align: left"> </h3>
+            </div>
+            <div class="modal-body" style="min-height: 250px;max-height: 250px;text-align: left;overflow: auto">
+                <div class="col-md-12">
+                       <div class="table-responsive">
+                            <table class="table">
+                                <thead class="bg-teal bg-lighten-4">
+                                    <tr>
+                                        <th >Fecha Gestión</th>
+                                        <th >Usuario</th>
+                                        <th >Efectivo</th>
+                                        <th >Razón Estado</th>
+                                        <th >Se Inscribirá?</th>
+                                        <th >Fecha Posible Inscripción/Volver a llamar</th>
+                                        <th >Observación</th>
+
+                                    </tr>
+                                </thead>
+                                <tbody id="listahistorial">
+
+                                </tbody>
+                            </table>
+                       </div>
+
+                </div>
+            </div>
+
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+        </div>
+    </div>
+
+
+
+    <div class="modal fade static" id="pregunta" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese las Fechas</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <input type='hidden' name='num_reporte' id='num_reporte' />
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formestd %}
+               <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-consultar"> Generar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="reporte2" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese Datos</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="form_comisiona"  action="" method="POST">
+            {% for field in form_comisiona %}
+               <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-consultar"> Generar</a>
+        </div>
+    </div>
+
+{% endblock %}
+

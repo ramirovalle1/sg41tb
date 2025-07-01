@@ -1,0 +1,312 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript">
+    $(function(){
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/jornada?action=ver_pendientes&s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+        {#------------------------------------------------------ ADD SESION A JORNADA----------------------------------------------------------------#}
+        $(".add_jornada").click(function(){
+            var idsesion = $(this).attr("sesion_id");
+            var idjornada = $(this).attr("jid");
+            var snombre = $(this).attr("snombre");
+            var jnombre = $(this).attr("jnombre");
+            smoke.confirm('Esta seguro de agregar la sesion "'+snombre+'" a la jornada "'+jnombre+'"', function(e){
+            if (e){
+                $.post("/jornada",{"action": "add_sesionjornada","idjornada":idjornada,"sesion":idsesion},function(data) {
+                    if(data.result=='ok'){
+                        alert("Registro agregado"+nombre);
+                        location.reload()
+                   }else{
+                        alert(data.result);
+                   }
+                },"json");
+            }else{
+            }
+            }, {
+            ok: "Si",
+            cancel: "No",
+            classname: "custom-class",
+            reverseButtons: true
+            });
+        });
+
+        {#------------------------------------------------------ ADD SESION NUEVA----------------------------------------------------------------#}
+    $('.nueva_sesion').click(function(){
+        $("#agregar_sesion #paneltitle2").html('Nueva sesion');
+        $("#agregar_sesion").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_sesion").modal("show");
+    });
+
+    {#------------------------------------------------------ MODIFICAR----------------------------------------------------------------#}
+    $('.modificar').click(function(){
+        $("#id_sesion").val($(this).attr('sesion'));
+        $("#id_comienza").val($(this).attr('comienza'));
+        $("#id_termina").val($(this).attr('termina'));
+        if (($(this).attr('lunes')) == "True"){
+            $("#id_lunes").attr('checked',true);
+        }else{
+            $("#id_lunes").attr('checked',false);
+        }
+        if (($(this).attr('martes')) == "True"){
+            $("#id_martes").attr('checked',true);
+        }else{
+            $("#id_martes").attr('checked',false);
+        }
+        if (($(this).attr('miercoles')) == "True"){
+            $("#id_miercoles").attr('checked',true);
+        }else{
+            $("#id_miercoles").attr('checked',false);
+        }
+        if (($(this).attr('jueves')) == "True"){
+            $("#id_jueves").attr('checked',true);
+        }else{
+            $("#id_jueves").attr('checked',false);
+        }
+        if (($(this).attr('viernes')) == "True"){
+            $("#id_viernes").attr('checked',true);
+        }else{
+            $("#id_viernes").attr('checked',false);
+        }
+        if (($(this).attr('sabado')) == "True"){
+            $("#id_sabado").attr('checked',true);
+        }else{
+            $("#id_sabado").attr('checked',false);
+        }
+        if (($(this).attr('domingo')) == "True"){
+            $("#id_domingo").attr('checked',true);
+        }else{
+            $("#id_domingo").attr('checked',false);
+        }
+        if (($(this).attr('estado')) == "True"){
+            $("#id_estado").attr('checked',true);
+        }else{
+            $("#id_estado").attr('checked',false);
+        }
+
+        $("#idsesion").val($(this).attr('id'));
+        $($("#id_sesion").get(0).parentNode).find(".help-text").html('');
+        $("#agregar_sesion #paneltitle2").html('Editar sesion '+($(this).attr('sesion')));
+        $("#agregar_sesion").modal({"backdrop":"static","width":"40%"});
+        $("#agregar_sesion").modal("show");
+    });
+
+    $("#agregar_sesion .btn-cerrar").click(function(){
+        $(".formError").removeClass('aparece');
+        $(".formError").addClass('oculta');
+        $("#agregar_sesion").modal("hide");
+        document.getElementById("formulario").reset();
+        return false;
+    });
+
+    $("#formbutton").click(function(){
+        $(".formError").removeClass('oculta');
+        $(".formError").addClass('aparece');
+    });
+
+        {#------------------------------------------------------ ELIMINAR SESIONJORNADA----------------------------------------------------------------#}
+        $(".eliminar_sesion").click(function(){
+            var id = $(this).attr("id");
+            var nom_sesion = $(this).attr("sesion_nombre");
+            var nom_jornada =$(this).attr("jnombre");
+            smoke.confirm('Esta seguro de eliminar la sesion "'+nom_sesion+'"', function(e){
+            if (e){
+                $.post("/jornada",{"action": "eliminar_sesionjornada","id_sesion":id},function(data) {
+                    if(data.result=='ok'){
+                        alert("Registro Eliminado");
+                        location.reload()
+                   }else{
+                        alert(data.result);
+                   }
+                },"json");
+            }else{
+            }
+            }, {
+            ok: "Si",
+            cancel: "No",
+            classname: "custom-class",
+            reverseButtons: true
+            });
+        });
+
+        {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+        {% if error %}
+            smoke.alert('{{ error }}');
+
+        {% endif %}
+
+    });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span1"></div>
+        <div class="span9"  >
+            <h3 >Listado de sesiones pendientes por agregar a jornadas</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/jornada" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+{#        <div class='span2'>#}
+{#            <a href="#" class='btn btn-success nueva_sesion'><i class="icon-plus icon-white"></i> Nueva Sesion</a>#}
+{#        </div>#}
+        <div class='span4'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/jornada?action=ver_pendientes" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span1"></div>
+        <div class="span10 ">
+            <table class="table table-condensed">
+                <thead>
+                    <tr>
+                        <th> Sesiones</th>
+                        <th style="text-align: center"> Hora de inicio</th>
+                        <th style="text-align: center"> Hora de fin</th>
+                        <th style="width:65px; text-align:center"> Lunes</th>
+                        <th style="width:65px; text-align:center"> Martes</th>
+                        <th style="width:65px; text-align:center"> Miercoles</th>
+                        <th style="width:65px; text-align:center"> Jueves</th>
+                        <th style="width:65px; text-align:center"> Viernes</th>
+                        <th style="width:65px; text-align:center"> Sabado</th>
+                        <th style="width:65px; text-align:center"> Domingo</th>
+                        <th style="width:65px; text-align:center"> Estado</th>
+                        <th style="width: 50px"> </th>
+                </thead>
+
+                <tbody>
+                    {% for c in pendientes %}
+                        <tr>
+                            <td> {{ c.nombre }} </td>
+                            <td style="text-align: center"> {{ c.comienza|time:'H\hi' }} </td>
+                            <td style="text-align: center"> {{ c.termina|time:'H\hi' }} </td>
+
+                            <td style="text-align: center">
+                                {% if c.lunes %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if c.martes %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if c.miercoles %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if c.jueves %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if c.viernes %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if c.sabado %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if c.domingo %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if c.estado %}
+                                   <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                   <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% for j in jornadas %}
+                                             <li><a style="cursor: pointer" jid="{{ j.id }}" jnombre="{{ j.nombre }}" sesion_id="{{ c.id }}" snombre="{{ c.nombre }}" class="add_jornada" title="Agregar sesion a jornada {{ j.nombre }}"><i class="icon-plus"></i> {{ j.nombre }}</a></li>
+                                        {% endfor %}
+{#                                        <li><a href="/jornada?action=ver_turnos&id={{ c.id }}"><i class="icon-list"></i>  Ver turnos</a></li>#}
+                                        <li><a style="cursor:pointer" id="{{ c.id }}" sesion_nombre="{{ c.nombre }}" class="eliminar_sesion"><i class="icon-remove"></i>  Eliminar sesion</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not pendientes %}
+                        <tr>
+                            <td colspan="10">NO EXISTE REGISTRO</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_sesion">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/jornada?action=ver_sesiones&id={{ jornada.id }}" method="POST"  >
+                <input type='hidden' name='action' value='add_sesion' />
+                <input type='hidden' name='idsesion' id='idsesion' />
+                {% for c in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

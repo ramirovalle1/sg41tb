@@ -1,0 +1,76 @@
+<script type="text/javascript">
+
+    $('.validar').click(function(){
+        $("#examenexterno_panel").modal('hide');
+        $("#idpersonaexamval").val($(this).attr('idpersonaexam'));
+        $("#validaexamendesac_panel").modal({"backdrop":"static", width: "40%"});
+        $("#validaexamendesac_panel").modal("show");
+
+        return false;
+    });
+
+    $(".verexamen").click(function(){
+        window.open('/listapersonaexter?action=resultado&id='+$(this).attr('idpersexam')+'&idexaext='+$(this).attr('idexaext'),"Examen", 'width='+(screen.availWidth)+',height ='+(screen.availHeight)+',fullscreen=yes,menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=no');
+    });
+    $(".detavaliexa").click(function(){
+        $("#examenexterno_panel").modal('hide');
+        var nombre = $(this).attr('nombre');
+        $.get("/listapersonaexter",{"action": "detavaliexa","id":$(this).attr('idpersonaextr')},function(data) {
+            $("#detallevalid_panel .modal-body").html(data);
+            $("#detallevalid_panel #paneltitle1").html(" Nombres:   "+nombre);
+            $("#detallevalid_panel").modal({"backdrop":"static", keyboard: 'false', width: "60%", height: "200px" });
+            $("#detallevalid_panel").modal("show");
+        }, "html");
+        return false;
+    });
+
+
+
+</script>
+<div class="row-fluid">
+<div class="span12 ">
+    <table class="table table-condensed ">
+        <thead>
+            <tr>
+                <th>Exam&eacute;n</th>
+                <th>Puntaje</th>
+                <th>Valido</th>
+                <th>Consulta</th>
+                <th>Ver Examen</th>
+            </tr>
+        </thead>
+    <tbody>
+        {% for p in personaexamenes %}
+            <tr>
+
+                <td > {{ p.examenexterno.titulo }}
+                    {% if p.finalizado %}
+                        {% if   p.puntaje < nota_examen %} <span class="label label-important">Reprobado</span>{% else %} <span class="label label-success">Aprobado</span> {% endif %}
+                    {% else %}
+                        <span class="label label-warning">Realizando</span>
+                    {% endif %}
+                </td>
+                <td > {% if p.puntaje %}{{ p.puntaje }}{% else %}0{% endif %}</td>
+                <td id="valida{{ p.id }}">
+                    {% if p.valida %}
+                        <a idpersonaexam="{{ p.id }}" style="cursor: pointer" activ="{{ p.valida }}" class="validar"> <img src='/static/images/16/true.png' alt='' border="0"/> </a>
+                    {% else %}
+                        <a idpersonaexam="{{ p.id }}" style="cursor: pointer" activ="{{ p.valida }}" class="validar"> <img src='/static/images/16/false.png' alt='' border="0"/> </a>
+                    {% endif %}
+                </td>
+                <td>{% if p.detalledesactiva %}<a style="cursor: pointer" idpersonaextr="{{ p.id }}" nombre="{{ p.personaextern.nombres }}" class="btn btn-info detavaliexa">Detalle</a>{% endif %}</td>
+                <td>{% if p.finalizado and p.valida %}<a class="btn btn-success verexamen" idpersexam="{{ p.id }}" idexaext="{{ p.examenexterno.id }}" >Ver examen</a>{% endif %}</td>
+            </tr>
+        {% endfor %}
+        {% if not personaexamenes %}
+            <tr>
+                <td > NO EXISTEN REGISTROS
+
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>
+</div>
+

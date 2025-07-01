@@ -1,0 +1,114 @@
+{% extends "practicasadmin/formvehic.html" %}
+{% block extraheading %}
+{% endblock %}
+{% block javascript %}
+    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>
+{#    <script src='/static/js/adicionarproveedor.js'></script>#}
+
+    <script>
+    $(function() {
+
+        $("#id_nombre,#id_presentacion,#id_bodega,#id_cantidad,#id_fechavencimiento,#id_lote").addClass("validate[required]");
+        $($("#id_nombre").get(0).parentNode.parentNode).prepend("<h4 class='alert alert-success'>DATOS </h4>" );
+        $("#id_fechavencimiento").datepicker({format:"dd-mm-yyyy"});
+        $("#id_cantidad").addClass("input-small");
+        $("#id_costo").floats().addClass("input-small");
+        $("#id_lote").addClass("input-medium");
+        $("#id_bodega").addClass("input-large");
+        {% if regismed %}
+            $("#id_fechavencimiento,#id_lote").addClass("validate[required]",false);
+            $("#id_nombre").attr("readonly",true);
+            $("#id_presentacion").attr("readonly",true);
+            $("#id_bodega").attr("readonly",true);
+            $("#id_cantidad").attr("readonly",true);
+            $("#id_lote").attr("readonly",true);
+{#            $("#id_factura").attr("readonly",true);#}
+{#            $("#id_iva").attr("readonly",true);#}
+{#            $("#id_factura").attr("disabled",true);#}
+{#            $("#id_iva").attr("disabled",true);#}
+            $($("#id_fechavencimiento").get(0).parentNode.parentNode).hide();
+            $($("#id_motivo").get(0).parentNode.parentNode).hide();
+            $($("#id_lote").get(0).parentNode.parentNode).hide();
+        {% endif %}
+
+
+        $("form").validationEngine();
+        var numeros1="0123456789";
+        function solo_numeros(texto){
+           var num = 0;
+           for(i=0; i<texto.length; i++){
+              if (numeros1.indexOf(texto.charAt(i),0)!=-1){
+                  num = num +1;
+              }
+           }
+           return num;
+        }
+        prety = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(2), {prefix: '$', thousandSeparator: ',', decimalSeparator: ".", sufix: '', decimalPlaces: 2});
+        };
+
+        pretyPct = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(1), {prefix: '', thousandSeparator: ',', decimalSeparator: ".", sufix: '%', decimalPlaces: 1});
+        };
+
+        simple = function(sid) {
+            return Big($.fn.floats.simplify_fn($(sid).val(), {prefix: '$', thousandSeparator: ',', sufix: '%'}));
+        };
+
+        simpleV = function(v) {
+            return Big($.fn.floats.simplify_fn(v, {prefix: '$', thousandSeparator: ','}));
+        };
+
+
+        $("#id_cantidad").blur(function(){
+            var v = $("#id_cantidad").val();
+            var p = solo_numeros(v);
+            if (p != v.length)
+            {
+              $($("#id_cantidad").get(0).parentNode).find(".help-text").html("Ingresar solo Numeros");
+              $("#id_cantidad").val("");
+              $("#id_cantidad").focus();
+            }
+            else{
+                {% if regismed %}
+                    var cant = $(this).val();
+                    if(cant!='')
+                    {
+                        $.post("/registromedicamento",{"action": "consult", "id": {{ regismed.id }},"cant":cant },function(data) {
+                            if (data.result=='ok') {
+                                $($("#id_cantidad").get(0).parentNode).find(".help-text").html("La cantidad excede al stock");
+                                $("#id_cantidad").focus();
+                            }
+
+
+                            },"json");
+                    }
+                {% endif %}
+                $($("#id_cantidad").get(0).parentNode).find(".help-text").html("");
+            }
+
+        });
+        {% if error %}
+            $($("#id_cantidad").get(0).parentNode).find(".help-text").html("La cantidad excede al stock");
+            $("#id_cantidad").val({{ error }});
+            $("#id_cantidad").focus();
+        {% endif %}
+    });
+    </script>
+{% endblock %}
+{% block titulo %}
+
+{% endblock %}
+
+{% block formaction %}/registromedicamento{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+{#    <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">Guardar Inscripci&oacute;n</button>#}
+    <input type='hidden' name='action' value='editar'/>
+    {% if regismed %}
+        <input type='hidden' name='regismed' value='{{ regismed.id }}'/>
+    {% endif %}
+{% endblock %}
+
+{% block formback %}/registromedicamento{% endblock %}
+{% block buttonname %}Guardar{% endblock %}

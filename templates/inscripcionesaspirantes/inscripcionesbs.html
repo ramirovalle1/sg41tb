@@ -1,0 +1,247 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+           $("#nuevo").click(function() {
+                location.href = "/inscripcionesaspirantes?action=add";
+           });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/inscripcionesaspirantes?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".btn-generarespecie").click(function() {
+                var insasp = $(this).attr("insasp");
+                smoke.confirm("Generar Especie de Convalidacion", function(e){
+                if (e){
+                       $.post("/inscripcionesaspirantes", {"action":'generaespecie',id: insasp}, function(data) {
+                        if (data.result=='ok'){
+                            smoke.alert("Especie Generada");
+                            location.reload();
+                        }else{
+                        smoke.alert("Error Intente Nuevamente");
+                        }
+                    }, "json");
+                    return false;
+
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+            $(".btn-generarespecieproforma").click(function() {
+                var insasp = $(this).attr("insasp");
+                smoke.confirm("Generar Especie Presupuesto de Carrera", function(e){
+                if (e){
+                       $.post("/inscripcionesaspirantes", {"action":'generaespecieproforma',id: insasp}, function(data) {
+                        if (data.result=='ok'){
+                            smoke.alert("Especie Generada");
+                            location.reload();
+                        }else{
+                        smoke.alert("Error Intente Nuevamente");
+                        }
+                    }, "json");
+                    return false;
+
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+
+        <div class="span11"  >
+            <h3 >Registro  de Aspirantes</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/inscripcionesaspirantes" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Aspirante</a>
+            {% if search %}
+                <a href="/inscripcionesaspirantes" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span2'>
+            {% if not persona.pertenece_soporte %}
+                <a href="#" id='nuevo' class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Aspirante</a><br> </br>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>Nombres</th>
+                        <th>Ced/Pasaporte</th>
+                        <th style="text-align: center;">Celular</th>
+                        <th style="text-align: center;">Convencional</th>
+                        <th style="text-align: center;">Email</th>
+                        <th style="text-align: center;">Carrera que Aspira</th>
+                        {#<th style="text-align: center;">Se inscribira</th>#}
+                        {#<th style="text-align: center;">Posible Inscripcion</th>#}
+                        {#<th style="text-align: center;">Tipo Registro</th>#}
+                        <th style="text-align: center;">Realizado por</th>
+                        {#<th style="text-align: center;">Inscrito</th>#}
+                        <th style="text-align: center;">Registrado (fecha y hora)</th>
+                        {#<th style="text-align: center;">Vendedor</th>#}
+                        {#<th style="text-align: center;">Vence Registro</th>#}
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for s in insasp %}
+                        <tr>
+                            {% if  s.activo %}
+                                {# {% if s.fueratiempo < 8 %}#}
+                                    <td> {{ s.apellido1 }} {{ s.apellido2 }}  {{ s.nombres }}
+                                        {% if s.tieneespecie %}<br>
+                                            <span class='label label-important'>Especie Generada</span>
+                                        {% endif %}
+                                        {% if s.especieproforma %}<br>
+                                            <span class='label label-success'>Especie Presupuesto</span>
+                                        {% endif %}
+                                    </td >
+                                    <td>{% if s.cedula %} {{ s.cedula }}{% endif %} <br/>
+                                        {% if s.pasaporte %}
+                                            {% if s.pasaporte %}{{ s.pasaporte }}<br/><span class="label label-important">{{ 'Extranjero' }}</span> {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if s.telefono %}{{ s.telefono }}{% endif %}
+                                    </td>
+                                    <td>
+                                        {% if s.telefono_conv %} {{ s.telefono_conv }}{% endif %}
+                                    </td>
+                                    <td>
+                                        {% if s.email %}
+                                            <a href="mailto:{{ s.email }}" style="color: #003bb3">
+                                                {{ s.email }}
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                    <td> {{ s.carrera.nombre }} </td >
+                                    {#<td style="text-align: center;">#}
+                                    {#     {% if s.respuesta.descripcion == 'NO' %}#}
+                                    {#         {{ s.respuesta.descripcion }} / {{ s.tiponoregistro.descripcion }}#}
+                                    {#     {% else %}#}
+                                    {#         {{ s.respuesta.descripcion}}#}
+                                    {#     {% endif %}#}
+                                    {#</td >#}
+                                    {# <td style="text-align: center;"> {{ s.f_inscripcion|date:'d-m-Y' }} </td >#}
+                                    {# <td> {{ s.tiporegistro.descripcion }} </td >#}
+                                    <td style="text-align: center;"> {{ s.usuario.username }} </td >
+                                    {#<td style="text-align: center;">#}
+                                    {#        {% if s.inscrito %}#}
+                                    {#             <img src='/static/images/16/true.png' alt='Si' border='0'/>#}
+                                    {#        {% else %}#}
+                                    {#            <img src='/static/images/16/false.png' alt='No' border='0'/>#}
+                                    {#        {% endif %}#}
+                                    {#</td>#}
+                                    <td style="text-align: center;"> {{ s.fecha|date:'d-m-Y' }} {{ s.hora|time:'H:i' }} </td >
+                                    {# <td style="text-align: center;"> {% if s.vendedor.nombres %} {{ s.vendedor.nombres }}{% endif %} </td >#}
+                                    {#<td style="text-align: center;"> {{ s.vencimientoregistro|date:'d-m-Y' }} </td >#}
+                                    <td>
+                                        <div class="btn-group">
+                                            <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                                Acciones
+                                                <span class="caret"></span>
+                                            </a>
+                                            <ul class="dropdown-menu pull-right">
+                                                {% if not persona.pertenece_soporte %}
+                                                    {% if not  s.inscrito %}
+                                                        <li><a href="/inscripciones?action=add&insasp={{ s.id }}"><i class="icon-book"></i> Inscribir</a></li>
+                                                        {% if not  s.tieneespecie %}
+                                                            <li><a href="#" insasp="{{ s.id }}" class="btn-generarespecie"><i class="icon-money"></i> Generar Especie</a></li>
+                                                        {% endif %}
+                                                        {% if not  s.especieproforma %}
+                                                            <li><a href="#" insasp="{{ s.id }}" class="btn-generarespecieproforma"><i class="icon-money"></i> Presupuesto Carrera</a></li>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </td>
+                                {# {% endif %}#}
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                    {% if not insasp %}
+                        <tr>
+                            <td colspan="10">
+                                NO HAY ASPIRANTES
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/inscripcionesaspirantes?page=1">1</a></li>
+                            <li><a href="/inscripcionesaspirantes?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/inscripcionesaspirantes?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/inscripcionesaspirantes?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/inscripcionesaspirantes?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/inscripcionesaspirantes?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

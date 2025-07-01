@@ -1,0 +1,108 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Documentos a descargar por Alumno: {{ matricula.inscripcion }}</h3>
+            <h4>{{ matricula.nivel.periodo }}</h4>
+            <h5>{{ matricula.nivel }}</h5>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Asignatura</th>
+                <th>Profesor(es)</th>
+                <th>Syllabus</th>
+                {% if ARCHIVO_TIPO_PLANCLASE > 0 %}
+                    <th>Plan de Clase</th>
+                {% endif %}
+                <th>Deberes</th>
+            {% if ARCHIVO_TIPO_PLANCLASE > 0 %}
+                <th>Material de Apoyo</th>
+            {% endif %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for materiaasignada in materiasasignadas %}
+                <tr>
+                    <td>
+                        {{ materiaasignada.materia.nombre_completo }}<br/>
+                        {% if not materiaasignada.materia.nivel == matricula.nivel %}
+                            <i>{{ materiaasignada.materia.nivel }}</i>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <table class="table table-condensed">
+                        {% for profesormateria in materiaasignada.materia.profesores_materia %}
+                            </tr><td width='80px'><span class="label label-info">{{ profesormateria.segmento }}</span></td><td>{%  if  profesormateria.profesor_aux  %} {{ profesormateria.profesor_auxiliar }}{% else %}{{ profesormateria.profesor }}{% endif %}</td></tr>
+                        {% endfor %}
+                        </table>
+                    </td>
+
+                    <td>
+                        {% if materiaasignada.materia.syllabus %}
+                            <a href='{{ materiaasignada.materia.syllabus.download_link }}' class='btn btn-info btn-mini'><i class='icon-download-alt icon-white'></i> Descargar</a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    {% if ARCHIVO_TIPO_PLANCLASE > 0 %}
+                        <td>
+                            {% if materiaasignada.materia.plan_clase %}
+                                <a href='{{ materiaasignada.materia.plan_clase.download_link }}' class='btn btn-info btn-mini'><i class='icon-download-alt icon-white'></i> Descargar</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                    <td>
+                        {% for profesor in materiaasignada.profesores %}
+                            {% if materiaasignada.materia.deber %}
+                                <a href='/alu_documentos?action=deberes&id={{ materiaasignada.materia.id }}&p={{ profesor.id }}'>
+                                {{ materiaasignada.materia.deber.count }} Deber{% if materiaasignada.materia.deber.count > 1 %}es{% endif %}
+                            {% else %}
+                                Sin Deberes
+                            {% endif %}
+                        {% endfor %}
+                        </a>
+                    </td>
+                    {% if ARCHIVO_TIPO_PLANCLASE > 0 %}
+                        <td>
+                            {% for profesor in materiaasignada.profesores %}
+                                {% if materiaasignada.materia.material_apoyo %}
+                                    <a href='/alu_documentos?action=material&id={{ materiaasignada.materia.id }}&p={{ profesor.id }}'>
+                                    {{ materiaasignada.materia.material_apoyo.count }} Material{% if materiaasignada.materia.material_apoyo.count > 1 %}es{% endif %}
+                                {% else %}
+                                    Sin Deberes
+                                {% endif %}
+                            {% endfor %}
+                            </a>
+                        </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+            {% if not materiasasignadas %}
+                <tr>
+                    <td colspan="4" align='center'>NO EXISTEN MATERIAS</td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+{% endblock %}

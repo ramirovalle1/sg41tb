@@ -1,0 +1,497 @@
+<div id="notificaciones">
+    <div id="notificaciones-panel">
+
+        <section id="notificaciones-header">
+            <div style="display: flex; align-items:center; gap:.5em">
+{#                <div class="logo" style="background: rgb(255,255,255,.9); border-radius: 50%">#}
+                    <img src="/static/images/itb_iso.png" alt="logo"/>
+{#                </div>#}
+                <h3>Notificaciones ITB</h3>
+            </div>
+            <a href="#" onclick="salirNotificaciones('{{ bloquea_notificacion }}')" style="margin-right: 1em" class="exit">
+                <span class="icon-remove exit-notificaciones"></span>
+            </a>
+        </section>
+
+        <section id="notificaciones-body">
+            {% for x in notificaciones %}
+                <div class="notificacion" {% if x.utiliza_detalle %}title="Haga Click para ver detalle"{% endif %}>
+{#                  inicio de titulo#}
+                    <div class="titulo titulo-{{ x.id }} {{ x.tipo }}" {% if x.utiliza_detalle %} onclick="verDetalle('{{ x.id }}', '{{ x.utiliza_detalle }}')" style="cursor: pointer;" {% endif %}>
+                        <div class="loader-containter">
+                            <span class="loader loader{{ x.id }}"></span>
+                        </div>
+                        <div class="alert-icon">
+                            <span class="icon-info-sign"></span>
+                        </div>
+                        <div class="display:flex; justify-content:space-between;">
+                            <strong>{{ x.notificacion_titulo }}</strong>
+                        </div>
+
+                        {% if x.notificacion_descripcion %}
+                            <div style="text-align:justify;">
+                                <p>{{ x.notificacion_descripcion }}</p>
+                            </div>
+                        {% endif %}
+
+                        <div style="display:flex; flex-wrap: wrap; align-items:center; justify-content:flex-end; gap:.5em;">
+                            {% if x.urls %}
+                                {% for url in x.urls %}
+                                    <a
+                                        href="#"
+                                        onclick="accesoModulo(event, '{{ url.url }}', '{{ x.modal }}')"
+                                        class=" btn btn-{{ url.tipo }}"
+                                        title="{{ url.title }}">
+                                        <i class="icon-{{ url.icono }}"></i>
+                                        &nbsp;{{ url.name }}
+                                    </a>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+{#                  fin de titulo#}
+
+{#                  inicio de detalle#}
+                    <div class="detalle detalle{{ x.id }}">
+
+                    </div>
+{#                  fin de detalle#}
+
+                </div>
+            {% endfor %}
+        </section>
+    </div>
+    <div class="loader-link-container">
+        <div style="padding: 2em; background: white; border-radius: 10px; display: flex; gap:1em; width: 90%; justify-content:center">
+            <span class="loader-link"></span>
+            <div>
+                <h3>Accediendo al módulo</h3>
+                <h4 class="animate-letter">Espere unos segundos...</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+{#<div class="modal fade static" id="notificacionesModal" style="width: 100px; z-index: 99999;">#}
+{#    <div class="modal-header">#}
+{#        <h4 id='modalTittle'><i></i></h4>#}
+{#    </div>#}
+{#    <div class="modal-body" style="text-align: left">#}
+{##}
+{#    </div>#}
+{#    <div class="modal-footer">#}
+{#        <a href="#" class="btn btn-guardar btn-success"><i class="icon-save"></i> Guardar</a>#}
+{#    </div>#}
+{#</div>#}
+
+<script type="text/javascript">
+    accesoModulo = function(event, url, modal){
+        event.preventDefault()
+        if (modal == 'True') {
+            $.get("/notificaciones", {'action':url.substring(1) }, function(data) {
+                Swal.fire({
+                  title: "Convenio Pago",
+                  icon: false,
+                  html: data,
+                  showCloseButton: true,
+                  showCancelButton: false,
+                  showDenyButton: true,
+                  focusConfirm: true,
+                  confirmButtonText: "Aceptar",
+                  denyButtonText: "Rechazar",
+                  cancelButtonText: "Cancelar",
+                  cancelButtonColor: "#d33",
+
+                  cancelButtonAriaLabel: "Thumbs down"
+                }).then(function(result){
+                    if (result.isConfirmed) {
+                        saveConvenioPago('aceptar')
+                    }
+                    if (result.isDenied){
+                        saveConvenioPago('rechazar')
+                    }
+                })
+            }, "html");
+
+        } else {
+            document.querySelector(".loader-link-container").style.display="flex";
+            location.href = url
+        }
+    };
+
+    $("#id_fecha").datepicker({format:"dd-mm-yyyy"});
+    saveConvenioPago = function(tipo) {
+        $.post("/notificaciones", {'action':'save_convenio_pago', 'tipo':tipo }, function(data) {
+            console.log(data)
+            if (data.result=="ok") {
+                window.location.href = url;
+            } else {
+                swal.fire("Alerta!", data.mensaje, "warning")
+            }
+        }, "json");
+    }
+
+    verDetalle = function(id, utilizaDetalle) {
+        if (utilizaDetalle == 'True') {
+            const contenedorDetalle = document.querySelector('.detalle'+id);
+            contenedorDetalle.classList.toggle('detalle-on');
+            if (contenedorDetalle.classList.contains("detalle-on")) {
+                const loader = document.querySelector('.loader'+id)
+                loader.style.display = 'block';
+
+                $.post("/notificaciones", {'action':'mostrar_detalle', 'id':id }, function(data) {
+{#                    console.log(data)#}
+                    loader.style.display = 'none';
+                    if (data.result=="ok") {
+                        let htmlTable =    "<table class='table'><tr>"
+
+        {#                  INICIO ARMAR ENCABEZADO DE TABLA DINAMICA#}
+                        data.detalle.cabecera_tabla.forEach(function(cabecera) {
+                            htmlTable +=    "<th>"+cabecera+"</th>"
+                        })
+{#                        console.log(typeof(data.detalle.utiliza_url))#}
+                        if (data.detalle.utiliza_url) {
+                            htmlTable += "<th style='text-align:center;'>Ir a Módulo</th></tr>"
+                        }
+
+        {#                  FIN ARMAR ENCABEZADO DE TABLA DINAMICA#}
+
+                        data.detalle.detalle.forEach(function(det) {
+                               htmlTable += "<tr>"
+        {#                      INICIO ARMAR DETALLE DE TABLA DINAMICA#}
+                            det.detalle_tabla.forEach(function(detalleFila) {
+                                htmlTable += "<td>"+detalleFila+"</td>"
+                            })
+                            btnUrl = det.otros.utiliza_url?"<a href='#' class='btn btn-primary' onclick='irUrl(\""+det.otros.url+"\", \""+det.otros.periodo+"\")' ><i class='icon-share'></i></a>":""
+                            htmlTable += "<th style='text-align:center;'>"+btnUrl+"</th></tr>"
+        {#                      FIN ARMAR DETALLE DE TABLA DINAMICA#}
+                        })
+                        htmlTable += "</table>"
+                        contenedorDetalle.innerHTML = htmlTable
+                        contenedorDetalle.classList.add("aparecer")
+                    } else {
+                        swal.fire("Alerta!", data.mensaje, "warning")
+                    }
+                }, "json");
+            }
+        }
+    }
+
+    salirNotificaciones = function(bloquea) {
+        if (bloquea == 'True') {
+            Swal.fire({
+              title: "Alerta!",
+              text: "Debe atender las notificaciones con etiquetas rojas o amarillas para poder acceder al panel principal del SGA.",
+              icon: "question",
+              showCancelButton: true,
+              confirmButtonColor: "#0d437d",
+              cancelButtonColor: "#d33",
+              confirmButtonText: "Atender notificaciones",
+              cancelButtonText: "Cerrar sesión"
+            }).then(function(result){
+              if (!result.isConfirmed) {
+                location.href = '/logout'
+              }
+
+            });
+        } else {
+            const notificacionesPanel = document.querySelector("#notificaciones-panel")
+            notificacionesPanel.style.animation = 'fadeOutRight 1s forwards'
+            const notificaciones = document.querySelector("#notificaciones")
+            setTimeout(function() {
+                notificaciones.classList.add('ocultar')
+                notificaciones.style.display = 'none'
+            }, 800);
+        }
+    }
+
+    irUrl = function(url, periodo) {
+        document.querySelector(".loader-link-container").style.display = "flex"
+        if (periodo != 'false') {
+            $.post("/notificaciones", {'action':'update_periodo', 'periodo_id':periodo }, function(data) {
+{#              console.log(data)#}
+                if (data.result=="ok") {
+                    window.location.href = url;
+                } else {
+                    swal.fire("Alerta!", data.mensaje, "warning")
+                }
+            }, "json");
+        }else {
+            window.location.href = url;
+        }
+    }
+
+</script>
+
+<style type="text/css">
+    .swal2-container {
+      z-index: 99999;
+    }
+
+    .animate-letter {
+        position: relative;
+    }
+
+    .animate-letter:before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        background: white;
+{#        border-left: 2px solid #333;#}
+        animation: animate 5s steps(23) infinite;
+    }
+
+    @keyframes animate {
+        40%, 60% {
+            left: 100%;
+        }
+        100% {
+            left: 0%;
+        }
+    }
+
+    .danger { background: #f8d7da; }
+    .danger:hover span { color: #000000; }
+    #notificaciones-panel .danger:hover { background: #fdc1c6; }
+
+    .success { background: #d1e7dd; }
+    .success:hover span { color: #000000; }
+    #notificaciones-panel .success:hover { background: #b4e6cf; }
+
+    .warning { background: #fff3cd; }
+    .warning:hover span { color: #000000; }
+    #notificaciones-panel .warning:hover { background: #fdeaac; }
+
+    .info { background: #cfe2ff; }
+    .info:hover span { color: #000000; }
+    #notificaciones-panel .info:hover { background: #abcafa; }
+
+    .loader-link-container {
+        margin: 1em 1em;
+        width: 700px;
+        height: calc(100vh - 2em);
+        background: rgb(255, 255, 255, .4);
+        backdrop-filter:blur(5px);
+        position: absolute;
+        top: 0;
+        right: 0px;
+        z-index: 1;
+        border-radius: 10px;
+        display: flex;
+        gap: 1em;
+        justify-content: center;
+        align-items: center;
+        animation: fadeIn .5s linear forwards;
+        display: none;
+    }
+
+    .loader-link {
+        width: 70px;
+        height: 70px;
+        border: 10px solid #333;
+        border-bottom-color: #e57e09;
+        border-radius: 50%;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+    }
+
+    #notificaciones {
+        width: 100vw;
+        height: 100vh;
+        position: fixed;
+        z-index: 9999;
+        background: rgb(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        top: 0;
+        left: 0;
+    }
+
+    #notificaciones-panel {
+        margin: 1em 1em;
+        width: 700px;
+        height: calc(100vh - 2em);
+        background: rgb(255, 255, 255, 1);
+        backdrop-filter:blur(10px);
+{#        background: rgb(0, 0, 0, 0.5);#}
+        position: absolute;
+        top: 0;
+        right: 0px;
+        animation: fadeLeft 1s ease-in-out forwards;
+        box-shadow: -2px 2px 10px 0 rgb(0, 0, 0, 0.1);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+        overflow-y: auto; /* Desbordamiento vertical */
+        -ms-overflow-style: none;  /* IE y Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+
+    .notificaciones-panel::-webkit-scrollbar { display: none; }
+
+    #notificaciones-header {
+{#        background: rgb(0, 0, 0, 0.8);#}
+{#        background: linear-gradient(90deg, #0d437d 25%, #61a735 50%, #fada14 75%, #e57e09 100%);#}
+        background: #333;
+        top: 0;
+        left: 0;
+        width: calc(100% - 2em);
+        display: flex;
+        justify-content: space-between;
+        align-items:center;
+        padding: .5em 1em;
+        color: #eee;
+    }
+
+    #notificaciones-header img {
+        height: 60px;
+    }
+
+    section {
+        padding: 0 1em;
+    }
+
+    .notificacion {
+        position: relative;
+        margin-bottom: 1.5em;
+        box-shadow: 2px 2px 10px 0 rgb(0,0,0,.1);
+        background: rgb(255,255,255,.9);
+    }
+
+    .notificacion .titulo {
+        display:flex;
+        flex-direction:column;
+        justify-content: space-between;
+        gap: .2em;
+        padding: 10px 10px 10px 60px;
+        width: calc(100% - (10px + 60px));
+        position: relative;
+    }
+
+    .ocultar { animation: fadeOut .5s forwards; }
+    .detalle { display: none; z-index: -999 }
+    .detalle-on { display:block; }  {# se utiliza desde javascript #}
+    .aparecer { animation: fade-in-right 0.5s linear; }
+
+    .alert-icon {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: center;
+    }
+
+    .alert-icon span {
+        position: absolute;
+
+        top: 50%;
+        left: 50%;
+        transform: translate(-90%, -50%);
+        font-size: 30px;
+    }
+
+    .loader-containter {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items:center;
+        justify-content:center;
+    }
+
+    .loader {
+        {#position: absolute;#}
+        {#top: 10px;#}
+        {#left: 10px;#}
+        width: 45px;
+        height: 45px;
+        border: 5px solid transparent;
+        border-bottom-color: #333;
+        border-radius: 50%;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+        display: none;
+    }
+
+    @keyframes rotation {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes fade-in-right {
+        0% {
+            opacity: 0;
+            transform: translateX(-100%);
+        }
+        100% {
+            opacity: 1;
+            transform: translateX(0%);
+        }
+    }
+
+    @keyframes fadeLeft {
+        0% {
+            opacity: 0;
+            right: -700px;
+        }
+        100 % {
+            opacity: 1;
+            right: 0px;
+        }
+    }
+
+    @keyframes fadeOut {
+        0% {
+            opacity: 1;
+        }
+        100%{
+            opacity: 0;
+            display: none;
+        }
+    }
+
+    @keyframes fadeOutRight {
+        0% {
+            opacity: 1;
+        }
+        20% {
+            transform: translate(-10%, 0%);
+        }
+        100%{
+            opacity: 0;
+            transform: translate(100%, 0%);
+        }
+    }
+
+    @keyframes fadeIn {
+        0% {
+            opacity: 0;
+        }
+        100%{
+            opacity: 1;
+        }
+    }
+
+    .exit:hover .exit-notificaciones {
+        color: #e57e09;
+    }
+
+    .exit-notificaciones {
+        color: white;
+        font-size: 1.5rem;
+    }
+
+</style>

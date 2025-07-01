@@ -1,0 +1,915 @@
+{% extends "basenueva.html" %}
+{% block heading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+    
+    <script type="text/javascript" >
+        $(function() {
+            {% if idsede %}
+                $("#id_sede").attr('disabled',true);
+                $("#id_sede").val('{{ idsede }}');
+            {% endif %}
+
+            $(".btn-cerrarvisita").click(function () {
+                $("#modalvisita").modal("hide");
+            });
+            $(".btn-addvisita").click(function (){
+                var formData = new FormData();
+                formData.append('action','addtipovisitabiblioteca');
+                formData.append('descripcion',$("#descripcion").val());
+                $.ajax({
+                    url:'/visitabiblioteca',
+                    type:"POST",
+                    contentType:false,
+                    data:formData,
+                    processData:false,
+                    cache:false,
+                    success: function(data){
+                        if(data.result=="ok") {
+                           var html="";
+                           swal("Notificacion !", "Tipo de Servicio Biblioteca agregado correctamente", "success").then(function(){
+                                html = html + '<option value="">----- </option>'
+                                for(var d in data.listavisita){
+                                    var visit = data.listavisita[d]
+                                    html =html+ '<option value="'+visit.id+'">'+visit.tipovisita+'</option>'
+                                }
+                                $('#id_tipovisitabiblioteca').html(html);
+                                $("#modalvisita").modal("hide");
+                                $("#txtdescripcion").val('');
+                           });
+                        }else{
+                            swal("Error", data.mensaje, "error");
+                        }
+                    },
+                });
+            });
+
+            $(".btn-cerrararticulo").click(function () {
+                $("#modalarticulo").modal("hide");
+            });
+
+            $(".btn-addarticulo").click(function (){
+                if($('#chkestado').prop('checked')){
+                    var estado='true'
+                }else{
+                   var estado='false'
+                }
+                var formData = new FormData();
+                formData.append('action','addtipoarticulo');
+                formData.append('descripcion',$("#descripcionart").val());
+                formData.append('estado',estado);
+                formData.append('tiposervicio',$("#id_tipovisitabiblioteca").val());
+                showWaiting("Ingresando información","espere unos segundos");
+                $.ajax({
+                    url:'/visitabiblioteca',
+                    type:"POST",
+                    contentType:false,
+                    data:formData,
+                    processData:false,
+                    cache:false,
+                    success: function(data){
+                        if(data.result=="ok") {
+                            hideWaiting();
+                            swal('Notificacion !','Tipo de Articulo agregado correctamente', 'success').then(function(){
+                                $("#modaldepartamento").modal("hide");
+                                $("#descripcionart").val('');
+                                $("#chkestado").prop('checked');
+                                location.reload()
+                            })
+                        }else{
+                            hideWaiting();
+                            swal("Error", data.mensaje, "error");
+                        }
+                    }
+                });
+            });
+
+            $("#id_di").attr('checked',true)
+
+            $('#id_nombres').keyup(function(e) {
+                if(e.keyCode == 97) {
+                    var p = $("#id_nombres").length();
+                    $("#id_nombres").replaceWith(" ",p-1);
+                }
+            });
+
+            chequeaCedula = function(){
+                numero = $("#id_cedula").val();
+                var suma = 0;
+                var residuo = 0;
+                var pri = false;
+                var pub = false;
+                var nat = false;
+                var numeroProvincias = 24;
+                var modulo = 11;
+
+                prov = numero.substr(0,2);
+                if (parseInt(prov)>numeroProvincias || parseInt(prov)<=0){
+                    alert('El código de la provincia (dos primeros dígitos) es inválido');
+                    $("#id_cedula").val("");
+                }
+
+                /* Aqui almacenamos los digitos de la cedula en variables. */
+                d1 = numero.substr(0,1);
+                d2 = numero.substr(1,1);
+                d3 = numero.substr(2,1);
+                d4 = numero.substr(3,1);
+                d5 = numero.substr(4,1);
+                d6 = numero.substr(5,1);
+                d7 = numero.substr(6,1);
+                d8 = numero.substr(7,1);
+                d9 = numero.substr(8,1);
+                d10 = numero.substr(9,1);
+
+                /* El tercer digito es: */
+                /* 9 para sociedades privadas y extranjeros */
+                /* 6 para sociedades publicas */
+                /* menor que 6 (0,1,2,3,4,5) para personas naturales */
+
+                if (d3==7 || d3==8){
+                    alert('El tercer dígito ingresado es inválido');
+                    $("#id_cedula").val("");
+                }
+
+                /* Solo para personas naturales (modulo 10) */
+                if (d3 <= 6){
+                    nat = true;
+                    p1 = d1 * 2; if (p1 >= 10) p1 -= 9;
+                    p2 = d2 * 1; if (p2 >= 10) p2 -= 9;
+                    p3 = d3 * 2; if (p3 >= 10) p3 -= 9;
+                    p4 = d4 * 1; if (p4 >= 10) p4 -= 9;
+                    p5 = d5 * 2; if (p5 >= 10) p5 -= 9;
+                    p6 = d6 * 1; if (p6 >= 10) p6 -= 9;
+                    p7 = d7 * 2; if (p7 >= 10) p7 -= 9;
+                    p8 = d8 * 1; if (p8 >= 10) p8 -= 9;
+                    p9 = d9 * 2; if (p9 >= 10) p9 -= 9;
+                    modulo = 10;
+                }
+
+                /* Solo para sociedades publicas (modulo 11) */
+                /* Aqui el digito verficador esta en la posicion 9, en las otras 2 en la pos. 10 */
+                else if(d3 == 6){
+                    pub = true;
+                    p1 = d1 * 3;
+                    p2 = d2 * 2;
+                    p3 = d3 * 7;
+                    p4 = d4 * 6;
+                    p5 = d5 * 5;
+                    p6 = d6 * 4;
+                    p7 = d7 * 3;
+                    p8 = d8 * 2;
+                    p9 = 0;
+                }
+
+                /* Solo para entidades privadas (modulo 11) */
+                else if(d3 == 9) {
+                    pri = true;
+                    p1 = d1 * 4;
+                    p2 = d2 * 3;
+                    p3 = d3 * 2;
+                    p4 = d4 * 7;
+                    p5 = d5 * 6;
+                    p6 = d6 * 5;
+                    p7 = d7 * 4;
+                    p8 = d8 * 3;
+                    p9 = d9 * 2;
+                }
+
+                suma = p1 + p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+                residuo = suma % modulo;
+
+                /* Si residuo=0, dig.ver.=0, caso contrario 10 - residuo*/
+                digitoVerificador = residuo==0 ? 0: modulo - residuo;
+
+                /* ahora comparamos el elemento de la posicion 10 con el dig. ver.*/
+                if (pub==true){
+                    if (digitoVerificador != d9){
+                        alert('El ruc de la empresa del sector público es incorrecto.');
+                        $("#id_cedula").val("");
+                    }
+                    /* El ruc de las empresas del sector publico terminan con 0001*/
+                    if ( numero.substr(9,4) != '0001' ){
+                        alert('El ruc de la empresa del sector público debe terminar con 0001');
+                        $("#id_cedula").val("");
+                    }
+                }
+
+                else if(pri == true){
+                    if (digitoVerificador != d10){
+                        alert('El ruc de la empresa del sector privado es incorrecto.');
+                        $("#id_cedula").val("");
+                    }
+                    if ( numero.substr(10,3) != '001' ){
+                        alert('El ruc de la empresa del sector privado debe terminar con 001');
+                        $("#id_cedula").val("");
+                    }
+                }
+
+                else if(nat == true){
+                    if (digitoVerificador != d10){
+                        alert('El número de cédula de la persona natural es incorrecto.');
+                        $("#id_cedula").val("");
+                    }
+                    if (numero.length >10 && numero.substr(10,3) != '001' ){
+                        alert('El ruc de la persona natural debe terminar con 001');
+                        $("#id_cedula").val("");
+                    }
+                }
+                return true;
+            };
+
+            var egresado = false;
+            $("#id_cedula").blur(function(){
+                egresado = false;
+                ocultaotrosparametros();
+                if ($(this).val() != ''){
+                    if ($("#id_di").is(':checked'))
+                    {
+                        chequeaCedula();
+                    }
+
+                        var ruc = $(this).val();
+                    if ($(this).val() != ''){
+                        $.post("/visitabiblioteca", {'action': 'datosvisitas', 'cedula': ruc}, function(data){
+                            if (data.result=='ok'){
+                                $("#id_nombres").val(data.nombre);
+                                $("#id_telefono").val(data.telefono);
+                                $("#id_direccion").val(data.direccion);
+                                // llena las opciones del combo tipo persona
+                                const cmbtipopersona = document.getElementById('id_tipopersona');
+                                var opctipopersona = '';
+                                for (var i in data.cmbtipopersona){
+                                    opctipopersona += '<option value="'+data.cmbtipopersona[i].id+'">'+data.cmbtipopersona[i].descripcion+'</option>';
+                                }
+                                cmbtipopersona.innerHTML = opctipopersona;
+
+                                if (data.autoselectipo){
+                                    autoselectipo(data.autoselectipo);
+                                }
+
+                            }else{
+                                $("#id_nombres").val("");
+                                $("#id_telefono").val("");
+                                $("#id_direccion").val("");
+                                const cmbtipopersona = document.getElementById('id_tipopersona');
+                                var opctipopersona = '';
+                                for (var i in data.cmbtipopersona){
+                                    opctipopersona += '<option value="'+data.cmbtipopersona[i].id+'">'+data.cmbtipopersona[i].descripcion+'</option>';
+                                }
+                                cmbtipopersona.innerHTML = opctipopersona;
+
+                                // no necesita seleccionar automatico porque solo tiene la opcion otros y no necesita ingresar mas datos
+                               /* if (data.autoselectipo){
+                                    autoselectipo(data.autoselectipo);
+                                }*/
+                                ocultaotrosparametros();
+                            }
+                        }, "json");
+                        return false;
+                    }
+
+                }
+            });
+            $("#id_tipoarticulo").addClass('input-xxlarge')
+            $("#id_tipoarticulo").attr({ "multiple":"multiple" });
+            $("#id_tipoarticulo option:first").remove();
+
+
+            $("#addarticulo").click(function () {
+                var optiposervicio = $("#id_tipovisitabiblioteca option:selected").text();
+                console.log(optiposervicio);
+                $("#titletiposervicio").html(optiposervicio);
+            });
+
+
+            $("#id_tipovisitabiblioteca").change(function () {
+                var opctipoarticulo = '';
+                const id_tipoarticulo = document.getElementById('id_tipoarticulo');
+                $("#addarticulo").addClass('d-none');
+                if ($(this).val() != '0'){
+                    showWaiting("Ingresando información","espere unos segundos");
+                    $.post("/visitabiblioteca", {
+                        "action": "cargatiposervicio",
+                        "idtiposervicio": $(this).val(),
+                    }, function (data) {
+                        if (data.result == 'ok') {
+                            var hayopc = false;
+                            for(opc in data.tipoarticulos){
+                                opctipoarticulo += '<option value="'+data.tipoarticulos[opc].id+'">'+data.tipoarticulos[opc].descripcion+'</option>';
+                                hayopc = true;
+                            }
+                            $("#addarticulo").removeClass('d-none');
+                            id_tipoarticulo.innerHTML = opctipoarticulo;
+                            hideWaiting();
+                        } else {
+                            hideWaiting();
+                            swal("Error", data.message, 'error');
+                        }
+                    }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                        hideWaiting();
+                        console.log(errorThrown);
+                        console.log('getJSON request failed! ' + textStatus+ ' eroro jqk'+jqXHR.responseText);
+                        swal("Error", "Error de conexión", 'error');
+                    });
+                }
+                id_tipoarticulo.innerHTML = opctipoarticulo;
+            });
+
+            function validaformulario() {
+                var valido = true;
+                if (!$("#id_nombres").val()){
+                    $("#id_nombres").addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_nombres").removeClass('form-control-danger');
+                }
+
+                if (!$("#id_direccion").val()){
+                    $("#id_direccion").addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_direccion").removeClass('form-control-danger');
+                }
+
+                if (!$("#id_telefono").val()){
+                    $("#id_telefono").addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_telefono").removeClass('form-control-danger');
+                }
+
+                if (!$("#id_observacion").val()){
+                    $("#id_observacion").addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_observacion").removeClass('form-control-danger');
+                }
+
+                if (!$("#id_cedula").val()){
+                    $("#id_cedula").addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_cedula").removeClass('form-control-danger');
+                }
+
+                /* ------- COMBOS -------- */
+
+                if ($("#id_tipopersona").val() == '0' || $("#id_tipopersona").val() == ''){
+                    $('#id_tipopersona').next('.select2-container').find('.select2-selection--single').addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_tipopersona").next('.select2-container').find('.select2-selection--single').removeClass('form-control-danger');
+                }
+
+                if ($("#id_sede").val() == '0' || $("#id_sede").val() == ''){
+                    $('#id_sede').next('.select2-container').find('.select2-selection--single').addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_sede").next('.select2-container').find('.select2-selection--single').removeClass('form-control-danger');
+                }
+
+                if ($("#id_tipovisitabiblioteca").val() == '0' || $("#id_tipovisitabiblioteca").val() == ''){
+                    $('#id_tipovisitabiblioteca').next('.select2-container').find('.select2-selection--single').addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_tipovisitabiblioteca").next('.select2-container').find('.select2-selection--single').removeClass('form-control-danger');
+                }
+
+                if ($("#id_tipoarticulo").val() == '0' || $("#id_tipoarticulo").val() == ''){
+                    $('#id_tipoarticulo').next('.select2-container').find('.select2-selection--multiple').addClass('form-control-danger');
+                    valido = false;
+                } else {
+                    $("#id_tipoarticulo").next('.select2-container').find('.select2-selection--multiple').removeClass('form-control-danger');
+                }
+
+                return valido;
+            }
+
+            {#$("#id_nombres,#id_direccion, #id_telefono, #id_observacion,#id_cedula, #id_tipopersona, #id_tipovisitabiblioteca").addClass("validate[required]");#}
+
+            $("#guardavisita").click(function(){
+                if (validaformulario() == true) {
+                    $("#id_sede").attr('disabled',false);
+                    var formData = new FormData();
+                    formData.append('action','guardavisita');
+                    formData.append('tipoarticuloid', $("#id_tipoarticulo").val());
+                    formData.append('nombres', $("#id_nombres").val());
+                    formData.append('direccion', $("#id_direccion").val());
+                    formData.append('telefono', $("#id_telefono").val());
+                    formData.append('tipovisitabiblioteca', $("#id_tipovisitabiblioteca").val());
+                    formData.append('cedula', $("#id_cedula").val());
+                    formData.append('tipopersona', $("#id_tipopersona").val());
+                    formData.append('observacion', $("#id_observacion").val()); /* sugerencia */
+
+                    /* ----- Campos extras por perfil ------ */
+                    if ($("#id_facultad").val()){
+                        formData.append('facultad', $("#id_facultad").val());
+                    }
+                    if ($("#id_carrera").val()){
+                        formData.append('carrera', $("#id_carrera").val());
+                    }
+                    if ($("#id_modalidad").val()){
+                        formData.append('modalidad', $("#id_modalidad").val());
+                    }
+                    if ($("#id_nivel").val()){
+                        formData.append('nivel', $("#id_nivel").val());
+                    }
+                    if ($("#id_jornada").val()){
+                        formData.append('jornada', $("#id_jornada").val());
+                    }
+                    if ($("#id_departamento").val()){
+                        formData.append('departamento', $("#id_departamento").val());
+                    }
+                    if (egresado == true){
+                        formData.append('egresado', egresado);
+                    }
+                    /* ---- fin campos extras por perfil ---- */
+                    var sede = $("#id_sede").val();
+                    {% if idsede %}
+                        sede = {{ idsede }}
+                    {% endif %}
+                    formData.append('idsede', sede);
+
+                    showWaiting("Ingresando información","espere unos segundos");
+                    $.ajax({
+                        url:'/visitabiblioteca',
+                        type:"POST",
+                        contentType:false,
+                        data:formData,
+                        processData:false,
+                        cache:false,
+                        success: function(data){
+                            if(data.result=="ok") {
+                                hideWaiting();
+                                swal('Notificacion !','Tipo de Articulo agregado correctamente', 'success').then(function(){
+                                    $("#modaldepartamento").modal("hide");
+                                    $("#descripcionart").val('');
+                                    $("#chkestado").prop('checked');
+                                    $("#id_sede").attr('disabled',true);
+                                    location.reload();
+                                })
+                            }else{
+                                hideWaiting();
+                                $("#id_sede").attr('disabled',true);
+                                swal("Error", data.message, "error");
+                            }
+                        },
+                        error: function (xhr, ajaxOptions, thrownError) {
+                            swal("Error", "Error Conexion en el Servidor", "error");
+                        }
+                    });
+
+                }
+
+            });
+
+            function autoselectipo(opc) {
+                $("#id_tipopersona").val(opc).trigger('change');
+            }
+
+
+            $(document).on("change", "#id_tipopersona", function () {
+                ocultaotrosparametros();
+                $.post("/visitabiblioteca", {
+                    "action": "cargainfopersona",
+                    "id_tipopersona": $("#id_tipopersona").val(),
+                    "cedula": $("#id_cedula").val()
+                }, function (data) {
+                    if (data.result == 'ok') {
+                        // habilita los campos segun el perfil
+                        if (data.docente){
+                            $("#divfacultad").removeClass('d-none');
+                        }
+                        if (data.alumno){
+                            $("#divfacultad").removeClass('d-none');
+                            $("#divcarrera").removeClass('d-none');
+                            if (data.egresado){
+                                $("#divegresado").removeClass('d-none');
+                                $("#chkegresado").prop("checked", true);
+                                $("#chkegresado").prop('disabled', true);
+                                egresado = true;
+                            } else {
+                                $("#divmodalidad").removeClass('d-none');
+                                $("#divnivel").removeClass('d-none');
+                                $("#divjornada").removeClass('d-none');
+                            }
+                        }
+                        if (data.administrativo){
+                            $("#divdepartamento").removeClass('d-none');
+                        }
+
+                        // llena los campos
+                        if (data.facultad){
+                            $("#facultad").val(data.facultad[0].nombre);
+                            $("#id_facultad").val(data.facultad[0].id);
+                        }
+                        if (data.carrera){
+                            $("#carrera").val(data.carrera[0].nombre);
+                            $("#id_carrera").val(data.carrera[0].id);
+                        }
+                        if (data.modalidad){
+                            $("#modalidad").val(data.modalidad[0].nombre);
+                            $("#id_modalidad").val(data.modalidad[0].id);
+                        }
+                        if (data.nivel){
+                            $("#nivel").val(data.nivel[0].nombre);
+                            $("#id_nivel").val(data.nivel[0].id);
+                        }
+                        if (data.jornada){
+                            $("#jornada").val(data.jornada[0].nombre);
+                            $("#id_jornada").val(data.jornada[0].id);
+                        }
+                        if (data.departamento){
+                            $("#departamento").val(data.departamento[0].nombre);
+                            $("#id_departamento").val(data.departamento[0].id);
+                        }
+                    } else {
+                        swal("Error", data.message, 'error');
+                    }
+                }, "json").fail(function(jqXHR, textStatus, errorThrown) {
+                    console.log(errorThrown);
+                    console.log('getJSON request failed! ' + textStatus+ ' eroro jqk'+jqXHR.responseText);
+                    swal("Error", "Error de conexión", 'error');
+                });
+            });
+
+            function ocultaotrosparametros() {
+                $("#divfacultad").addClass('d-none');
+                $("#facultad").val('');
+                $("#id_facultad").val('');
+
+                $("#divcarrera").addClass('d-none');
+                $("#carrera").val('');
+                $("#id_carrera").val('');
+
+                $("#divmodalidad").addClass('d-none');
+                $("#modalidad").val('');
+                $("#id_modalidad").val('');
+
+                $("#divnivel").addClass('d-none');
+                $("#nivel").val('');
+                $("#id_nivel").val('');
+
+                $("#divjornada").addClass('d-none');
+                $("#jornada").val('');
+                $("#id_jornada").val('');
+
+                $("#divdepartamento").addClass('d-none');
+                $("#departamento").val('');
+                $("#id_departamento").val('');
+
+                $("#divegresado").addClass('d-none');
+            }
+
+        });
+             
+    </script>
+
+    <style>
+        .div_label{
+            width: 40%;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .div_label label{
+            width: 150px; text-align: end;
+        }
+
+        .div_label_large{
+            width: 30%;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .div_label_large label{
+            width: 150px; text-align: end;
+        }
+
+    </style>
+{% endblock %}
+
+{% block canvas %}
+    <div class="mobile-menu-overlay"></div>
+    <div class="main-container">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-10 col-sm-12">
+                    <div class="title">
+                        <h4> Adicionar Nueva Visita</h4>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-2">
+                    <a href="/visitabiblioteca" class='btn btn-dark float-md-left float-lg-left'><i class="icon-copy ion-arrow-left-a"></i> Atrás</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-box mb-30">
+            <div class="pd-30">
+                <div class="row">
+                    <div class="col-lg-8 col-md-10">
+                        <div class="pd-20 card-box mb-30" style="margin-top: 10px; background-color: #eee">
+                            <div class="row">
+                                <div class="col-lg-12 col-md-12">
+                                    <h5 class="alert alert-success">REGISTRO</h5>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-9 col-lg-6" style="display: flex;">
+                                    <div class="div_label">
+                                        <label for="id_sede">Sede: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <select id="id_sede" class="custom-select2 form-control" style="width: 90%">
+                                            <option value="0">---------</option>
+                                            {% for s in sedes %}
+                                                <option value="{{ s.id }}">{{ s.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top: 10px">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_tipovisitabiblioteca">Tipo de Servicio: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <select id="id_tipovisitabiblioteca" class="custom-select2 form-control " style="width: 90%">
+                                            <option value="0">---------</option>
+                                            {% for t in tiposervicio %}
+                                                <option value="{{ t.id }}">{{ t.descripcion }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <a href="#" data-toggle="modal" data-target="#modalvisita" style="font-size: 30px;color: blue" title="Adicionar Tipo de Servicio">+</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top: 10px">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_tipoarticulo">Tipo de Artículo: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <select id="id_tipoarticulo" class="custom-select2 form-control" style="width: 90%">
+                                            <option value="0">---------</option>
+                                        </select>
+                                        <a href="#" id="addarticulo" class="d-none" data-toggle="modal" data-target="#modalarticulo" style="font-size: 30px;color: blue" title="Adicionar Art&iacute;culo">+</a>
+                                    </div>
+                                </div>
+                            </div>
+
+{#                            <div class="row" style="margin-top: 10px">#}
+{#                                <div class="col-md-9 col-lg-6">#}
+{#                                    <div class="form-group">#}
+{#                                         <div class="custom-control custom-checkbox mb-5" style="padding-left: 100px">#}
+{#                                            <input type="checkbox" class="custom-control-input" id="id_di">#}
+{#                                            <label class="custom-control-label" for="id_di">Cédula?</label>#}
+{#                                         </div>#}
+{#                                    </div>#}
+{#                                </div>#}
+{#                            </div>#}
+
+
+                            <div class="row" style="margin-top: 10px;">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_cedula">Documento de Identificación: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <input id="id_cedula" type="text" class="form-control" style="width: 90%">
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-3" style="margin-top: 10px;">
+                                    <div class="form-group">
+                                         <div class="custom-control custom-checkbox mb-5">
+                                            <input type="checkbox" class="custom-control-input" id="id_di">
+                                            <label class="custom-control-label" for="id_di">Cédula ?</label>
+                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top: 10px">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label" style="align-items: center;">
+                                        <label for="id_tipopersona">Tipo de Persona: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <select id="id_tipopersona" class="custom-select2 form-control" style="width: 100%">
+                                            <option value="0">---------</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-3 d-none" id="divegresado" style="margin-top: 10px;">
+                                    <div class="form-group">
+                                         <div class="custom-control custom-checkbox mb-5">
+                                            <input type="checkbox" class="custom-control-input" id="chkegresado">
+                                            <label class="custom-control-label" for="chkegresado">Egresado</label>
+                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top: 10px;">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_nombres">Nombre: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <input id="id_nombres" type="text" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top: 10px;">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_direccion">Dirección: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <input id="id_direccion" type="text" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top: 10px;">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_telefono">Teléfonos: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <input id="id_telefono" type="text" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+                            {# ----- info depende el tipo de persona ------ #}
+                            <section>
+                                <div class="row d-none" id="divfacultad" style="margin-top: 10px;">
+                                    <div class="col-md-9 col-lg-6" style="display: flex">
+                                        <div class="div_label">
+                                            <label for="facultad">Facultad: </label>
+                                        </div>
+                                        <div style="width: 60%">
+                                            <input id="facultad" type="text" class="form-control" readonly>
+                                            <input type="hidden" id="id_facultad">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row d-none" id="divcarrera" style="margin-top: 10px;">
+                                    <div class="col-md-9 col-lg-8" style="display: flex">
+                                        <div class="div_label_large">
+                                            <label for="carrera">Carrera: </label>
+                                        </div>
+                                        <div style="width: 70%">
+                                            <input id="carrera" type="text" class="form-control" readonly>
+                                            <input type="hidden" id="id_carrera">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row d-none" id="divmodalidad" style="margin-top: 10px;">
+                                    <div class="col-md-9 col-lg-6" style="display: flex">
+                                        <div class="div_label">
+                                            <label for="modalidad">Modalidad: </label>
+                                        </div>
+                                        <div style="width: 60%">
+                                            <input id="modalidad" type="text" class="form-control" readonly>
+                                            <input type="hidden" id="id_modalidad">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row d-none" id="divnivel" style="margin-top: 10px;">
+                                    <div class="col-md-9 col-lg-8" style="display: flex">
+                                        <div class="div_label_large">
+                                            <label for="nivel">Nivel: </label>
+                                        </div>
+                                        <div style="width: 70%">
+                                            <input id="nivel" type="text" class="form-control" readonly>
+                                            <input type="hidden" id="id_nivel">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row d-none" id="divjornada" style="margin-top: 10px;">
+                                    <div class="col-md-9 col-lg-8" style="display: flex">
+                                        <div class="div_label_large">
+                                            <label for="jornada">Jornada: </label>
+                                        </div>
+                                        <div style="width: 70%">
+                                            <input id="jornada" type="text" class="form-control" readonly>
+                                            <input type="hidden" id="id_jornada">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row d-none" id="divdepartamento" style="margin-top: 10px;">
+                                    <div class="col-md-9 col-lg-6" style="display: flex">
+                                        <div class="div_label">
+                                            <label for="departamento">Departamento: </label>
+                                        </div>
+                                        <div style="width: 60%">
+                                            <input id="departamento" type="text" class="form-control" readonly>
+                                            <input type="hidden" id="id_departamento">
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </section>
+                            {# ---- fin info por tipo de persona ----- #}
+
+                            <div class="row" style="margin-top: 10px;">
+                                <div class="col-md-9 col-lg-6" style="display: flex">
+                                    <div class="div_label">
+                                        <label for="id_observacion">Sugerencia: </label>
+                                    </div>
+                                    <div style="width: 60%">
+                                        <input id="id_observacion" type="text" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="row" style="margin-top: 20px">
+                                <div class="col-md-9 col-lg-6">
+                                    <a class="btn btn-success" id="guardavisita" href="#">Guardar Visita</a>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+
+    <section>
+        <div class="modal fade static" id="modalvisita" role="dialog" aria-labelledby="myModalLabel33" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="width: 1000px;">
+                    <div class="modal-header">
+                         <h3 class="modal-title" style="color: #333333;">Adicionar Tipo de Servicio en Biblioteca </h3>
+                    </div>
+                    <div class="modal-body panelbody">
+                        <div id="formulario"> {#action="/solicitud_materiaonline" method="POST"#}
+                            <fieldset class="control-group">
+                            <input type='hidden' name='idvisita' id='idvisita'/>
+                                <div >
+                                    <label class="control-label" for="descripcion">Descripcion:</label>
+                                    <input type="text" name="descripcion" id="descripcion"  style="width: 100%" class="form-control">
+                                    <p class="help-text"> </p>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" id="btn-adddescuento" class="btn btn-addvisita btn-info">Guardar</a>
+                        <a href="#" id="btn-cerrardescuento" class="btn btn-cerrarvisita btn-danger">Cerrar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade static" id="modalarticulo" role="dialog" aria-labelledby="myModalLabel33" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content" style="width: 1000px;">
+                    <div class="modal-header">
+                         <h3 class="modal-title" style="color: #333333;">Adicionar Tipo Articulo</h3>
+                    </div>
+                    <div class="modal-body panelbody">
+                        <div id="formulario">
+                            <h4>TIPO DE SERVICIO: <span id="titletiposervicio"></span></h4> <br>
+                            <fieldset class="control-group">
+                            <input type='hidden' name='idarticulo' id='idarticulo'/>
+                                <div >
+                                    <label class="control-label" for="txtdescripcionart">Descripcion:</label>
+                                    <input type="text" name="descripcionart" id="descripcionart"  style="width: 100%" class="form-control">
+                                    <p class="help-text"> </p>
+                                </div>
+                                <div class="form-group">
+                                     <div class="custom-control custom-checkbox mb-5">
+                                        <input type="checkbox" class="custom-control-input" id="chkestado">
+                                        <label class="custom-control-label" for="chkestado">Estado</label>
+                                     </div>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="#" id="btn-addarticulo" class="btn btn-addarticulo btn-info">Guardar</a>
+                        <a href="#" id="btn-cerrararticulo" class="btn btn-cerrararticulo btn-danger">Cerrar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+
+{% endblock %}

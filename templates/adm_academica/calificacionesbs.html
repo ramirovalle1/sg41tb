@@ -1,0 +1,255 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript" src="/static/js/jquery.editinplace.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            var mat_id ;
+            cierre_materia = function() {
+                var mid = $(this).attr("mid");
+                var self = $(this);
+                if (!$(this).hasClass("disabled")) {
+                    $.blockUI({message: null});
+                    $.post("/adm_docentes", {action: 'cerrarmateria', 'mid': mid}, function(data) {
+                        $.unblockUI();
+                        if (data.result=='ok') {
+                            $(".cierremateriaasignada").remove();
+                            self.remove();
+                            smoke.alert("Cerrada la Materia");
+                        } else {
+
+                        }
+                    }, "json");
+                }
+                return false;
+            };
+
+        $("#mclose").click(function(){
+                $("#progresbar").modal('hide');
+                $(".modal-footer").show();
+            });
+          $("#actualiza").click(function() {
+                var id =mat_id;
+                if (mat_id>0){
+                $("#progresbar").modal('show');
+                $(".modal-footer").hide();
+                $(".modal-body").html("Espere mientras se actualizan las calificaciones");
+                    $.post("/adm_docentes",{"action": "actualiza2","materia":id },function(data) {
+                        if (data.result=="ok"){
+                            $(".modal-body").html("Se han actualizado "+data.c + " Asignaturas.");
+                        } else {
+                            $(".modal-body").html("Ocurrieron errores");
+                        }
+                        $(".modal-footer").show();
+                    },"json");
+                } else{
+                    smoke.alert("Debe seleccionar una materia");
+                }
+
+             });
+
+            abrir_materia = function() {
+                var mid = $(this).attr("mid");
+                var self = $(this);
+                if (!$(this).hasClass("disabled")) {
+                    $.blockUI({message: null});
+                    $.post("/pro_evaluaciones", {action: 'abrirmateria', 'mid': mid}, function(data) {
+                        $.unblockUI();
+                        if (data.result=='ok') {
+                            var cmi = $("#materiassel").val();
+                            actualizaEvaluaciones(cmi);
+                        } else {
+
+                        }
+                    }, "json");
+                }
+                return false;
+            };
+
+            cierre_materia_asignada = function() {
+                var maid = $(this).attr("maid");
+                var cerrado = $(this).hasClass("btn-danger");
+                var self = $(this);
+                $.post("/pro_evaluaciones", {'action': 'cerrarmateriaasignada','maid':maid, 'cerrado': ((cerrado)?"true":"false")}, function(data) {
+                    if (data.result=='ok') {
+                        self.removeClass("btn-danger");
+                        if (data.cerrado) {
+                            self.addClass("btn-danger");
+                            self.html("Abrir");
+                            $("#materiaasignadarow"+maid+" input").attr("disabled","disabled");
+                        } else {
+                            self.html("Cerrar");
+                            if (!data.tienedeuda) {
+                                $("#materiaasignadarow"+maid+" input").removeAttr("disabled");
+                            } else {
+                                $("#materiaasignadarow"+maid+" input").attr("disabled","disabled");
+                            }
+                        }
+                        if (data.tienemateriaasignadaabierta) {
+                            $("#cierremateria").removeClass("btn-danger").hide();
+                        } else {
+                            $("#cierremateria").addClass("btn-danger").show();
+                        }
+                    } else{
+                        smoke.alert("Aun no puede cerrar la Materia, faltan notas por ingresar");
+                    }
+                }, "json");
+                return false;
+            };
+
+            actualizar_selector = function() {
+                var selector = $(this).attr("sid");
+                var codigo = $(this).val();
+                var materia = $(this).attr('mid');
+
+                $.blockUI({message: null});
+                $.post("/pro_evaluaciones", {'action': 'codigo', 'sel': selector, 'cod': codigo, 'materia': materia }, function(data) {
+                    $.unblockUI();
+                    if (data.result=="ok") {
+                        $("#codn"+selector).html(data.codigo);
+
+                    }
+                }, "json");
+            };
+
+            actualizar_nota = function() {
+                var maid = $(this).attr("maid");
+                var sel = $(this).attr("sel");
+                var cod = 1;
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5  %}
+                    if (sel=='n1' || sel=='n2' || sel=='n3' || sel=='n4') {
+                        cod = $("#sel"+sel).val();
+                    }
+                {% endif %}
+                var valor = $(this).val();
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+                    $(this).val(parseFloat(valor));
+                {% else %}
+                    $(this).val(parseInt(valor, 10));
+                {% endif %}
+                var self = $(this);
+                $.post("/pro_evaluaciones", {'action':'nota','maid': maid, 'sel': sel, 'val': valor, 'cod': cod}, function(data) {
+                    if (data.result=="ok") {
+                        if (data.valor!=0) {
+                            self.addClass('marcado');
+                        } else {
+                            self.removeClass("marcado");
+                            self.val(data.valor);
+                        }
+                        $("#materiaasignada"+maid).html(data.nota_final);
+                    {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+                        $("#materiaasignadam1"+maid).html(data.momento1);
+                        $("#materiaasignadam2"+maid).html(data.momento2);
+                    {% endif %}
+                        $("#maestado"+maid).html(data.estado);
+                    } else {
+                        self.val(0);
+                        self.removeClass("marcado");
+                    }
+                }, "json");
+            };
+
+            actualizaEvaluaciones = function(id) {
+                if (id) {
+                    showWaiting("Calculando Evaluaciones","Espere unos segundos por favor...");
+                    $.get("/adm_docentes",{action:'segmento', 'id': id, 'profesor': {{ profesor.id }}}, function(data) {
+                        $("#segmento").html(data);
+                        hideWaiting();
+
+                        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+                            $(".selectorcod").change(actualizar_selector);
+                            $(".nota").blur(actualizar_nota);
+                        {% endif %}
+                        $(".cierremateriaasignada").click(cierre_materia_asignada);
+                        $("#cierremateria").click(cierre_materia);
+                        $("#abrirmateria").click(abrir_materia);
+
+                    }, 'html');
+
+                }
+            };
+
+                $("#materiassel").change(function() {
+                    var id = $(this).val();
+                    mat_id = $(this).val();
+                    actualizaEvaluaciones(id);
+                });
+
+{#                {% if not materia %}#}
+{#                    actualizaEvaluaciones($("#materiassel").val());#}
+{#                {% endif %}#}
+
+                {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+                    $(".selectorcod").change(actualizar_selector);
+                    $(".nota").blur(actualizar_nota);
+                {% endif %}
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Evaluaciones de Alumnos: {{ profesor }}</h3>
+            <h5>Per&iacute;odo: {{ periodo }}</h5>
+        </div>
+        <div class='span1'>
+            <a href="/adm_docentes" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <br>
+    <div class="span4">
+            {% if not cerradas %}
+                <a href="/adm_docentes?action=calificaciones&c=1&id={{ profesor.id }}" class='btn btn-success'> Materias Cerradas </a>
+            {% endif %}
+            {% if not abiertas  %}
+                <a href="/adm_docentes?action=calificaciones&a=1&id={{ profesor.id }}" class='btn btn-info'> Materias Abiertas </a>
+            {% endif %}
+    </div>
+    <div class='row-fluid'>
+        <div class="span6">
+            <a href="#" id='actualiza' class='btn btn-warning'><i class="icon-eject icon-white"></i> Actualizar</a>
+        </div>
+    </div>
+    <br>
+    <div class='row-fluid'>
+        <div class="span12">
+        <table width='100%' cellpadding="0" cellspacing="10">
+            <thead>
+            <tr>
+                <th>
+                    <form class="well">
+                    <select id='materiassel'>
+                        <option value=''></option>
+                        {% for materia2 in materias %}
+                            <option value='{{ materia2.id }}' {% if materia.id == materia2.id %}selected="selected"{% endif %}>{{ materia2 }}{% if materia2.es_externa %} - {{ materia2.materia_externa.codigo }}{% endif %}{% if materia2.cerrado %}-(CERRADA){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                    </form>
+                </th>
+            </tr>
+            </thead>
+            <tbody id='segmento'>
+            {% autoescape off %}
+                {{ listadoprecargado }}
+            {% endautoescape %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="progresbar" data-backdrop="static">
+        <div class="modal-header">
+            <h3>Procesando datos</h3>
+        </div>
+        <div class="modal-body">
+            <p>Por favor espere que termine la actualizaci&oacuten.</p>
+            <div class="progresbarresult">
+
+            </div>
+        </div>
+        <div class="modal-footer" hidden="">
+            <a href="#" class="btn" id="mclose">Salir</a>
+        </div>
+    </div>
+{% endblock %}

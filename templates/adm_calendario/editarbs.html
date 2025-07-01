@@ -1,0 +1,175 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+{% endblock %}
+{% block atras %}/adm_calendario{% endblock %}
+{% block javascript %}
+    $("#id_fechainicio, #id_fechafin").datepicker({format:"dd-mm-yyyy"});
+    $("#id_nombre, #id_periodo, #id_tipo, #id_departamento, #id_horafin, #id_horainicio,#id_responsable,#id_lugar").addClass("validate[required]");
+    $("#id_horainicio").addClass("input-small");
+    $("#id_horafin").addClass("input-small");
+    $('#id_responsable').addClass("input-xxlarge");
+    $('#id_lugar').addClass("input-xxlarge");
+    $("#id_responsable").attr("myval","{{ actividad.responsable.id }}");
+    $("#id_horainicio").blur(function(){
+
+        var v = $("#id_horainicio").val();
+        var p = tiene_numeros(v);
+        if(v!=''){
+            if (v.split(':').length == 2 ){
+                if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59)
+                {
+                  $($("#id_horainicio").get(0).parentNode.parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00, los minutos deben ser  menor a 60 y la hora menor a 24");
+
+                  $("#id_horainicio").focus();
+                }
+                else{
+                    $($("#id_horainicio").get(0).parentNode).find(".help-text").html("");
+
+                }
+            }
+            else{
+                  $($("#id_horainicio").get(0).parentNode.parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00, los minutos deben ser  menor a 60 y la hora menor a 24");
+                  $("#id_horainicio").focus();
+                }
+        }
+        else{
+            $($("#id_horainicio").get(0).parentNode).find(".help-text").html("");
+        }
+    });
+
+    $("#id_horafin").blur(function(){
+
+        var v = $("#id_horafin").val();
+        var p = tiene_numeros(v);
+        if(v!=''){
+            if (v.split(':').length == 2 ){
+                if (p != v.length | v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':').length > 2 | parseInt(v.split(':')[1])> 59 | parseInt(v.split(':')[0])> 24)
+                {
+                  $($("#id_horafin").get(0).parentNode.parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00, los minutos deben ser  menor a 60 y la hora menor a 24");
+
+                  $("#id_horafin").focus();
+                }
+                else{
+                    $($("#id_horafin").get(0).parentNode).find(".help-text").html("");
+
+                }
+            }
+            else{
+                  $($("#id_horafin").get(0).parentNode.parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00, los minutos deben ser  menor a 60 y la hora menor a 24");
+                  $("#id_horafin").focus();
+                }
+        }
+        else{
+            $($("#id_horafin").get(0).parentNode).find(".help-text").html("");
+        }
+    });
+
+    var numeros="0123456789:";
+
+    function tiene_numeros(texto){
+       var num = 0;
+       for(i=0; i<texto.length; i++){
+          if (numeros.indexOf(texto.charAt(i),0)!=-1){
+              num = num +1;
+          }
+       }
+       return num;
+    }
+    $("#id_es_auditorio").click(function(){
+            if ($("#id_es_auditorio").is(':checked')){
+                $("#id_es_aula").attr('checked',false)
+                $($("#id_auditorio").get(0).parentNode.parentNode).show()
+                $($("#id_lugar").get(0).parentNode.parentNode).hide()
+                $("#id_aula").val('');
+                $($("#id_aula").get(0).parentNode.parentNode).hide()
+            }else{
+                $($("#id_auditorio").get(0).parentNode.parentNode).hide()
+                $($("#id_lugar").get(0).parentNode.parentNode).show()
+            }
+
+        });
+        $("#id_es_aula").click(function(){
+            if ($("#id_es_aula").is(':checked')){
+                $("#id_es_auditorio").attr('checked',false)
+                $("#id_auditorio").val('');
+                $($("#id_aula").get(0).parentNode.parentNode).show()
+                $($("#id_auditorio").get(0).parentNode.parentNode).hide()
+                $($("#id_lugar").get(0).parentNode.parentNode).hide()
+            }else{
+                $($("#id_aula").get(0).parentNode.parentNode).hide()
+                $($("#id_lugar").get(0).parentNode.parentNode).show()
+            }
+
+        });
+    {% if actividad.auditorio %}
+        {% if actividad.auditorio.tipo.id == 9 %}
+            $($("#id_auditorio").get(0).parentNode.parentNode).show()
+            $($("#id_lugar").get(0).parentNode.parentNode).hide()
+            $("#id_es_auditorio").attr('checked',true)
+            $("#id_es_aula").attr('checked',false)
+            $($("#id_aula").get(0).parentNode.parentNode).hide()
+        {% else %}
+            $($("#id_aula").get(0).parentNode.parentNode).show()
+            $($("#id_lugar").get(0).parentNode.parentNode).hide()
+            $("#id_es_auditorio").attr('checked',false)
+            $("#id_es_aula").attr('checked',true)
+            $($("#id_auditorio").get(0).parentNode.parentNode).hide()
+        {% endif %}
+    {% else %}
+        $($("#id_auditorio").get(0).parentNode.parentNode).hide()
+        $($("#id_aula").get(0).parentNode.parentNode).hide()
+        $($("#id_lugar").get(0).parentNode.parentNode).show(
+        $("#id_es_auditorio").attr('checked',false)
+        $("#id_es_aula").attr('checked',false)
+    {% endif %}
+
+    buscar_responsable = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Persona',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_responsable").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+                else{
+                     $("#id_responsable").attr("myval","");
+                }
+            }, 'json');
+        };
+
+        $('#id_responsable').typeahead({source: buscar_responsable, updater: function(item) {
+            var results = $("#id_responsable").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_responsable").attr("myval",datos.id);
+                }
+            }
+            return item;
+        }});
+        $("#buttonparti").click(function(){
+            $("#responsable").val($("#id_responsable").attr("myval"));
+        });
+        $("#formbutton").click(function(){
+            $("#responsable").val($("#id_responsable").attr("myval"));
+        });
+{% endblock %}
+{% block titulo %}{{ title }}{% endblock %}
+{% block formaction %}/adm_calendario{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='edit'/>
+    <input type='hidden' name='id' value='{{ actividad.id }}'/>
+    <input type='hidden' id='responsable' name='rid' value='' />
+{% endblock %}
+{% block formback %}/adm_calendario{% endblock %}
+{% block buttonname %}Guardar{% endblock %}
+{% block extrabuttons %}
+    {% if not actividad.existpartici %}
+        <button type="submit" class="btn btn-info" name="participante" id='buttonparti'>Guardar y Adicionar Participante</button>
+    {% endif %}
+{% endblock %}

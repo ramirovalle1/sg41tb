@@ -1,0 +1,185 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/act_docentes_vinculacion?s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+        $("#id_fecha").datepicker({format:"dd-mm-yyyy"});
+
+    {#------------------------------------------------------- MODIFICAR DATOS----------------------------------------------------------------#}
+        $('.modificar_datos').click(function(){
+            iddocenteactividad = $(this).attr("iddocenteactividad");
+            nombre_docente = $(this).attr("nombre_docente");
+            nombre_actividad = $(this).attr("actividad");
+
+            $("#editar_actividaddocente #iddocenteactividad").val($(this).attr('iddocenteactividad'));
+            $("#id_fecha").val($(this).attr('cambio'));
+
+            $("#editar_actividaddocente #paneltitle2").html('Modificar datos de la actividad docente"'+nombre_actividad+'"');
+            $("#editar_actividaddocente").modal({"backdrop":"static","width":"40%"});
+            $("#editar_actividaddocente").modal("show");
+        });
+
+        $("#editar_actividaddocente .btn-cerrar").click(function(){
+            $("#editar_actividaddocente").modal("hide");
+        });
+
+        {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+        {% if error %}
+            smoke.alert('{{ error }}');
+        {% endif %}
+
+    });
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span11"  >
+            <h3>Actividades de Vinculaci&oacute;n Docentes</h3></br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/mantenimiento" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/act_docentes_vinculacion" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th> Docente</th>
+                        <th style="text-align: center"> Actividad</th>
+                        <th style="text-align: center"> F. Actividad</th>
+                        <th style="text-align: center"> F. Ingreso</th>
+                        <th style="text-align: center"> Horas</th>
+                        <th style="text-align: center"> Usuario Cambio </th>
+                        <th style="text-align: center"> F. Cambio</th>
+                        <th style="text-align: center"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for d in docentes %}
+                        <tr>
+                            <td>{{ d.persona.nombre_completo_inverso }} <br>
+                                <span style="color: #808080"> {% if d.persona.cedula %} {{ d.persona.cedula }} {% else %} {{ d.persona.pasaporte }} {% endif %}</span>
+                            </td>
+                            <td style="text-align: left"> {{ d.actividad.nombre}} <br>
+                            </td>
+                            <td style="text-align: center"> {{ d.fecha|date:'d-m-Y' }} <br>
+                            </td>
+                            <td style="text-align: center"> {% if d.fechaingreso %} {{ d.fechaingreso|date:'d-m-Y hh:mm:ss'}} {% endif %}</td>
+                            <td style="text-align: center"> {% if d.horas %} {{ d.horas }} {% endif %} </td>
+                            <td style="text-align: center"> {% if d.usuariocambio %} {{ d.usuariocambio }} {% endif %}</td>
+                            <td style="text-align: center"> {% if d.fechacambio %} {{ d.fechacambio|date:'d-m-Y hh:mm:ss' }} {% endif %}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if d.encorte_del_rol and perms.sga.change_multadocentemateria %}
+                                            <li><a href="#" class='modificar_datos' iddocenteactividad='{{ d.id }}' actividad='{{ d.actividad.nombre }}' cambio='{{ d.fecha|date:'d-m-Y' }}' ><i class="icon-edit"></i>  Editar Fecha de Actividad</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not docentes %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTEN REGISTROS
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span1"></div>
+        <div class="span10">
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/act_docentes_vinculacion?page=1">1</a></li>
+                            <li><a href="/act_docentes_vinculacion?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/act_docentes_vinculacion?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/act_docentes_vinculacion?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/act_docentes_vinculacion?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/act_docentes_vinculacion?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="editar_actividaddocente">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario1" style="overflow-y: auto"  class='well form-horizontal' action="/act_docentes_vinculacion" method="POST"  >
+                <input type='hidden' name='action' value='edit_docenteactividad' />
+                <input type='hidden' name='iddocenteactividad' id='iddocenteactividad' />
+                {% for c in formactividad %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+
+{% endblock %}

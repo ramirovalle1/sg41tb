@@ -1,0 +1,141 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+
+        google.load("visualization", "1", {packages:["corechart"]});
+        google.setOnLoadCallback(drawChart1);
+        google.setOnLoadCallback(drawChart2);
+        google.setOnLoadCallback(drawChart3);
+
+        grupos = [{% for grupo in grupos_sexo %}
+            {"id":"{{ grupo.id }}","nombre":"{{ grupo.nombre }}","total_estudiantes":{{ grupo|args:anno|args:edad|call:"cantidad_estudiantes_sexo" }}}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        ];
+
+        function drawChart1() {
+            var elements = [];
+            elements.push(['Grupos', 'Total Estudiantes']);
+            for (var i in grupos){
+                var grupo = grupos[i];
+                elements.push([grupo.nombre, grupo.total_estudiantes]);
+            }
+            var data = google.visualization.arrayToDataTable(elements);
+
+            var options = {
+              title: 'Gráfico - Totales Estudiantes Casados Menores a '+{{edad}},
+              'align': 'top',
+              is3D: true
+            };
+
+            var chart = new google.visualization.PieChart(document.getElementById('piechart_3d'));
+            chart.draw(data, options);
+        }
+
+        function drawChart2() {
+            var elements = [];
+            elements.push(['CARRERAS'{% for g in grupos_sexo %},"{{ g.nombre }}"{% endfor %}]);
+            {% for ls in lista_carreras_grupos %}
+                elements.push(["{{ ls.0 }}"{% for l in ls.1 %},{{ l }}{% endfor %}]);
+            {% endfor %}
+
+            var data = google.visualization.arrayToDataTable(elements);
+
+            var options = {
+              title: 'Gráfico de Casados Menores a ' +{{edad}}
+            };
+
+            var chart2 = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+            chart2.draw(data, options);
+        }
+
+        {#Mujeres menores a edad ingresada por Carrera #}
+        function drawChart3() {
+            gruposMujeres = [{% for listamujeres in lista_mujeres_carreras %}
+                  {"carrera":"{{ listamujeres.0 }}","cantidad":{{ listamujeres.1 }}}{% if not forloop.last %},{% endif %}
+                 {% endfor %}
+             ];
+
+            var elementsTercera = [];
+            elementsTercera.push(['Gráfico', 'Estudiantes Mujeres Menores a edad ingresada']);
+            for (var i in gruposMujeres){
+                var grupoMujeres = gruposMujeres[i];
+                elementsTercera.push([grupoMujeres.carrera,grupoMujeres.cantidad]);
+            }
+            var dataMujeres = google.visualization.arrayToDataTable(elementsTercera);
+
+            var optionsMujeres = {
+              title: 'Gráfico - Estudiantes Mujeres Menores a '+{{ edad }} ,
+              'align': 'top',
+              is3D: true
+            };
+            var chart3 = new google.visualization.PieChart(document.getElementById('pie_mujeres'));
+            chart3.draw(dataMujeres, optionsMujeres);
+        }
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+<div class="row-fluid">
+    <div class="span11">
+        <h3> TABLA Y GRAFICOS - ESTUDIANTES CASADOS MENORES A {{edad}} POR CARRERAS - A&Ntilde;O {{ anno }}</h3>
+    </div>
+    <div class='span1'>
+        <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+    </div>
+</div>
+<br/>
+
+<div class='row-fluid'>
+    <div class='span6'>
+        <table class='table table-bordered table-condensed'>
+            <thead>
+                <tr>
+                    <th rowspan="2" class="bigger" style="vertical-align: middle"> CARRERAS</th>
+                    <th colspan="5" style="text-align: center" class="bigger">Sexo</th>
+                </tr>
+                <tr class="bigger" >
+                    {% for gruposexo in grupos_sexo %}
+                        <th style="text-align: center;">{{ gruposexo.nombre }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for ls in lista_carreras_grupos %}
+                <tr class="bigger">
+                    <td>{{ ls.0 }}</td>
+                    {% for l in ls.1 %}
+                        <td style="text-align: center;">{{ l }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="alert-info">
+                    <td class="bigger" style="text-align: center">TOTALES</td>
+                    {% for g in grupos_sexo %}
+                    <td style="text-align: center; font-size: 17px"><b>{{ g|args:anno|args:edad|call:"cantidad_estudiantes_sexo"}}</b></td>
+                    {% endfor %}
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <div class="span6">
+        <div id="piechart_3d" style="height: 417px;"></div>
+    </div>
+    <div class="span6">
+        <div id="pie_mujeres" style="height: 417px;"></div>
+    </div>
+</div>
+
+{#<div class="row-fluid">#}
+{#    <div class="span6">#}
+{#        <div id="chart_div" style="height: 417px;"></div>#}
+{#    </div>#}
+{##}
+{#</div>#}
+
+{% endblock %}

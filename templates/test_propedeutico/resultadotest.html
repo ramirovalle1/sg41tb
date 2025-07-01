@@ -1,0 +1,250 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+
+            $("#detalle_venta #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_venta").modal("hide");
+            });
+
+
+            $(".detallevta").click(function() {
+               var vid = $(this).attr("pid");
+                   $.get("/visitabiblioteca", {'action':'detalle', 'visita': vid}, function(data) {
+                        $("#detalle_venta .modal-body").html(data);
+                        $("#detalle_venta").modal({"backdrop":"static"});
+                        $("#detalle_venta").modal("show");
+                   }, "html");
+               return false;
+              });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/visitabiblioteca?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/visitabiblioteca?g='+id;
+                }else{
+                    location.href = '/visitabiblioteca';
+                }
+
+            });
+            $("#gruposede").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/visitabiblioteca?se='+id;
+                }else{
+                    location.href = '/visitabiblioteca';
+                }
+
+            });
+
+            $("#cerrar").click(function() {
+                alert(1);
+                $("#observacion").modal("hide");
+            });
+
+            $("#observacion").click(function() {
+                $('#observacion').modal({backdrop: 'static'});
+                    // Render parameters
+                $("#observacion").find("#paneltitle").html("Observacion");
+{#                $("#observacion").find("#panelbody").html("");#}
+{#                $(".btn-ejecutarambito").show();#}
+{#                $(".btn-ejecutarindicador").hide();#}
+
+                $("#observacion").modal("show");
+{#                $("#cerrar").attr("ins",ins);#}
+{#                location.href = '/becas_matricula?action=motivoanula&id='+ins;#}
+{#                $("#motivodesactivacion").modal("show");#}
+            });
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas  %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>ALUMNO: {{ inscripciontest.inscripcion }} </h3>
+            <h3>Resultado de los TEST</h3>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span5' style="text-align: right;">
+            {% if inscripciontest.inscripcion %}
+                <a href="/reportes?action=run&direct=true&n=resultado_test_areas&inscripcion={{ inscripciontest.inscripcion.id }}&rt=pdf" class='btn btn-warning'><i class="icon-print"></i> Imprimir otros test</a>
+                <a href="/reportes?action=run&direct=true&n=resultado_test_personalidad&inscripcion={{ inscripciontest.inscripcion.id }}&rt=pdf" class='btn btn-warning'><i class="icon-print"></i> Test Personalidad</a>
+            {% endif %}
+            <a href="/test_propedeutico?action=alumnostest" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a></br>
+        </div>
+    </div>
+    {% if test %}
+    <div class="row-fluid">
+        <div class='span5'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                {% if not inscripciontest.inscripcion.tienediscapacidad %}
+                    <th style="text-align: center"></th>
+                    <th style="text-align: center">PD</th>
+                    <th style="text-align: center">PC</th>
+                    <th style="text-align: center">ESTADO</th>
+                {% else %}
+                    <th style="text-align: center"></th>
+                    <th style="text-align: center">PUNTAJE</th>
+                    <th style="text-align: center">CALIFICACI&Oacute;N</th>
+                {% endif %}
+            </tr>
+            </thead>
+            <tbody>
+                {% for test in test %}
+                    <tr>
+                        <th style="text-align: center;">
+                           {{ test.descripcion }}
+                        </th>
+                        {% if not inscripciontest.inscripcion.tienediscapacidad %}
+                            <td style="text-align: center;">
+                               {{ test|args:inscripciontest|call:"resulta_direc" }}
+                            </td>
+                            <td style="text-align: center;">
+                               {{ test|args:inscripciontest|call:"resulta_perce" }}
+                            </td>
+                            <td style="text-align: center;">
+                               {{ test|args:inscripciontest|call:"resulta_descr" }}
+                            </td>
+                        {% else %}
+                            <td style="text-align: center;">
+                               {{ test|args:inscripciontest|call:"resulta_direc" }}
+                            </td>
+                            <td style="text-align: center;">
+                                {{ test|args:inscripciontest|call:"resulta_descr" }}
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+
+            </tbody>
+            <tfoot>
+                <tr style="text-align: center">
+                    {% if inscripciontest.observacion == "" %}
+                        <td style="text-align: center"><a href='/test_propedeutico?action=observacion&inscr={{ inscripciontest.id }}' class='btn '><i class=""></i> Ingresar Observacion</a></td>
+                    {% endif %}
+                </tr>
+            </tfoot>
+        </table>
+
+        </div>
+    </div>
+    {% endif  %}
+    {% if aretest != "" %}
+        <div class='row-fluid'>
+        <div class='span5'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" >
+                <thead>
+                <tr>
+                    <th style="text-align: center">AREAS</th>
+                    <th style="text-align: center">PREGUNTAS</th>
+                    <th>TOTAL</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for area in areas %}
+                        <tr>
+                            <th style="text-align: center;">
+                               {{ area.nombre }}<br>
+                               {{ area.descripcion }}
+                            </th>
+                            <td style="text-align: center;">
+                               <table  style="width: 1px;text-align: center;height: 1px;" >
+                                   <thead>
+                                       {% for res in  area|args:inscripciontest|call:"pregunta_area"  %}
+                                           <td>{{ res.pregunta_orden }}</td>
+                                       {% endfor %}
+                                   </thead>
+                               </table>
+                            </td>
+                            <td style="text-align: center;">
+                               {{ area|args:inscripciontest|call:"pregunta_total" }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if perms.sga.change_inscripcion %}
+            <a href="/visitabiblioteca?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Visita</a>
+            {% endif %}
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/visitabiblioteca?page=1">1</a></li>
+                            <li><a href="/visitabiblioteca?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/inscripciones?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/visitabiblioteca?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/visitabiblioteca?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/visitabiblioteca?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="observacion" style="display: none;">
+        <div class="modal-header">
+            <!-- <a class="close" data-dismiss="modal">×</a> -->
+            <h3 id="paneltitle">Adicionar</h3>
+        </div>
+        <div class="modal-body">
+            <input type="text" id="nuevodatoinput" style="width: 100%; text-transform: uppercase;height: 100px"/>
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+            <a href="/estudiantesxdesertar?action=estudio&id={{ estudiantexdesertar.inscripcion.id }}" class="btn btn-primary btn-ejecutarambito">Guardar</a>
+        </div>
+    </div>
+
+
+
+{% endblock %}

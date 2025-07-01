@@ -1,0 +1,170 @@
+{% extends "formbs.html" %}
+{% block heading %}
+     <script type="text/javascript">
+         Shadowbox.init({
+            overlayColor: "#000",
+            overlayOpacity: "0.6",
+
+            });
+        $(function() {
+
+            $("#search").click(function() {
+                    var term = $("#searchfield").val().toUpperCase();
+                    location.href = "/seminario?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+     <div class='row-fluid'>
+        <div class='span9'>
+            <h3>Listado de Talleres</h3>
+{#            <h3>Listado de Talleres</h3>#}
+            <br>
+        </div>
+
+            {% if perms.sga.add_noticia %}
+                <div class='span3'style="text-align: right">
+                    <a href="/seminario?action=add" class='btn btn-success'><i class="icon-share-alt"></i>Nuevo Taller</a>
+                    <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+                </div>
+                {# div class='span2'style="text-align: left">  #}
+                {#<a href="/seminario?action=actualizar" class='btn btn-danger'><i class="icon-remove-sign"></i> Actualizar</a> #}
+                {#</div> #}
+            {% endif %}
+
+
+{#        <div class='span1'>#}
+{#            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>#}
+{#        </div>#}
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <form class="form-search">
+                <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/seminario" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>C&oacute;digo</th>
+                <th >Nombre</th>
+                <th>Objetivo</th>
+                <th>Inicio</th>
+                <th style="text-align: center">Fin</th>
+                <th style="text-align: center">Hora</th>
+                <th>Capacidad</th>
+                <th>Inscritos</th>
+                <th>Carrera</th>
+                <th>Expositor</th>
+                <th>Ubicaci&oacute;n</th>
+                <th style="text-align: center">Precio</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for s in seminario %}
+                <tr>
+                    <td style="width: 5%">{{ s.id }}</td>
+                    <td style="width: 25%">{{ s.taller }}</td>
+                    <td style="width: 25%">{{ s.objetivo  }}</td>
+                    <td style="width: 7%; text-align: center">{{ s.inicio|date:'d-m-Y' }}</td>
+                    <td style="width: 7%; text-align: center">{{ s.fin|date:'d-m-Y'}}</td>
+                    <td style="width: 7%; text-align: center">{{ s.horainicio|time:"H:i" }} - {{ s.horafin|time:"H:i"}}</td>
+                    <td style="width: 5%; text-align: center">{{ s.capacidad }}</td>
+                    <td style="width: 5%; text-align: center">{{ s.inscritos }}</td>
+                    <td style="width: 13%">{{ s.carrera }}</td>
+                    <td style="width: 10%">{{ s.expositor }}</td>
+                    <td style="width: 25%">{% if s.ubicacion %}{{ s.ubicacion }}
+                    {% if s.imgubicacion %}
+                        <a href="{{ s.imgubicacion.url }}" rel="shadowbox, width=700;height=400;float=left  " title="{{ s.ubicacion }}"><i class="icon-map-marker"></i> Ver Ubicacion</a>
+                    {% endif %}
+
+                    {% endif %}
+                    </td>
+                    <td style="width: 5%; text-align: center">{% if not  s.libre  %}${{ s.precio }}{% endif %}</td>
+                    <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                    {% if  s.puede_eliminarse and perms.sga.add_noticia %}
+                                        <li><a  href="/seminario?action=eliminar&id={{ s.id }} "> <i class='icon-remove'></i> Eliminar </a></li>
+                                    {% else %}
+                                        <li><a  href="/seminario?action=ver&id={{ s.id }} "> <i class='icon-edit'></i> Ver Inscritos </a></li>
+{#                                        <li><a href='/reportes?action=run&direct=true&n=certificados_seminario&rt=pdf&seminario={{ s.id }}'><i class="icon-print icon-white"></i> Certificados en Grupo</a></li>#}
+{#                                        <li><a href='/reportes?action=run&direct=true&n=inscritos_por_talleres&rt=pdf&taller={{ s.id }}'><i class="icon-print icon-white"></i> Listado Inscritos</a></li>#}
+                                    {% endif %}
+                                    {% if perms.sga.add_noticia %}
+                                        <li><a  href="/seminario?action=editar&id={{ s.id }} "> <i class='icon-edit'></i> Editar </a></li>
+                                        <li><a href='/reportes?action=run&direct=true&n=certificados_seminario&rt=pdf&seminario={{ s.id }}'><i class="icon-print icon-white"></i> Certificados en Grupo</a></li>
+                                        <li><a href='/reportes?action=run&direct=true&n=inscritos_por_talleres&rt=pdf&taller={{ s.id }}'><i class="icon-print icon-white"></i> Listado Inscritos</a></li>
+                                    {% endif %}
+
+                                </ul>
+                            </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not seminario %}
+                <tr>
+                    <td colspan="11">
+                        NO HAY REGISTROS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% if paging.num_pages > 20 %}
+                    <div class='pagination'>
+                        <ul>
+                            {% if paging.primera_pagina %}
+                                <li><a href="/seminario?page=1">1</a></li>
+                                <li><a href="/seminario?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                            {% endif %}
+                            {% for pagenumber in paging.paginas %}
+                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/seminario?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                            {% endfor %}
+                            {% if paging.ultima_pagina %}
+                                <li><a href="/seminario?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                                <li><a href="/seminario?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% else %}
+
+                    <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/seminario?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock  %}

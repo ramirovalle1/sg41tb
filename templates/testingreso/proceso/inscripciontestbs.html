@@ -1,0 +1,261 @@
+{% extends "basenueva.html" %}
+
+{% load sga_extras %}
+
+{% block heading %}
+
+<style>
+    body {
+        background-color: #eee
+    }
+    .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+      color: #fff;
+      background-color:  #184679; }
+
+
+    .custom-control-input:checked ~ .custom-control-label::before {
+      color: #fff;
+      border-color:#184679;
+      background-color: #184679;
+    }
+
+    .badge-incia_test {
+            color: #fff;
+            background-color: #D35400;
+            font-size: 14px;
+    }
+
+</style>
+
+<script>
+    $(function () {
+
+        var idtestins=0;
+
+        function buscar(){
+
+            var term = $("#txtbusqueda").val().toUpperCase();
+            location.href = "/inscripciontest?s=" + term ;
+        }
+
+        $("#search").click(function() {
+            buscar();
+        });
+
+        aceptartermino=function (idregistrotest) {
+
+           idtestins= idregistrotest;
+           $.get("/tests", {'action':'verterminos', 'idtest': idregistrotest}, function(data) {
+
+
+                 $("#addaceptar .modal-body").html(data);
+                 $("#addaceptar").modal({backdrop: 'static', keyboard: false});
+
+
+         }, "html");
+         return false;
+
+        }
+
+         $("#btnaceptar").click(function() {
+
+
+                  $("#login-modal2").modal({backdrop: 'static', keyboard: false});
+                  $('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../testsenescyt/static/imagen/loader.gif"/><br/> Guardando información espero un momento...</div>');
+
+
+                  var formData = new FormData();
+                  formData.append('action', 'aceptartermino');
+                  formData.append('idtest', idtestins);
+                  formData.append('idpersona', {{ personadado.id }});
+
+
+
+                  $.ajax({
+                      url: '/inscripciontest',
+                      type: "POST",
+                      contentType: false,
+                      data: formData,
+                      processData: false,
+                      cache: false,
+                      success: function (data) {
+                          if (data.result == "ok") {
+                               location.href = "/inscripciontest?action=realizartest&idtest="+idtestins;
+                          } else {
+                              swal("Error", data.message, "error");
+                              $("#login-modal2").remove();//ocultamos el modal
+                              $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                              $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                              $('.modal-content').remove();
+                              $('#content').remove();
+
+
+                          }
+
+                      },
+                      error: function (xhr, ajaxOptions, thrownError) {
+                          swal("Error", "Error Conexion en el Servidor", "error");
+                          $("#login-modal2").remove();//ocultamos el modal
+                          $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                          $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                          $('.modal-content').remove();
+                          $('#content').remove();
+                      },
+
+                      complete: function () {
+                          $("#login-modal2").remove();//ocultamos el modal
+                          $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                          $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                          $('.modal-content').remove();
+                          $('#content').remove();
+
+                      }
+
+
+                  });
+
+         });
+
+    });
+
+</script>
+
+{% endblock %}
+{% block canvas %}
+
+
+ <div class="mobile-menu-overlay"></div>
+
+ <div class="main-container">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-6 col-sm-12">
+                    <div class="title">
+                        <h4>Listado de Test</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-box mb-30">
+					<div class="pd-20">
+                        <div class="row">
+                            <div class="col-md-4" style="margin-top: 5px">
+                                <div class="form-group" >
+                                    <label > <a style="color: #d92550"></a></label>
+                                    <input id="txtbusqueda" type="text" class="form-control" value='{{ search }}' >
+                                </div>
+                            </div>
+                            <div class="col-md-4" style="margin-top: 5px">
+                                <label > <a style="color: #d92550"></a></label>
+                                <div class="form-group">
+                                    <button type="button" id="search" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+                                </div>
+                            </div>
+
+                        </div>
+					</div>
+					<div class="pb-20">
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th>Nombre</th>
+									<th>Tiempo del Test</th>
+									<th>Mensaje</th>
+                                    <th>Estado</th>
+									<th style="text-align: center">Acciones</th>
+								</tr>
+							</thead>
+							<tbody>
+                               {% for p in listadotestactivo %}
+                                    <tr>
+                                        <td style="text-align: center">{{ p.titulo }}</td>
+                                        <td style="text-align: center">{{ p.minutofin }}</td>
+                                        <td style="text-align: center;">{{ p.observacion }}</td>
+                                        <td style="text-align: center">
+
+                                        {% with realizadotest=p|args:personadado.id|call:"existe_test_inscripcion" %}
+                                            {% if realizadotest %}
+                                                <span class="badge badge-success">Realizado</span>
+                                            {% else %}
+                                                <span class="badge badge-warning" style="color: white">No Realizado</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                        </td>
+
+                                        <td style="text-align: center">
+
+                                            {% with realizadotest=p|args:personadado.id|call:"existe_test_inscripcion" %}
+
+                                                    {% if not realizadotest  %}
+                                                        {% with aceptotermino=p|args:personadado.id|call:"acepto_termino" %}
+                                                            {% if aceptotermino == False %}
+                                                                 <a  class=" btn badge-incia_test" onclick="aceptartermino('{{ p.id }}')"  style="color: white;cursor:pointer"> Realizar Test</a>
+                                                            {% else %}
+                                                                <a  class=" btn badge-incia_test" href="/inscripciontest?action=realizartest&idtest={{ p.id }}"  style="color: white;cursor:pointer"> Realizar Test</a>
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    {% endif %}
+                                            {% endwith %}
+
+
+                                        </td>
+                                    </tr>
+                               {% endfor %}
+                                {% if not listadotestactivo %}
+                                    <tr>
+                                        <td colspan="12">
+                                            NO EXISTEN REGISTROS
+                                        </td>
+                                    </tr>
+                                {% endif %}
+							</tbody>
+						</table>
+					</div>
+        </div>
+
+        <div class="footer-wrap pd-20 mb-20 card-box">
+				Desarrollado por Tics @todos los derechos reservados
+		</div>
+
+ </div>
+
+
+<div  class="modal fade " id="addaceptar" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="width: 1200px;left: -100px">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabelpersona">Término y Condiciones</h4>
+                </div>
+
+                <div class="modal-body" style="width:1200px;overflow: auto;">
+
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"  class="btn" data-bgcolor="#FA1D06" data-dismiss="modal" data-color="#ffffff">Salir</button>
+                    <button type="button" id="btnaceptar" class="btn" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>
+
+                </div>
+
+            </div>
+
+        </div>
+</div>
+
+
+
+ <div class="modal fade" id="login-modal2"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="row">
+                <div id="content" class="col-lg-12">
+
+                </div>
+            </div>
+        </div>
+    </div>
+ </div>
+
+{% endblock %}

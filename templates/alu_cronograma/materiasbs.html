@@ -1,0 +1,135 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $(".profesormateria").click(function() {
+                $.blockUI({message: null});
+                var pmid = $(this).attr("pmid");
+                var self = this;
+                $.post("/niveles", {'action': 'delprofesor', 'pmid': pmid}, function(data) {
+                    $.unblockUI();
+                    $(self.parentNode.parentNode).remove();
+                }, "json");
+            });
+
+
+            $(".selectorfecha").datepicker({format:"dd-mm-yyyy"});
+            $(".selectorfecha").blur(function() {
+                var mid = $(this).attr("mid");
+                var horas = $("#horas"+mid).val();
+                var fecha = $(this).val();
+                var inicio = $(this).hasClass("fechainicio");
+                $.blockUI({message: null});
+                $.post("/niveles", {'action': 'updatefecha', 'horas': horas, 'mid': mid, 'fecha': fecha, 'inicio': inicio}, function(data) {
+                    $.unblockUI();
+                    if (data.result=='ok') {
+                        if (inicio) {
+                            $("#selectorfechafin"+mid).val(data.fin);
+                        }
+                    } else {
+                        if (!inicio) {
+                            $("#selectorfechafin"+mid).val(data.fin);
+                        }
+                    }
+                    $(".fechas"+mid).html("["+data.inicio+" al "+data.fin+"]");
+                });
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Cronograma de Materias del Alumno : {{ matricula.inscripcion }} </h3>
+            <h4>Carrera: {{ matricula.nivel.carrera }}</h4>
+            <h4>Nivel: {{ matricula.nivel.nivelmalla }} - {{ matricula.nivel.paralelo }} ({{ matricula.nivel.sesion }}) </h4>
+            <h5>Per&iacute;odo: {{ matricula.nivel.periodo }} </h5>
+            {% if matricula.nivel.tutornivel %}<h5><b><span style="color: #0000ff"> Tutor: {{ matricula.nivel.tutornivel.tutor.persona.nombre_completo_inverso }}- {{ matricula.nivel.tutornivel.tutor.persona.telefono }} - {{ matricula.nivel.tutornivel.tutor.persona.email }}
+            </span></b></h5>{% endif %}
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Asignatura</th>
+                    {% if UTILIZA_ASIGNATURA_RECTORA %}
+                        <th>Rectora</th>
+                    {% endif %}
+                    <th>Horas / Cr&eacute;ditos</th>
+                    <th>Inicia / Termina</th>
+                    <th>Profesor(es)</th>
+                    <th>Horarios</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for materiaasignada in materiasasignadas %}
+                    <tr>
+                        <td>
+                            {% if materiaasignada.materia.identificacion %}{{ materiaasignada.materia.identificacion }}{% else %}###{% endif %}-{{ materiaasignada.materia.asignatura }}
+{#                        <br>#}
+{#                             {% if  materiaasignada.materia.exordinario %}<span class="label label-important"> Ex. Ordinario {{  materiaasignada.materia.exordinario|date:"d-m-Y" }} {% endif %} {% if   materiaasignada.materia.revision  %} Revisi&oacute;n {{  materiaasignada.materia.revision|date:"d-m-Y" }} {% endif %} {% if  materiaasignada.materia.exatrasado %} Ex. Atrasado {{  materiaasignada.materia.exatrasado|date:"d-m-Y" }}{% endif %}</span>#}
+                            {% if materiaasignada.materia.pasada_fecha %}<br/><span class="label label-success">MATERIA YA CURSADA</span>{% endif %}
+                        </td>
+                        {% if UTILIZA_ASIGNATURA_RECTORA %}
+                            <td>{% if materiaasignada.materia.rectora %}<img src='/static/images/16/true.png' alt=''/>{% else %}-{% endif %}</td>
+                        {% endif %}
+                        <td>{{ materiaasignada.materia.horas }} Horas <br/>{{ materiaasignada.materia.creditos }} Cr&eacute;ditos</td>
+                        <td><span class="label label-info"> {{ materiaasignada.materia.inicio|date:'d-m-Y' }} </span> <br/><span class="label label-info"> {{ materiaasignada.materia.fin|date:'d-m-Y' }} </span></td>
+                        <td>
+                            <table class="table table-bordered table-condensed">
+                                {% if materiaasignada.materia.profesormateria_set.count %}
+                                    {% for profesormateria in materiaasignada.materia.profesores_materia %}
+                                        <tr>
+                                            {% if profesormateria.profesor_aux %}
+                                                <td> <b>{{ profesormateria.profesor_auxiliar.persona.nombre_completo  }}</b> - {{ profesormateria.segmento }} [{{ profesormateria.desde|date:'d-m-Y' }} al {{ profesormateria.hasta|date:'d-m-Y' }}] {% if forloop.first and materia.profesores_materia.count > 1 %}<span class="label label-success">PRINCIPAL</span>{% endif %} </td>
+                                            {% else %}
+                                                <td> <b>
+                                                    {{ profesormateria.profesor.persona.nombre_completo }}</b> - {{ profesormateria.segmento }} [{{ profesormateria.desde|date:'d-m-Y' }} al {{ profesormateria.hasta|date:'d-m-Y' }}] {% if forloop.first and materia.profesores_materia.count > 1 %}<span class="label label-success">PRINCIPAL</span>{% endif %}
+                                                    <br>{% if profesormateria.idzoom %} <a href="https://us04web.zoom.us/j/{{ profesormateria.idzoom }}" target="_blank"><span class="icon-share-alt"></span> Iniciar Zoom | ID: {{ profesormateria.idzoom }}</a> {% endif %}
+                                                </td>
+                                            {% endif %}
+
+                                        </tr>
+                                    {% endfor %}
+
+                                {% endif %}
+
+                            </table>
+
+                        </td>
+                        <td>
+                            <ol>
+                                {% for clase in materiaasignada.materia.clase_set.all %}
+                                    <li>{{ clase.dia_semana }} - ({{ clase.turno.comienza }} a {{ clase.turno.termina }})
+                                        {% if clase.virtual %}<b style="color: red"> - CLASE VIRTUAL </b>
+                                        {%  else %}
+                                            Aula: {{ clase.aula.nombre }}
+                                        {%  endif %}
+
+                                    </li>
+
+                                {% endfor %}
+                            </ol>
+                        </td>
+
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <!-- <a href="/reportes?action=run&direct=true&rid={{ reporte_cronograma_materias }}&nivel={{ nivel.id }}&rt=pdf" class='btn'><i class="icon-print"></i> Imprimir</a> -->
+            <a href="/alu_horarios?action=horario&id={{ matricula.nivel.id }}" class='btn btn-success'><i class="icon-time"></i> Ir al Horario</a>
+        </div>
+    </div>
+
+{% endblock %}

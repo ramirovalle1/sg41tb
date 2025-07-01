@@ -1,0 +1,158 @@
+{% extends "formbs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript" src="/static/js/jquery.editinplace.js"></script>
+     <script type="text/javascript">
+
+
+        $(function() {
+            var d=0;
+            var ins=0;
+            $('#id_archivo').addClass("validate[required]");
+
+            $('#formbutton').click(function(){
+                if ($("#id_archivo").val() == "" )
+                    {
+                        $($("#id_archivo").get(0).parentNode).find(".help-text").html("<span style='color: darkred'><i>Falta ingresar documento.</i></span>");
+                        $("#formbutton").attr("disabled",true);
+                        smoke.alert("Debe ingresar documento ");
+
+                    }
+                else{
+                       $("#formbutton").attr("disabled",true);
+                        location.reload();
+                    }
+            });
+
+            $(".btn-danger").click(function(){
+                var id = $(this).attr("did");
+                smoke.confirm('Se eliminara el documento', function(e){
+                    if (e){
+                        location.href = '/vinculacion?action=eliminardocu&id='+id;
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: "CANCELAR",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+        {% if error %}
+            smoke.alert('{{ error }}');
+        {% endif %}
+
+        $("#documento_panel .btn-cerrar").click(function() {
+            $("#documento_panel").modal("hide");
+            return false;
+        });
+
+        $("#agregardocumento").click(function(){
+            $("#id_nombre").val("");
+            $("#documento_panel").modal({width: '800px', backdrop: 'static'});
+            $("#documento_panel").modal("show");
+
+        });
+
+        });
+        Shadowbox.init({
+        overlayColor: "#000",
+        overlayOpacity: "0.6",
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+     <div class='row-fluid'>
+         <div class='span12'>
+            <div class='span9'>
+            </div>
+            <div class='span2' style="text-align: left">
+                <a href="#" class='btn btn-success' id=agregardocumento><i class="icon-search" style="text-align: left"></i>  Adicionar Documento</a>
+            </div>
+            <div class='span1'>
+                <a href="/vinculacion" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            </div>
+         </div>
+         <div class='row-fluid'>
+            <div class='span12'>
+                <h3>Documentos</h3>
+            </div>
+         </div>
+         <div class='row-fluid'>
+            <div class='span12'>
+            </div>
+         </div>
+     </div>
+     <div class='row-fluid'>
+        <div class='span6'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th >Documento</th>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    <th>Archivo</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for d in documento%}
+                    <tr>
+                        <td>{{ d.archivo}}</td>
+                        <td>{% if d.fecha %}{{ d.fecha|date:'d-m-Y' }}{% endif %}</td>
+                        <td>{{ d.user.username}}</td>
+                        <td style="text-align: center">{% if d.archivo %}<a href="{{d.archivo.url}}" class="btn btn-warning"> Descargar </a>{% endif %}</td>
+                        <td><a class="btn btn-danger" did={{ d.id }}>Eliminar</a></td>
+
+                    </tr>
+                {% endfor %}
+                {% if not documento %}
+                    <tr>
+                        <td colspan="4">
+                            NO HAY DOCUMENTOS
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+     </div>
+     <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/documentoest?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+     </div>
+
+     <div class="modal fade static" id="documento_panel"   >
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle1'><i> Ingrese Documento </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well {% block form-type %}form-horizontal{% endblock %}' action="/vinculacion" method="POST" enctype="multipart/form-data" >
+            <input type='hidden' name='action' value='add_docuest' />
+            {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">{% block buttonname %}Guardar{% endblock %}</button>
+            {% block extrabuttons %}
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            {% endblock %}
+            </form>
+        </div>
+     </div>
+{% endblock  %}

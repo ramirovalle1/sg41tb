@@ -1,0 +1,1678 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src='/static/js/notificacionpanel.js'></script>
+    <script src="/static/js/jquery.date_input.js" type='text/javascript'></script>
+    <script src="/static/js/jquery.timeentry.js" type='text/javascript'></script>
+
+    <link type='text/css' rel='stylesheet' href="/static/css/date_input.css"/>
+    <link type='text/css' rel='stylesheet' href="/static/css/jquery.timeentry.css"/>
+    <script type="text/javascript">
+        function confirmar_actualizar_eva(pk, title, accion) {
+            Swal.fire({
+                title: `<h4>${title}</h4>`,
+                text: "Confirmar acualización en EVA",
+                type: 'warning',
+                showCancelButton: true,
+                allowOutsideClick: false,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Si, deseo hacerlo',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.value) {
+                    $.blockUI({message: "Espere, estamos procesando su solicitud..."});
+                    $.ajax({
+                        type: "GET",
+                        url: "{{ request.path }}",
+                        data: {'action': accion, 'id': pk},
+                        success: function (response) {
+                            $.unblockUI();
+                            if (response.isSuccess) {
+                                swal.fire({
+                                    title: response.message,
+                                    {#text: "# Número: "+idpersonadobe,#}
+                                    type: 'info',
+                                    showCancelButton: false,
+                                    confirmButtonText: 'Aceptar',
+                                    cancelButtonText: 'No',
+                                    confirmButtonColor: '#3085d6',
+                                    cancelButtonColor: '#d33'
+                                }).then(function (isConfirm) {
+                                    if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+                                        $.blockUI({message: "Espere, estamos recuperando nuevos datos..."});
+                                        location.reload();
+                                    }
+
+                                });
+                            }else{
+                                swal.fire("Error", `${response.message}`, 'error')
+                            }
+                        },
+                        error: function () {
+                            $.unblockUI();
+                            swal.fire("Error", `No se pudo actualizar en EVA`, 'error')
+                        },
+                        dataType: "json"
+                    });
+                }
+            });
+        }
+
+        $(function() {
+            $('.tu').tooltip()
+            var niv = 0;
+            var mat =0;
+            var mate_culm =0;
+            var pmid2=0;
+            var idprofesohistorial=0;
+            var idprofmateria=0;
+            fechaclase="";
+            $("#id_exordinario, #id_revision, #id_exatrasado").datepicker({format:"dd-mm-yyyy"});
+            {%  if mensaje %}
+                smoke.alert('{{ mensaje }}');
+            {% endif %}
+            $(".actionCrearCursoEVA").click(function () {
+                $.blockUI({message: "Espere, estamos procesando su solicitud..."});
+                const id = $(this).data('id');
+                $.ajax({
+                    type: "GET",
+                    url: "/niveles",
+                    data: {'action': 'crear_curso_eva', 'id': id},
+                    success: function (response) {
+                        $.unblockUI();
+                        if (response.isSuccess) {
+                            smoke.confirm(response.message, function(e){
+                                    if(e){
+                                        location.reload();
+                                    }
+                                },
+                                {
+                                    ok:'Ok',
+                                    //cancel:'NO',
+                                    reverseButtons:false
+                                });
+                        }else{
+                            smoke.alert(response.message);
+                        }
+                    },
+                    error: function () {
+                        $.unblockUI();
+                        smoke.alert("Error al crear el curso en EVA");
+                    },
+                    dataType: "json"
+                });
+
+            });
+
+            $(".actionCrearCursoEVAMasivo").click(function () {
+                const id = $(this).data('id');
+                Swal.fire({
+                    title: `<h4>Creación masiva de cursos en EVA del nivel</h4>`,
+                    text: "Confirmar creación de cursos en EVA",
+                    type: 'warning',
+                    showCancelButton: true,
+                    allowOutsideClick: false,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Si, deseo hacerlo',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.value) {
+                        $.blockUI({message: "Espere, estamos procesando su solicitud..."});
+                        $.ajax({
+                            type: "GET",
+                            url: "/niveles",
+                            data: {'action': 'crear_curso_eva_masivo', 'id': id},
+                            success: function (response) {
+                                $.unblockUI();
+                                if (response.isSuccess) {
+                                    swal.fire("success", `${response.message}`, 'success')
+                                }else{
+                                    swal.fire("Error", `${response.message}`, 'error')
+                                }
+                            },
+                            error: function () {
+                                $.unblockUI();
+                                swal.fire("Error", `No se pudo actualizar en EVA`, 'error')
+                            },
+                            dataType: "json"
+                        });
+                    }
+                });
+
+            });
+            $("#mclose").click(function(){
+                $("#exportar").modal('hide');
+                $(".modal-footer").show();
+                if (self.href!="#"){
+                    $(location).attr('href',self.href);
+                }
+            });
+            $(".exportarmateria").click(function() {
+                $("#exportar").modal('show');
+                $(".modal-footer").hide();
+                $(".modal-body").html("Exportando datos de la materia, este proceso puede demorar, espere la confirmaci&oacuten que el mismo t&eacutermino correctamente");
+                id = $(this).attr('id');
+                $.post("/materias_externas",{"action": "exportarmateria", "materia": id },function(data) {
+                    if (data.err==0){
+                        $(".modal-body").html("Resultado "+data.mensaje+data.mensaje2);
+                        $("#mclose").prop("href", "/niveles?action=filtrar&id="+data.ni+"&f=4");
+                    } else {
+                        $(".modal-body").html("Resultado: "+data.mensaje + data.err);
+                        $("#mclose").prop("href", "/niveles?action=filtrar&id="+data.ni+"&f=2");
+                    }
+                    $(".modal-footer").show();
+                },"json");
+            });
+
+            $(".fechaculm").click(function() {
+                {% if  not nivel.cerrado %}
+                    mate_culm = $(this).attr('mid');
+                    var fechacul = $(this).attr('fechacul');
+                    if (fechacul){
+                        $("#dato").val(fechacul);
+                    }else{
+                        $("#dato").val('{{ nivel.fin|date:"d-m-Y" }}');
+                    }
+
+                    $("#dato").datepicker({format:"dd-mm-yyyy"});
+                    $($("#dato").get(0).parentNode).find(".help-text").html("");
+                    $("#pregunta").modal({backdrop: 'static', keyboard: false, width: "20%", height: "20%"});
+                    $("#pregunta").modal("show");
+                {% endif %}
+            });
+            $(".btn-cerrar").click(function() {
+                $("#pregunta").modal('hide');
+
+            });
+
+            $("#pregunta .btn-agregar").click(function() {
+                var dato = $("#dato").val();
+                if (dato){
+                    $("#pregunta").modal("hide");
+                    location.href=('/niveles?action=addfechaculm&fecha='+dato+'&nivel={{ nivel.id }}'+"&mat="+mate_culm);
+                }
+            });
+            {#            $(".fechaexamen").click(function(){#}
+            {#               mat = $(this).attr('materia');#}
+            {#               var extra = $(this).attr('extra');#}
+            {#               var revi = $(this).attr('revi');#}
+            {#               var atra = $(this).attr('atra');#}
+            {#                $("#id_exordinario").val("");#}
+            {#                fechac =fin.split("-");#}
+            {#                fechaclase = new Date(fechac[2], fechac[1] - 1, fechac[0]);#}
+            {#                alert(fechaclase);#}
+            {#                $("#id_exordinario").datepicker("setValue",fechaclase);#}
+            {#                $("#id_exordinario").val(extra);#}
+            {#                $("#id_revision").val(revi);#}
+            {#                $("#id_exatrasado").val(atra);#}
+            {#                $("#modalfechas").modal({width: '400px', backdrop: 'static'});#}
+            {#                $("#modalfechas").modal("show");#}
+            {#            });#}
+            {#              $("#modalfechas .btn-cerrar").click(function() {#}
+            {#                $("#modalfechas").modal("hide");#}
+            {#                return false;#}
+            {#            });#}
+            {#            $("#modalfechas .btn-success").click(function() {#}
+            {#                $("#modalfechas").modal("hide");#}
+            {#                var ordi = $("#id_exordinario").val();#}
+            {#                var revi = $("#id_revision").val();#}
+            {#                var atra = $("#id_exatrasado").val();#}
+            {#                if (ordi == '' ||  revi == '' || atra == ''){#}
+            {#                   alert("INGRESE TODAS LAS FECHAS");#}
+            {#                   $("#modalfechas").modal({width: '400px', backdrop: 'static'});#}
+            {#                   $("#modalfechas").modal("show");#}
+            {#                }else{#}
+            {#                    $.post("/niveles",{"action": "addfechas","id":mat,"ordi":ordi,"revi":revi,"atra":atra},function(data) {#}
+            {#                       if(data.result=='ok'){#}
+            {##}
+            {#                        smoke.alert("DATOS GUARDADOS CORRECTAMENTE");#}
+            {#                           location.reload();#}
+            {#                           return false;#}
+            {#                       }#}
+            {#                       if(data.result=='badord'){#}
+            {#                           alert("LA FECHA DE EXAMEN ORDINARIO NO ES CORRECTA...!!!");#}
+            {#                           $("#modalfechas").modal("show");#}
+            {#                           return false;#}
+            {#                       }#}
+            {#                        if(data.result=='badrev'){#}
+            {#                        alert("LA FECHA DE REVISION DE EXAMEN NO ES CORRECTA...!!!");#}
+            {#                               $("#modalfechas").modal("show");#}
+            {#                               return false;#}
+            {#                       }#}
+            {#                        if(data.result=='badatr'){#}
+            {#                        alert("LA FECHA DE EXAMEN ATRASADO NO ES CORRECTA...!!!");#}
+            {#                           $("#modalfechas").modal("show");#}
+            {#                           return false;#}
+            {#                       }#}
+            {#                        if(data.result=='badfecha'){#}
+            {#                        alert("EL ORDEN DE LAS FECHAS NO ES CORRECTA...!!!");#}
+            {#                           $("#modalfechas").modal("show");#}
+            {#                           return false;#}
+            {#                       }#}
+            {#                    },"json");#}
+            {#                }#}
+            {##}
+            {#            });#}
+            $(".correo").click(function(){
+                niv = $(this).attr("nid");
+                {% if nivel.mat_nivel == 0 %}
+                    smoke.alert("No hay matriculados en este nivel");
+                    return false;
+                {% else %}
+                    $($("#correopanel").get(0).parentNode).find(".help-text").html("");
+                    $("#comment").val('');
+                    $("#asunto").val('');
+                    $("#correopanel").show();
+                    $("#correopanel .paneltitle").html('Contenido a Enviar');
+                    $("#correopanel").modal({backdrop: 'static', keyboard: false, height:"100%"});
+                    return false;
+                {% endif %}
+            });
+            $(".aprobada").click(function(){
+                var mat = $(this).attr("mid");
+                var mensaje ='la materia no estara disponible?';
+                var op = false;
+                if ($(this).is(':checked')){
+                    op = true;
+                    mensaje ='Esta seguro de aprobar la materia?';
+                }
+                smoke.confirm( mensaje, function(e){
+                    if (e){
+                        $.post("/niveles",{"action": "aprobar_materia", "id": mat ,"op":op },function(data) {
+                            if (data.result=='ok'){
+                                setInterval(function(){
+                                    location.href = "/niveles?action=materias&id={{ nivel.id }}";
+                                }, 250);
+                                smoke.alert("OK");
+                            }else{
+                                smoke.alert("OCURRIERON ERRORRES");
+                            }
+
+                        },"json");
+                    }else{
+                    }
+                }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+
+
+
+            });
+
+            enviarcorreo = function(cerrar) {
+                var comentario =  $("#comment").val();
+                var asunto =  $("#asunto").val();
+                if (comentario != '' && niv != 0 && asunto != ''){
+                    $.post("/niveles", {"action":'correomasivo', "contenido":comentario,"nivel":niv,"asunto":asunto}, function(data) {
+                        if (data.result=='ok') {
+                            $("#correopanel").modal("hide");
+                            smoke.alert('El correo ha sido enviado correctamente')
+                        }
+                        else{
+
+                            $("#correopanel").modal("hide");
+                            smoke.alert('Error al enviar el correo '+data.error)
+                        }
+
+                    }, "json");
+
+                    if (cerrar) {
+                        $("#pagopanel").modal("hide");
+                    }
+
+                }
+                else {
+                    $($("#correopanel").get(0).parentNode).find(".help-text").html("<h4 class='alert alert-danger'>Ingresar Asunto y Contenido</h4>");
+                }
+
+            };
+
+            enviarcronograma = function(cerrar) {
+                var comentario =  $("#comment").val();
+                var asunto =  $("#asunto").val();
+                if (comentario != '' && niv != 0 && asunto != ''){
+                    $.post("/niveles", {"action":'correocronograma', "contenido":comentario,"nivel":niv,"asunto":asunto}, function(data) {
+                        if (data.result=='ok') {
+                            $("#correopanel").modal("hide");
+                            smoke.alert('El correo ha sido enviado correctamente')
+
+
+                        }
+                        else{
+
+                            $("#correopanel").modal("hide");
+                            smoke.alert('Error al enviar el correo '+data.error)
+                        }
+
+
+
+                    }, "json");
+
+                    if (cerrar) {
+                        $("#pagopanel").modal("hide");
+                    }
+
+                }
+                else {
+                    $($("#correopanel").get(0).parentNode).find(".help-text").html("<h4 class='alert alert-danger'>Ingresar Asunto y Contenido</h4>");
+                }
+            };
+
+            $("#correopanel .btn-cerrar").click(function() {
+                $("#correopanel").modal("hide");
+                return false;
+            });
+            $("#correopanel .btn-adicionar").click(function() {
+                enviarcorreo(false);
+                return false;
+            });
+
+            $("#correopanel .btn-cronogramayenviar").click(function() {
+                enviarcronograma(false);
+                return false;
+            });
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/niveles?action=buscar&par="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".generarexcel").click(function(){
+                var matid=$(this).attr("matid");
+                $.post("/niveles", {"action":"generarexcel","matid":matid}, function(data) {
+                    if (data.result=='ok'){
+                        $("#espera").modal("hide");
+                        var ventana= window.open();
+                        ventana.location.href=data.url;
+                    }else{
+                        showWaiting("Error","Intente Nuevamente",true);
+                    }
+                }, "json");
+            });
+
+            $(".profesormateria").click(function() {
+                $.blockUI({message: null});
+                var pmid = $(this).attr("pmid");
+                var self = this;
+                $.post("/niveles", {'action': 'delprofesor', 'pmid': pmid}, function(data) {
+                    $.unblockUI();
+                    if (data.result=='bad') {
+                        smoke.alert('No se puede eliminar porque tiene aprobada la materia ');
+                    }else{
+                        if (data.result=='bad2') {
+                            smoke.alert('No se puede eliminar. Debe borrar las clases que ha abierto el docente ');
+                        }else{
+                            $(self.parentNode.parentNode).remove();
+                        }
+                    }
+                }, "json");
+            });
+
+            $(".profesormateriaquitar").click(function() {
+
+                pmid2 = $(this).attr("pmid");
+
+                document.getElementById("paneltitle5").innerHTML=$(this).attr("pmtitulo");
+                $("#paneltitle5").val($(this).attr("pmtitulo"));
+                $($("#id_observacion").get(0).parentNode).find(".help-text").html("");
+                $($("#id_documento").get(0).parentNode).find(".help-text").html("");
+                $("#id_documento").val('');
+                $("#id_observacion").val('');
+                $("#id_fechahasta").datepicker({format:"dd-mm-yyyy"});
+                document.getElementById("id_fechahasta").readOnly = true;
+
+                $("#quitarasignacionprofesor").modal({backdrop: 'static',width:"-80% !important",keyboard: false});
+                $("#quitarasignacionprofesor").modal("show");
+
+            });
+
+            $("#cerraranular").click(function() {
+                $("#quitarasignacionprofesor").modal("hide");
+
+            });
+
+
+
+            $("#verhistorialquitarprofesor .btn-cerrar").click(function() {
+                $("#verhistorialquitarprofesor").modal('hide');
+
+            });
+
+            function cargarHistorial(data){
+
+                $("#listahistorialasiga").html("");
+                for (var m in data.listahistorial) {
+                    $("#listahistorialasiga").append("<tr><td>"+data.listahistorial[m].fecharegistro +"</td><td>"+data.listahistorial[m].fechasuspencion +"</td><td>" + data.listahistorial[m].usuario + "</td><td>" + data.listahistorial[m].observacion + "</td>" +
+                        "</td><td>" + data.listahistorial[m].tipolog + "</td>"+"</td><td><a class='btn btn-info' target='__blank' href='"+data.listahistorial[m].archivo+"'>Ver Archivo</a></td></tr>");
+                }
+            }
+
+
+
+
+            function validarDatos(){
+                var r=0;
+                var x = document.getElementById("id_documento");
+                var validExts = new Array(".doc",".docx",".pdf");
+                var fileExt = x.value;
+                fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+                $($("#id_documento").get(0).parentNode).find(".help-text").html("");
+                if (document.getElementById("id_observacion").value==""){
+                    r=1;
+                    $($("#id_observacion").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Debe ingresar la Observación</h6>");
+                }else{
+                    $($("#id_observacion").get(0).parentNode).find(".help-text").html("");
+                    if (document.getElementById("id_fechahasta").value==""){
+                        $($("#id_fechahasta").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Debe seleccionar la fecha de suspensión</h6>");
+                        r=1;
+                    }else{
+                        $($("#id_fechahasta").get(0).parentNode).find(".help-text").html("");
+                        if (validExts.indexOf(fileExt) < 0) {
+                            x.value="";
+                            $($("#id_documento").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Debe seleccionar el archivo</h6>");
+                            r=1;
+                        }
+                    }
+                }
+
+
+
+
+
+                return r;
+
+            }
+
+            $("#guardaranular").click(function() {
+
+                var form= document.getElementById("id_documento");
+                var file = form.files[0];
+                var formData = new FormData();
+                formData.append('action','quitarasignacionprofesor');
+                if (file){
+                    formData.append('file',file);
+                }
+                formData.append('idmaestroprofesor',pmid2);
+                formData.append('fechahasta',document.getElementById("id_fechahasta").value);
+                formData.append('observacion',document.getElementById("id_observacion").value);
+
+                $.unblockUI();
+
+                if (validarDatos()==0){
+                    $("#quitarasignacionprofesor").modal("hide");
+                    $.ajax({
+                        url:'/niveles',
+                        type:"POST",
+                        contentType:false,
+                        data:formData,
+                        processData:false,
+                        cache:false,
+                        success: function(data)
+                        {
+                            if(data.result=="ok") {
+
+                                smoke.alert("Se actualizó correctamente el registro");
+                                $("#quitarasignacionprofesor").modal("hide");
+                            }else{
+                                smoke.alert(data.mensaje);
+                                $("#quitarasignacionprofesor").modal("hide");
+                            }
+                            setInterval(function(){
+                                location.reload();
+                            }, 5000);
+
+                        }
+                    });
+                }
+
+            });
+
+
+            var validos = " abcdefghijklmnopqrstuvwxyz0123456789-_%,";
+
+            function soloLetrasYNum(campo) {
+                var letra;
+                var bien = true;
+                for (var i=0; i<campo.length; i++) {
+                    letra=campo.charAt(i).toLowerCase()
+                    if (validos.indexOf(letra) == -1){bien=false;};
+                }
+                if (!bien) {
+                    return 1;
+
+                }else{
+                    return 0;
+                }
+            }
+
+
+
+            $("#id_documento").change(function() {
+                var x = document.getElementById("id_documento");
+                var validExts = new Array(".doc",".docx",".pdf");
+                var fileExt = x.value;
+                var nombre= fileExt.substring(fileExt.indexOf(x.files[0].name),fileExt.lastIndexOf('.'));
+                fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+
+                if (validExts.indexOf(fileExt) < 0) {
+                    x.value="";
+
+                    $("#id_documento").val('');
+                    $($("#id_documento").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Solo Archivo doc,docx y pdf</h6>");
+                }else{
+                    if (parseInt(soloLetrasYNum(nombre))==1){
+                        $("#id_documento").val('');
+                        $($("#id_documento").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El Nombre del Documento contiene Tilde o Caracteres Especailes</h6>");
+                    }else{
+                        $($("#id_documento").get(0).parentNode).find(".help-text").html("");
+                    }
+                }
+
+
+
+            });
+
+
+
+
+
+
+
+            $(".selectorfecha").datepicker({format:"dd-mm-yyyy"});
+
+            $(".selectorfecha").blur(function() {
+                var mid = $(this).attr("mid");
+                var horas = $("#horas"+mid).val();
+                var fecha = $(this).val();
+                var inicio = $(this).hasClass("fechainicio");
+                $.blockUI({message: null});
+                $.post("/niveles", {'action': 'updatefecha', 'horas': horas, 'mid': mid, 'fecha': fecha, 'inicio': inicio}, function(data) {
+                    $.unblockUI();
+                    {#                    if (data.result=='ok') {#}
+                    {#                        if (inicio) {#}
+                    {#                            $("#selectorfechafin"+mid).val(data.fin);#}
+                    {#                        }#}
+                    {#                    } else {#}
+                    {#                        if (!inicio) {#}
+                    {#                            $("#selectorfechafin"+mid).val(data.fin);#}
+                    {#                        }#}
+                    {#                    }#}
+                    {#                    $(".fechas"+mid).html("["+data.inicio+" al "+data.fin+"]");#}
+                });
+            });
+
+            {% if nivel.cerrar_disponible and not centroexterno%}
+                $(".cerrarnivel").click(function() {
+                    $.blockUI({message: null});
+                    var nid = $(this).attr("nid");
+                    $(".cerrarnivel").hide();
+                    $.post("/niveles", {'action':'precierre', 'nid': nid}, function(data) {
+
+                        if (data.result=='ok') {
+                            $.unblockUI();
+                            $("#cerrarpanel").modal({keyboard: false, backdrop: 'static'});
+                            $("#cerrarpanel").modal("show");
+                            var materias = data.materias;
+                            var cantidad = materias.length;
+                            var progressdelta = 90.0/data.cantidad;
+                            var indice = 0;
+                            for (var i in materias) {
+                                var materia = materias[i];
+                                lista = materia.lista;
+                                for (var j in lista) {
+                                    var elemento = lista[j];
+                                    indice ++;
+                                    var cp = (indice*progressdelta)+'%';
+                                    $("#progresshint").html(materia.nombre+" - "+elemento.nombre);
+                                    $("#progressbar").css({'width': cp});
+
+                                    $.ajax({
+                                        type: "POST",
+                                        url: "/niveles",
+                                        data: {"action": "cierrema", "maid": elemento.id},
+                                        success: function(data) {
+
+                                        },
+                                        dataType: "json",
+                                        async: false
+                                    } );
+                                }
+                            }
+                            $("#progresshint").html("Finalizando Cierre de Nivel");
+                            $("#progressbar").css({'width': '100%'});
+                            $.ajax({
+                                type: "POST",
+                                url: "/niveles",
+                                data: {"action": "cierren", "nid": {{ nivel.id }} },
+                                success: function(data) {
+
+                                },
+                                dataType: "json",
+                                async: false
+                            });
+                            $("#cerrarpanel").modal("hide");
+                            swal.fire('Notificación',"Finalizando cierre de Nivel  " +data.info,'success').then(function (){
+                                location.href = "/niveles?action=materias&id={{ nivel.id }}";
+                            });
+                        } else {
+                            $.unblockUI();
+                            smoke.alert("Fallo al intentar cerrar el nivel" + data.error);
+                            {#swal.fire('Error!',"Fallo al intentar cerrar el nivel" + data.error,'error');#}
+                        }
+                    }, "json");
+
+                });
+
+            {% endif %}
+
+            verhistorial = function(id) {
+
+                $.post("/niveles", {
+                    "action": "ver_historialasignacion",
+                    idprofesorhistorial:id
+                }, function (data) {
+                    if (data.result == 'ok') {
+
+                        cargarHistorial(data);
+
+                        $("#verhistorialquitarprofesor").modal({backdrop: 'static',width:"-50% !important",keyboard: false});
+                        $("#verhistorialquitarprofesor").modal("show");
+                    } else {
+
+                        smoke.alert(data.message);
+                    }
+                    hideWaiting();
+                }, 'json');
+
+            }
+
+            quitaraceptado= function(id) {
+                smoke.confirm("Seguro que desea eliminar la aceptación?", function(e){
+                    if (e){
+                        $("#motivo_panel").modal({"backdrop":"static","width":"500px"});
+                        $("#motivo_panel").modal("show");
+                        idprofmateria=id;
+                        {#                    $.post("/niveles", {"action": "quitaraceptado",idmaestroprofesor:id}, function (data) {#}
+                        {#                        if (data.result == 'ok') {#}
+                        {#                           smoke.alert("Se quitó la aceptación correctamente");#}
+                        {#                        } else {#}
+                        {##}
+                        {#                           smoke.alert(data.mensaje);#}
+                        {#                        }#}
+                        {#                    }, 'json');#}
+
+                        {#                    setInterval(function(){#}
+                        {#                    location.href = "/niveles?action=materias&id={{ nivel.id }}";#}
+                        {#                    }, 5000);#}
+
+                    }else{
+                    }
+                }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            }
+
+            $("#idzoom").addClass('input-large');
+            $('.agregar_zoom').click(function(){
+                $("#idzoom").val('');
+                $("#id").val($(this).attr('id'));
+                $("#agregar_zoom #paneltitle2").html('Agregar Zoom ID');
+                $("#agregar_zoom").modal({"backdrop":"static","width":"500px"});
+                $("#agregar_zoom").modal("show");
+            });
+
+            $('.modificar_zoom').click(function(){
+                $("#idzoom").val($(this).attr('idzoom'));
+                $("#id").val($(this).attr('id'));
+                $("#agregar_zoom #paneltitle2").html('Modificar Zoom ID');
+                $("#agregar_zoom").modal({"backdrop":"static","width":"500px"});
+                $("#agregar_zoom").modal("show");
+            });
+
+            $("#agregar_zoom .btn-cerrar").click(function(){
+                $(".formError").removeClass('aparece');
+                $(".formError").addClass('oculta');
+                $("#agregar_zoom").modal("hide");
+                return false;
+            });
+
+            $("#formbutton_idzoom").click(function(){
+                $(".formError").removeClass('oculta');
+                $(".formError").addClass('aparece');
+            });
+
+            verarchivosubido = function(id,idprofesor,idmateria) {
+
+                $.get("/niveles", {'action':'detallearch', "id":id,"idprofesor":idprofesor,"idmateria":idmateria}, function(data) {
+                    $("#detalle_archivo .modal-body").html(data);
+                    $("#detalle_archivo").modal({"backdrop":"static",width:'40%'});
+                    $("#detalle_archivo").modal("show");
+                }, "html");
+                return false;
+            }
+
+            $("#detalle_archivo .btn-cerrar").click(function(){
+                $("#detalle_archivo").modal("hide");
+
+                return false;
+            });
+
+            $("#motivo_panel .btn-agregar").click(function() {
+                mot = $("#id_motivo").val();
+                $("#motivo_panel").modal('hide');
+                $.post("/niveles", {"action": "quitaraceptado",idmaestroprofesor:idprofmateria,motivo:mot}, function (data) {
+                    if (data.result == 'ok') {
+                        smoke.alert("Se quitó la aceptación correctamente");
+                    } else {
+                        smoke.alert(data.mensaje);
+                    }
+                }, 'json');
+            });
+
+            $("#motivo_panel .btn-cerrar").click(function() {
+                $("#motivo_panel").modal('hide');
+            });
+
+            var numerosdec="0123456789.";
+            function solo_numerosdec(texto){
+                var num = 0;
+                for(i=0; i<texto.length; i++){
+                    if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+                        num = num +1;
+                    }
+                }
+                return num;
+            }
+
+            $("#id_valor").blur(function(){
+                var num = $(this).val();
+                if (solo_numerosdec(num) != num.length){
+                    $($(this).get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+                    $(this).val("");
+                    $(this).focus();
+                }
+                else{
+                    $($(this).get(0).parentNode).find(".help-text").html("");
+                }
+            });
+
+            $(".valorhora").click(function() {
+                pmid2 = $(this).attr("pmid");
+                $("#id_valorporhora").attr('checked',false);
+                $("#id_valor").attr("disabled",true);
+                $("#horaspormateria_panel #id_valor").css("width", '50%');
+                $("#id_valor").val('0.00');
+                $("#horaspormateria_panel").modal({backdrop: 'static',width:"-80% !important",keyboard: false});
+                $("#horaspormateria_panel").modal("show");
+            });
+
+            $("#id_valorporhora").change(function(){
+                if ($("#id_valorporhora").is(':checked')){
+                    $("#id_valor").attr("disabled",false);
+                }
+                else{
+                    $("#id_valorporhora").val("");
+                    $("#id_valor").attr("disabled",true);
+                }
+            });
+
+            $("#horaspormateria_panel .btn-guardar").click(function() {
+                profmateria=pmid2;
+                valor= $("#id_valor").val();
+                $("#horaspormateria_panel").modal('hide');
+                $.post("/niveles", {action: 'add_valorhora', 'id':profmateria, 'valor':valor}, function(data) {
+                    if (data.result == 'ok') {
+                        smoke.alert("Registro Guardado");
+                        location.reload('/niveles?action=materias&id={{ nivel.id }}');
+                    } else {
+                        alert("Ocurrio un Error... Intentelo mas Tarde");
+                    }
+                },"json");
+            });
+
+            $("#horaspormateria_panel .btn-cerrar").click(function() {
+                $("#id_valorporhora").attr('checked',false);
+                $("#id_valor").val('0.00');
+                $("#horaspormateria_panel").modal('hide');
+            });
+
+            $(".help-text-valor").hide();
+            $("#id_valor").blur(function(){
+                if($("#id_valor").val()>{{ VALOR_HORA_MAXIMO }}||$("#id_valor").val()<{{ VALOR_HORA_MINIMO }}){
+                    $(".help-text-valor").html("Valor no puede superar los $10 por hora clase.");
+                    $("#horaspormateria_panel .btn-guardar").hide();
+                    $(".help-text-valor").show(300);
+                }else{
+                    $("#help-text-valor").html("");
+                    $("#horaspormateria_panel .btn-guardar").show(300);
+                    $(".help-text-valor").hide();
+                }
+            });
+
+            sendEmail = function(id) {
+                swal({
+                        title: "Enviar correo.",
+                        text: "Desea enviar correo de confirmación de materia?",
+                        type: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#DD6B55",
+                        confirmButtonText: "Si, enviar correo!",
+                        closeOnConfirm: false
+                    },
+                    function(){
+                        $.post("/niveles", {'action':'sendEmail', 'id':id }, function(data){
+                            if (data.result=='ok') {
+                                swal("Listo!", "Correo enviado satisfactoriamente", "success")
+                            }else{
+                                swal("Error!", data.error, "error")
+                            }
+                        }, "json");
+                    });
+
+
+            }
+        });
+
+    </script>
+    <style>
+        .oculta{
+            display: none;
+        }
+        .aparece{
+            display: block;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class="modal fade" id="exportar" data-backdrop="static">
+        <div class="modal-header">
+            <h3>Procesando datos</h3>
+        </div>
+        <div class="modal-body">
+            <p>Por favor espere que termine la exportaci&oacute;n.</p>
+            <div class="progresbarresult">
+            </div>
+        </div>
+        <div class="modal-footer" hidden="">
+            <a href="#" class="btn" id="mclose">Salir</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>{% if nivel.cerrado %}<span class='label label-important'>CERRADO {{ nivel.fechacierre|date:"d-m-Y" }} </span>{% endif %} {% if nivel.nivelmalla %}{{ nivel.nivelmalla }} - {% endif %}{{ nivel.paralelo }} - {{ nivel.sesion }}, {% if nivel.carrera %}{{ nivel.carrera }}{% else %}{{ nivel.coordinacion }}{% endif %}[{{ nivel.inicio|date:"d-m-Y" }} - {{ nivel.fin|date:"d-m-Y" }}]</h3>
+            <h4>Per&iacute;odo: {{ periodo }}</h4><br/>
+            {% if not centroexterno %}
+                <h4>Fecha Tope de  Matricula Ordinaria:  hasta {{ nivel.fechatopematricula|date:"d-m-Y" }} {% if nivel.matricula_cerrada %}<span class="label label-important"> CERRADA</span>{% endif %}</h4>
+                {% if not materialibre %}
+                    <h4>{% if nivel.fechatopematriculaex %} Fecha Tope Matricula Extraordinaria: hasta {{ nivel.fechatopematriculaex|date:"d-m-Y" }} {% if not nivel.matriculaextraordinaria_abierta %} <span class="label label-important"> CERRADA</span>{% endif %}{% endif %} </h4>
+                    <h4>Capacidad del nivel para Matriculas: <span class="badge badge-info"> {{ nivel.capacidadmatricula }}</span> (Matriculados: {{ nivel.mat_nivel }}) {% if nivel.mat_nivel >= nivel.capacidadmatricula %}<span class="label label-important"> SE HA COMPLETADO LA CAPACIDAD TOTAL DE MATRICULADOS DEL NIVEL</span>{% endif %}</h4>
+                {% endif %}
+            {% endif %}
+            <br/>
+        </div>
+        <div class='span1'>
+            <a href="/niveles" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class='row-fluid margeninferior'>
+        {% if not centroexterno %}
+            <div class='span12'>
+                {% if not nivel.cerrado %}
+                    {% if not persona.pertenece_soporte %}
+                        <a href="/niveles?action=addmateria&id={{ nivel.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i>Adicionar Materia</a>
+                    {% endif %}
+                {% endif %}
+
+                <a href="/reportes?action=run&direct=true&n=mate_cronogramaperiodo&nivel={{ nivel.id }}&rt=pdf" class='btn btn-warning'><i class="icon-print"></i> Imprimir</a>
+                <a href="/horarios?action=horario&id={{ nivel.id }}&ret=1" class='btn'><i class="icon-time"></i> Horario</a>
+                <a href="/matriculas?action=matricula&id={{ nivel.id }}&ret=1" class="btn"><i class="icon-group"></i> Matr&iacute;cula - {{ nivel.mat_nivel }}</a>
+                {% if cronogramapagos %}
+                    <a href="/niveles?action=pagos&id={{ nivel.id }}" class="btn"><i class="icon-money"></i> Pagos</a>
+                {% endif %}
+                {% if not nivel.cerrado %}
+                    {% if nivel.eva %}
+                        <a href="javascript:void(0)" data-id="{{ nivel.id }}" class='btn btn-info actionCrearCursoEVAMasivo'><i class="icon-paper-clip icon-white"></i> Crear curso  masivo EVA</a>
+                    {% endif %}
+
+                {% endif %}
+                {% if not nivel.cerrado %}
+                    {% if nivel.matriculados or INSCRIPCION_CONDUCCION%}
+                        {% if not persona.pertenece_soporte %}
+                            <a href="/niveles?action=addrubro&nivel={{ nivel.id }}" class="btn"><i class="icon-plus"></i> Gesti&oacute;n de Otros Rubros</a>
+                        {% endif %}
+                    {% endif %}
+                    {% if not centroexterno %}
+                        {% if not persona.pertenece_soporte %}
+                            <a href="" class="correo" nid = {{ nivel.id }}><span class="btn btn-info"> <i class="icon-pencil"></i> Enviar Correo </span></a>
+                        {% endif %}
+                        {% if nivel.cerrar_disponible %}
+                            <a href="#" nid="{{ nivel.id }}" class="btn btn-danger cerrarnivel">Cerrar Nivel</a>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+                    {#  OCU 10-01-2018 solicitado por T.Tapia que se puedan enviar los correos asi el nivel este cerrado#}
+                    <a href="" class="correo" nid = {{ nivel.id }}><span class="btn btn-info"> <i class="icon-pencil"></i> Enviar Correo </span></a>
+                    {% if perms.sga.change_nivel  %}
+                        <a href="/niveles?action=abrirn&nid={{ nivel.id }}" class="btn btn-warning">Abrir Nivel</a>
+                    {% endif %}
+
+
+                {% endif %}
+            </div>
+        {% else %}
+            <div class='span12'>
+                <form class='form-search'>
+                    <input class='input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                    <a href="#" id='search' class='btn btn-success'><i class="icon-search icon-white"></i> Buscar</a>
+                    {% if search %}
+                        <a href="/niveles" id='allresults' class='btn btn-danger'><i class="icon-remove icon-white"></i> Todos</a>
+                    {% endif %}
+                </form>
+                {% if not coordinador %}
+                    <a href="/niveles?action=addmateria&id={{ nivel.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Adicionar Materia</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=1" class='btn btn-success'> Todas</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=2" class='btn btn-danger'>  Cerradas</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=3" class='btn btn-warning'> Abiertas</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=4" class='btn btn-warning'> Exportadas</a>
+                {% else %}
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=1" class='btn btn-success'> Todas</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=2" class='btn btn-danger'>  Cerradas</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=3" class='btn btn-warning'> Abiertas</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=4" class='btn btn-warning'> Exportadas</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th>Asignatura</th>
+                    {% if UTILIZA_ASIGNATURA_RECTORA %}
+                        <th>Rectora</th>
+                    {% endif %}
+                    <th>{% if not centroexterno %}Horas{% else %}Centro{% endif %}</th>
+                    <th>{% if not centroexterno %}Cr&eacute;ditos{% else %}Paralelo{% endif %}</th>
+                    <th>{% if centroexterno %}Cant. Matric. {% endif %}</th>
+                    <th>Fecha Inicial</th>
+                    <th>Fecha Final</th>
+                    <th>Profesor(es)</th>
+                    {% if VALIDA_MATERIA_APROBADA %}
+                        <th>Aprobada</th>
+                    {% endif %}
+                    {% if centroexterno %}
+                        <th>Exportada</th>
+                        <th>SGAOnline</th>
+                    {% endif %}
+                    <th> </th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for materia in materias %}
+                    <tr>
+                        <td>
+                            {% if not nivel.cerrado and not centroexterno %}
+                                {% if not persona.pertenece_soporte %}
+                                    <a href='/niveles?action=editmateria&id={{ materia.id }}'>{% if materia.identificacion %}{{ materia.identificacion }}{% else %}###{% endif %}-{{ materia.asignatura }}</a>
+                                {% else %}
+                                    {% if materia.identificacion %}{{ materia.identificacion }}{% else %}###{% endif %}-{{ materia.asignatura }}
+                                {% endif %}
+                                {% if materia.ultima_malla%}
+                                    {% if not materia.culminacion_tit %}
+                                        <br>  <span title="Click para ingresar" class="label label-warning fechaculm" style="cursor: pointer" mid={{ materia.id }} >NO HA DEFINIDO FECHA DE CULMINACI&Oacute;N DE PERIODO DE TITULACI&Oacute;N</span>
+                                    {% else %}
+                                        <br>  <span class="label label-warning">  FECHA DE CULMINACI&Oacute;N DE PERIODO DE TITULACI&Oacute;N  </span><a class="fechaculm" style="cursor: pointer;" title="Click Para Cambiar Fecha"  fechacul="{{materia.culminacion_tit|date:"d-m-Y" }}" mid={{ materia.id }} > {{ materia.culminacion_tit|date:"d-m-Y" }}</a>
+                                    {% endif %}
+                                {% endif %}
+                                <br>
+                                {#                             {% if materia.exordinario %}<span class="label label-info"> Ex. Ordinario {{ materia.exordinario|date:"d-m-Y" }} {% endif %} {% if  materia.revision  %} Revisi&oacute;n  {{ materia.revision|date:"d-m-Y" }} {% endif %} {% if materia.exatrasado %} Ex. Atrasado {{ materia.exatrasado|date:"d-m-Y" }}{% endif %}</span>#}
+                            {% else %}
+                                {% if materia.identificacion %}{{ materia.identificacion }}-{% else %}{% endif %}{{ materia.asignatura }}
+                                {% if  materia.culminacion_tit %}
+                                    <br>  <span class="label label-warning">  FECHA DE CULMINACI&Oacute;N DE PERIODO DE TITULACI&Oacute;N  </span><a class="fechaculm" style="cursor: pointer;" title="Click Para Cambiar Fecha"  fechacul="{{materia.culminacion_tit|date:"d-m-Y" }}" mid={{ materia.id }} > {{ materia.culminacion_tit|date:"d-m-Y" }}</a>
+                                {% endif %}
+                            {% endif %}
+
+                            {#                        <br/>#}
+                            {% if materia.cerrado %}
+                                <span class="label label-important">CERRADA el {{ materia.fechacierre|date:"d-m-Y" }}</span>
+                            {% endif %}
+                            {% if materialibre and materia.rectora %}
+                                <span class="label label-info">MATERIA GENERAL</span>
+                            {% endif %}
+                            {% if centroexterno and not materia.paralelo%}
+                                <span class="label label-info">MATERIA INTERNA</span>
+                            {% endif %}
+                            {% if nivel.utiliza_eva %}
+                                <span class="label label-success">Si utiliza EVA</span>
+                                <span class="label label-info">Curso Moodle ({{ materia.id_moodle_course|default_if_none:"0" }})</span>
+                            {% else %}
+                                <span class="label label-important">No utiliza EVA</span>
+                            {% endif %}
+                            {% if materia.modelo_evaluativo %}
+                                <span class="label label-default tu " title="Modelo Evaluativo">{{ materia.modelo_evaluativo.nombre }}</span>
+                            {% endif %}
+                        </td>
+                        {% if UTILIZA_ASIGNATURA_RECTORA %}
+                            <td>
+                                {% if materia.rectora %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                        <td>
+                            {% if not centroexterno %}
+                                {{ materia.horas }} Horas
+                            {% else %}
+                                {{ materia.entidad }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not centroexterno %}
+                                {{ materia.creditos }} Cr&eacute;ditos
+                            {% else %}
+                                {{ materia.paralelo }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not centroexterno %}
+                                {% if not materia.cerrado %}
+                                    <input type="text" style="width: auto;" size="1" id="horas{{ materia.id }}"/>
+                                {% endif %}
+                            {% else %}
+                                {{ materia.cantidad_matriculas_materia }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not materia.cerrado and not centroexterno %}
+                                {% if DEFAULT_PASSWORD == 'itb' %}
+                                    {% if materia.cierre_materia %}
+                                        {{ materia.inicio|date:'d-m-Y' }}
+                                    {% else %}
+                                        {% if perms.sga.add_nivelmalla  %}
+                                            <input mid='{{ materia.id }}' type="text" class='selectorfecha fechainicio input-small' value='{{ materia.inicio|date:'d-m-Y' }}'/>
+                                        {% else %}
+                                            {{ materia.inicio|date:'d-m-Y' }}
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    <input mid='{{ materia.id }}' type="text" class='selectorfecha fechainicio input-small' value='{{ materia.inicio|date:'d-m-Y' }}'/>
+                                {% endif %}
+                            {% else %}
+                                {{ materia.inicio|date:'d-m-Y' }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not materia.cerrado and not centroexterno %}
+                                {% if DEFAULT_PASSWORD == 'itb' %}
+                                    {% if materia.cierre_materia %}
+                                        {% if perms.sga.delete_nivel  %}
+                                            <input mid='{{ materia.id }}' type="text" class='selectorfecha fechafin input-small' id="selectorfechafin{{ materia.id }}" value='{{ materia.fin|date:'d-m-Y' }}'/>
+                                        {% else %}
+                                            {{ materia.fin|date:'d-m-Y' }}
+                                        {% endif %}
+                                    {% else %}
+                                        {% if perms.sga.add_nivelmalla  %}
+                                            <input mid='{{ materia.id }}' type="text" class='selectorfecha fechafin input-small' id="selectorfechafin{{ materia.id }}" value='{{ materia.fin|date:'d-m-Y' }}'/>
+                                        {% else %}
+                                            {{ materia.fin|date:'d-m-Y' }}
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    <input mid='{{ materia.id }}' type="text" class='selectorfecha fechafin input-small' id="selectorfechafin{{ materia.id }}" value='{{ materia.fin|date:'d-m-Y' }}'/>
+                                {% endif %}
+                            {% else %}
+                                {{ materia.fin|date:'d-m-Y' }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <table class="table table-bordered table-condensed">
+                                {% if materia.profesormateria_set.count %}
+                                    {% for profesormateria in materia.profesores_materia %}
+                                        <tr>
+                                            <td>
+                                                {% if not materia.cerrado %}
+                                                    {% if perms.sga.delete_profesormateria  %}
+                                                        <a href="#" class='profesormateria' pmid='{{ profesormateria.id }}'><i class="icon-remove"></i> </a> <a href="/niveles?action=editprofesor&pmid={{ profesormateria.id }}"><i class="icon-edit"></i></a> <a href="#" onclick="sendEmail('{{ profesormateria.id }}')" title="Enviar Correo"><i class="icon-share"></i></a> {% if  perms.sga.add_profesormateria %} {% if  profesormateria.aceptacion %} {% if  profesormateria.suspendido %} <a href="#" title="Quitar Suspensión Docente" class='profesormateriaquitar' pmid='{{ profesormateria.id }}' pmtitulo="Quitar Suspensión Docente" ><i class="icon-unlock"></i></a> {% else %} <a href="#" title="Suspender Docente" class='profesormateriaquitar' pmid='{{ profesormateria.id }}' pmtitulo="Suspender Docente"> <i class="icon-lock"></i>  {% endif %} {% endif %} {%  if profesormateria.tiene_log_quitar_profesor  %} <a href="#"  onclick="verhistorial('{{ profesormateria.id }}')"  > <i class="icon-eye-open"></i>  {% endif %}{% endif %}</a>
+                                                    {% endif %}
+                                                {% endif %}
+                                                {{ profesormateria.segmento }} - <b>{{ profesormateria.profesor.persona.nombre_completo }} {%  if profesormateria.profesor_aux %} <span class="label label-info">Aux. </span>  {{ profesormateria.profesor_auxiliar.persona.nombre_completo }} {% endif %}</b> <span class="fechas{{ materia.id }}">[{{ profesormateria.desde|date:'d-m-Y' }} al {{ profesormateria.hasta|date:'d-m-Y' }}]</span> {% if forloop.first and materia.profesores_materia.count > 1 %}<span class="label label-info">PRINCIPAL</span>{% endif %}
+                                                {%  if profesormateria.profesor.practicahospital %}
+                                                    <span class="label label-important tl" title="Pr&aacute;ctica Hospitalaria">PH</span>
+                                                {% endif %}
+                                                {# OCastillo 12-09-2023 esta accion queda sin efecto luego de reunion con Facultad FASSS                                       #}
+                                                {#                                        {% if not materia.nivel.cerrado and DEFAULT_PASSWORD == 'itb'%}#}
+                                                {#                                            {% if perms.sga.add_perfilprofesorasignatura %}#}
+                                                {#                                                <a href="#" title="Agregar Valor por Hora" class='valorhora' pmid='{{ profesormateria.id }}' pmtitulo="Valor Materia" ><i class="icon-money"></i></a>#}
+                                                {#                                            {% endif %}#}
+                                                {#                                        {% endif %}#}
+                                                {% if DEFAULT_PASSWORD == 'itb' %}
+                                                    {% if  profesormateria.fechacorreo %}
+                                                        {% if profesormateria.profesor_logaceptacion %}
+                                                            {% if profesormateria.tiene_log_profesor  %}<br>
+                                                                {% if  profesormateria.log_profesor.tipolog == 1 %}
+                                                                    {% if not materia.cerrado %}
+                                                                        {% if   perms.sga.add_profesormateria %}
+                                                                            <span  > <a class="label label-success" onclick="quitaraceptado('{{ profesormateria.id }}')"> Aceptado el {{ profesormateria.log_profesor.fechaceptacion|date:'d-m-Y' }}</a> {% if profesormateria.idzoom %}<br><a href="#" class="modificar_zoom" id="{{ profesormateria.id }}" idzoom='{{ profesormateria.idzoom }}'><span class="icon-edit"></span>  Zoom ID: {{ profesormateria.idzoom }}</a> {% else %}<br><a href="#" style='color:red' class="agregar_zoom" id="{{ profesormateria.id }}"><span class="icon-plus"></span>  Agregar Zoom ID</a>{% endif %}</span>
+                                                                            <br>  {% if  profesormateria.tiene_materialsubido %}<a class="label label-success" href="#" onclick="verarchivosubido('{{profesormateria.id }}','{{ profesormateria.profesor.id }}','{{ profesormateria.materia.id }}',1)"><span > Material Subido </span></a> {% endif %}
+                                                                        {% else %}
+                                                                            <span class="label label-success" > Aceptado el {{ profesormateria.log_profesor.fechaceptacion|date:'d-m-Y' }} </span> {% if profesormateria.idzoom %}<br> <span class="label label-warning" > Zoom ID: {{ profesormateria.idzoom }}{% endif %} </span>
+                                                                            <br>{% if  profesormateria.tiene_materialsubido %}
+                                                                            {% if not persona.pertenece_soporte %}
+                                                                                <a class="label label-success" href="#" onclick="verarchivosubido('{{profesormateria.id }}','{{ profesormateria.profesor.id }}','{{ profesormateria.materia.id }}',1)"><span > Material Subido </span></a>
+                                                                            {% else %}
+                                                                                <span class="label label-success"> Material Subido </span>
+                                                                            {% endif %}
+                                                                        {% endif %}
+                                                                        {% endif %}
+                                                                    {% else %}
+                                                                        <span class="label label-success" > Aceptado el {{ profesormateria.log_profesor.fechaceptacion|date:'d-m-Y' }} </span> {% if profesormateria.idzoom %}<br> <span class="label label-warning" > Zoom ID: {{ profesormateria.idzoom }}{% endif %} </span>
+                                                                        <br>{% if  profesormateria.tiene_materialsubido %}
+                                                                        {% if not persona.pertenece_soporte %}
+                                                                            <a class="label label-success" href="#" onclick="verarchivosubido('{{profesormateria.id }}','{{ profesormateria.profesor.id }}','{{ profesormateria.materia.id }}',1)"><span > Material Subido </span></a>
+                                                                        {% else %}
+                                                                            <span class="label label-success"> Material Subido </span>
+                                                                        {% endif %}
+                                                                    {% endif %}
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="label label-important"> Rechazado el {{ profesormateria.log_profesor.fechaceptacion|date:'d-m-Y' }}</span>
+                                                                    <span class="label label-success">
+                                                                {% if  profesormateria.log_profesor.motivo %}
+                                                                    Motivo:{{ profesormateria.log_profesor.motivo}}
+                                                                {% endif %}
+                                                            </span>
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% else %}
+                                                            {% if not profesormateria.aceptacion %} <span class="label label-important">Pendiente Aprobación. </span> {% else %} {% if not materia.cerrado %} {% if  perms.sga.add_profesormateria %} <span ><a class="label label-success" onclick="quitaraceptado('{{ profesormateria.id }}')"> Aprobado. </a></span>{% else %} <span class="label label-success">  Aprobado. </span> {% endif %}  {% else %} <span class="label label-success">  Aprobado. </span>  {% endif %}  {% endif %}
+                                                        {% endif %}
+
+                                                    {% endif %}
+                                                    {% if  profesormateria.esasignadoennivelcerrado %}
+                                                        {% if  materia.asignado_nivelcerrado %}
+                                                            <span class="label label-important">Docente asignado en Nivel Cerrado </span>
+                                                        {% endif %}
+                                                    {% endif %}
+
+                                                    {#                                            {% if  perms.sga.add_perfilprofesorasignatura %}#}
+                                                    {#                                                {% if profesormateria.valorporhora %}#}
+                                                    {#                                                    <span class="label label-important" > Valor por Hora: ${{ profesormateria.valor }}</span>#}
+                                                    {#                                                {% endif %}#}
+                                                    {#                                            {% endif %}#}
+                                                {% endif %}
+
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+
+                                {% endif %}
+                                {% if not materia.cerrado %}
+                                    <tr>
+                                        <td>
+                                            {% if not coordinador %}
+                                                {% if perms.sga.delete_profesormateria  %}
+                                                    <a href="/niveles?action=addprofesor&mid={{ materia.id }}" class="btn btn-mini"><i class="icon-plus"></i> Profesor</a>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </table>
+                        </td>
+                        {% if VALIDA_MATERIA_APROBADA %}
+                            <td style="text-align: center" > {% if materia.clase_congre and  perms.sga.change_nivel %}<input type="checkbox" class="aprobada" {% if materia.aprobada%} checked="true" {% endif %}mid={{ materia.id }}>{% endif %} </td>
+                        {% endif %}
+                        {% if centroexterno %}
+                            <td style="text-align: center">
+                                {% if not materia.exp_itb %}
+                                    {% if materia.exportada or materia.cantexp > 0 or materia.cantexport > 0 %}
+                                        <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if materia.sgaonline %}
+                                    <a ><img src='/static/images/16/true.png' alt='Si' border="0"/></a>
+                                {% else %}
+                                    <a><img src='/static/images/16/false.png' alt='No' border="0"/></a>
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                        <td>
+                            {% if not centroexterno %}
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if nivel.utiliza_eva %}
+                                            <li><a href='{{ request.path }}?action=loadViewFirma&id={{ materia.id }}' class=""><i class="icon-list icon-white"></i> Responsable de firmas</a></li>
+                                        {% endif %}
+                                        {% if not materia.cerrado %}
+                                            {% if not persona.pertenece_administrativos %}
+                                                {% if not materia.tiene_clases %}<li><a href='/niveles?action=deletemateria&id={{ materia.id }}'><i class="icon-remove icon-white"></i>  Borrar Materia</a></li>{% endif %}
+                                            {% endif %}
+                                            {% if nivel.utiliza_eva %}
+                                                {% if not materia.id_moodle_course %}
+                                                    <li><a href='javascript:void(0)' class="actionCrearCursoEVA" data-id="{{ materia.id }}"><i class="icon-plus icon-white"></i> Crear curso en EVA</a></li>
+                                                {% else %}
+                                                    {% if materia.nivel.eva.url %}
+                                                        <li><a href="{{ materia.nivel.eva.url }}course/view.php?id={{ materia.id_moodle_course }}" target="_blank"><i class="icon-link icon-white"></i> Ir a curso EVA</a></li>
+                                                    {% endif %}
+                                                    <li class="dropdown-submenu pull-left">
+                                                        <a href="javascript:void(0)">
+                                                            <i class="fa fa-refresh"></i> Actualizaciones en EVA
+                                                        </a>
+                                                        <ul class="dropdown-menu" style="width: 100%;">
+                                                            <li><a href='javascript:void(0)' class="" onclick="confirmar_actualizar_eva({{ materia.id }}, 'Esta seguro(a) que desea actualizar modelo evaluativo de la materia:\n {{ materia.asignatura.nombre }} de {{ materia.nivel.nivelmalla.nombre }}', 'actualizar_modelo_eva')"><i class="icon-refresh icon-white"></i> Modelo evaluativo</a></li>
+                                                            <li><a href='javascript:void(0)' class="" onclick="confirmar_actualizar_eva({{ materia.id }}, 'Esta seguro(a) que desea actualizar silabo de la materia:\n {{ materia.asignatura.nombre }} de {{ materia.nivel.nivelmalla.nombre }}', 'actualizar_silabo_eva')"><i class="icon-refresh icon-white"></i> Sílabo</a></li>
+                                                            <li><a href='javascript:void(0)' class="" onclick="confirmar_actualizar_eva({{ materia.id }}, 'Esta seguro(a) que desea actualizar profesor(es) de la materia:\n {{ materia.asignatura.nombre }} de {{ materia.nivel.nivelmalla.nombre }}', 'actualizar_profesor_eva')"><i class="icon-refresh icon-white"></i> Profesor(es)</a></li>
+                                                            <li><a href='javascript:void(0)' class="" onclick="confirmar_actualizar_eva({{ materia.id }}, 'Esta seguro(a) que desea actualizar estudiante(s) de la materia:\n {{ materia.asignatura.nombre }} de {{ materia.nivel.nivelmalla.nombre }}', 'actualizar_estudiante_eva')"><i class="icon-refresh icon-white"></i> Estudiante(s)</a></li>
+                                                        </ul>
+                                                    </li>
+                                                {% endif %}
+                                            {% endif %}
+                                            <li><a href="/reportes?action=run&direct=true&n=lista_alumnos_matriculados_materia&materia={{ materia.id }}&rt=pdf"><i class="icon-print icon-white"></i> Tomando esta materia</a></li>
+                                            {#                                    <li><a href='/niveles?action=deleteclases&id={{ materia.id }}'><i class="icon-time icon-white"></i> Borrar Clases</a></li>#}
+                                            {% if not persona.pertenece_soporte %}
+                                                <li><a href='/niveles?action=asignaragrupo&id={{ materia.id }}'><i class="icon-share-alt icon-white"></i> Asignar a otro Grupo</a></li>
+                                            {% else %}
+                                                <li> <a href="#"  class="generarexcel" matid='{{ materia.id }}'><i class="icon-list"></i> Reporte Asistencia</a></li>
+                                            {% endif %}
+                                            {% if materia.cerrado and not materia.nivel.cerrado  %}
+                                                <li><a href='#' mid='{{ materia.id }}' id='abrirmateria'><i class="icon-plus icon-white"></i> Abrir Materia</a></li>
+                                            {% endif %}
+                                            {% if  perms.sga.change_factura  %}
+                                                <li><a href='/niveles?action=cerrarmateria&id={{ materia.id }}'><i class="icon-plus icon-white"></i> Cerrar Materia</a></li>
+                                            {% endif %}
+                                            {% if perms.sga.add_reporteexcel %}
+                                                <li> <a href="#"  class="generarexcel" matid='{{ materia.id }}'><i class="icon-list"></i> Reporte Asistencia</a></li>
+                                            {% endif %}
+                                            {#                                        <li><a style="cursor: pointer" class="fechaexamen" materia="{{ materia.id }}" extra ="{% if materia.exordinario %}{{ materia.exordinario|date:'d-m-Y' }}{% endif %}" revi ="{% if  materia.revision %}{{ materia.revision|date:'d-m-Y' }}{% endif %} " atra ="{% if materia.exatrasado %}{{ materia.exatrasado|date:'d-m-Y' }}{% endif %} "><i class="icon-calendar icon-white"></i> Fecha Examen</a></li>#}
+
+                                        {% else %}
+                                            {% if perms.sga.change_materia  and not materia.nivel.cerrado %}
+                                                {# OCastillo ITB no podra abrir materias #}
+                                                {# OCastillo 12-06-2020 se vuelve a dar el permiso para ITB para abrir materias #}
+                                                {# {% if not DEFAULT_PASSWORD == 'itb' %}#}
+                                                <li><a href='/niveles?action=abrirmateria&id={{ materia.id }}'><i class="icon-unlock icon-white"></i> Abrir Materia </a></li>
+                                                {# {% endif %}#}
+                                            {% endif %}
+                                            {#                                    {% if persona.usuario.is_superuser and not materia.nivel.cerrado or perms.sga.change_logquitarasignacionprofesor  %}#}
+                                            {% if not materia.nivel.cerrado and perms.sga.change_logquitarasignacionprofesor  %}
+                                                <li><a href='/niveles?action=abrirmateria&id={{ materia.id }}'><i class="icon-unlock icon-white"></i> Abrir Materia (Tics) </a></li>
+                                            {% endif %}
+                                            {% if perms.sga.add_reporteexcel %}
+                                                <li> <a href="#"  class="generarexcel" matid='{{ materia.id }}'><i class="icon-list"></i> Reporte Asistencia</a></li>
+                                            {% endif %}
+
+                                            {# OCastillo 16-07-2020 para asignar docente con nivel cerrado  #}
+                                            {% if perms.sga.change_profesormateria and materia.nivel.cerrado %}
+                                                <li> <a href='/niveles?action=addprofesornivelcerrado&id={{ materia.id }}'><i class="icon-check"></i> Asignar Docente</a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            {% else %}
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if materia.cerrado %}
+                                            {% if materia.entidad %}
+                                                {% if materia.cantexp <= 2  %}
+                                                    {% if not coordinador %}
+                                                        <li><a href='#' id='{{ materia.id }}' class='exportarmateria'><i class="icon-eject icon-white"></i> Exportar  {% if materia.cantexp %} ({{materia.cantexp}}) {% else %} ({{materia.cantexport}}) {% endif %}</a></li>
+                                                    {% endif %}
+                                                {% endif %}
+                                                <li><a href='/reportes?action=run&direct=true&n=certificados_grupo&rt=pdf&materia={{ materia.id }}'><i class="icon-print icon-white"></i> Certificados materia</a></li>
+                                            {% endif %}
+                                            {% if materia.cantex <= 2  %}
+                                                {% if not coordinador %}
+                                                    <li><a href='/niveles?action=abrirm&id={{ materia.id }}'><i class="icon-unlock icon-white"></i> Abrir </a></li>
+                                                {% endif %}
+                                                <li><a href='/niveles?action=tomandom&id={{ materia.id }}&grupo={{ materia.paralelo }}'><i class="icon-user icon-white"></i> Tomando la Materia</a></li>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if not coordinador %}
+                                                {% if not materia.tiene_clases %}<li><a href='/niveles?action=deletemateria&id={{ materia.id }}'><i class="icon-remove icon-white"></i> Borrar Materia</a></li>{% endif %}
+                                                {#                                    <li><a href='/niveles?action=tomandom&id={{ materia.id }}'><i class="icon-user icon-white"></i> Exportada ({{ materia.cantexport }})</a></li>#}
+                                                <li><a href='/niveles?action=tomandom&id={{ materia.id }}&grupo={{ materia.paralelo }}'><i class="icon-user icon-white"></i> Tomando la Materia</a></li>
+                                                <li><a href='/gruposcurso?action=asignarcurso&id={{ materia.id }}&grupo={{ materia.paralelo }}'><i class="icon-user icon-white"></i> Asignar a Curso</a></li>
+                                            {% else %}
+                                                <li><a href='/niveles?action=tomandom&id={{ materia.id }}&grupo={{ materia.paralelo }}'><i class="icon-user icon-white"></i> Tomando la Materia</a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if materia.exp_itb %}
+                                            <li> <a href="/niveles?action=addrubrositb&id={{ materia.id }}&grupo={{ materia.paralelo }}"><i class='icon-plus'></i> Crear Rubros</a></li>
+                                        {% endif %}
+                                        {% if materia.rubros_matitb %}
+                                            <li> <a href="/niveles?action=verrubrositb&id={{ materia.id }}&grupo={{ materia.paralelo }}"><i class='icon-eye-open'></i> Ver Rubros</a></li>
+                                            <li> <a href="/niveles?action=importar_estitb&id={{ materia.id }}&grupo={{ materia.paralelo }}"><i class='icon-check'></i> Importar Grupo</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% for mnivel in materianivel %}
+                    <tr>
+                        <td  style="font-weight: bold;">{{ mnivel.materia.asignatura }}
+                            {% if mnivel.materia.cerrado %}<br>
+                                <span class="label label-important">CERRADA el {{ mnivel.materia.fechacierre|date:"d-m-Y" }}</span>
+                            {% endif %}
+
+                        </td>
+                        <td>{{ mnivel.materia.horas }} Horas </td>
+                        <td>{{ mnivel.materia.creditos }} Cr&eacute;ditos </td>
+                        <td></td>
+                        <td>{{ mnivel.materia.inicio|date:'d-m-Y' }} </td>
+                        <td>{{ mnivel.materia.fin|date:'d-m-Y' }} </td>
+                        <td>
+                            <table class="table table-bordered table-condensed">
+                                {% if mnivel.materia.profesormateria_set.count %}
+                                    {% for profesormateria in mnivel.materia.profesores_materia %}
+                                        <tr>
+                                            <td>
+                                                {{ profesormateria.segmento }} - <b>{{ profesormateria.profesor.persona.nombre_completo }} {%  if profesormateria.profesor_aux %} <span class="label label-info">Aux. </span>  {{ profesormateria.profesor_auxiliar.persona.nombre_completo }} {% endif %}</b> <span class="fechas{{ materia.id }}">[{{ profesormateria.desde|date:'d-m-Y' }} al {{ profesormateria.hasta|date:'d-m-Y' }}]</span> {% if forloop.first and materia.profesores_materia.count > 1 %}<span class="label label-info">PRINCIPAL</span>{% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endif %}
+                            </table>
+                        </td>
+                        <td style="font-weight: bold;text-align: center">
+                            VIENDO CON  {{ mnivel.materia.nivel.paralelo }} - {{ mnivel.materia.nivel.nivelmalla }}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        {% if not centroexterno %}
+            <div class='span12'>
+                {% if not nivel.cerrado %}
+                    {% if not persona.pertenece_soporte %}
+                        <a href="/niveles?action=addmateria&id={{ nivel.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Adicionar Materia</a>
+                    {% endif %}
+                {% endif %}
+                <a href="/reportes?action=run&direct=true&n=mate_cronogramaperiodo&nivel={{ nivel.id }}&rt=pdf" class='btn btn-warning'><i class="icon-print"></i> Imprimir</a>
+                <a href="/horarios?action=horario&id={{ nivel.id }}" class='btn'><i class="icon-time"></i> Horario</a>
+                <a href="/matriculas?action=matricula&id={{ nivel.id }}" class="btn"><i class="icon-group"></i> Matr&iacute;cula - {{ nivel.matricula_set.count }}  </a>
+                {% if cronogramapagos %}
+                    <a href="/niveles?action=pagos&id={{ nivel.id }}" class="btn"><i class="icon-money"></i> Pagos</a>
+                {% endif %}
+                {% if not nivel.cerrado %}
+                    {% if nivel.matriculados %}
+                        {% if not persona.pertenece_soporte %}
+                            <a href="/niveles?action=addrubro&nivel={{ nivel.id }}" class="btn"><i class="icon-plus"></i> Gesti&oacute;n de Otros Rubros</a>
+                        {% endif %}
+                    {% endif %}
+                    {% if not centroexterno %}
+                        {% if nivel.cerrar_disponible %}
+                            <a href="#" nid="{{ nivel.id }}" class="btn btn-danger cerrarnivel">Cerrar Nivel</a>
+                        {% endif %}
+                    {% endif %}
+                {% else %}
+
+                    {% if perms.sga.change_nivel  %}
+                        <a href="/niveles?action=abrirn&nid={{ nivel.id }}" class="btn btn-warning">Abrir Nivel</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% else %}
+            <div class='span12'>
+                {% if not coordinador %}
+                    {% if not persona.pertenece_soporte %}
+                        <a href="/niveles?action=addmateria&id={{ nivel.id }}" class='btn btn-success'><i class="icon-plus icon-white"></i> Adicionar Materia</a>
+                    {% endif %}
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=1" class='btn btn-success'>  Todas</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=2" class='btn btn-danger'>   Cerradas</a>
+                    <a hreaf="/niveles?action=filtrar&id={{ nivel.id }}&f=3" class='btn btn-warning'> Abiertas</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=4" class='btn btn-warning'>  Exportadas</a>
+                {% else %}
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=1" class='btn btn-success'>  Todas</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=2" class='btn btn-danger'>   Cerradas</a>
+                    <a hreaf="/niveles?action=filtrar&id={{ nivel.id }}&f=3" class='btn btn-warning'> Abiertas</a>
+                    <a href="/niveles?action=filtrar&id={{ nivel.id }}&f=4" class='btn btn-warning'>  Exportadas</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="modal fade static" id="cerrarpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle">Cerrando el Nivel</h3>
+        </div>
+        <div class="modal-body" id="panelbody">
+            <div class="progress progress-striped active">
+                <div class="bar" style="width: 0%;" id="progressbar"></div>
+            </div>
+            <div id="progresshint">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="correopanel" style="display: none;">
+        <div class="modal-header">
+            <h4>Asunto:<textarea name="asunto" id="asunto"  rows="1" tabindex="4" style="text-transform: none;width: 100%"></textarea></h4>
+
+        </div>
+        <div class="modal-body panelbody" style="height:100%">
+            <form id="formulario3" class='form-vertical' action="" method="POST" style="height:100%">
+                <fieldset class="control-group nomargins">
+                    <div class="controls">
+                        <h4>Contenido:<textarea name="comment" id="comment" cols="100%" rows="18" tabindex="4" style="text-transform: none"></textarea></h4>
+
+                        <p class="help-text"> </p>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cronogramayenviar btn-warning">Cronograma y Enviar</a>
+            <a href="#" class="btn btn-adicionar btn-inverse" style="background: #49afcd">Enviar</a>
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+    {#    <div class="modal fade static" id="modalfechas"   >#}
+    {#        <div class="modal-header">#}
+    {#            <h4  id='paneltitle1'><i> Registrar Fechas</i></h4>#}
+    {#        </div>#}
+    {#        <div class="modal-body" style="text-align: left">#}
+    {#            <form id="formulario" class="well form-horizontal" action="" method="POST">#}
+    {#            {% for field in frmfechas %}#}
+    {#                <fieldset class="control-group nomargins">#}
+    {#                <label class="control-label" style="text-align: left;"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>#}
+    {#                    <div class="controls">#}
+    {#                        {{ field }}#}
+    {#                        <p class="help-text">{{ field.help_text }} </p>#}
+    {#                    </div>#}
+    {#                </fieldset>#}
+    {#            {% endfor %}#}
+    {#            </form>#}
+    {##}
+    {#        </div>#}
+    {#        <div class="modal-footer">#}
+    {#            <a href="#" class="btn btn-buscar btn-success">Guardar</a>#}
+    {#            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>#}
+    {#        </div>#}
+    {#    </div>#}
+
+
+    <div class="modal fade static" id="pregunta" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese la Fecha </h3>
+        </div>
+        <div class="modal-body " style="text-align: center">
+            <input id='dato' style="width: 40%;border-bottom: 3px;border-radius: 4px;text-align: center"> </input>
+            <p class="help-text"> </p>
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="" class="btn btn-primary btn-agregar"> Guardar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="quitarasignacionprofesor" style="width: 500px;left: -110px;margin-left: 20%;margin-top: -97.0104px;">
+        <div class="modal-header">
+            <h3 id="paneltitle5" style="text-align: center"> </h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+                {% for field in frmquitardocente %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text" style="color: red"> {{ field.help_text  }}</p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar " id="cerraranular">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-consultar" id="guardaranular"> Guardar</a>
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="verhistorialquitarprofesor" style="width: 1020px;left: -110px;margin-left: 20%;margin-top: -97.0104px;">
+
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ver Historial</h3>
+            <h3 id="lblnombredocente" style="text-align: left"> </h3>
+        </div>
+        <div class="modal-body" style="min-height: 250px;max-height: 250px;text-align: left;overflow: auto">
+            <div class="col-md-12">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead class="bg-teal bg-lighten-4">
+                        <tr>
+                            <th >Fecha Registro</th>
+                            <th >Fecha Suspensión</th>
+                            <th >Usuario</th>
+                            <th >Observación</th>
+                            <th >Tipo</th>
+                            <th >Archivo</th>
+
+
+                        </tr>
+                        </thead>
+                        <tbody id="listahistorialasiga">
+
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_zoom">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/niveles" method="POST"  >
+                <input type='hidden' name='action' value='add_idzoom' />
+                <input type='hidden' name='id' id='id' />
+                <input type='hidden' name='nivel' value='{{ nivel.id }}'/>
+                <label for="id_zoom">Zoom ID: </label>
+                <input type='text' name='idzoom' id='idzoom'/>
+                <br><br>
+                <button type="submit" class="btn btn-success" id="formbutton_idzoom">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static " id="detalle_archivo" style="margin-left: -500"  >
+        <div class="modal-header" style="text-align: center;word-wrap: break-word">
+            <h4  id="paneltitle"><i> Ver Archivos Subidos </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a href="#" id="cerrar" class="btn btn-cerrar  btn-aceptar">Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="motivo_panel" style="display: none; width: 250%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese el motivo </h3>
+        </div>
+        <div class="modal-body " style="text-align: center">
+            <input id='id_motivo' style="width: 100%;border-bottom: 3px;border-radius: 4px;text-align: center"> </input>
+            <p class="help-text"> </p>
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="" class="btn btn-primary btn-agregar"> Guardar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="horaspormateria_panel" style="width: 300px;left: -110px;margin-left: 20%;margin-top: -97.0104px;">
+        <div class="modal-header">
+            <h3 id="paneltitle5" style="text-align: center">Valor por Hora </h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+                {% for field in valormateria %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text" style="color: red"> {{ field.help_text  }}</p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <p class="help-text-valor alert alert-danger"></p>
+
+            </form>
+        </div>
+
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar " id="cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-guardar" id="guardar"> Guardar</a>
+        </div>
+    </div>
+
+{% endblock %}
+

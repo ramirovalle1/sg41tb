@@ -1,0 +1,854 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript">
+        $(function() {
+{#            $('form').validationEngine();#}
+
+            $('form').validationEngine();
+            $('#numero,#pregunta,#puntos').addClass('validate[required]');
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                if($("#asign").attr("myval") > 0 && $("#idcar").attr("myval") > 0){
+                    showWaiting("Buscando información","Espere unos segundos por favor...");
+                    if(term != ''){
+                        location.href = "/preguntaasignatura?s="+term+"&asign="+$("#asign").attr("myval")+"&idcar="+$("#idcar").attr("myval");
+                    }else{
+                        location.href = "/preguntaasignatura?asign="+$("#asign").attr("myval")+"&idcar="+$("#idcar").attr("myval");
+                    }
+                }else{
+                    if($("#idcar").attr("myval") < 1)
+                        smoke.alert('Debe seleccionar una Carrera');
+                    else
+                        smoke.alert('Debe seleccionar una Asignatura');
+                }
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            buscar_asignatura = function(query, process) {
+                $("#asign").attr("myval",0);
+                $.get("/reportes", {'action':'data', 'model': 'Asignatura',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#asign").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#asign").get(0).results = "";
+                        $("#asign").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#asign').typeahead({source: buscar_asignatura, updater: function(item) {
+                var results = $("#asign").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#asign").attr("myval",datos.id);
+                        $("#search").trigger("click");
+                    }
+                }
+                return item;
+            }});
+
+            buscar_carrera = function(query, process) {
+                $("#idcar").attr("myval",0);
+                $.get("/reportes", {'action':'data', 'model': 'Carrera',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#idcar").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#idcar").get(0).results = "";
+                        $("#idcar").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#idcar').typeahead({source: buscar_carrera, updater: function(item) {
+                var results = $("#idcar").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#idcar").attr("myval",datos.id);
+                        $("#helasig").html('');
+                        showWaiting("Buscando información","Espere unos segundos por favor...");
+                        if($("#asign").attr("myval") > 0){
+                            showWaiting("Buscando información","Espere unos segundos por favor...");
+                            location.href = "/preguntaasignatura?asign="+$("#asign").attr("myval")+"&idcar="+datos.id;
+
+                        }else{
+                            showWaiting("Buscando información","Espere unos segundos por favor...");
+                            location.href = "/preguntaasignatura?idcar="+datos.id;
+                        }
+                    }
+                }
+                return item;
+            }});
+
+            $(".addpregu").click(function(){
+                $("#activo").attr('checked',true);
+                $("input[name=action]").val('guardarpreg');
+                $("#editar").val('verpre');
+                $("#idpregunexamen").val({{ asign.id }});
+                {% if asign %}
+                    $("#numero").val({{ asign|args:carrera.id|call:"numerosiguiente" }});
+                {% endif %}
+
+                $("#preguntapanel").modal({"backdrop":"static","width":"50%"});
+                $("#preguntapanel").modal("show");
+                $("#preguntapanel .help-text").html('');
+                $("#titulopreguntapanel").html('Ingresar Pregunta y Respuestas para la Asignatura {{ asign }}');
+                $("#addrespuesta").removeClass('hidden');
+            });
+
+            $("#copiar").click(function(){
+                $("#copiarpreguntmod").modal({"backdrop":"static","width":"50%"});
+                $("#copiarpreguntmod").modal("show");
+                $("#preguntapanel .help-text").html('');
+            });
+
+            $(".editar").click(function(){
+                if($(this).attr('activo') == 'True')
+                {
+                    $("#activo").attr('checked',true);
+                }
+                else{
+                    $("#activo").attr('checked',false);
+                }
+                $("#idpregunexamen").val($(this).attr('idpregunta'));
+                $("#numero").val($(this).attr('numero'));
+                $("#puntos").val($(this).attr('puntos'));
+                $("#pregunta").val($(this).attr('pregunta'));
+                $("#preguntapanel").modal({"backdrop":"static","width":"50%"});
+                $("#preguntapanel").modal("show");
+                $("#preguntapanel .help-text").html('');
+                $("#titulopreguntapanel").html('Editar Pregunta y Respuestas para la Asignatura {{ asign }}');
+
+                var newid = 0;
+                $.post("/preguntaasignatura",{'idpregunta': $(this).attr('idpregunta'), 'action': 'busrespuest'}, function(data) {
+                    if (data.result=='ok'){
+
+                        for (var i in data.respuesta) {
+
+
+                            $.each($("#respuestas div"), function () {
+
+                                if (parseInt($(this).data("id")) > newid) {
+                                    newid = parseInt($(this).data("id"));
+                                }
+                            });
+
+
+                            newid = parseInt(i) + 1;
+
+                            var div = $("<div ></div>", {
+                                id: "agrega" + newid,
+                                con: newid,
+                                "data-id": newid,
+                                "style":'border-bottom: 1px ridge #ebe4eb;'
+                            });
+                            var col=0;
+                            $.each($("#respuestas div:nth(0) section"), function () {
+                                var cur_td = $(this);
+                                var children = cur_td.children();
+                                // Añade el nuevo Elemento en la tabla.
+                                if ($(this).data("name") != undefined) {
+                                    col++;
+                                    var section = $("<section></section>", {
+                                        "data-name": $(cur_td).data("name")
+                                    });
+                                    var c = $(cur_td).find($(children[1]).prop('tagName')).clone().val("");
+                                    c.attr("name", $(cur_td).data("name") + newid);
+                                    c.attr("num",newid);
+                                    c.attr("id", $(cur_td).data("name") + newid);
+                                    c.appendTo($(section));
+            {#                        section.appendTo($(div));#}
+                                    if($(cur_td).data("name") == 'respuestas')
+                                    {
+                                        c = $(cur_td).find($(children[2]).prop('tagName')).clone().val("");
+                                        c.attr("name", $(cur_td).data("name") + newid);
+                                        c.attr("num",newid);
+                                        c.attr("style","text-transform: none");
+                                    }
+                                    else{
+                                        c = $(cur_td).find($(children[2]).prop('tagName')).clone().val("");
+                                        c.attr("name", $(cur_td).data("name") + newid);
+                                        c.attr("num",newid);
+                                    }
+                                    c.appendTo($(section));
+                                    section.appendTo($(div));
+
+                                }else{
+                                    var section = $("<section></section>", {
+                                        'text': $('#respuestas div').length
+                                    }).appendTo($(div));
+                                }
+                            });
+
+                            // Añade la nueva fila.
+                            $(div).appendTo($('#respuestas'));
+
+                            $(div).find("section a.eliminar").on("click", function (){
+
+                                $(this).closest("div").remove();
+                                newid = parseInt(newid) - 1;
+                                if(newid != 0){
+                                    $("#cantresp").val(newid);
+                                    document.getElementById('elimina'+newid).style.display='block';
+                                }
+                            });
+
+                            var dato = data.respuesta[i];
+
+                            if(dato.valida == "True")
+                            {
+                                $('input[name=valida'+newid+']').attr('checked',true);
+                            }
+                            else{
+                                $('input[name=valida'+newid+']').attr('checked',false);
+                            }
+                            $('input[name=respuesta'+newid+']').val(dato.respuesta);
+                            $('input[name=respuesta'+newid+']').addClass('validate[required]');
+                            $('input[name=respuestaid'+newid+']').val(dato.idrespuesta);
+                            $('a[name=elimina'+newid+']').hide();
+                            $('input[name=respuesta'+newid+']').addClass('validate[required]');
+                            $("#cantresp").val(newid);
+
+                        }
+                    }else{
+                        smoke.alert("Error reimprimiendo la factura");
+                    }
+                }, "json");
+
+                band ++;
+            });
+
+            $(".eliminpre").click(function(){
+                var idpregunta = $(this).attr("idpregunta");
+                var accion = $(this).attr("accion");
+                smoke.confirm( 'Esta seguro de eliminar la Pregunta?', function(e){
+                if (e){
+                        location.href = '/preguntaasignatura?action=eliminpreg&id='+ idpregunta+'&page={{ numpag }}';
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                    });
+            });
+
+            $("#preguntapanel .btn-cerrar").click(function(){
+                $("#preguntapanel").modal("hide");
+                for (i = 0; i < parseInt($("#cantresp").val()); i++) {
+                    var newid = parseInt(i)+1;
+                    $('a[name=elimina'+newid+']').closest("div").remove();
+
+                }
+                $("#cantresp").val(0);
+                $("#addrespt").val(0);
+                $("#addrespuesta").addClass('hidden');
+                $("#pregunta").attr('readonly',false);
+                $("#numero").attr('readonly',false);
+                $("#puntos").attr('readonly',false);
+                $("#puntos").val('');
+                $("#imagenpr").attr('disabled',false);
+                $("#activo").attr('disabled',false);
+                $("#activo").attr('checked',false);
+                $("#pregunta").val('');
+
+                $(".formError").removeClass('aparece');
+                $(".formError").addClass('oculta');
+                $("#editar").val('0');
+                $("input[name=action]").val('editarpreg');
+                $("#titulopreguntapanel").html("Editar Preguntas y Respuestas");
+                return false;
+            });
+
+            var band = 0;
+            $(".addresp").click(function(){
+                if($(this).attr('activo') == 'True')
+                {
+                    $("#activo").attr('checked',true);
+                }
+                else{
+                    $("#activo").attr('checked',false);
+                }
+
+                $("#activo").attr('disabled',true);
+                $("#idpregunexamen").val($(this).attr('idpregunta'));
+                $("#numero").val($(this).attr('numero')).attr('readonly',true);
+                $("#puntos").val($(this).attr('puntos')).attr('readonly',true);
+                $("#imagenpr").attr('disabled',true);
+                $("#addrespuesta").removeClass('hidden');
+                $("#addrespuesta").click();
+                $("#addrespt").val(1);
+{#                document.getElementById('addrespuesta').style.display='block';#}
+                $("#pregunta").val($(this).attr('pregunta')).attr('readonly',true);
+                $("#preguntapanel").modal({"backdrop":"static","width":"50%"});
+                $("#preguntapanel").modal("show");
+                $("#preguntapanel .help-text").html('');
+                $("#titulopreguntapanel").html("Agregar Respuestas");
+                if(band==0)
+                {
+                    $("#guardarbutt").click();
+                }
+                band ++;
+                if(!$(".formError").html()){
+                    $(".formError").removeClass('oculta');
+                    $(".formError").addClass('aparece');
+                }
+
+            });
+
+            $("#addrespuesta").click(function() {
+
+                var newid = 0;
+
+                $.each($("#respuestas div"), function () {
+
+                    if (parseInt($(this).data("id")) > newid) {
+                        newid = parseInt($(this).data("id"));
+                    }
+                });
+                if(newid != 0){
+                    $("#cantresp").val(newid);
+                    document.getElementById('elimina'+newid).style.display='none';
+                }
+                newid++;
+
+                var div = $("<div ></div>", {
+                    id: "agrega" + newid,
+                    con: newid,
+                    "data-id": newid,
+                    "style":'border-bottom: 1px ridge #ebe4eb;'
+                });
+                var col=0;
+
+                $.each($("#respuestas div:nth(0) section"), function () {
+                    var cur_td = $(this);
+                    var children = cur_td.children();
+                    // Añade el nuevo Elemento en la tabla.
+                    if ($(this).data("name") != undefined) {
+                        col++;
+
+                        var section = $("<section></section>", {
+                            "data-name": $(cur_td).data("name")
+                        });
+
+                        var c = $(cur_td).find($(children[1]).prop('tagName')).clone().val("");
+                        c.attr("name", $(cur_td).data("name") + newid);
+                        c.attr("num",newid);
+                        c.attr("id", $(cur_td).data("name") + newid);
+                        c.appendTo($(section));
+{#                        section.appendTo($(div));#}
+                        if($(cur_td).data("name") == 'respuestas')
+                        {
+                            c = $(cur_td).find($(children[2]).prop('tagName')).clone().val("");
+                            c.attr("name", $(cur_td).data("name") + newid);
+                            c.attr("num",newid);
+                            c.attr("style","text-transform: none");
+                        }
+                        else{
+                            c = $(cur_td).find($(children[2]).prop('tagName')).clone().val("");
+                            c.attr("name", $(cur_td).data("name") + newid);
+                            c.attr("num",newid);
+                        }
+                        c.appendTo($(section));
+                        section.appendTo($(div));
+
+
+                    }else{
+                        var section = $("<section></section>", {
+                            'text': $('#respuestas div').length
+                        }).appendTo($(div));
+                    }
+                });
+
+                // Añade la nueva fila.
+                $(div).appendTo($('#respuestas'));
+
+                $(div).find("section a.eliminar").on("click", function (){
+
+                    if(newid > 1){
+                        $(this).closest("div").remove();
+                        newid = newid - 1;
+                    }
+
+                    if(newid != 0){
+                        $("#cantresp").val(newid);
+                        document.getElementById('elimina'+newid).style.display='block';
+                    }
+                });
+                $('input[name=respuesta'+newid+']').addClass('validate[required]');
+                $("#cantresp").val(newid);
+
+                // document.getElementsByName('nombre'+newid).val($('#ProductoNombre').val());
+
+            });
+
+            $("#guardarbutt").click(function(){
+                $(".formError").removeClass('oculta');
+                $(".formError").addClass('aparece');
+
+            });
+
+            $(".eliminarespuesta").click(function(){
+                var idopc = $(this).attr("idopc");
+                var accion = $(this).attr("accion");
+                smoke.confirm( 'Esta seguro de eliminar la respuesta?', function(e){
+                if (e){
+                        location.href = '/preguntaasignatura?action='+ accion +'&id='+ idopc;
+{#                        alert(idresp)#}
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                    });
+            });
+            {% if asign %}
+                $("#asign").val('{{ asign }}');
+                $("#asign").attr('myval','{{ asign.id }}');
+            {% endif %}
+
+            {% if carrera %}
+                $("#idcar").val('{{ carrera }}');
+                $("#idcar").attr('myval','{{ carrera.id }}');
+                $("#helasig").html('');
+            {% endif %}
+
+               $(".imprimirpregu").click(function(){
+               if (($("#asign").attr("myval")>0) && ($("#idcar").attr("myval")>0)){
+                 window.open('/reportes?action=run&direct=true&n=lista_preguntas_materia&rt=pdf&preguntaasignatura_id='+$("#asign").attr("myval")+'&carrera_id='+$("#idcar").attr('myval'));
+                location.href = '/preguntaasignatura';
+               }else{
+                  smoke.alert("Debe seleccionar la Asignatura y la Carrera ");
+               }
+
+
+            });
+
+
+            buscar_asignatura = function(query, process) {
+                $("#asignmod").attr("myval",0);
+                $.get("/reportes", {'action':'data', 'model': 'Asignatura',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#asignmod").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#asignmod").get(0).results = "";
+                        $("#asignmod").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#asignmod').typeahead({source: buscar_asignatura, updater: function(item) {
+                var results = $("#asignmod").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#mensjecop").html("");
+                        $("#asignmod").attr("myval",datos.id);
+                        if(parseInt(datos.id) == parseInt("{{ asign.id }}") && parseInt($("#idcarmod").attr("myval")) == parseInt("{{ carrera.id }}")){
+                            $("#mensjecop").html("La asignatura y carrera seleccionada son las mismas a copiar, por favor seleccione otras.");
+                            $("#asignmod").attr("myval",0);
+                        }
+                    }
+                }
+                return item;
+            }});
+            buscar_carrera = function(query, process) {
+                $("#idcarmod").attr("myval",0);
+                $.get("/reportes", {'action':'data', 'model': 'Carrera',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#idcarmod").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#idcarmod").get(0).results = "";
+                        $("#idcarmod").attr("myval",0);
+                        listing = [];
+                        process(listing);
+                    }
+                }, 'json');
+            };
+
+            $('#idcarmod').typeahead({source: buscar_carrera, updater: function(item) {
+                var results = $("#idcarmod").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name){
+                        $("#mensjecop").html("");
+                        $("#idcarmod").attr("myval",datos.id);
+                        if(parseInt(datos.id) == parseInt("{{ carrera.id }}") && parseInt($("#asignmod").attr("myval")) == parseInt("{{ asign.id }}")){
+                            $("#mensjecop").html("La asignatura y carrera seleccionada son las mismas a copiar, por favor seleccione otras.")
+                            $("#idcarmod").attr("myval",0);
+                        }
+                    }
+                }
+                return item;
+            }});
+            $("#copmodal").click(function(){
+               if ($("#asignmod").attr("myval")>0 && $("#idcarmod").attr("myval") > 0){
+
+                    showWaiting("Guardando información","Espere unos segundos por favor...");
+                     $.post("/preguntaasignatura",{'carrprin': "{{ carrera.id }}", 'asignprin': "{{ asign.id }}", 'carrprin': "{{ carrera.id }}",
+                         'asigncop': $("#asignmod").attr("myval"),'carrcop':  $("#idcarmod").attr("myval"), 'action': 'copiar'}, function(data) {
+                            if (data.result=='ok'){
+                                location.href = "/preguntaasignatura?asign="+$("#asignmod").attr("myval")+"&idcar="+$("#idcarmod").attr("myval");
+                            }else{
+                                hideWaiting();
+                                $("#mensjecop").html("Error Intentelo nuevamente")
+                            }
+
+
+                    }, "json");
+               }else{
+                  $("#mensjecop").html("Seleccione carrera y asignatura donde se copiara las preguntas")
+               }
+
+
+            });
+            $("#cerrcop").click(function(){
+                $("#copiarpreguntmod").modal("hide");
+                $("#asignod").attr("myval",0);
+                $("#idcarmod").attr("myval",0);
+            });
+
+            $(".activpregunta").click(function(){
+                var idpregunta = $(this).attr("idpre");
+                smoke.confirm( 'Esta seguro de '+$(this).attr("mensaje")+' la Pregunta?', function(e){
+                if (e){
+                        location.href = '/preguntaasignatura?action=activpregunta&id='+ idpregunta+'&page={{ numpag }}';
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                    });
+            });
+
+        });
+    </script>
+    <style>
+        .oculta{
+            display: none;
+        }
+        .aparece{
+            display: block;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span10" style="text-align: center">
+            {% if asign %}
+                <h3> Preguntas de la Asignatura {{ asign }} de la carrera {{ carrera }} </h3>
+            {% endif %}
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br/>
+    <div class='row-fluid'>
+        <div class="span11" style="text-align: center">
+            <b>Carrera</b>:
+            <input type="text" id="idcar" class="searchinput input-xxlarge search-query" data-provide="typeahead"/>
+        </div>
+    </div><br/>
+    <div class='row-fluid'>
+        <div class="span11" style="text-align: center">
+            <b>Asignatura</b>:
+            <input type="text" id="asign" class="searchinput input-xxlarge search-query" data-provide="typeahead" {% if not carrera %}readonly {% endif %}/>
+            {% if not carrera %}<p style="color: red" id='helasig'> Debe seleccionar una carrera para escoger una asignatura</p>{% endif %}
+        </div>
+    </div><br/>
+    <div class='row-fluid'>
+        <div class='span6'>
+            <form class= "form-search"> <input class='searchinput input-xlarge search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search and asign  %}
+                <a href="/preguntaasignatura?asign={{ asign.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div><br/>
+    {% if asign %}
+        <div class='row-fluid'>
+            <div class="span11">
+                {% if not persona.pertenece_soporte %}
+                    <a class="btn btn-info addpregu" style="cursor: pointer"><b><span class="icon-plus"></span> Agregar Pregunta</b></a>
+                    {% if preguntasasignatura %}
+                        <a class="btn btn-success" id="copiar" style="cursor: pointer;float: right"><b><span class="icon-list"></span> Copiar Preguntas</b></a>
+                    {% endif %}
+                {% endif %}
+                <a class="btn btn-success imprimirpregu" style="cursor: pointer"><b><span class="icon-print"></span> Imprimir</b></a>
+            </div>
+        </div><br/>
+    {% endif %}
+    <div class="row-fluid" >
+        <div class="span11" style="">
+            <table class='table' cellpadding="0" cellspacing="0" id="tablepregunto">
+                <thead>
+                <tr>
+                    <th ><h4>Preguntas y Respuestas</h4></th>
+                    <th style="text-align: center"><h4>Imagen</h4></th>
+                    <th style="text-align: center"><h4></h4></th>
+                    <th style="text-align: center"><h4></h4></th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for p in preguntasasignatura %}
+                        <tr >
+                            <td ><h4 style="white-space: pre-wrap;text-align: justify;">{{ p.numero }}.- {{ p.pregunta }}</h4>
+                                {% if not persona.pertenece_soporte %}
+                                    <li title="Agregar respuestas" idpregunta="{{ p.id }}" activo="{{ p.activo }}" numero="{{ p.numero }}" puntos="{{ p.puntos }}" pregunta="{{ p.pregunta }}"  style="cursor: pointer;float: right" class="label label-warning addresp"><span class="icon-plus"></span>Respuesta</li>
+                                    {% if not p.existexamenresp %}
+                                        <li style="cursor: pointer;float: right" idpregunta="{{ p.id }}" activo="{{ p.activo }}" numero="{{ p.numero }}"  puntos="{{ p.puntos }}" pregunta="{{ p.pregunta }}" title="Editar Preguntar" class="label label-info editar"><span class="icon-edit"></span>editar</li>
+                                        <li title="Agregar respuestas" idpregunta="{{ p.id }}"  style="cursor: pointer;float: right" class="label label-important eliminpre"><span class="icon-remove"></span>Eliminar</li>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if p.imagen %}
+                                    <div class="thumbnail" style="height: 50px">
+
+                                        <img src="{{ p.imagen.url }}" alt="" style="width: 50px;height: 50px">
+
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                {% if not persona.pertenece_soporte %}
+                                    {% if p.activo %}
+                                        <b>Activado: </b><a style="cursor: pointer" idpre="{{ p.id }}" mensaje="Desactivar" class="activpregunta"><img src='/static/images/16/true.png' alt='' border="0"/></a>
+                                    {% else %}
+                                        <b>Desactivado</b><a style="cursor: pointer" idpre="{{ p.id }}" mensaje="Activar" class="activpregunta"><img src='/static/images/16/false.png' alt='' border="0"/></a>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center">
+                                <b>Puntos: {{ p.puntos }}</b>
+                            </td>
+                            {% for r in p.respuesta %}
+                                <tbody>
+                                    <tr>
+                                        <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b style="color: red">R{{ forloop.counter }}.- </b> {{ r.respuesta }}
+                                        </td>
+                                        <td>
+                                            {% if r.imagen %}
+                                                <div class="thumbnail" style="height: 50px;"  >
+                                                    <img src="{{ r.imagen.url }}" alt="" style="width: 50px;height: 50px">
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td style="text-align: center;word-wrap: break-word">
+                                            {% if r.valida %}
+                                                <img src='/static/images/16/true.png' style="float: left"  alt='' border="0"/>
+                                            {% else %}
+                                                <img src='/static/images/16/false.png' style="float: left" alt='' border="0"/>
+                                            {% endif %}
+                                            {% if not r.exist_examparc %}
+                                                {% if not persona.pertenece_soporte %}
+                                                    <li  title="eliminar" idopc="{{ r.id }}" accion="eliminaresp" style="cursor: pointer;float: right" class="label label-important eliminarespuesta">eliminar</li>
+                                                {% endif %}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                    {% if not preguntasasignatura %}
+                        <tr>
+                            <td colspan="4">{% if asign %} NO EXISTEN PREGUNTAS PARA ESTA ASIGNATURA{% else %}DEBE ESCOGER UNA ASIGNATURA{% endif %}</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if asign %}
+        <div class='row-fluid'>
+        <div class="span11" style="">
+            {% if paging.num_pages > 10 %}
+                <div class='pagination'>
+                    <ul >
+                        {% if paging.primera_pagina %}
+                            <li><a href="/preguntaasignatura?asign={{ asign.id }}&idcar={{ carrera.id }}&page=1">1</a></li>
+                            <li><a href="/preguntaasignatura?asign={{ asign.id }}&idcar={{ carrera.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/preguntaasignatura?asign={{ asign.id }}&idcar={{ carrera.id }}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/preguntaasignatura?asign={{ asign.id }}&idcar={{ carrera.id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/preguntaasignatura?asign={{ asign.id }}&idcar={{ carrera.id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/preguntaasignatura?asign={{ asign.id }}&idcar={{ carrera.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+    {% endif %}
+    {% if asign %}
+        <div class='row-fluid'>
+            <div class="span3">
+                {% if not persona.pertenece_soporte %}
+                    <a class="btn btn-info addpregu" style="cursor: pointer"><b><span class="icon-plus"></span> Agregar Pregunta</b></a>
+                {% endif %}
+            </div>
+        </div><br/>
+    {% endif %}
+    <div class="modal fade static" id="preguntapanel">
+        <div class="modal-header" style="word-wrap: break-word;text-align: center">
+            <h3 id="titulopreguntapanel">Editar Preguntas y Respuestas</h3><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' enctype="multipart/form-data" action="/preguntaasignatura" method="POST"  >
+                <input type='hidden' name='action' value='editarpreg'/>
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                <input type='hidden' name='addrespt' id='addrespt' value="0"/>
+                <input type='hidden' name='num_pages' id='num_pages' value="{{ numpag }}"/>
+                <input type='hidden' name='cantresp' id='cantresp' value="0"/>
+                <input type='hidden' name='idpregunexamen' id='idpregunexamen' />
+                <input type='hidden' name='idcar' id='idcar' value="{{ carrera.id }}" />
+
+
+                <div class="controls" style="margin-left: 1%">
+                    <b>N&uacute;mero:</b> <input type="text" name='numero' id="numero" style="width: 5%" {% if preguntaex %} value="{{ preguntaex }}" {% endif %}/>
+                    <p class="help-textnum">{{ field.help_text }} </p>
+                    <b>Pregunta:</b> {% if DEFAULT_PASSWORD == "itb" %} <textarea type="text" name='pregunta' id="pregunta" rows="6" cols="50"  style="text-transform: none" ></textarea>{% else %}<input type="text" name='pregunta' id="pregunta" style="text-transform: none" />{% endif %}<br/><br/>
+                    <b>Imagen:</b><input type="file" name="imagenpr" id="imagenpr" /><br/><br/>
+                    <b>puntos:</b> <input  type="text" name='puntos' id="puntos" style="width: 5%" /><br/><br/>
+                    <b>Activo:</b> <input style="width:10%;" type="checkbox" name='activo' id="activo" checked/>
+
+                    <p class="help-text">{{ field.help_text }} </p>
+                    <a class="btn btn-info hidden" id="addrespuesta"  style="cursor:pointer;float: right"><b><span class="icon-plus"></span> Respuestas</b></a>
+                    <br/><br/><hr style="border: 1px ridge #ebe4eb;">
+                    <div id="respuestas" style="padding-left: 5%">
+                        <div id='agrega0'  data-id="0" con="0" class="hidden">
+                            <section  data-name="respuesta">
+                                <br/><b name="resp0" id="resp0">Respuesta:</b>
+                                <input type="text" name="respuesta0" id="respuesta0" style="text-transform: none"/><br/>
+                            </section>
+                            <section  data-name="imagen">
+                                <br/><b name="img0" id="img0">Imagen:</b>
+                                <input type="file" name="imagen0" id="imagen0"/>
+                            </section>
+                            <section  data-name="valida">
+                                <br/><b name="vali0" id="vali0">Correcta:</b>
+                                <input style="width:10%;" type="checkbox" name="valida0" name="valida0" /><br/>
+                            </section>
+                            <section  data-name="respuestaid">
+                                <br/><b name="respuestaidsid0" id="respuestaids0"></b>
+                                <input type="hidden" name="respuestaid0" name="respuestaid0" /><br/>
+                            </section>
+                            <section  data-name="elimina">
+                                <br/>
+                                <a  class="btn btn-danger eliminar" num="0" style="float: right" name="elimina0" id="elimina0">Eliminar</a>
+                                <br/>
+                            </section>
+
+                        </div>
+                    </div>
+                </div>
+                <br/><br/><button type="submit" class="btn btn-success" id="guardarbutt" style="float: right" >Guardar</button>&nbsp;&nbsp;
+{#                <button type="submit" class="btn btn-warning hidden guardar1" style="float: right" name="continuar">Guardar y continuar</button>&nbsp;&nbsp;#}
+                <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+
+            </form>
+        </div>
+    </div>
+    <div class="modal fade static" id="copiarpreguntmod">
+        <div class="modal-header" style="word-wrap: break-word;text-align: center">
+            <h3 id="titulopregunta">Copiar Preguntas y Respuestas de {{ asign }} de la carrera {{ carrera }} </h3>
+            <br/>
+            <h5 id='panelt2' ></h5>
+        </div
+        <div class="modal-body" >
+            <div class='row-fluid'>
+                <div class="span11" style="text-align: center">
+                    <b>Carrera</b>:
+                    <input type="text" id="idcarmod" class="searchinput input-xxlarge search-query" data-provide="typeahead"/>
+                </div>
+            </div><br/>
+            <div class='row-fluid'>
+                <div class="span11" style="text-align: center">
+                    <b>Asignatura</b>:
+                    <input type="text" id="asignmod" class="searchinput input-xxlarge search-query" data-provide="typeahead"/>
+                    <p style="color: red" id="mensjecop"></p>
+                </div>
+            </div><br/>
+            <div class='row-fluid'>
+                <div class="span11">
+                    <a class="btn btn-danger" id="cerrcop" style="float: right">Cerrar</a>
+                    <a class="btn btn-success" id="copmodal" style="float: right">Guardar</a>
+                </div>
+            </div><br/><br/>
+        </div>
+    </div>
+{% endblock %}
+

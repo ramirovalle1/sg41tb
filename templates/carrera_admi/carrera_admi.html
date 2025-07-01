@@ -1,0 +1,446 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            var c = 0;
+
+            $(".btn-cerrar").click(function() {
+                $("#rubrospanel").modal('hide');
+            });
+
+            $(".cerrarbtn").click(function() {
+                $("#test").modal("hide");
+            });
+
+            $(".add").click(function() {
+                c = $(this).attr("cid");
+                var carrera = $(this).attr("carrera");
+                $("#modaltipo #paneltitle1").html("Agregar Modalidad Culminacion de Estudios ("+carrera+") "+'<br>');
+                $("#modaltipo").modal({width: '800px', backdrop: 'static'});
+                $("#modaltipo").modal("show");
+            });
+            $(".ver").click(function() {
+                c = $(this).attr("cid");
+                var carrera = $(this).attr("carrera");
+                $.get("/solicitudonline",{"action": "vertipos","c":c},function(data) {
+                        $("#detalle_tipo .modal-body").html(data);
+                        $("#detalle_tipo #paneltitle1").html(carrera + "<br> MODALIDAD CULMINACION DE ESTUDIOS" );
+                        $("#detalle_tipo").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                        $("#detalle_tipo").modal("show");
+               }, "html");
+            });
+
+            $("#detalle_tipo #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_tipo").modal("hide");
+            });
+
+            $("#modaltipo .btn-cerrar").click(function() {
+                $("#modaltipo").modal("hide");
+                return false;
+            });
+
+            $("#modaltipo .btn-buscar").click(function() {
+            $("#modaltipo").modal("hide");
+            var t= $("#modaltipo #id_tipo").val();
+            $.post("/solicitudonline",{"action": "addtipocarrera","t":t,"c":c},function(data) {
+                   if(data.result=='ok'){
+                       alert("Registro Correcto");
+                       location.reload();
+                   }else{
+                       alert(data.result);
+                   }
+                },"json");
+            });
+
+
+            $(".rubros").click(function() {
+                $("#rubro").val("");
+                $("#valor").val("");
+
+                c = $(this).attr("cid");
+                var carrera = $(this).attr("carrera");
+                    $("#rubrospanel").find("#paneltitle").html("Adicionar Rubro a Matriculados " );
+                    $("#rubrospanel").find("#panelbody").html("Carrera: "+ carrera);
+                    $("#rubrospanel").modal("show");
+                    $("#rubrospanel").find(".fechainput").datepicker({format:"dd-mm-yyyy"});
+            });
+
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/carrera_admi?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+{#                    $("#search").trigger("click");#}
+                    $("#search").click();
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+            $(".activares").click(function() {
+                var id = $(this).attr("ins");
+                $.post("/carrera_admi",{"action": "activacion", "id": id },function(data) {
+                        if(data.result=='ok'){
+                        location.reload();}
+                        else{
+{#                            location.reload();#}
+                            $("#test").modal({backdrop: 'static', keyboard: 'false', width: "617px", maxHeight: ($(window).height()*3)/4 });
+                            $("#test").modal("show");
+                        }
+                },"json");
+            });
+            {# activar check de online o de hibrido   #}
+            $(".activaronline").click(function() {
+                var id = $(this).attr("ins");
+                $.post("/carrera_admi",{"action": "activaronline", "id": id },function(data) {
+                    if(data.result=='ok'){
+                        location.reload();
+                    }
+                    else{
+
+                    }
+                },"json");
+            });
+            $(".activarhibrido").click(function() {
+                var id = $(this).attr("ins");
+                $.post("/carrera_admi",{"action": "activarhibrido", "id": id },function(data) {
+                    if(data.result=='ok'){
+                        location.reload();
+                    }
+                    else{
+
+                    }
+                },"json");
+            });
+
+            $("#rubrospanel .btn-generar").click(function() {
+
+
+                var rubro = $("#rubro").val();
+                var valor = $("#valor").val();
+                var fecha = $("#fecha").val();
+                if (rubro !='' && valor != '' && fecha !=''){
+                    $("#espera").modal({ backdrop: 'static'});
+                    $("#espera").modal("show");
+                    $.post("/carrera_admi",{"action": "generarrubro", "id": c ,"rubro":rubro, "valor":valor, "fecha":fecha},function(data) {
+                        if(data.result=='ok'){
+                        $("#rubrospanel").modal("hide");
+                        $("#espera").modal("hide");
+                        smoke.alert('SE HA AGREGADO EL RUBRO A ' + data.contador + ' ESTUDIANTES');
+{#                        location.reload();#}
+                        }
+                        else{
+                            $("#espera").modal("hide");
+                             alert("OCURRIERON ERRORES");
+                        }
+                    },"json");
+                }else{
+
+                    alert("Existen campos en blanco, Favor completar");
+
+                }
+
+            });
+
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                {% if not activos and not inactivos and not todos %} Listado Carreras{% endif %}
+                {% if todos %}Listado de Carreras (TODOS) {% endif %}
+            </h3>
+
+        </div>
+        <div class='atright'>
+            {% if grupo %}
+                <a href="/carrera_admi" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% else %}
+                <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="row-fluid">
+        {% if not persona.pertenece_soporte %}
+            {% if perms.sga.change_inscripcion %}
+                <div class='span2'>
+                    <a href="/carrera_admi?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Carrera</a>
+                </div>
+            {% endif %}
+        {% endif %}
+
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/carrera_admi" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+        <div class="span2">
+        </div>
+
+        <div class="span2">
+        </div>
+
+        <div class="span3" style="text-align: right">
+
+
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>C&oacute;digo Carrera (Crm)</th>
+                <th>Nombre</th>
+
+                <th>Alias</th>
+
+                <th>Titulo</th>
+                <th>C&oacute;digo Carrera</th>
+                <th>Online</th>
+                <th>Hibrida</th>
+                <th>Estado</th>
+                <th style="width: 20px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for car in carrera %}
+                    <tr>
+                        <td>{{ car.id }}</td>
+                        <td>
+                            {% if not persona.pertenece_soporte %}
+                                <a href='/carrera_admi?action=edit&id={{ car.id }}'>{{ car.nombre }}</a>
+                            {% else %}
+                                <a href='#'>{{ car.nombre }}</a>
+                            {% endif %}
+                        </td>
+                        <td>{{ car.alias }}</td>
+                        <td>
+                            {% if car.titulo %}
+                                {{ car.titulo }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if car.codigocarrera %}
+                                {{ car.codigocarrera }}
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if not persona.pertenece_soporte %}
+                                <a href="#" ins='{{ car.id }}' class="activaronline">
+                            {% endif %}
+                            {% if car.online %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not persona.pertenece_soporte %}
+                                <a href="#" ins='{{ car.id }}' class="activarhibrido">
+                            {% endif %}
+                            {% if car.hibrido %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if not persona.pertenece_soporte %}
+                                <a href="#" ins='{{ car.id }}' class="activares">
+                            {% endif %}
+                            {% if car.activo %}
+                                <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' alt='No' border='0'/>
+                            {% endif %}
+                            </a>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                        {% if  perms.sga.add_carrera %}
+                                        <li><a  href='/carrera_admi?action=edit&id={{ car.id }}'> <i class='icon-edit'></i> Editar </a></li>
+                                        <li><a class="add"  cid="{{ car.id }}" carrera="{{ car }}" style="cursor: pointer">  <i class='icon-plus'></i> Agregar Modalidad </a></li>
+                                        {% if car.tiene_modalidad %}
+                                            <li><a  class="ver" cid="{{ car.id }}" carrera="{{ car }}" style="cursor: pointer">  <i class='icon-certificate'></i> Ver Modalidad </a></li>
+                                        {% endif %}
+                                        {% if not car.elimina_carrera and not car.activo  %}
+                                        <li><a  href='/carrera_admi?action=delete&id={{ car.id }}'> <i class='icon-remove'></i> Eliminar </a></li>
+                                        {% endif %}
+                                        {% endif %}
+                                        {% if  perms.sga.change_carrera %}
+                                            <li><a  class = 'rubros' cid="{{ car.id }}" carrera="{{ car.alias }}"> <i class='icon-asterisk'></i> Adicionar Rubro </a></li>
+                                            <li><a  href='/carrera_admi?action=rubroscreados&id={{ car.id }}'> <i class='icon-list'></i> Rubros Creados </a></li>
+                                        {% endif %}
+{#                                        <li><a  href='/carrera_admi?action=agr&id={{ car.id }}'> <i class='icon-edit'></i> Editar </a></li>#}
+
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if not persona.pertenece_soporte %}
+               {% if perms.sga.change_inscripcion %}
+                    <a href="/carrera_admi?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Carrera</a>
+                {% endif %}
+            {% endif %}
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/carrera_admi?page=1">1</a></li>
+                            <li><a href="/carerra_admi?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/carrera_admi?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/carrera_admi?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/carrera_admi?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/carrera_admi?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+
+
+
+    <div class="modal fade static" id="test" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Informacion</h3>
+        </div>
+        <div class="modal-body">
+            <p class="test"> No puede desactivar esta Carrera, debido a que se encuentra en una Malla</b>
+            </p>
+        </div>
+        <div class="modal-footer">
+{#            <a href="/test_dobe?action=evaluartest&tes={{ test.id }}" class="btn btn-info"><i class=""></i> Realizar test</a>#}
+            <a href="" id='cerrarbtn' class="btn btn-success"><i class=""></i> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modaltipo"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> </i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in tipoform %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="rubrospanel" style="display: none;">
+        <div class="modal-header">
+            <!-- <a class="close" data-dismiss="modal">×</a> -->
+            <h3 id="paneltitle">Titulo</h3>
+        </div>
+        <div class="modal-body">
+            <h4 id="panelbody">One fine body…</h4>
+            <div id="panelalert">
+
+            </div>
+            <table id="panelcanvas" class="table table-bordered table-striped table-condensed">
+                <tr>
+                <td >
+                    <b>Rubro</b><br/>
+                    <textarea rows="1" style="width: 90%; text-transform: uppercase;"id=rubro >CONGRESO</textarea>
+                </td>
+
+                <td nowrap="true"><b>Valor</b><br/>$<input id=valor type='text' class="span1"/></td>
+
+                <td><b>Fecha Cobro</b><br/><input class="fechainput input-small"  id=fecha type="text" value='{{ fecha|date:'d-m-Y' }}'/></td>
+                <td><br/><a href='#' class="btn btn-success btn-generar" >Adicionar </a></td>
+                </tr>
+
+            </table>
+            <div id="panelalert">
+
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+        <div class="modal-header" style="background-color: red">
+                <h3 class="paneltitle" style="text-align: center">ESPERE MIENTRAS SE AGREGA EL RUBRO..</h3>
+            </div>
+    </div>
+    <div class="modal fade static" id="detalle_tipo"   >
+    <div class="row-fluid modal-header">
+         <h4  id='paneltitle1'><i> </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div >
+            <a style="float: left" href="#" id="cerrar" class="btn btn-danger  btn-aceptar">  <i  class="icon-remove icon-white"></i> <b> SALIR</b></a>
+
+        </div>
+    </div>
+    </div>
+
+
+{% endblock %}

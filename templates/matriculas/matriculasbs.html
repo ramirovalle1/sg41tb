@@ -1,0 +1,843 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+            $("#id_fecha, #id_fechavencimiento").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+            $("#id_fecha, #id_fechavencimiento, #id_valor, #id_descripcion, #id_documento").addClass("validate[required]");
+            $("#id_valor").addClass('input-small');
+            $("#id_descripcion,#id_tipootrorubro").addClass('input-large');
+            $("#id_descripcion,#id_tipootrorubro,#id_valor").attr({"autocomplete":"off"});
+
+
+            niveles = [{% for nivel in niveles %}
+                {"id":"{{ nivel.id }}","cerrado": {% if nivel.cerrado %}true{% else %}false{% endif %}, "fechacierre": "{{ nivel.fechacierre|date:'d-m-Y' }}","modalidad": "{{ nivel.grupo.modalidad.nombre }}",  "matriculados": {{ nivel.mat_nivel }}, "carrera": "{{ nivel.carrera_id }}", "sede": "{{ nivel.sede.id }}","sesion": "{{ nivel.sesion }}","annomalla": "{{ nivel.malla.inicio_anno }}","nivelmalla":"{{ nivel.nivelmalla }}","paralelo": "{{ nivel.paralelo }}","inicio":"{{ nivel.inicio_repr }}","fin":"{{ nivel.fin_repr }}"}{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+
+            niveles_abiertos = { {% for nivel in niveles_abiertos %}
+                "{{ nivel.id }}": {{ nivel.mat_nivel }} {% if not forloop.last %},{% endif %}{% endfor %}
+            };
+
+            findNiveles = function(s, c) {
+                var l = [];
+                for (i in niveles) {
+                    var am = niveles[i];
+                    if (am.sede==s && am.carrera==c) {
+                        l.push(am);
+                    }
+                }
+                return l;
+            };
+
+            matricula_nivel_abierto = function(id) {
+                if (id in niveles_abiertos) {
+                    return niveles_abiertos[id];
+                }
+                return 0;
+            };
+
+
+            buscar_nivel = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Nivel',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_nivel").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+            };
+            $('#id_nivel').typeahead({source: buscar_nivel, updater: function(item) {
+                var results = $("#id_nivel").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_nivel").attr("myval",datos.id);
+                    }
+                }
+                return item;
+            }});
+
+            $(".btn-generar").click(function() {
+                $("#id_nivel").val('');
+                $("#grupo_panel").modal({width: '500px', backdrop: 'static'});
+                $("#grupo_panel").modal("show");
+
+            });
+            $("#grupo_panel .btn-cerrar").click(function() {
+                $("#grupo_panel").modal('hide');
+
+            });
+
+            $("#grupo_panel .btn-grupo").click(function() {
+                var dato = $("#id_nivel").attr("myval");
+                if (dato){
+                    $("#grupo_panel").modal("hide");
+                     $.post("/datos_estudiantes", {"action":'generar',"exportar":1,"g":dato}, function(data) {
+                        if (data.result=='ok'){
+                            $("#waitpanel").modal("hide");
+                            location.href=data.url;
+                        }else{
+                            $("#waitpanel").modal("hide");
+                            smoke.alert("Error Intente Nuevamente");
+                        }
+
+                     }, "json");
+                     return false;
+                }
+            });
+
+            $(".btn-generarcsv").click(function() {
+                $("#datocsv").val('');
+                $("#grupocsv_panel").modal({backdrop: 'static', keyboard: false, width: "20%", height: "20%"});
+                $("#grupocsv_panel").modal("show");
+            });
+
+            $("#grupocsv_panel .btn-cerrarcsv").click(function() {
+                $("#grupocsv_panel").modal('hide');
+            });
+
+            $("#grupocsv_panel .btn-grupocsv").click(function() {
+                var datocsv = $("#datocsv").val();
+                if (datocsv){
+                    $("#grupocsv_panel").modal("hide");
+                     $.post("/matriculas", {"action":'exportar_grupocsv',"gcsv":datocsv}, function(data) {
+                        if (data.result=='ok'){
+                            $("#waitpanel").modal("hide");
+                            location.href=data.url;
+                        }else{
+                            $("#waitpanel").modal("hide");
+                            smoke.alert("Error Intente Nuevamente");
+                        }
+                     }, "json");
+                 return false;
+                }
+            });
+            {# desde aqui carga de rubro credencial masiva #}
+{#            $(".btn-cargaderubrosmatriculados").click(function() {#}
+{#                $("#matriculados_panel").modal({backdrop: 'static', keyboard: false, width: "20%", height: "20%"});#}
+{#                $("#matriculados_panel").modal("show");#}
+{#            });#}
+{##}
+{#            $("#matriculados_panel .btn-cerrarmatriculados").click(function() {#}
+{#                $("#matriculados_panel").modal('hide');#}
+{#            });#}
+{##}
+{#            $("#matriculados_panel .btn-rubroscredencial").click(function() {#}
+{#                $("#matriculados_panel").modal("hide");#}
+{#                 $.post("/matriculas", {"action":'cargaderubromatriculados'}, function(data) {#}
+{#                    if (data.result=='ok'){#}
+{#                        smoke.alert('Carga de Rubros OK');#}
+{#                        location.reload()#}
+{#                    }else{#}
+{#                        $("#waitpanel").modal("hide");#}
+{#                        smoke.alert("Error Intente Nuevamente");#}
+{#                    }#}
+{#                 }, "json");#}
+{#            });#}
+            {# hasta aca   #}
+
+
+            mostrar_nivel = function() {
+                var id = $(this).attr("id");
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").hide();
+                $("."+id).show();
+            };
+
+            mostrar_todos = function() {
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").show();
+            };
+
+            $(".niveltodos").click(mostrar_todos);
+            mostrar_ninguno = function() {
+                $(this.parentNode.parentNode.parentNode.parentNode.parentNode).find(".nivelrow").hide();
+            };
+            $(".nivelninguno").click(mostrar_ninguno);
+
+            sedes = {};
+            $(".cell").each(function(cell) {
+                $this = $(this);
+                var carrera = $this.attr('carrera');
+                var sede = $this.attr('sede');
+                var sesion = $this.attr('sesion');
+                var nivelmalla = $this.attr('nivelmalla');
+                var paralelo = $this.attr('paralelo');
+                var matricula = $this.attr('matriculas');
+
+                var niveles = findNiveles(sede, carrera);
+                var sum = 0;
+                for (i in niveles) {
+                    var nivel = niveles[i];
+                    var nivelmalla = nivel.nivelmalla;
+
+                    var idboton = "bot"+nivelmalla.replace(' ','').toLowerCase()+"_"+carrera+"_"+sede;
+                    var $boton = $(this).find("#"+idboton);
+                    if ($boton.length==0) {
+                        var botones = $this.find(".niveles button");
+                        var insertado = false;
+                        for (var ii=0; ii<botones.length; ii++) {
+                            var boton2 = botones.get(ii);
+                            if ($(boton2).html()>nivelmalla) {
+                                $(boton2).before("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                                insertado = true;
+                                break;
+                            }
+                        }
+                        if (!insertado) {
+                            $this.find(".niveles").append("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                        }
+//                        $this.find(".niveles").append("<button class='btn btn-mini' id='"+idboton+"'>"+nivelmalla+"</button>");
+                        $this.find("#"+idboton).click(mostrar_nivel);
+                    }
+
+                    $(this).append("<tr style='display: none' class='nivelrow "+idboton+"'><td><b>"+((nivel.cerrado)?"<span class='label label-important'>CERRADO</span> ":"")+nivel.paralelo+" - "+nivel.nivelmalla+ " (Del " + nivel.inicio +" al "+ nivel.fin + ") - "+nivel.modalidad+" "+nivel.sesion+ " - Malla("+nivel.annomalla+")</b></td><td>"+
+                            " <a href='/matriculas?action=matricula&id="+nivel.id+"' class='btn btn-info btn-mini'><i class='icon-user icon-white'></i> Matr&iacute;cula</a>" +
+                            ((nivel.cerrado)?"<a href='/matriculas?action=matproxnivel&id="+nivel.id+"' class='btn btn-mini btn-success'><i class='icon-asterisk icon-white'></i> Matricular Prox Nivel</a>":"") +
+                            " "+ "<span class='badge "+((nivel.matriculados==0)?"badge-error":"")+"'>" + nivel.matriculados+
+                            "</span></td></tr>");
+
+                    sum += matricula_nivel_abierto(nivel.id);
+
+                }
+                $("#ca_"+carrera+"_"+sede).append("<br/></br>"+ "<span class='badge "+((sum==0)?"badge-error":"")+"'>" + sum + "</span>" + " Matriculados");
+                if (sedes[sede]!=undefined) {
+                    sedes[sede] = sedes[sede]+sum;
+                } else {
+                    sedes[sede] = sum;
+                }
+            });
+            var sumT = 0;
+            for (i in sedes) {
+                var sedesum = sedes[i];
+                $("#totalsede_"+i).append("<b>"+sedesum+"</b>");
+                sumT += sedesum;
+            }
+            $("#totalgeneral").append("<b>"+sumT+"</b>");
+
+
+            $("#generarexcel").click(function() {
+{#                $("#excel").modal("hide");#}
+{#                $("#espera").modal("show");#}
+{#                location.href='/matrizsecreta';#}
+
+                $("#waitpanel").find("#panelbody").html('Espere un mientras se ejecuta el excel');
+                $("#waitpanel").modal("show");
+                $.post("/matrizsecreta", {"action":'generarexcel'}, function(data) {
+                    if (data.result=='ok'){
+{#                        $("#espera").modal("hide");#}
+                        $("#waitpanel").modal("hide");
+                        var ventana= window.open();
+                        ventana.location.href=data.url;
+                        ventana.target='_blank';
+
+{#                        $("#id_cuentafin").val("");#}
+{#                        $("#id_cuentainicio").val("");#}
+{#                        $("#id_fechainicio").val("");#}
+{#                        $("#id_fechafin").val("");#}
+{#                        $("#id_fechainicio").val(fechahoy);#}
+{#                        $("#id_fechafin").val(fechahoy);#}
+{#                        $("#centrocostobody").empty();#}
+
+                    }else{
+                        $("#waitpanel").modal("hide");
+{#                        showWaiting("Error","Intente Nuevamente",true);#}
+                        smoke.alert("Error Intente Nuevamente");
+                    }
+
+                 }, "json");
+                return false;
+            });
+
+            $(".btn_xls_becadosmunicipio").click(function() {
+                $("#xls_becasmunicipio").modal({backdrop: 'static', keyboard: false, width: "40%", height: "40%"});
+                $("#xls_becasmunicipio").modal("show");
+            });
+
+            $(".generar_xls_becasminicipio").click(function() {
+                var validar = false;
+                var form = document.getElementById('id_archivo');
+                var file = form.files[0];
+                var formData = new FormData();
+                if (file) {
+                    formData.append('archivo', file);
+                    validar = true;
+                }
+
+                formData.append('action', 'xls_becasmunicipio');
+                if(validar) {
+                    showWaiting("Generando Archivo","Espere por favor.....");
+                    $.ajax({
+                        url: '/matriculas',
+                        type: "POST",
+                        contentType: false,
+                        data: formData,
+                        processData: false,
+                        cache: false,
+                        success: function (data) {
+                            if (data.result=='ok'){
+                                $("#espera").modal("hide");
+                                setInterval(function(){
+                                        location.href = '/matriculas';
+                                }, 2500);
+                                location.href=data.url;
+                            }else{
+                                smoke.alert("Error:" + data.result);
+                            }
+                            $("#xls_becasmunicipio").modal("hide");
+                            hideWaiting();
+                        },
+                        error: function (xhr, ajaxOptions, thrownError) {
+                            hideWaiting();
+                            smoke.alert("Error vuelva a intentarlo");
+                        }
+                    });
+                }
+            });
+
+            $("#xls_becasmunicipio .btn-cerrar").click(function() {
+                $("#xls_becasmunicipio").modal("hide");
+            });
+{#   ------------------------------------------------------------------------------------------------------------------------------------------------#}
+            {% for s in sedes %}
+                {% with cantidad=s|args:periodo.id|call:"num_matriculados" %}
+                    $(".totalsede_"+"{{ s.id }}").html("{{ cantidad }}"+" matriculados");
+                {% endwith %}
+                $('.sede'+"{{ s.id }}").click(function(){
+                    if($(".body"+"{{ s.id }}").is(':visible')){
+                        $('.nav'+"{{ s.id }}").removeClass("active");
+                        $(".body"+"{{ s.id }}").hide();
+                        $(".cabecera"+"{{ s.id }}").hide();
+                    }else{
+                        {% for sede in sedes %}
+                            $(".body"+"{{ sede.id }}").hide();
+                            $(".cabecera"+"{{ sede.id }}").hide();
+                            $('.nav'+"{{ sede.id }}").removeClass("active");
+                        {% endfor %}
+
+                        $('.nav'+"{{ s.id }}").addClass("active");
+                        $(".body"+"{{ s.id }}").show();
+                        $(".cabecera"+"{{ s.id }}").show();
+                    }
+                });
+            {% endfor %}
+
+            {% if filtro %}
+                $('.nav'+"{{ sede.id }}").addClass("active");
+                $(".body"+"{{ sede.id }}").show();
+                $(".cabecera"+"{{ sede.id }}").show();
+            {% endif %}
+
+{#            --------------------------------------------------------------------BUSCAR GRUPO---------------------------------------------------------------#}
+            buscar_grupo = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Nivel',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#txt_grupo").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#txt_grupo").attr("myval","0");
+                         $("#txt_grupo").get(0).results = "";
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+
+            $("#txt_grupo_id").hide();
+            $('#txt_grupo').typeahead({source: buscar_grupo, updater: function(item) {
+                var results = $("#txt_grupo").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        $("#txt_grupo").attr("myval",datos.id);
+                        $("#txt_grupo_id").val(datos.id);
+                    }
+                }
+                return item;
+            }});
+
+{#            --------------------------------------------------------------------BUSCAR CARRERA---------------------------------------------------------------#}
+            buscar_carrera = function(query, process) {
+                $.get("/reportes", {'action':'datafilt', 'model': 'Carrera',
+                                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results.length > 0) {
+                        $("#txt_carrera").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.alias);
+                        }
+                        process(listing);
+                    }
+                    else{
+                         $("#txt_carrera").attr("myval","0");
+                         $("#txt_carrera").get(0).results = "";
+                         listing = [];
+                         process(listing);
+                    }
+                }, 'json');
+            };
+
+            $("#txt_carrera_id").hide();
+            $('#txt_carrera').typeahead({source: buscar_carrera, updater: function(item) {
+                var results = $("#txt_carrera").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.alias) {
+                        $("#txt_carrera").attr("myval",datos.id);
+                        $("#txt_carrera_id").val(datos.id);
+                    }
+                }
+                return item;
+            }});
+
+            $("#btn_buscargrupo").click(function() {
+                var nivel_id = $("#txt_grupo_id").val().toUpperCase();
+                var carrera_id = $("#txt_carrera_id").val().toUpperCase();
+                if(carrera_id !='' || nivel_id !=''){
+                    if(carrera_id==''){
+                        location.href = "/matriculas?n="+nivel_id;
+                    }
+                    else{
+                        location.href = "/matriculas?c="+carrera_id;
+                    }
+                }
+
+            });
+
+            $('#txt_grupo').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#btn_buscargrupo").trigger("click");
+                }
+            });
+
+            $('#txt_carrera').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#btn_buscargrupo").trigger("click");
+                }
+            });
+
+            $("#subirarchivo").click(function() {
+                $($("#id_tipootrorubro").get(0).parentNode).find(".help-text").html("");
+                $("#id_tipootrorubro").val('');
+                $($("#id_descripcion").get(0).parentNode).find(".help-text").html("");
+                $("#id_descripcion").val('');
+                $($("#id_valor").get(0).parentNode).find(".help-text").html("");
+                $("#id_valor").val('');
+                $($("#id_archivo").get(0).parentNode).find(".help-text").html("");
+                $("#id_archivo").val('');
+                $("#archivo").modal({backdrop: 'static', keyboard: false, width: "25%", height: "10%"});
+                $("#archivo").modal("show");
+            });
+
+            function validarDatos(){
+                var r=0;
+                var x = document.getElementById("id_documento");
+                var validExts = new Array(".xls",".xlsx");
+                var fileExt = x.value;
+                fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+                $($("#id_documento").get(0).parentNode).find(".help-text").html("");
+                if (document.getElementById("id_tipootrorubro").value==""){
+                    r=1;
+                    $($("#id_tipootrorubro").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Debe ingresar tipo de rubro</h6>");
+                }else{
+                      $($("#id_tipootrorubro").get(0).parentNode).find(".help-text").html("");
+                      if (document.getElementById("id_valor").value==""){
+                        $($("#id_valor").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Debe ingresar el valor </h6>");
+                        r=1;
+                      }else{
+                          $($("#id_valor").get(0).parentNode).find(".help-text").html("");
+                          if (document.getElementById("id_descripcion").value==""){
+                            $($("#id_descripcion").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Debe ingresar descripcion </h6>");
+                            r=1;
+                          }else{
+                              if (validExts.indexOf(fileExt) < 0) {
+                                    x.value="";
+                                    $($("#id_documento").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Debe seleccionar el archivo</h6>");
+                                    r=1;
+                              }
+                          }
+                      }
+                }
+                return r;
+            }
+
+            $("#archivo .btn-subir").click(function() {
+                var form= document.getElementById("id_documento");
+                var file = form.files[0];
+                var formData = new FormData();
+                formData.append('action','subirrubrosmasivos');
+                if (file){
+                    formData.append('file',file);
+                }
+                formData.append('tipootrorubro',document.getElementById("id_tipootrorubro").value);
+                formData.append('valor',document.getElementById("id_valor").value);
+                formData.append('descripcion',document.getElementById("id_descripcion").value);
+                formData.append('fecha',document.getElementById("id_fecha").value);
+                formData.append('fechavencimiento',document.getElementById("id_fechavencimiento").value);
+
+                $.unblockUI();
+                if (validarDatos()==0){
+                       $("#archivo").modal("hide");
+                       $.ajax({
+                           url:'/matriculas',
+                           type:"POST",
+                           contentType:false,
+                           data:formData,
+                           processData:false,
+                           cache:false,
+                           success: function(data)
+                              {
+                                if(data.result=="ok") {
+                                    smoke.alert("Se procesó la información, revisar correo informativo");
+                                    $("#archivo").modal("hide");
+                                }else{
+                                    smoke.alert(data.mensaje);
+                                    $("#archivo").modal("hide");
+                                }
+                                    setInterval(function(){
+                                    location.reload();
+                                    }, 5000);
+                              }
+                       });
+                }
+            });
+
+            var validos = " abcdefghijklmnopqrstuvwxyz0123456789-_";
+
+            function soloLetrasYNum(campo) {
+                var letra;
+                var bien = true;
+                for (var i = 0; i < campo.length; i++) {
+                    letra = campo.charAt(i).toLowerCase();
+                    if (validos.indexOf(letra) == -1) {
+                        bien = false;
+                    }
+                }
+                if (!bien) {
+                     return 1;
+
+                } else {
+                     return 0;
+                }
+            }
+
+            $("#archivo .btn-cerrar").click(function() {
+                $("#archivo").modal('hide');
+            });
+
+            $("#id_documento").change(function() {
+                var x = document.getElementById("id_documento");
+                var validExts = new Array(".xls",".xlsx");
+                var fileExt = x.value;
+                var nombre= fileExt.substring(fileExt.indexOf(x.files[0].name),fileExt.lastIndexOf('.'));
+                fileExt = fileExt.substring(fileExt.lastIndexOf('.'));
+
+                if (validExts.indexOf(fileExt) < 0) {
+                    x.value="";
+                    $("#id_documento").val('');
+                    $($("#id_documento").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Solo archivo extensi&oacute;n xls y xlsx</h6>");
+                }else{
+                    if (parseInt(soloLetrasYNum(nombre))==1){
+                        $("#id_documento").val('');
+                        $($("#id_documento").get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El nombre del archivo contiene tilde caracteres especiales</h6>");
+                    }else{
+                        $($("#id_documento").get(0).parentNode).find(".help-text").html("");
+                    }
+                }
+            });
+
+            var numerosdec="0123456789.";
+
+            function solo_numerosdec(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+
+            $("#id_valor").blur(function(){
+                var numero = $(this).val();
+                var p = solo_numerosdec(numero);
+
+                if($("#id_valor").val() != ""){
+                    if (p != numero.length){
+                          $($("#id_valor").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Ingrese solo numeros</i></h6>");
+                          $("#id_valor").val("");
+                          $("#id_valor").focus();
+                    }
+                    else{
+                         $($("#id_valor").get(0).parentNode).find(".help-text").html("");
+                         }
+
+                }
+                else{
+                    $($("#id_valor").get(0).parentNode).find(".help-text").html("<h6 style='color:darkred' ><i> Valor es obligatorio</i></h6>");
+                    }
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span2'>
+            <h3>Matr&iacute;culas de Niveles Acad&eacute;micos</h3>
+            <h4>Periodo: {{ periodo.nombre }}</h4>
+{#            <a href="#" class="btn btn-success" id='generarexcel'> <img src="/static/images/16/excel.png"> </img> MATRIZ</a>#}
+        </div>
+        <div class="span4">
+            <table class="table table-condensed table-bordered">
+                <thead>
+                    <tr>
+                       <th colspan="7" style="text-align: center">ESTADISTICA GENERAL DE ESTUDIANTES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+{#                        <td style="text-align: center; font-weight: bold">Inscritos</td>#}
+                        <td style="text-align: center; font-weight: bold">Matriculados</td>
+                        <td style="text-align: center; font-weight: bold">Becados</td>
+                        <td style="text-align: center; font-weight: bold">Egresados</td>
+                        <td style="text-align: center; font-weight: bold">Graduados</td>
+                        <td style="text-align: center; font-weight: bold">Inactivos</td>
+                        <td style="text-align: center; font-weight: bold">Retirados</td>
+                    </tr>
+                    <tr>
+{#                        <td style="text-align: center">{{ inscritos }}</td>#}
+                        <td style="text-align: center">{{ matriculados }}</td>
+                        <td style="text-align: center">{{ becados }}</td>
+                        <td style="text-align: center">{{ egresados }}</td>
+                        <td style="text-align: center">{{ graduados }}</td>
+                        <td style="text-align: center">{{ inactivos }}</td>
+                        <td style="text-align: center">{{ retirados }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <br/>
+        </div>
+        <div class='span5' style="text-align: right">
+            {% if persona.usuario.is_superuser or perms.sga.change_archivoexcelbecadosmunicipio %}
+                <a href="#" class='btn btn-success btn_xls_becadosmunicipio'> XLS Becados Municipio</a>
+            {% endif %}
+            {% if persona.usuario.is_superuser or perms.sga.add_observacionmatricula %}
+                <a href="#" class='btn btn-success btn-generar'><i class='icon-file'></i> Generar</a>
+            {% endif %}
+            {% if persona.usuario.is_superuser %}
+                <a href="#" class='btn btn-info btn-generarcsv'><i class='icon-file'></i> Generar Correos</a>
+{#                <a href="#" class='btn btn-info btn-cargaderubrosmatriculados'><i class='icon-file'></i> Cargar Rubro Credenciales</a>#}
+            {% endif %}
+            {% if persona.usuario.is_superuser or perms.sga.change_retiradomatricula %}
+                <a href="#" id='subirarchivo' hidden class='btn btn-warning'><i class="icon-check icon-white" ></i> Carga Masiva de Rubros</a>
+            {% endif %}
+            <a href="/" class='btn'><i class='icon-arrow-left'></i> Atras</a>
+        </div>
+
+    </div>
+    <div class="row-fluid">
+        <div class="span9"></div>
+        <div class="span3">
+            <input class='input-large search-query' type='text' id='txt_grupo' value='' placeholder="Buscar Grupo"/>
+            <input class='input-large search-query' type='text' id='txt_grupo_id' value=''/>
+            <a href="#" id='btn_buscargrupo' class='btn btn-info' style="width: 20%"><i class="icon-search icon-white"></i> Buscar</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span9"></div>
+        <div class="span3">
+            <input class='input-large search-query' type='text' id='txt_carrera' value='' placeholder="Filtrar Carrera"/>
+            <input class='input-large search-query' type='text' id='txt_carrera_id' value=''/>
+            {% if filtro %}
+                <a href="/matriculas" class='btn btn-primary' style="width: 20%"><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- SEDES -->
+    <div class="row-fluid">
+        <div class="span12">
+            <ul class="nav nav-tabs nav-justified">
+                {% for sede in sedes %}
+                    <li class="nav{{ sede.id }}" id="lisede"><a href="#" class="sede{{ sede.id }}">{{ sede.nombre }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            {% if niveles %}
+                {% for sede in sedes %}
+                    <thead class="cabecera{{ sede.id }}" hidden="" id="cabecera">
+                        <tr>
+                            <th colspan="2" style="background-color: dodgerblue">
+                                <h3 style="color:aliceblue; text-align: center;">{{ sede.nombre }}</h3>
+                                <h5 style="color:lightyellow; text-align: right;" class='totalsede_{{ sede.id }}'></h5>
+                            </th>
+                        </tr>
+                    <tr>
+                        <th width='30%'>Carreras</th>
+                        <th width='70%'>Niveles</th>
+                    </tr>
+                    </thead>
+
+                    <tbody class="body{{ sede.id }}" hidden="" id="body">
+                    {% for carrera in carreras %}
+                        <tr class='{% cycle "odd" "even" %}'>
+                            <td id='ca_{{ carrera.id }}_{{ sede.id }}'>{{ carrera.nombre }}</td>
+                            <td>
+                                <table class='table table-bordered cell' sede='{{ sede.id }}' carrera='{{ carrera.id }}'>
+                                    <thead>
+                                    <th colspan="2">
+                                        <div class="btn-group niveles" data-toggle="buttons-radio">
+                                            <button class="btn btn-mini niveltodos">Todos</button>
+                                            <button class='btn btn-mini btn-warning nivelninguno'><i class="icon-chevron-up"></i></button>
+                                        </div>
+                                    </th>
+                                    </thead>
+                                </table>
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <td><b>Total de Matriculados </b></td>
+                        <td class='cell' id='totalsede_{{ sede.id }}'> </td>
+                    </tr>
+                    </tbody>
+
+                {% endfor %}
+            {% else %}
+                {% if msj %}
+                    <tr>{{ msj }}</tr>
+                {% else %}
+                    <tr>NO EXISTE REGISTRO</tr>
+                {% endif %}
+            {% endif %}
+            <tfoot>
+            <tr>
+                <td align="center"><b>TOTAL DE ALUMNOS MATRICULADOS</b></td>
+                <td><div class='cell ' id='totalgeneral'> </div></td>
+            </tr>
+            </tfoot>
+
+        </table>
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block moreblock %}
+
+    <div class="modal fade static" id="grupo_panel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Ingrese el Nivel</h3>
+        </div>
+        <div class="modal-body ">
+            <div style="overflow-y: auto"  class='form-horizontal' >
+                   <h4> Nivel:<input type="text" name="nivel" id="id_nivel" style="width: 95%"></h4>
+                   <p class="help-text">{{ field.help_text }} </p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-primary btn-grupo"> Generar</a>
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="grupocsv_panel" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese el Grupo</h3>
+        </div>
+        <div class="modal-body " style="text-align: center">
+            <input id='datocsv' style="width: 40%;border-bottom: 3px;border-radius: 4px;text-align: center"> </input>
+            <p class="help-text"> </p>
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrarcsv ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-grupocsv"> Generar</a>
+        </div>
+    </div>
+
+    {# desde aqui #}
+    <div class="modal fade static" id="matriculados_panel" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Se proceder&aacute; a cargar el rubro en las finanzas de los estudiantes matriculados</h3>
+        </div>
+        <div class="modal-body " style="text-align: center">
+            <p class="help-text"> </p>
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrarmatriculados ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-rubroscredencial"> Generar</a>
+        </div>
+    </div>
+    {# hasta aca #}
+
+    {# carga masiva de rubros graduacion   #}
+    <div class="modal fade static" id="archivo" style="display: none; width: 25%; color: blue">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Carga masiva de rubros </h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formcargamasiva %}
+               <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+            {% endfor %}
+            </form>
+        </div>
+
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-subir"> Subir</a>
+        </div>
+    </div>
+    {#hasta aca carga masiva    #}
+
+    <div class="modal fade static" id="xls_becasmunicipio" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Seleccione el archivo con la informacion requerida</h3>
+        </div>
+        <div class="modal-body ">
+            <div style="overflow-y: auto"  class='form-horizontal' >
+                   <input type="file" name="id_archivo" id="id_archivo">
+                   <p class="help-text">{{ field.help_text }} </p>
+            </div>
+            <div style="overflow-y: auto; text-align: center"  class='form-horizontal' >
+               <h4> Ejemplo:</h4>
+                <img src='../../media/xls_becasmunicipio/ejemplo.png' alt="Ejemplo"/>
+            </div><br>
+            <h4 style="color: red"> La informacion del estudiante debe empezar en la <b>FILA #3</b> como se muestra en la imagen,
+                ademas de respetar las columnas ITEM, CEDULA, NOMBRE, GENERO en las posiciones correspondientes;
+            para que el archivo se ejecute de forma correcta</h4>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-success generar_xls_becasminicipio"> Generar</a>
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+        </div>
+    </div>
+{% endblock %}

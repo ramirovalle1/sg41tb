@@ -1,0 +1,218 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            var eid= 0;
+            $(".subir").click(function(){
+                eid= $(this).attr('eid');
+                $("#modalexamen").modal({"backdrop":"static","width":"40%"});
+                $("#modalexamen").modal('show');
+                $("#evaluacionid").val(eid);
+            });
+            $(".cambiar").click(function(){
+                eid= $(this).attr('eid');
+                $("#modalexamen").modal({"backdrop":"static","width":"40%"});
+                $("#modalexamen").modal('show');
+                $("#evaluacionid").val(eid);
+            });
+            {% if error %}
+                smoke.alert("{{ error }}");
+            {% endif %}
+
+            {% if mensaje %}
+                smoke.alert("{{ mensaje  }}");
+            {% endif %}
+
+            $("#modalexamen .btn-cerrar").click(function(){
+                $("#modalexamen").modal("hide");
+            });
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+<div class='row-fluid'>
+    <div class='span11'>
+
+        <br>
+    </div>
+    <div class='span1'>
+        <a href="/alum_tutorias?s={{ matricula.inscripcion.persona.cedula }}" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+    </div>
+</div>
+<div class='row-fluid'>
+    <div class="span12" >
+    {#Se agrega el correo institucional y se indica si tiene discapacidad#}
+    <h3>Materias Asignadas al Alumno:  {% if matricula.inscripcion.tienediscapacidad %}
+                                      <img src='../../static/images/discapacidad.png' />
+                                   {% endif %}
+                                    {{ matricula.inscripcion }}
+                                   {% if matricula.inscripcion.persona.emailinst %}
+                                          <a href="mailto:{{matricula.inscripcion.persona.emailinst }}" style="color: #003bb3">
+                                             {{ matricula.inscripcion.persona.emailinst }}
+                                        </a>
+
+                                   {% endif %}
+    </h3>
+    <h3>Tel&eacute;fono: {{ matricula.inscripcion.persona.telefono }} - {{ matricula.inscripcion.persona.telefono_conv }}</h3>
+    <h4>{{ matricula.nivel }} - {{ matricula.nivel.periodo }}</h4>
+    </div>
+</div>
+<div class="row-fluid">
+        <div class="span12">
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Asignatura</th>
+                <th>Profesor(es)</th>
+                <th>N1</th>
+                <th>N2</th>
+                <th>N3</th>
+                <th>N4</th>
+                <th>Exam.</th>
+                <th>Archivo</th>
+                <th>NTotal.</th>
+                <th>Recup/Mejoram.</th>
+
+
+                <th>NFinal</th>
+
+                <th>Estado</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for materiaasignada in materiasasignadas %}
+                <tr>
+                    <td>
+                        {{ materiaasignada.materia.nombre_completo }}<br/>
+                        {% if materiaasignada.materia.nivel == matricula.nivel %}
+                        {% else %}
+                            <span class='label label-important'>{{ materiaasignada.materia.nivel }}</span>
+                       {% endif %}
+                    </td>
+
+                    <td>
+                        <table class="table table-condensed" width="100%">
+                        {% for profesormateria in materiaasignada.materia.profesormateria_set.all %}
+                            <tr>
+                                <td>{%  if profesormateria.profesor_auxiliar %}{{ profesormateria.profesor_auxiliar }}{% else %}{{ profesormateria.profesor }}{% endif %}
+                                    {#Se agrega el correo institucional a los docentes#}
+                                    {% if profesormateria.profesor.persona.emailinst %}
+                                        <a href="mailto:{{ profesormateria.profesor.persona.emailinst }}" style="color: #003bb3">
+                                            -  {{profesormateria.profesor.persona.emailinst }}
+                                        </a>
+                                    {% endif %}
+                                </td>
+                                <td width='30%'>
+                                </td>
+                        {% endfor %}
+                        </table>
+                    </td>
+
+                        <td>
+                            <b class='bigger'>{{ materiaasignada.evaluacion.n1 }}</b>
+                            {% if materiaasignada.evaluacion.n1 and materiaasignada.evaluacion.cod1 %}
+                                - <span class="tips" title="{{ materiaasignada.evaluacion.cod1.nombre }}">[{{ materiaasignada.evaluacion.cod1.id }}]</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <b class='bigger'>{{ materiaasignada.evaluacion.n2 }}</b>
+                            {% if materiaasignada.evaluacion.n2 and materiaasignada.evaluacion.cod2 %}
+                                - <span class="tips" title="{{ materiaasignada.evaluacion.cod2.nombre }}">[{{ materiaasignada.evaluacion.cod2.id }}]</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <b class='bigger'>{{ materiaasignada.evaluacion.n3 }}</b>
+                            {% if materiaasignada.evaluacion.n3 and materiaasignada.evaluacion.cod3 %}
+                                - <span class="tips" title="{{ materiaasignada.evaluacion.cod3.nombre }}">[{{ materiaasignada.evaluacion.cod3.id }}]</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <b class='bigger'>{{ materiaasignada.evaluacion.n4 }}</b>
+                            {% if materiaasignada.evaluacion.n4 and materiaasignada.evaluacion.cod4 %}
+                                - <span class="tips" title="{{ materiaasignada.evaluacion.cod4.nombre }}">[{{ materiaasignada.evaluacion.cod4.id }}]</span>
+                            {% endif %}
+                        </td>
+                        <td><b class='bigger'>{{ materiaasignada.evaluacion.examen }}</b>
+                        <td style="text-align: center">
+                            {% if not materiaasignada.materia.nivel.cerrado %}
+                                {% if  materiaasignada.evaluacion.examen > 0 %}
+                                        {% if  materiaasignada.evaluacion.archiexamen %}
+                                            <i class="icon-refresh cambiar" title="Cambiar Examen" eid="{{ materiaasignada.evaluacion.id }}" style="cursor: pointer" ></i> <a href="media/{{ materiaasignada.evaluacion.archiexamen }}" style="cursor:pointer;" title="Descargar Archivo"><img src="../../sgaonline/static/staticsga/images/pdf.png"></a>
+                                        {% else %}
+                                            <i class="icon-upload subir" title="Subir Examen" eid="{{ materiaasignada.evaluacion.id }}" style="cursor: pointer" ></i>
+                                        {% endif %}
+                                    {% endif %}
+                            {% else%}
+                            NIVEL CERRADO
+                            {% endif %}
+                        </td>
+                        </td>
+                        <td><b class='bigger'>{% if materiaasignada.evaluacion.examen >= min_exa %} {{ materiaasignada.notaparcial|floatformat}}{% else  %}{{ materiaasignada.notaparcial|floatformat}}{% endif %}</b></td>
+                        <td><b class='bigger'>{{ materiaasignada.evaluacion.recuperacion }}</b></td>
+                        <td style="text-align: center">
+                            {% if materiaasignada.notafinal < nota_para_aprobar or valida_asistencia and materiaasignada.porciento_asistencia < asistencia_para_aprobar %}
+                                <span class='badge badge-error bigger'>{{ materiaasignada.notafinal|floatformat}}</span>
+                            {% else %}
+                                <span class='badge badge-success bigger'>{{ materiaasignada.notafinal|floatformat}}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if materiaasignada.evaluacion.estado_id == 1 %}<span style="color: #006400;"><b>{{ materiaasignada.evaluacion.estado }}</b></span>{% endif %}
+                            {% if materiaasignada.evaluacion.estado_id == 2 %}<span style="color: #dc143c;"><b>{{ materiaasignada.evaluacion.estado }} </b></span>
+                                {% if materiaasignada.evaluacion.recuperacion > 0 or materiaasignada.notafinal < 40 %}<span style="color: #dc143c;"><b> (NF)</b></span>{% endif %}
+                                {% if valida_asistencia %}{% if materiaasignada.porciento_asistencia < 75 %}<span style="color: #dc143c;"><b> (AS)</b></span>{% endif %}{% endif %}
+                            {% endif %}
+                            {% if materiaasignada.evaluacion.estado_id == 3 %}
+                                <span>{{ materiaasignada.evaluacion.estado }}</span>
+                            {% endif %}
+                            {% if materiaasignada.evaluacion.estado_id == 4 %}
+                                <span style="color: #daa520;"><b>{{ materiaasignada.evaluacion.estado }} </b></span>
+                                {% if materiaasignada.notafinal >= 40 and materiaasignada.notafinal < nota_para_aprobar %}<span style="color: #dc143c;"><b> (NF)</b></span>{% endif %}
+                            {% endif %}
+                        </td>
+
+
+
+
+
+
+
+
+                </tr>
+            {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="modal fade static" id="modalexamen"   >
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle1'><i> Ingrese Archivo de Examen</i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well {% block form-type %}form-horizontal{% endblock %}' action="/alum_tutorias" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addexamen' />
+                <input type='hidden' name='evaluacionid' id='evaluacionid' value='' />
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+
+                <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">{% block buttonname %}Guardar{% endblock %}</button>
+                {% block extrabuttons %}
+                    <a href="#" class="btn btn-cerrar"> Cerrar</a>
+                {% endblock %}
+            </form>
+        </div>
+    </div>
+{% endblock %}

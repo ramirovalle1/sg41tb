@@ -1,0 +1,217 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <script type="text/javascript">
+        $(function(){
+            var userid = 0;
+            var usercruceid = 0;
+            var edita = 0;
+            $("#id_fecha").datepicker({format:"yyyy-mm-dd",language: "es"});
+            $("#id_asistente").addClass("validate[required]");
+            $("#cantidad").addClass("input-small");
+
+            $("form").validationEngine();
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/horario_asistente?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+
+        });
+    </script>
+    <style>
+        .oculta{
+            display: none;
+        }
+        .aparece{
+            display: block;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+
+
+    <div class='row-fluid' style="margin-top: 50px">
+        <div class='atright'>
+            <div class='span2'></div>
+
+            <div class='span6'>
+                <form class="form-search">
+                <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/horario_asistente" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="row-fluid" style="margin-top: 45px">
+        <div class="span2"></div>
+        <div class="span8">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Asistente</th>
+                        <th>Departamento</th>
+                        <th>Activo</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asis in asistentes %}
+                        <tr>
+                            <td >{{ asis.persona }}</td>
+                            <td >{{ asis.departamento }}</td>
+                            <td style="text-align: center">
+                                {% if asis.activo %}
+                                    <a ><img src='/static/images/16/true.png' alt='' border="0"/></a>
+                                {% else %}
+                                    <a><img src='/static/images/16/false.png' alt='' border="0"/></a>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        <li><a style="cursor: pointer" href="/horario_asistente?action=horarioasis&id={{ asis.id }}" ><i class="icon-upload"></i> Horarios </a></li>
+                                    </ul>
+
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    {% if not asistentes %}
+                        <tr>
+                            <td colspan="4">NO EXISTEN REGISTRO</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class="span8">
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/horario_asistente?page=1">1</a></li>
+                            <li><a href="/horario_asistente?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/horario_asistente?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/horario_asistente?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/horario_asistente?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/horario_asistente?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="nuevoasigpanel">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ><i>  </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/asistente_estudiantiles" method="POST"  >
+                <input type='hidden' name='action' value='add'/>
+                <input type='hidden'  name='idsolici' id='idsolici' />
+                <input type='hidden' name='editar' id='editar' value="0"/>
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="trasladopanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle" ></h3>
+        </div>
+        <div class="modal-body panelbody">
+            Nuevo Asistente:
+            <select id='asistrecibe' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for a in asis %}
+                    <option value="{{ a.asistente.usuario.id }}" >{{ a.asistente.usuario.username }}</option>
+                {% endfor %}
+            </select> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            Cantidad: <input type='text' id='cantidad' value="0"  />
+            <div style="padding-left: 13%"> <p id='mensaj' ></p></div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-info generar"> GENERAR</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="crucepanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle" ></h3>
+        </div>
+        <div class="modal-body panelbody">
+            Nuevo Asistente:
+            <select id='asistcruce' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for a in asis %}
+                    <option value="{{ a.asistente.usuario.id }}" >{{ a.asistente.usuario.username }}</option>
+                {% endfor %}
+            </select> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                       <div style="padding-left: 13%"> <p id='mensaj' ></p></div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-ejecutar btn-info generar"> GENERAR</a>
+            <a href="#" class="btn btn-cerrar"> Cerrar</a>
+        </div>
+    </div>
+     <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UNOS SEGUNDOS</h3>
+        </div>
+    </div>
+{% endblock %}

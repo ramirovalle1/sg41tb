@@ -1,0 +1,416 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <script type="text/javascript">
+
+        $(function() {
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/requerimiento?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+            var idrequer = 0;
+            $('#nuevo').click(function(e) {
+                idrequer = 0;
+                $("#nuevopanel #action").val("addrequer");
+                $("#departamento").val(0);
+                $("#requerimiento").val("");
+                $("#nuevopanel").modal({width: '40%', backdrop: 'static'});
+                $("#nuevopanel").modal("show");
+            });
+
+            $('.editar').click(function(e) {
+                idrequer = $(this).attr("idrequer");
+                $("#nuevopanel #action").val("edditrequer");
+                $("#departamento").val($(this).attr("departamento"));
+                $("#requerimiento").val($(this).attr("novedad"));
+                $("#nuevopanel").modal({width: '40%', backdrop: 'static'});
+                $("#nuevopanel").modal("show");
+            });
+            $("#depart").change(function() {
+                var id = $(this).val();
+                if (id){
+
+                    location.href = '/requerimiento?dpto='+id;
+                }else{
+                    location.href = '/requerimiento';
+                }
+
+            });
+
+            $('#cerrar').click(function(e) {
+                $($("#departamento").get(0).parentNode).find(".help-textd").html("");
+                $($("#requerimiento").get(0).parentNode).find(".help-textr").html("");
+                $("#departamento").val(0);
+                $("#requerimiento").val("");
+                $("#nuevopanel").modal("hide");
+                return false;
+            });
+
+            $('#nuevopanel #ingresar').click(function(e) {
+                var valida = true;
+                $('#nuevopanel #ingresar').hide();
+                $($("#departamento").get(0).parentNode).find(".help-textd").html("");
+                $($("#requerimiento").get(0).parentNode).find(".help-textr").html("");
+
+                if($("#departamento").val() == 0){
+                    valida = false;
+                    $($("#departamento").get(0).parentNode).find(".help-textd").html("<h6 style='color:red' >Ingrese Departamento</h6>");
+                }
+
+                if($("#requerimiento").val() == "")
+                {
+                    valida = false;
+                    $($("#requerimiento").get(0).parentNode).find(".help-textr").html("<h6 style='color:red' >Ingrese Requerimiento</h6>");
+                }
+                if(valida){
+
+
+
+
+                    var inputFileImage = document.getElementById("id_archivo");
+                    var file = inputFileImage.files[0];
+                    var data = new FormData();
+
+                    data.append('archivo',file);
+                    data.append('action',$("#nuevopanel #action").val());
+                    data.append('idrequer',idrequer);
+                    data.append('requerimiento',$("#requerimiento").val());
+                    data.append('departamento',$("#departamento").val());
+                    var url = "/requerimiento";
+                    $.ajax({
+                    url:url,
+                    type:"POST",
+                    contentType:false,
+                    data:data,
+                    processData:false,
+                    cache:false,
+                    success: function(data)
+                       {
+                        if(data.result=="ok")
+                            location.reload();
+                        else
+                            $($("#requerimiento").get(0).parentNode).find(".help-textr").html("<h6 class='alert alert-danger'>Error Intentelo Nuevamente</h6>");
+                       }
+                    });
+                    $('#nuevopanel #ingresar').show();
+                    return false;
+                }
+
+            });
+
+            var idreq = 0;
+            var descr = "";
+            $(".detconsult").click(function(){
+                idreq = $(this).attr("idreq");
+                descr = $(this).attr("descr");
+                $.get("/requerimiento", {'action':'detconsult',"idreq":idreq}, function(data) {
+
+                    $("#detallereque .modal-body").html(data);
+                    $("#detallereque").modal({"backdrop":"static","width":"60%"});
+                    $("#detallereque").modal("show");
+                    $("#detreqdescrip").html(descr);
+               }, "html");
+               return false;
+            });
+
+            $("#detallereque #cerrar").click(function() {
+                $("#detallereque").modal("hide");
+
+            });
+
+            $("#responpanel #cerrar").click(function() {
+                $("#responpanel").modal("hide");
+                $("#detallereque").modal({"backdrop":"static","width":"60%"});
+                $("#detallereque").modal("show");
+
+            });
+
+
+            $('#responpanel #ingresar').click(function(e) {
+                var valida = true;
+                $('#responpanel #ingresar').hide();
+                $($("#consulta").get(0).parentNode).find(".help-textc").html("");
+                $($("#responder").get(0).parentNode).find(".help-textr").html("");
+
+                if($("#responder").val() == ""){
+                    valida = false;
+                    $($("#responder").get(0).parentNode).find(".help-textc").html("<h6 style='color:red' >Ingrese Respuesta</h6>");
+                }
+
+
+                if(valida){
+                    $.post("/requerimiento", {'action': $("#responpanel #action").val(), 'idetall':$("#idetall").val(), 'respuesta': $("#responder").val()}, function(data){
+                        if (data.result=='ok'){
+                            $.get("/requerimiento", {'action':'detconsult',"idreq":idreq}, function(data) {
+                                $('#responpanel').modal("hide");
+                                $("#detallereque .modal-body").html(data);
+                                $("#detallereque").modal({"backdrop":"static","width":"60%"});
+                                $("#detallereque").modal("show");
+                                $("#detreqdescrip").html(descr);
+                            }, "html");
+                            return false;
+                        }else{
+                            $('#responpanel #ingresar').show();
+                            $($("#consulta").get(0).parentNode).find(".help-textc").html("<h6 class='alert alert-danger'>Error Intentelo Nuevamente</h6>");
+                        }
+
+                    }, 'json');
+                    return false;
+                }
+
+            });
+            $(".reenviar").click(function(){
+                var idreq = $(this).attr("idrequer");
+                smoke.confirm("reenviar  requerimiento? ",function(e){
+                   if(e){
+                        location.href="/requerimiento?action=reenviar&idreq="+idreq;
+                   }
+                }, {
+                   ok: "Si",
+                   cancel: "No",
+                   classname: "custom-class",
+                   reverseButtons: true
+
+                });
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Requerimiento de Departamento {% if pendiente %} (Pendiente) {% endif %} {% if finalizado %} (Finalizado) {% endif %}</h3>
+             {% if depar %}
+                    <h4> Departamento: {{ depar }}</h4>
+            {% endif %}
+        </div>
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br>
+
+    <div class="row-fluid">
+        <div class='span8'>
+            <form class="form-search">
+                <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search or depar or finalizado or pendiente %}
+                    <a href="/requerimiento" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+                {% endif %}
+            </form>
+        </div>
+        <div class='span4' style="text-align: right">
+            {% if finalizado or not pendiente%}
+                <a style="cursor: pointer" href="/requerimiento?p=1" class="btn btn-success"><i class="icon-check-empty"></i> Pendientes</a>
+            {% endif %}
+            {% if pendiente or not  finalizado%}
+             <a style="cursor: pointer" href="/requerimiento?f=1"  class="btn btn-danger"><i class="icon-check"></i> Finalizados</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class='span9'>
+            <a style="cursor: pointer" id="nuevo"  class="btn btn-success"><i class="icon-edit"></i> Nuevo Requerimiento </a><br><br>
+        </div>
+         <div class="span3">
+                Departamento:
+                <select id='depart' class="input-xlarge bigger"/>
+                    <option value=''>-----</option>
+                    {% for d in departamento %}
+                        <option value="{{ d.id }}">{{ d.descripcion }}</option>
+                    {% endfor %}
+                </select>
+
+        </div>
+
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-striped table-bordered' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th style="text-align: center">F. Ingreso</th>
+                    <th style="text-align: center;">Requerimiento</th>
+                    <th style="text-align: center">Departamento</th>
+                    <th style="text-align: center">Responsable</th>
+                    <th style="text-align: center">Observaci&oacute;n</th>
+                    <th style="text-align: center">Finalizado</th>
+                    <th style="text-align: center">F. Finaliza</th>
+                    <th style="text-align: center;width: 7%">Archivo</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for req in requerimiento %}
+                    <tr>
+                        <td >{% if req.fechaingre %}{{ req.fechaingre|date:'d-m-Y' }}{% endif %}</td>
+                        <td >{{ req.novedad }}</td>
+                        <td >{{ req.departamento }}</td>
+                        <td >{{ req.persona }}</td>
+                        <td >{% if req.observacion %}{{ req.observacion }}{% endif %}</td>
+                        <td style="text-align: center">
+                            {% if req.finalizado %}
+                                <a ><img src='/static/images/16/true.png' alt='' border="0"/></a>
+                            {% else %}
+                                <a><img src='/static/images/16/false.png' alt='' border="0"/></a>
+                            {% endif %}
+                        </td>
+                        <td >{% if req.fechafinal %}{{ req.fechafinal|date:'d-m-Y' }}{% endif %}</td>
+                        <td style="text-align: center">
+                            {% if  req.archivo %}
+                                <a href='{{ req.archivo.url }}' target="_blank" class='btn btn-info btn-mini'><i class="icon-download icon-white"></i>Descargar</a>
+                            {% endif %}
+
+                            {% if  req.archivofin %}
+                                <b>Finalizaci&oacute;n</b>
+                                <a href='{{ req.archivofin.url }}' target="_blank" class='btn btn-info btn-mini'><i class="icon-download icon-white"></i>Descargar</a>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center">
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                    <ul class="dropdown-menu pull-right">
+
+                                        {% if not req.exist_detalle and not req.finalizado %}
+                                            <li><a style="cursor: pointer" class="editar" idrequer="{{ req.id }}" novedad="{{ req.novedad }}" departamento="{{ req.departamento.id }}"><i class="icon-edit icon-white"></i> Editar</a></li>
+                                        {% else %}
+                                            <li><a style="cursor: pointer" class="detconsult" idreq="{{ req.id }}" descr="{{ req.novedad }}"><i class="icon-eye-open"></i> Ver Consultas</a></li>
+                                        {% endif %}
+                                        {% if  not req.finalizado %}
+                                            <li><a style="cursor: pointer" class="reenviar" idrequer="{{ req.id }}" ><i class="icon-refresh"></i> Reenviar</a></li>
+                                        {% else %}
+                                            <li><a href="/reportes?action=run&direct=true&n=requerimiento_depart&requerimiento={{ req.id }}&rt=pdf" class='btn'><i class="icon-print"></i> Imprimir</a></li>
+                                        {% endif %}
+                                    </ul>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                {% if not requerimiento %}
+                    <tr>
+                        <td colspan="8">
+                            NO HAY REQUERIMIENTOS SOLICITADOS
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span12">
+
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/requerimiento?page=1">1</a></li>
+                            <li><a href="/requerimiento?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/requerimiento?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/requerimiento?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/requerimiento?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/requerimiento?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="nuevopanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle1"> Ingresar Datos</h3>
+        </div>
+        <div class="modal-body">
+
+            <b>Departamento:</b><select name="departamento" id="departamento" style="width: 98%;">
+                <option value="0">---------</option>
+                {% for dep in departamento %}
+                    <option value="{{ dep.id }}" >{{ dep.descripcion }}</option>
+                {% endfor %}
+            </select>
+            <p class="help-textd"></p>
+            <b>Requerimiento:</b><textarea type='text' id='requerimiento'   name="departamento" style="width:98%;" rows="8" cols="50" ></textarea>
+            <p class="help-textr"></p>
+            <input type="file" name="archivo" id="id_archivo" >
+            <p class="help-text">Tamano Maximo permitido 40Mb, en formato doc, docx, pdf, png, jpg </p>
+            <input type='hidden' id='action' value='addrequer'/>
+
+        </div>
+        <div class="modal-footer">
+            <a  style="cursor: pointer;" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+            <a style="cursor: pointer;" id="ingresar" class="btn btn-primary btn-resetear"> Ingresar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static " id="detallereque" style="margin-left: -500"  >
+    <div class="row-fluid modal-header" >
+        <h3 style="text-align: center">Requerimiento</h3><br>
+        <h4 id="detreqdescrip" style="font-weight: normal;text-align: justify;width: 98%"></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div style="float: right">
+            <a style="cursor: pointer" id="cerrar" class="btn btn-success  btn-aceptar">ACEPTAR</a>
+        </div>
+    </div>
+    </div>
+
+
+    <div class="modal fade static" id="responpanel" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 id="paneltitle1"> Ingresar Datos</h3>
+        </div>
+        <div class="modal-body">
+            <b>Consulta:</b><textarea type='text' id='consulta'   name="consulta" style="width:98%;" rows="5" cols="50" readonly></textarea>
+            <p class="help-textc"></p>
+            <b>Responder:</b><textarea type='text' id='responder'   name="responder" style="width:98%;" rows="8" cols="50" ></textarea>
+            <p class="help-textr"></p>
+            <input type='hidden' id='action' value='0'/>
+            <input type='hidden' id='idetall' value='0'/>
+        </div>
+        <div class="modal-footer">
+            <a  style="cursor: pointer;" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+            <a style="cursor: pointer;" id="ingresar" class="btn btn-primary btn-resetear"> Ingresar</a>
+        </div>
+    </div>
+
+
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_fecha").datepicker({format:"dd-mm-yyyy"});
+    $("#id_banco, #id_tipotarjeta").addClass("input-xxlarge");
+    $("#id_referencia, #id_lote,#id_procesador,#id_autorizacion").addClass("input-small");
+
+    $(function() {
+{#        $("#id_numero,#id_motivo, #id_beneficiario").addClass("validate[required]");#}
+{#        $("#id_numero, #id_valor").addClass("input-medium");#}
+{#        $("#id_motivo, #id_beneficiario").addClass("input-block-level");#}
+{#        $("#id_numero").focus();#}
+     $($("#id_banco_id").get(0).parentNode.parentNode).hide();
+     $($("#id_tipotarjeta_id").get(0).parentNode.parentNode).hide();
+     $($("#id_procesador_id").get(0).parentNode.parentNode).hide();
+
+        buscar_tarjeta = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'TipoTarjetaBanco',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_tipotarjeta").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+        {%  if bco %}
+            $("#id_banco_id").val('{{ bco }}');
+        {% endif  %}
+        {%  if ttarj %}
+            $("#id_tipotarjeta_id").val('{{ ttarj }}');
+        {% endif  %}
+        {%  if procesador %}
+            $("#id_procesador_id").val('{{ procesador }}');
+        {% endif  %}
+
+        $('#id_tipotarjeta').typeahead({source: buscar_tarjeta, updater: function(item) {
+            var results = $("#id_tipotarjeta").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_tipotarjeta").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_tipotarjeta_id").val(d);
+                }
+            }
+            return item;
+
+        }});
+
+        buscar_banco = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Banco',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_banco").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+        $('#id_banco').typeahead({source: buscar_banco, updater: function(item) {
+            var results = $("#id_banco").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_banco").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_banco_id").val(d);
+                }
+            }
+            return item;
+        }});
+
+        buscar_procesador = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'ProcesadorPagoTarjeta',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_procesador").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+        $('#id_procesador').typeahead({source: buscar_procesador, updater: function(item) {
+            var results = $("#id_procesador").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_procesador").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_procesador_id").val(d);
+                }
+            }
+            return item;
+        }});
+
+     });
+
+{% endblock %}
+{% block titulo %}
+    MODIFICAR DATOS PAGO TARJETA
+    <h3>{{ factura }} (Valor: ${{ factura.total|floatformat:2 }})</h3>
+    <h4>{{ factura.cliente }}</h4>
+    <h4>Estudiante: {{ factura.estudiante }}</h4>
+{% endblock %}
+{% block formaction %}/facturas{% endblock %}
+
+{% block formextra %}
+    <input type='hidden' name='action' value='modificartarj'/>
+    <input type='hidden' name='id' value='{{ factura.id }}'/>
+    <input type='hidden' id='modificartarj' name='bid' value='' />
+    <input type='hidden'  name='tar' value='{{ pago_tarj.id }}' />
+{% endblock %}
+{% block formback %}/facturas?id={{ factura.id }}{% endblock %}
+{% block buttonname %}Guardar Datos{% endblock %}

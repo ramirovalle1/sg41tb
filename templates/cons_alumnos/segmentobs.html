@@ -1,0 +1,318 @@
+<div class="row-fluid">
+    <div class="span12 " style="overflow-x: auto">
+        <table class='table' cellpadding="0" cellspacing="0">
+            <thead>
+                <tr>
+                    <th colspan="7" style="text-align: center"><h3>Ver Bandeja de Atenci&oacute;n : (<a href="/cons_alumnos?action=versolicitudes&id={{ matricula.inscripcion.id }}"> Ir a Bandeja </a>)</h3></th>
+                </tr>
+                <tr>
+                    <th colspan="7" style="text-align: center"><h3>Ver Mesa de Ayuda : (<a href="/cons_alumnos?action=vermesaayuda&id={{ matricula.inscripcion.id }}"> Ir a Mesa de Ayuda </a>)</h3></th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+{#Se agrega el correo institucional y se indica si tiene discapacidad#}
+
+<h3>Materias Asignadas al Alumno:  {% if matricula.inscripcion.tienediscapacidad %}
+                                      <img src='/static/images/discapacidad.png' />
+                                   {% endif %}
+                                    {{ matricula.inscripcion }}
+                                   {% if matricula.inscripcion.persona.emailinst %}
+                                        <a href="mailto:{{matricula.inscripcion.persona.emailinst }}" style="color: #003bb3">
+                                            {{ matricula.inscripcion.persona.emailinst }}
+                                        </a>
+                                   {% endif %}
+</h3>
+{% if matricula.nivel.tutornivel %}<h4 style="color: #808080">Tutor: {{ matricula.nivel.tutornivel.tutor.persona.nombre_completo_inverso }}   -   {{ matricula.nivel.tutornivel.tutor.persona.email }}   -   {{ matricula.nivel.tutornivel.tutor.persona.telefono }}</h4><br/>{% endif %}
+<h5>{{ matricula.nivel }}</h5>
+<table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+    <thead>
+    <tr>
+        <th>Asignatura</th>
+        <th>Profesor(es)</th>
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+            <th>Nota 1</th>
+            <th>Nota 2</th>
+            <th>Proy.Int</th>
+            <th>Nota N3</th>
+            <th>Suplet.</th>
+       {% endif %}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+            <th>N1</th>
+            <th>N2</th>
+            <th>N3</th>
+            <th>N4</th>
+            <th>Exam.</th>
+            <th>Recup.</th>
+        {% endif %}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+            <th>TC1 / TE1 / P1</th>
+            <th>1er Mom.</th>
+            <th>TC2 / TE2 / P2</th>
+            <th>2do Mom.</th>
+            <th>PFinal</th>
+            <th>Proy.</th>
+            <th>Supl.</th>
+       {% endif %}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+            <th>N1</th>
+            <th>N2</th>
+            <th>N3</th>
+            <th>NP(60%)</th>
+            <th>Examen</th>
+       {% endif %}
+        <th>NFinal</th>
+        {% if not centroexterno %}
+            <th>Asiste.</th>
+            <th>Actuac.</th>
+        {% endif %}
+        <th>Estado</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for materiaasignada in materiasasignadas %}
+        <tr>
+            <td>
+                {{ materiaasignada.materia.nombre_completo }}<br/>
+                {% if materiaasignada.materia.nivel == matricula.nivel %}
+                {% else %}
+                    <span class='label label-important'>{{ materiaasignada.materia.nivel }}</span>
+               {% endif %}
+            </td>
+
+            <td>
+                <table class="table table-condensed" width="100%">
+                {% for profesormateria in materiaasignada.materia.profesormateria_set.all %}
+                    <tr>
+                        <td>{%  if profesormateria.profesor_auxiliar %}{{ profesormateria.profesor_auxiliar }}{% else %}{{ profesormateria.profesor }}{% endif %}
+                            {#Se agrega el correo institucional a los docentes#}
+                            {% if profesormateria.profesor.persona.emailinst %}
+                                <a href="mailto:{{ profesormateria.profesor.persona.emailinst }}" style="color: #003bb3">
+                                    -  {{profesormateria.profesor.persona.emailinst }}
+                                </a>
+                            {% endif %}
+                        </td>
+                        <td width='30%'>
+                            <a href='{% if profesormateria.tiene_lecciones %}/cons_alumnos?action=clases&id={{ materiaasignada.materia.id }}&p={% if profesormateria.profesor_auxiliar %}{{ profesormateria.profesor_auxiliar.id }}{% else %}{{ profesormateria.profesor.id }}{% endif %}&m={{ matricula.id }}{% else %}#{% endif %}' class='btn btn-mini {% if profesormateria.tiene_lecciones %}btn-info{% else %}{% endif %}'> {% if profesormateria.tiene_lecciones %}{{ profesormateria.cantidad_lecciones }}{% else %}0{% endif %} Lecciones</a><br/>
+                        </td>
+                {% endfor %}
+                </table>
+            </td>
+
+            {# Seccion Evaluacion IAVQ #}
+            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.1 %}
+                <td>
+                    <a href="/cons_alumnos?action=editnota&id={{ materiaasignada.id }}&n=1" title='P1-({{ materiaasignada.evaluacion.n1.p1|floatformat:"2" }}) P2-({{ materiaasignada.evaluacion.n1.p2|floatformat:"2" }}) P3-({{ materiaasignada.evaluacion.n1.p3|floatformat:"2" }}) P4-({{ materiaasignada.evaluacion.n1.p4|floatformat:"2" }}) P5-({{ materiaasignada.evaluacion.n1.p5|floatformat:"2" }})'>
+                        <span>{{ materiaasignada.evaluacion.n1.nota|floatformat:"2" }} </span></a>
+                </td>
+                <td><a href="/cons_alumnos?action=editnota&id={{ materiaasignada.id }}&n=2" title='P1-({{ materiaasignada.evaluacion.n2.p1|floatformat:"2" }}) P2-({{ materiaasignada.evaluacion.n2.p2|floatformat:"2" }}) P3-({{ materiaasignada.evaluacion.n2.p3|floatformat:"2" }}) P4-({{ materiaasignada.evaluacion.n2.p4|floatformat:"2" }}) P5-({{ materiaasignada.evaluacion.n2.p5|floatformat:"2" }})'>
+                    <span>{{ materiaasignada.evaluacion.n2.nota|floatformat:"2" }} </span></a>
+                </td>
+
+                {#            {% if materiaasignada.materia.rectora %}#}
+                <td><a href="/cons_alumnos?action=otrasnotas&id={{ materiaasignada.id }}&n=3" title='Proyecto Integrador'>
+                    <span>{{ materiaasignada.evaluacion.pi|floatformat:"2" }} </span></a>
+                </td>
+                {#            {% else %}#}
+                {#                <td><span>{{ materiaasignada.evaluacion.pi|floatformat:"2" }} </span></td>#}
+                {#            {% endif %}#}
+
+                <td> {{ materiaasignada.evaluacion.calcula_n3|floatformat:"2" }} </td>
+                <td><a href="/cons_alumnos?action=otrasnotas&id={{ materiaasignada.id }}&n=4" title='Supletorio'>
+                    <span>{{ materiaasignada.evaluacion.su|floatformat:"2" }} </span></a>
+                </td>
+                <td><b>{{ materiaasignada.evaluacion.nota_final|floatformat }}</b> </td>
+                {% if not centroexterno %}
+                    <td>
+                        {% if materiaasignada.porciento_asistencia < 60 %} <span style="color: #dc143c;"><b>{{ materiaasignada.porciento_asistencia }}%</b></span>{% endif %}
+                        {% if materiaasignada.porciento_asistencia >= 60 and materiaasignada.porciento_asistencia < 69 %} <span style="color: #daa520;"><b>{{ materiaasignada.porciento_asistencia }}%</b></span>{% endif %}
+                        {% if materiaasignada.porciento_asistencia >= 70 %} <span style="color:#006400;"><b>{{ materiaasignada.porciento_asistencia }}%</b></span>{% endif %}
+                    </td>
+                    <td>{{ materiaasignada.promedio_evaluacion_clase }} ({{ materiaasignada.cantidad_evaluaciones_clase }})</td>
+                {% endif %}
+                <td>
+                    {% if materiaasignada.evaluacion.estado_id == 1 %}<span style="color: #006400;"><b>{{ materiaasignada.evaluacion.estado }}</b></span>{% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 2 %}
+                        <span style="color: #dc143c;"><b>{{ materiaasignada.evaluacion.estado }} </b></span>
+                        {% if materiaasignada.evaluacion.su > 0 or materiaasignada.notafinal < 5.5 %}<span style="color: #dc143c;"><b> (NF)</b></span>{% endif %}
+                        {% if materiaasignada.porciento_asistencia < 60 %}<span style="color: #dc143c;"><b> (AS)</b></span>{% endif %}
+                    {% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 3 %}
+                        <span>{{ materiaasignada.evaluacion.estado }}</span>
+                    {% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 4 %}
+                        <span style="color: #daa520;"><b>{{ materiaasignada.evaluacion.estado }} </b></span>
+                        {% if materiaasignada.notafinal >= 5.5 and materiaasignada.notafinal < 7 %}<span style="color: #dc143c;"><b> (NF)</b></span>{% endif %}
+                        {% if materiaasignada.porciento_asistencia >= 60 and materiaasignada.porciento_asistencia < 69%}<span style="color: #dc143c;"><b> (AS)</b></span>{% endif %}
+                        {% if materiaasignada.materia.rectora %}
+                            {% if materiaasignada.evaluacion.pi < 7 %}<span style="color: #dc143c;"><b> (PI)</b></span>{% endif %}
+                        {% endif %}
+                    {% endif %}
+                </td>
+           {% endif %}
+
+
+            {# Seccion Evaluacion ITB o Evaluacion IGAD #}
+            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 %}
+                <td>
+                    <b class='bigger'>{{ materiaasignada.evaluacion.n1 }}</b>
+                    {% if materiaasignada.evaluacion.n1 and materiaasignada.evaluacion.cod1 %}
+                        - <span class="tips" title="{{ materiaasignada.evaluacion.cod1.nombre }}">[{{ materiaasignada.evaluacion.cod1.id }}]</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <b class='bigger'>{{ materiaasignada.evaluacion.n2 }}</b>
+                    {% if materiaasignada.evaluacion.n2 and materiaasignada.evaluacion.cod2 %}
+                        - <span class="tips" title="{{ materiaasignada.evaluacion.cod2.nombre }}">[{{ materiaasignada.evaluacion.cod2.id }}]</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <b class='bigger'>{{ materiaasignada.evaluacion.n3 }}</b>
+                    {% if materiaasignada.evaluacion.n3 and materiaasignada.evaluacion.cod3 %}
+                        - <span class="tips" title="{{ materiaasignada.evaluacion.cod3.nombre }}">[{{ materiaasignada.evaluacion.cod3.id }}]</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <b class='bigger'>{{ materiaasignada.evaluacion.n4 }}</b>
+                    {% if materiaasignada.evaluacion.n4 and materiaasignada.evaluacion.cod4 %}
+                        - <span class="tips" title="{{ materiaasignada.evaluacion.cod4.nombre }}">[{{ materiaasignada.evaluacion.cod4.id }}]</span>
+                    {% endif %}
+                </td>
+                <td><b class='bigger'>{{ materiaasignada.evaluacion.examen }}</b></td>
+                <td><b class='bigger'>{{ materiaasignada.evaluacion.recuperacion }}</b></td>
+                <td style="text-align: center">
+                    {% if materiaasignada.notafinal < nota_para_aprobar or valida_asistencia and materiaasignada.porciento_asistencia < asistencia_para_aprobar %}
+                        <span class='badge badge-error bigger'>{{ materiaasignada.notafinal|floatformat}}</span>
+                    {% else %}
+                        <span class='badge badge-success bigger'>{{ materiaasignada.notafinal|floatformat}}</span>
+                    {% endif %}
+                </td>
+                {% if not centroexterno %}
+                    <td style="text-align: center">
+                        {% if materiaasignada.porciento_asistencia < asistencia_para_aprobar %} <span style="color: #dc143c;"><b>{{ materiaasignada.porciento_asistencia }}%</b></span>{% endif %}
+                        {% if materiaasignada.porciento_asistencia >= asistencia_para_aprobar %} <span style="color:#006400;"><b>{{ materiaasignada.porciento_asistencia }}%</b></span>{% endif %}
+                    </td>
+                    <td>{{ materiaasignada.promedio_evaluacion_clase }} ({{ materiaasignada.cantidad_evaluaciones_clase }})</td>
+                {% endif %}
+                <td>
+                    {% if materiaasignada.evaluacion.estado_id == 1 %}<span style="color: #006400;"><b>{{ materiaasignada.evaluacion.estado }}</b></span>{% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 2 %}<span style="color: #dc143c;"><b>{{ materiaasignada.evaluacion.estado }} </b></span>
+                        {% if materiaasignada.evaluacion.recuperacion > 0 or materiaasignada.notafinal < 40 %}<span style="color: #dc143c;"><b> (NF)</b></span>{% endif %}
+                        {% if valida_asistencia %}{% if materiaasignada.porciento_asistencia < 75 %}<span style="color: #dc143c;"><b> (AS)</b></span>{% endif %}{% endif %}
+                    {% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 3 %}
+                        <span>{{ materiaasignada.evaluacion.estado }}</span>
+                    {% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 4 %}
+                        <span style="color: #daa520;"><b>{{ materiaasignada.evaluacion.estado }} </b></span>
+                        {% if materiaasignada.notafinal >= 40 and materiaasignada.notafinal < nota_para_aprobar %}<span style="color: #dc143c;"><b> (NF)</b></span>{% endif %}
+                    {% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 5 %}
+                        <span style="color: #daa520;"><b>{{ materiaasignada.evaluacion.estado }} </b></span>
+                        {% if materiaasignada.notafinal >= 40 and materiaasignada.notafinal < nota_para_aprobar %}<span style="color: #dc143c;"><b> (NF)</b></span>{% endif %}
+                    {% endif %}
+                </td>
+            {% endif %}
+
+            {# MODELO EVALUACION ITS #}
+            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.3 %}
+                <td>
+                    <b class='larger'>{{ materiaasignada.evaluacion.tc1 }} / {{ materiaasignada.evaluacion.te1 }} / {{ materiaasignada.evaluacion.p1 }}</b>
+                </td>
+                <td>
+                    <b class='bigger'>{{ materiaasignada.evaluacion.momento1 }} </b>
+                </td>
+                <td>
+                    <b class='larger'>{{ materiaasignada.evaluacion.tc2 }} / {{ materiaasignada.evaluacion.te2 }} / {{ materiaasignada.evaluacion.p2 }}</b>
+                </td>
+                <td>
+                    <b class='bigger'>{{ materiaasignada.evaluacion.momento2 }} </b>
+                </td>
+                <td>
+                    <b class='larger'>{{ materiaasignada.evaluacion.pfinal }}</b>
+                </td>
+                <td>
+                    <b class='larger'>{{ materiaasignada.evaluacion.proy }}</b>
+                </td>
+                <td><b class='larger'>{{ materiaasignada.evaluacion.su }}</b></td>
+
+                <td>
+                    {% if materiaasignada.evaluacion.nota_final < 70 or materiaasignada.porciento_asistencia < 60 %}
+                        <span class='badge badge-error bigger'>{{ materiaasignada.evaluacion.nota_final|floatformat}}</span>
+                    {% else %}
+                        <span class='badge badge-success bigger'>{{ materiaasignada.evaluacion.nota_final|floatformat}}</span>
+                    {% endif %}
+                </td>
+                {% if not centroexterno %}
+                    <td>
+                        {% if materiaasignada.porciento_asistencia < 60 %} <span style="color: #dc143c;"><b>{{ materiaasignada.porciento_asistencia }}%</b></span>{% endif %}
+                        {% if materiaasignada.porciento_asistencia >= 60 and materiaasignada.porciento_asistencia < 69 %} <span style="color: #daa520;"><b>{{ materiaasignada.porciento_asistencia }}%</b></span>{% endif %}
+                        {% if  materiaasignada.porciento_asistencia >= 70 %} <span style="color:#006400;"><b>{{ materiaasignada.porciento_asistencia }}%</b></span>{% endif %}
+                    </td>
+                    <td>{{ materiaasignada.promedio_evaluacion_clase }} ({{ materiaasignada.cantidad_evaluaciones_clase }})</td>
+                {% endif %}
+                <td>
+                    {% if materiaasignada.evaluacion.estado_id == 1 %}<span class='label'>{{ materiaasignada.evaluacion.estado }}</span>{% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 2 %}
+                        <span style="color: #dc143c;"><b>{{ materiaasignada.evaluacion.estado }} </b></span>
+                        {% if materiaasignada.notafinal < 70 %}<span style="color: #dc143c;"><b> (NF)</b></span>{% endif %}
+                        {% if materiaasignada.porciento_asistencia < 60 %}<span style="color: #dc143c;"><b> (AS)</b></span>{% endif %}
+                    {% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 3 %}<span class='label'>{{ materiaasignada.evaluacion.estado }}</span>{% endif %}
+                </td>
+           {% endif %}
+
+            {# Seccion Evaluacion CASADE #}
+            {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+                <td><b class='bigger'>{{ materiaasignada.evaluacion.n1 }}</b></td>
+                <td><b class='bigger'>{{ materiaasignada.evaluacion.n2 }}</b></td>
+                <td><b class='bigger'>{{ materiaasignada.evaluacion.n3 }}</b></td>
+                <td style="text-align: center"><b class='bigger'>{{ materiaasignada.evaluacion.nota_parcial }}</b></td>
+                <td style="text-align: center"><b class='bigger'>{{ materiaasignada.evaluacion.examen }}</b></td>
+                <td style="text-align: center">
+                    {% if materiaasignada.notafinal < nota_para_aprobar or valida_asistencia and materiaasignada.horas_asistencia < 16 %}
+                        <span class='badge badge-error bigger'>{{ materiaasignada.notafinal|floatformat}}</span>
+                    {% else %}
+                        <span class='badge badge-success bigger'>{{ materiaasignada.notafinal|floatformat}}</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center">
+                    {% if materiaasignada.horas_asistencia < 16 %}
+                        <span style="color: #dc143c;">
+                    {% else %}
+                        <span style="color:#006400;">
+                    {% endif %}
+                    <b>{{ materiaasignada.horas_asistencia|floatformat:0 }}h</b>
+                    </span>
+                </td>
+                <td>
+                    {{ materiaasignada.promedio_evaluacion_clase }} ({{ materiaasignada.cantidad_evaluaciones_clase }})
+                </td>
+                <td>
+                    {% if materiaasignada.evaluacion.estado_id == 1 %}<span style="color: #006400;"><b>{{ materiaasignada.evaluacion.estado }}</b></span>{% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 2 %}<span style="color: #dc143c;"><b>{{ materiaasignada.evaluacion.estado }} </b></span>
+                        {% if materiaasignada.evaluacion.recuperacion > 0 or materiaasignada.notafinal < 40 %}<span style="color: #dc143c;"><b> (NF)</b></span>{% endif %}
+                        {% if valida_asistencia %}{% if materiaasignada.porciento_asistencia < 75 %}<span style="color: #dc143c;"><b> (AS)</b></span>{% endif %}{% endif %}
+                    {% endif %}
+                    {% if materiaasignada.evaluacion.estado_id == 3 %}
+                        <span>{{ materiaasignada.evaluacion.estado }}</span>
+                    {% endif %}
+                </td>
+           {% endif %}
+
+        </tr>
+    {% endfor %}
+        {# Seccion Evaluacion ITB o Evaluacion IGAD #}
+        {% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.2 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.5 or MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}
+            <tr>
+                <td colspan="{% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}7{% else %}8{% endif %}" style="text-align: right"><i><b>Valores Promedios</b></i></td>
+                <td class="bigger" style="text-align: center"><b>{{ promedio_notas|floatformat:1 }}</b></td>
+                <td class="bigger" style="text-align: center"><b>{{ promedio_asistencias|floatformat:1 }}{% if MODELO_EVALUATIVO.0 == MODELO_EVALUATIVO.6 %}h{% else %}%{% endif %}</b></td>
+                <td colspan="2"></td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>

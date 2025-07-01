@@ -1,0 +1,294 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <style type="text/css">
+        #nota{{ var1 }}:focus{
+            background-color: lightcyan;
+        }
+        #nota{{ var2 }}:focus{
+            background-color: lightcyan;
+        }
+        #nota{{ var3 }}:focus{
+            background-color: lightcyan;
+        }
+    </style>
+    <script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function(){
+
+            var id1 = {{ id1 }}
+            var id2 = {{ id2 }}
+            var id3 = {{ id3 }}
+
+            var escala1 = {{ escala1 }}
+            var escala2 = {{ escala2 }}
+            var escala3 = {{ escala3 }}
+
+            var egresado = {{ egresado.id }}
+
+            document.getElementById("nota"+id1).style.backgroundColor = '#E1ECFF';
+            document.getElementById("nota"+id2).style.backgroundColor = '#FFFDE1';
+            document.getElementById("nota"+id3).style.backgroundColor = '#FFFDE1';
+            document.getElementById("total_practica").style.backgroundColor = '#FFFDE1';
+
+            function color_promedio() {
+                var total = document.getElementById("promedio").value;
+                if (total >= 70){
+                    document.getElementById('promedio').style.color = 'green';
+                }
+                else{
+                    document.getElementById('promedio').style.color = 'red';
+                }
+                if (document.getElementById("nota"+id1).value!='' && (document.getElementById("nota"+id2).value!='') && (document.getElementById("nota"+id3).value!='')){
+                    if (total >= 70){
+                        document.getElementById("mensaje").innerHTML = 'APROBADO';
+                        document.getElementById('mensaje').style.color = 'green';
+                    } else{
+                        document.getElementById("mensaje").innerHTML = 'REPROBADO';
+                        document.getElementById('mensaje').style.color = 'red';
+                    }
+                }
+            }
+
+            function is_numeric(value) {
+                return !isNaN(value) && isFinite(value);
+            }
+
+            $("#nota"+id1).change(function() {
+                var nota = document.getElementById("nota"+id1).value;
+                if ((is_numeric(nota)) && (nota<=escala1) && (nota>=0)){
+                    document.getElementById("nota_teorico").value = parseFloat(dosDecimales(nota*0.4));
+                    document.getElementById("promedio").value = promedio_total();
+                } else {
+                    document.getElementById("nota"+id1).focus();
+                    document.getElementById("nota"+id1).value = '';
+                }
+                if(nota==""){
+                    document.getElementById("nota_teorico").value = 0
+                }
+                color_promedio()
+            });
+
+            $("#nota"+id2).change(function() {
+                var nota1 = (document.getElementById("nota"+id2).value);
+                if (is_numeric(nota1) && (nota1<=escala2) && (nota1>=0)){
+                    parseFloat(nota1)
+                    document.getElementById("nota_practico").value = suma_practico();
+                    document.getElementById("promedio").value = promedio_total();
+                } else {
+                    document.getElementById("nota"+id2).focus();
+                    document.getElementById("nota"+id2).value = '';
+                }
+                color_promedio()
+            });
+
+            $("#nota"+id3).change(function() {
+                var nota2 = (document.getElementById("nota"+id3).value);
+                if (is_numeric(nota2) && (nota2<=escala3) && (nota2>=0)) {
+                    parseFloat(nota2)
+                    document.getElementById("nota_practico").value = suma_practico();
+                    document.getElementById("promedio").value = promedio_total();
+                } else {
+                    document.getElementById("nota"+id3).focus();
+                    document.getElementById("nota"+id3).value = '';
+                }
+                color_promedio()
+            });
+
+            function suma_practico() {
+                var nota1=document.getElementById("nota"+id2).value;
+                var nota2=document.getElementById("nota"+id3).value;
+                if (nota1==""){
+                    nota1 = 0;
+                }
+                if (nota2==""){
+                    nota2 = 0;
+                }
+                if (nota2=="" && nota1==""){
+                    document.getElementById("nota_practico").value = 0;
+                }
+                suma = parseFloat(nota1)+parseFloat(nota2);
+                document.getElementById("total_practica").value=suma;
+                return dosDecimales(suma*0.6);
+            }
+
+            function promedio_total() {
+                var nota_teorico = (document.getElementById("nota"+id1).value);
+                if (nota_teorico==""){
+                    nota_teorico = parseFloat(0);
+                }else{
+                    nota_teorico = parseFloat(nota_teorico*0.4)
+                }
+                var promedio = (parseFloat(suma_practico())+nota_teorico);
+                return dosDecimales(promedio);
+            }
+
+            function dosDecimales(n) {
+                let t=n.toString();
+                let regex=/(\d*.\d{0,2})/;
+                return t.match(regex)[0];
+            }
+
+{#            buscar_profesor = function(query, process) {#}
+{#                $.get("/reportes", {'action':'data', 'model': 'Profesor',#}
+{#                                    'p': 1, 'q': query, 's': 10}, function(data) {#}
+{#                    if (data.results) {#}
+{#                        $("#id_profesor").get(0).results = data.results;#}
+{#                        listing = [];#}
+{#                        for (var i in data.results) {#}
+{#                            var dato = data.results[i];#}
+{#                            listing.push(dato.name);#}
+{#                        }#}
+{#                        process(listing);#}
+{#                    }#}
+{#                }, 'json');#}
+{#            };#}
+{#            var docente = ''#}
+{#            $('#id_profesor').typeahead({source: buscar_profesor, updater: function(item) {#}
+{#                var results = $("#id_profesor").get(0).results;#}
+{#                for (var i in results) {#}
+{#                    var datos = results[i];#}
+{#                    docente=datos.id#}
+{#                }#}
+{#                return item;#}
+{#            }});#}
+
+            $("#formbutton").click(function(){
+{#                var profesor = docente;#}
+                var observacion = (document.getElementById('observ').value)
+                var notas = [];
+                if (document.getElementById("nota"+id1).value=='' || document.getElementById("nota"+id2).value=='' || document.getElementById("nota"+id3).value==''){
+                    smoke.alert('Faltan datos por ingresar');
+                }else{
+                    notas.push({ 'id_indice': id1,
+                                'nota_t':document.getElementById("nota"+id1).value,
+                                'id_indice_p1': id2, 'nota_p1':document.getElementById("nota"+id2).value,
+                                'id_indice_p2': id3, 'nota_p2':document.getElementById("nota"+id2).value
+                    });
+    {#                let notass = {teorico:[id1,document.getElementById("nota"+id1).value], practico:[id2,document.getElementById("nota"+id2).value]};#}
+    {#                $.post("/egresados",{"action":"add_complexivo","datos":notas,"observacion":observacion,"profesor":profesor},function(data) {#}
+                    $.post("/egresados",{"action":"add_complexivo", "egresado":egresado,"observacion":observacion,"nota_t":document.getElementById("nota"+id1).value, "nota_p1":document.getElementById("nota"+id2).value, "nota_p2":document.getElementById("nota"+id3).value,"indice_t":id1,"indice_p1":id2,"indice_p2":id3, "titulo_examen":{{ titulo_examen.id }}},function(data) {
+                        if(data.result=='ok'){
+{#                            alert("generar reporte");#}
+                            window.open('/reportes?action=run&direct=true&n=examen_complexivo_fatv_1&rt=pdf&egresado='+egresado);
+                            location.href = '/egresados';
+                            smoke.alert('Registro ingresado');
+                        }else if(data.result=='bad'){
+                            location.href = '/egresados?info='+data.error;
+                            smoke.alert(data.error);
+                        }
+
+                    },"json");
+                }
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span7"  >
+            <h3>NOTAS DE EXAMEN COMPLEXIVO</h3>
+            <h4>Alumno: {{ egresado.inscripcion.persona }}</h4>
+            <h4>Carrera: {{ egresado.inscripcion.carrera }}</h4></br></br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/egresados" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    <div class="row-fluid">
+        <div class="span2"></div>
+        <div class="span8" style="overflow-x: auto">
+            <table class='table table-condensed' cellpadding="0" cellspacing="0" id=tabla_complexivo>
+                <thead>
+                    <tr>
+                        <th style="text-align: center"><h3>Examen</h3></th>
+                        <th style="text-align: center"><h3>Descripcion</h3></th>
+                        <th style="text-align: center"><h3>Escalas</h3></th>
+                        <th style="text-align: center"><h3>Calificación</h3></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in indicevaluacionexamenes %}
+                        <tr id="{{ i.id }}" data-id="0" con="0">
+                            <td style="vertical-align: middle">
+                                <label style="text-align: center; vertical-align:middle;">{% if i.teorico %} Teorico {% else %} Practico {% endif %}</label>
+                            </td>
+                            <td style="vertical-align: middle">
+                                <label style="text-align: left; vertical-align:middle;">{{ i.descripcion }}</label>
+                            </td>
+                            <td style="vertical-align: middle">
+                                <label style="text-align: right; vertical-align:text-bottom;">{{ i.escala }}</label>
+                            </td>
+                            <td style="text-align: center; vertical-align: bottom;">
+                                <input style="text-align: center; width:30%" type="text" id="nota{{ i.id }}" name="nota{{ i.id }}" value='' />
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <thead>
+                    <tr>
+                        <td style="text-align: right; font-weight:bold; vertical-align: middle" colspan="3">Total Examen Practico:</td>
+                        <td style="text-align: center; vertical-align: bottom;">
+                            <input style="text-align: center;font-weight:900; width:30%" type="text" id="total_practica" name="nota{{ i.id }}" value='0' readonly/>
+                        </td>
+                    <tr>
+                        <th style="text-align: right;" colspan="3"><h3>Total Examen Teorico (40%):</h3></th>
+{#                        <th style="text-align: center; vertical-align:middle"><label style="text-align: center;"><h3 id='nota_teorico'>0</h3></label></th>#}
+                        <th style="text-align: center"><input style="text-align: center; width:30%;background-color: #E1ECFF;font-weight:900" type="text" id="nota_teorico" value='0' readonly/></th>
+                    </tr>
+                </thead>
+                <thead>
+                    <tr>
+                        <th style="text-align: right" colspan="3"><h3>Total Examen Practico (60%):</h3></th>
+{#                        <th style="text-align: center; vertical-align:middle"><label style="text-align: center;background-color: #FFFDE1;width:30%"><h3 id='nota_practico'>0</h3></label></th>#}
+                        <th style="text-align: center"><input style="text-align: center; width:30%;background-color: #FFFDE1;font-weight:900" type="text" id="nota_practico" value='0' readonly/></th>
+
+                    </tr>
+                </thead>
+                <thead>
+                    <tr>
+                        <th colspan="3" style="text-align: right" colspan="3"><h3>TOTAL:</h3></th>
+{#                        <th style="text-align: center; vertical-align:middle"><label style="text-align: center;"><h3 id='promedio'>0</h3></label></th>#}
+                        <th style="text-align: center"><input style="text-align: center; width:30%;font-weight:900; font-size: 150%;" type="text" id="promedio" value='0' readonly/></th>
+                    </tr>
+                </thead>
+                <thead>
+                    <tr>
+                        <td colspan="3"></td>
+                        <td style="text-align: center; vertical-align:middle"><label style="text-align: center;"><h3 id='mensaje'></h3></label></td>
+                    </tr>
+                </thead>
+                <thead>
+                    <tr style="color: red"><td style="text-align: left" colspan="4"><h3>Observaciones</h3></td></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="4">
+                            <input type="hidden" style="width:98%;text-align: center" name="titutdescr" id="titutdescr"  /><br/>
+                            <textarea type='text' id='observ' style="width:98%;text-align: justify" rows="4" cols="50" > </textarea><br/><br/>
+                        </td>
+                    </tr>
+                </tbody>
+
+{#                <thead>#}
+{#                    <tr style="color: red">#}
+{#                        <th colspan="4"><h3>Docente Evaluador</h3></th>#}
+{#                    </tr>#}
+{#                </thead>#}
+{#                <tbody>#}
+{#                    <tr>#}
+{#                        <td colspan="4" style="text-align: left">#}
+{#                            <input type="text" placeholder="Docente Evaluador" class="id_profesor" style="width:50%; text-align: left;" id="id_profesor" alt='0'/>#}
+{#                        </td>#}
+{#                    </tr>#}
+{#                </tbody>#}
+            </table>
+
+            <tfoot>
+                <button class="btn btn-success boton_guardar" style="float: right" id="formbutton">Guardar</button>
+            </tfoot>
+        </div>
+    </div>
+
+{% endblock %}

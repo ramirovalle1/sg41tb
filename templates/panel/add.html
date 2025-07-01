@@ -1,0 +1,122 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+    <script src='/static/js/notificacionpanel.js' xmlns="http://www.w3.org/1999/html"></script>
+    <script type="text/javascript">
+
+     $(function() {
+        $("form").validationEngine();
+        $("#id_fecha").datepicker({format:"dd-mm-yyyy"}).mask("99-99-9999");
+        $("#id_horainicio,#id_horafin,#id_capacidad").addClass("input-small");
+        $("#id_horainicio,#id_horafin").addClass("validate[required]");
+        $("#id_nombre").attr({rows:3 , style:'width:58%;font-size:12px'});
+        $("id_nombre").addClass("validate[required]");
+
+        prety = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(2), {prefix: '$', thousandSeparator: ',', decimalSeparator: ".", sufix: '', decimalPlaces: 2});
+        };
+
+        pretyPct = function(v) {
+            return $.fn.floats.pretify_fn(v.toFixed(1), {prefix: '', thousandSeparator: ',', decimalSeparator: ".", sufix: '%', decimalPlaces: 1});
+        };
+
+        simple = function(sid) {
+            return Big($.fn.floats.simplify_fn($(sid).val(), {prefix: '$', thousandSeparator: ',', sufix: '%'}));
+        };
+
+        simpleV = function(v) {
+            return Big($.fn.floats.simplify_fn(v, {prefix: '$', thousandSeparator: ','}));
+        };
+
+
+        $("#adicionarformapago").click(function() {
+            $("#id_tipopago").val("");
+            $("#formapago").modal({backdrop: 'static',width: '700px'});
+            $("#formapago").modal("show");
+            return false;
+        });
+         $(".linkback").click(function(){
+            location.href = "/panel";
+         });
+
+         var numeros="0123456789:";
+
+        function solo_numeros(texto){
+            var num = 0;
+                for(i=0; i<texto.length; i++){
+                    if (numeros.indexOf(texto.charAt(i),0)!=-1){
+                    num = num +1;
+                }
+            }
+        return num;
+        }
+
+         $("#id_horainicio").blur(function(){
+            var v = $("#id_horainicio").val();
+            var p = solo_numeros(v);
+            if(v!=''){
+                if( v.split(':').length == 3){
+                    if (p != v.length  |  v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':')[2].length < 2 | v.split(':').length > 3 | parseInt(v.split(':')[1])> 59)
+                    {
+                      $($("#id_horainicio").get(0).parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00:00 y los minutos deben ser  menor a 60");
+                      $("#id_horainicio").val("");
+                      $("#id_horainicio").focus();
+                    }else{
+                        $($("#id_horainicio").get(0).parentNode).find(".help-text").html("");
+                    }
+            }
+         }
+
+        });
+
+        chequeaprecio = function() {
+           if ($("#id_libre").is(":checked")){
+             $($("#id_precio").get(0).parentNode.parentNode).hide();
+           }else{
+              $($("#id_precio").get(0).parentNode.parentNode).show();
+           }
+        };
+        $("#id_libre").click(chequeaprecio);
+        $("#id_horafin").blur(function(){
+            var v = $("#id_horafin").val();
+            var p = solo_numeros(v);
+            if(v!=''){
+                if( v.split(':').length == 3){
+                    if (p != v.length  |  v.split(':')[0].length < 2 | v.split(':')[1].length < 2 | v.split(':')[2].length < 2 | v.split(':').length > 3 | parseInt(v.split(':')[1])> 59)
+                    {
+                      $($("#id_horafin").get(0).parentNode).find(".help-text").html("Ingresar solo  Numeros, Recuerde el formato es 00:00:00 y los minutos deben ser  menor a 60");
+                      $("#id_horafin").val("");
+                      $("#id_horafin").focus();
+                    }else{
+                        $($("#id_horafin").get(0).parentNode).find(".help-text").html("");
+                    }
+            }
+         }
+
+        });
+         chequeaprecio()
+
+     });
+
+
+    </script>
+
+{% endblock %}
+{% block titulo %}{% if  ban == 2  %}Editar Panel{% else %}Adicionar Panel {% endif %}
+{% if error %}
+    {% if ban == 2 %}
+        </br></br> <span> ERROR AL EDITAR EL PANEL</span>
+    {% else %}
+        </br></br> <span> ERROR AL CREAR EL PANEL</span>
+    {% endif %}
+{% endif %}
+{% endblock %}
+
+
+{% block formaction %}/panel{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='add'/>
+    <input type='hidden' name='ban' value='{{ ban }}'/>
+    <input type='hidden' name='id' value='{{ panel.id }}'/>
+{% endblock %}
+{% block formback %}/panel{% endblock %}
+{% block buttonname %}Guardar Cambios{% endblock %}

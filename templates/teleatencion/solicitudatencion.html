@@ -1,0 +1,528 @@
+{% extends "baseotrobs.html" %}
+
+{% block heading %}
+
+<style>
+
+body {
+    background-color: #eee
+
+}
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+  color: #fff;
+  background-color:  #184679; }
+
+.btn-primary {
+  color: #fff;
+  background-color: #184679;
+  border-color: #184679;
+}
+
+.custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color:#184679;
+  background-color: #184679; }
+
+
+</style>
+
+<script>
+
+
+
+ $(function () {
+
+
+     function cambiarTab(tab, div) {
+         $("#tabpanelsolicatencion a").removeClass('active');
+         $("#tabpanelcontenido div").removeClass('active');
+         $('#' + tab).addClass('tab-pane fade show active');
+         $('#' + div).addClass('tab-pane fade show active');
+     }
+
+     function validarCedula(numerocedula, val) {
+
+         if (val == 2) {
+             return 0;
+         } else {
+             var cad = numerocedula;
+             var total = 0;
+             var longitud = cad.length;
+             var longcheck = longitud - 1;
+
+             if (cad !== "" && longitud === 10) {
+                 for (i = 0; i < longcheck; i++) {
+                     if (i % 2 === 0) {
+                         var aux = cad.charAt(i) * 2;
+                         if (aux > 9) aux -= 9;
+                         total += aux;
+                     } else {
+                         total += parseInt(cad.charAt(i)); // parseInt o concatenará en lugar de sumar
+                     }
+                 }
+
+                 total = total % 10 ? 10 - total % 10 : 0;
+                 if (cad.charAt(longitud - 1) == total) {
+                     return 0;
+                 } else {
+                     return 1;
+                 }
+             }
+         }
+
+     }
+
+     function validarEmail(correo) {
+         if(correo){
+          if (/^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i.test(correo)){
+             return 0;
+          }else{
+            return 1;
+          }
+         }else{
+             return 0;
+         }
+     }
+
+
+     function limpiar() {
+         $("#helpcmbidentificacion").html("");
+         $("#helptxtidentificacion").html("");
+         $("#helptxtnombres").html("");
+         $("#helptxtapellidos").html("");
+         $("#helptxtemail").html("");
+         $("#helptxtcelular").html("");
+         $("#helpcmbtiposervicio").html("");
+         $("#helptxtrequerimiento").html("");
+         $("#helpcmbpais").html("");
+         $("#helpcmbcmbprovincia").html("");
+         $("#helpcmbciudad").html("");
+        }
+
+     function validarDatos() {
+
+         if ($("#cmbidetificacion").val() == 0) {
+             $("#helpcmbidentificacion").html("Debe seleccionar el tipo de identificación");
+               cambiarTab('base-tab1', 'datossolicitud');
+             return 1;
+         }
+         if ($("#txtidentificacion").val() == "") {
+             $("#helptxtidentificacion").html("Debe Ingresar la identificación");
+               cambiarTab('base-tab1', 'datossolicitud');
+             return 1;
+         }
+         if (validarCedula($("#txtidentificacion").val(), $("#cmbidetificacion").val()) != 0) {
+             $("#helptxtidentificacion").html("Número de Cédula Incorrecta");
+               cambiarTab('base-tab1', 'datossolicitud');
+             $("#txtidentificacion").val("");
+         }
+
+
+         if ($("#txtnombres").val() == "") {
+             $("#helptxtnombres").html("Debe Ingresar sus nombres");
+               cambiarTab('base-tab1', 'datossolicitud');
+             return 1;
+         }
+
+         if ($("#txtapellidos").val() == "") {
+             $("#helptxtapellidos").html("Debe Ingresar sus apellidos");
+               cambiarTab('base-tab1', 'datossolicitud');
+             return 1;
+         }
+         if ($("#txtemail").val() == "") {
+             $("#helptxtemail").html("Debe Ingresar su email");
+               cambiarTab('base-tab1', 'datossolicitud');
+             return 1;
+         }
+         if (validarEmail($("#txtemail").val())!=0) {
+            $("#helptxtemail").html("Formato del Correo Incorrecto");
+              cambiarTab('base-tab1', 'datossolicitud');
+             return 1;
+         }
+
+         if ($("#txtcelular").val() == "") {
+             $("#helptxtcelular").html("Debe Ingresar su celular");
+               cambiarTab('base-tab1', 'datossolicitud');
+             return 1;
+         }
+         if ($("#cmbtiposervicio").val() == 0) {
+             $("#helpcmbtiposervicio").html("Debe seleccionar el tipo de servicio");
+               cambiarTab('base-tab1', 'datossolicitud');
+             return 1;
+         }
+
+         if ($("#txtrequerimiento").val() == "") {
+             $("#helptxtrequerimiento").html("Debe Ingresar su requerimiento");
+               cambiarTab('base-tab1', 'datossolicitud');
+             return 1;
+         }
+
+          /*validacion de datos adicionales */
+
+             if ($("#cmbpais").val() == 0) {
+                 $("#helpcmbpais").html("Debe seleccionar el pais");
+                 cambiarTab('base-tab2', 'datosadcional');
+                 return 1;
+             }
+
+             if ($("#cmbprovincia").val() == 0) {
+                 $("#helpcmbcmbprovincia").html("Debe seleccionar la provincia");
+                 cambiarTab('base-tab2', 'datosadcional');
+                 return 1;
+             }
+
+             if ($("#cmbciudad").val() == 0) {
+                 $("#helpcmbciudad").html("Debe seleccionar la ciudad");
+                 cambiarTab('base-tab2', 'datosadcional');
+                 return 1;
+             }
+
+
+
+         return 0;
+
+     }
+
+
+     $("#btnguardar").click(function() {
+           limpiar();
+           if(validarDatos()==0) {
+               $("#login-modal").modal({backdrop: 'static', keyboard: false});
+               $('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../static/images/loader.gif"/><br/> Enviando Información espero un momento...</div>');
+
+
+               var formData = new FormData();
+
+
+               formData.append('action', 'agregarsolicitud');
+               formData.append('tipoidenticacion', $("#cmbidetificacion").val());
+               formData.append('identificacion', $("#txtidentificacion").val());
+               formData.append('nombres', $("#txtnombres").val());
+               formData.append('apellidos', $("#txtapellidos").val());
+               formData.append('email', $("#txtemail").val());
+               formData.append('celular', $("#txtcelular").val());
+               formData.append('tiposervicio', $("#cmbtiposervicio").val());
+               formData.append('requerimiento', $("#txtrequerimiento").val());
+               formData.append('idpais', $("#cmbpais").val());
+               formData.append('idprovincia', $("#cmbprovincia").val());
+               formData.append('idciudad', $("#cmbciudad").val());
+
+               $.ajax({
+                   url: '/solicitudatencion',
+                   type: "POST",
+                   contentType: false,
+                   data: formData,
+                   processData: false,
+                   cache: false,
+                   success: function (data) {
+                       if (data.result == "ok") {
+                           swal("! Tu Solicitud se Registró Correctamente", "success");
+
+                           location.href = "/solicitudatencion";
+
+
+                       } else {
+                           swal("Error", data.message, "error");
+                           $("#login-modal").hide();//ocultamos el modal
+                           $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                           $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+
+                       }
+
+                   },
+                   error: function (xhr, ajaxOptions, thrownError) {
+                       swal("Error", "Error Conexion en el Servidor", "error");
+                       $("#login-modal").remove();//ocultamos el modal
+                       $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                       $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+
+                   },
+
+                   complete: function () {
+                       $("#login-modal").remove();//ocultamos el modal
+                       $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                       $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+
+
+                   }
+
+
+               });
+           }
+
+
+  });
+
+     function llenardatos(data) {
+
+
+         $("#txtnombres").val(data.datospersona[0].nombres);
+         $("#txtapellidos").val(data.datospersona[0].apellidos);
+         $("#txtemail").val(data.datospersona[0].direccion);
+         $("#txttelefono").val(data.datospersona[0].telefono);
+
+
+     }
+
+
+     $("#txtidentificacion").blur(function(){
+         $("#helptxtidentificacion").html("");
+         if (validarCedula($("#txtidentificacion").val(), $("#cmbidetificacion").val()) != 0) {
+             $("#helptxtidentificacion").html("Número de Cédula Incorrecta");
+             $("#txtidentificacion").val("");
+         }else{
+               showWaiting("Buscando Informaci&oacute;n", "Espere unos segundos por favor...");
+               $.post("/solicitudatencion", {"action": "validaridentificacion", "cedu":  $("#txtidentificacion").val()}, function (data) {
+                    if (data.result == 'ok') {
+
+                        llenardatos(data);
+                    } else {
+
+                        swal("Alerta", data.message, "warning");
+                    }
+                     hideWaiting();
+                }, "json");
+
+
+         }
+    });
+
+     $("#cmbprovincia").change(function () {
+
+         $.post("/solicitudatencion", {
+             "action": "buscarcantones",
+             idprovincia: $("#cmbprovincia").val()
+         }, function (data) {
+             var cantontxt = '';
+             if (data.result == 'ok') {
+
+                 for (var x in data.listacanton) {
+                     cantontxt = cantontxt + '<option  value="' + data.listacanton[x].id + '"> ' + data.listacanton[x].nombre + '</option>';
+                 }
+                 $("#cmbciudad").html(cantontxt);
+
+             } else {
+                 $("#cmbciudad").html(cantontxt);
+             }
+
+         }, 'json');
+      });
+
+
+
+
+ });
+
+
+</script>
+
+
+
+{% endblock %}
+{% block canvas %}
+     <div class="container">
+
+         <div class="row justify-content-between" style="margin-top: 20px">
+             <a href="/"><img src="../../static/images/itb.jpg" alt="" width="100%" height="100%"></a>
+         </div> <br>
+
+         <div class="page-header">
+            <div class="row">
+                <div class="col-md-10 col-sm-12">
+                    <nav aria-label="breadcrumb" role="navigation">
+                        <ol class="breadcrumb">
+
+                           <li class="breadcrumb-item"><a href="/solicitudatencion">Inicio</a></li>
+
+                            <li class="breadcrumb-item active" style="color: #184679;" aria-current="page">Registro</li>
+                        </ol>
+                    </nav>
+                </div>
+
+
+            </div>
+         </div>
+
+         <div class="pd-20 card-box mb-30">
+
+            <div class="pd-20">
+                <div class="alert" style="background: #FA1D06" role="alert">
+                    <h4 style="color: white">Importante!</h4>
+                    <p style="color: white">Por favor, complete todos los campos con * que son obligatorios.</p>
+                </div>
+            </div>
+
+         </div>
+         <div class="pd-20 card-box mb-30">
+             <div class="pd-20">
+
+             <div class="tab" id="tabpanelsolicatencion">
+                    <ul class="nav nav-pills justify-content-center" role="tablist" >
+                        <li class="nav-item">
+                            <a class="nav-link active text-blue" data-toggle="tab" id="base-tab1" href="#datossolicitud" role="tab" aria-selected="true">Datos de la Solicitud</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-blue" data-toggle="tab" id="base-tab2" href="#datosadcional" role="tab" aria-selected="false">Datos Adicionales</a>
+                        </li>
+                    </ul>
+                    <div class="pd-20 card-box mb-30" style="margin-top: 10px; background-color: #eee">
+                        <div class="tab-content" id="tabpanelcontenido" style="margin-top: 5px">
+                            <div class="tab-pane fade show active" id="datossolicitud" role="tabpanel" aria-selected="false">
+                                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label >Tipo de Identificación <a style="color: #d92550">(*)</a> :</label>
+                             <select id="cmbidetificacion" class="custom-select form-control">
+                                <option value="0">Seleccionar Tipo de identificación</option>
+                                 {% for xtipoidenti in listtipoidentificacion %}
+                                       <option value='{{ xtipoidenti.id }}'>{{ xtipoidenti.nombre }}</option>
+                                  {% endfor %}
+                            </select>
+                             <p id="helpcmbidentificacion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label >Identificación <a style="color: #d92550">(*)</a>: </label>
+                            <input id="txtidentificacion" type="text" class="form-control" >
+                             <p id="helptxtidentificacion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                        </div>
+                    </div>
+                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label>Nombres <a style="color: #d92550">(*)</a>:</label>
+                                            <input id="txtnombres" type="text" class="form-control">
+                                            <p id="helptxtnombres"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label>Apellidos <a style="color: #d92550">(*)</a>:</label>
+                                            <input id="txtapellidos"type="text" class="form-control">
+                                            <p id="helptxtapellidos"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Email <a style="color: #d92550">(*)</a>:</label>
+                                            <input id="txtemail"type="text" class="form-control">
+                                            <p id="helptxtemail"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Número Celular <a style="color: #d92550">(*)</a>:</label>
+                                            <input id="txtcelular"type="text" class="form-control">
+                                            <p id="helptxtcelular"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label >Tipo Servicio <a style="color: #d92550">(*)</a> :</label>
+                                             <select id="cmbtiposervicio" class="custom-select form-control">
+                                                <option value="0">Seleccionar Tipo de servicio</option>
+                                                 {% for xlistiposervicio in listtiposervicio %}
+                                                       <option value='{{ xlistiposervicio.id }}'>{{ xlistiposervicio.nombre }}</option>
+                                                  {% endfor %}
+                                            </select>
+                                             <p id="helpcmbtiposervicio"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label >Detalle del requerimiento <a style="color: #d92550">(*)</a> :</label>
+                                            <textarea id="txtrequerimiento" class="form-control"></textarea>
+                                            <p id="helptxtrequerimiento"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="datosadcional" role="tabpanel" aria-selected="true">
+                                <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label >País <a style="color: #d92550">(*)</a> :</label>
+                                         <select id="cmbpais" class="custom-select2 form-control" style="width: 100%" >
+                                              <option value="0">Seleccionar el país</option>
+                                              {% for x in listpais %}
+                                                   <option value='{{ x.id }}'>{{ x.nombre }}</option>
+                                              {% endfor %}
+                                        </select>
+                                         <p id="helpcmbpais"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                    </div>
+                                </div>
+
+                            </div>
+                                <div class="row">
+                                     <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label >Provincia <a style="color: #d92550">(*)</a> :</label>
+                                         <select id="cmbprovincia" style="width: 100%" class="custom-select2 form-control">
+                                            <option value="0">Seleccionar la provincia</option>
+                                             {% for x in lisprovincia %}
+                                                   <option value='{{ x.id }}'>{{ x.nombre }}</option>
+                                             {% endfor %}
+
+                                        </select>
+                                        <p id="helpcmbcmbprovincia"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                    </div>
+                                </div>
+                                </div>
+                                <div class="row">
+                                     <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label >Ciudad <a style="color: #d92550">(*)</a> :</label>
+                                             <select id="cmbciudad" style="width: 100%" class="custom-select2 form-control">
+                                                <option value="0">Seleccionar la ciudad</option>
+
+                                            </select>
+                                            <p id="helpcmbciudad"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                        </div>
+                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+             </div>
+
+
+
+             <div class="modal-footer justify-content-center">
+                 <a id="btnguardar" class=" btn btn-success" ><h4 style="color: white">Enviar</h4></a>
+             </div>
+
+             </div>
+         </div>
+
+
+
+     </div>
+
+     <div class="modal fade" id="login-modal"   role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="row">
+                    <div id="content" class="col-lg-12">
+                        Enviando la Solicitud de Beca espero un momento...
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+
+
+
+
+
+{% endblock %}

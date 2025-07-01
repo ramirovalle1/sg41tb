@@ -1,0 +1,114 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+            $(".delmaterial").click(function(){
+                var id = $(this).attr('mid');
+                smoke.confirm('Esta seguro de eliminar el material de apoyo', function(e){
+                    if (e){
+                        location.href = '/pro_documentos?action=delmaterial&id='+id;
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>{{ profesor }}</h3>
+            <h5>Asignatura: {{ materia.asignatura }}</h5>
+        </div>
+        <div class='span1'>
+            <a href="/pro_documentos" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <!-- <th>[x]</th> -->
+                <th>Clases</th>
+                <th>Grupos</th>
+                <th>Fecha</th>
+                <th>Hora Entrada</th>
+                <th>Hora Salida</th>
+                <th>Asistencia</th>
+                <th>Material</th>
+
+            </tr>
+            </thead>
+            <tbody>
+            {% for leccion in lecciones %}
+                <tr>
+                    <td>
+                        <a href='/pro_clases?action=view&id={{ leccion.leccion_grupo.id }}'>
+                            <span class='smaller'><b>{{ leccion.clase.materia.nombre_completo }}</b><br/>
+                                <span class='smaller2'>{{ leccion.leccion_grupo.turno }}<br/>
+                                Aula: {{ leccion.leccion_grupo.aula }}<br/>
+                                </span>
+                            </span>
+                        </a>
+                    </td>
+                    <td>
+                        <span class='smaller2'>
+                        {% for leccion2 in leccion.leccion_grupo.lecciones.all %}
+                            - {{ leccion2.clase.materia.nivel }}<br/>
+                        {% endfor %}
+                        </span>
+                    </td>
+                    <td>{{ leccion.leccion_grupo.fecha|date:"d-m-Y" }}</td>
+                    <td>{{ leccion.leccion_grupo.horaentrada }}</td>
+                    <td>
+                        {% if not leccion.leccion_grupo.abierta %}
+                            {{ leccion.leccion_grupo.horasalida }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ leccion.leccion_grupo.asistencia_real }}/{{ leccion.leccion_grupo.asistencia_plan }} ({{ leccion.leccion_grupo.porciento_asistencia }}%)
+                    </td>
+
+                    <td>
+                        {% if leccion.material_apoyo %}
+                            <a href='{{ leccion.material_apoyo.download_link }}' class='btn btn-success btn-mini'><i class="icon-download icon-white"></i> Descargar</a>
+                            <a href="#" mid='{{ leccion.material_apoyo.id }}' class='btn btn-danger btn-mini delmaterial'><i class='icon-remove icon-white'></i></a>
+{#                            <a href='/pro_documentos?action=delmaterial&id={{ leccion.deber.id }}' class='btn btn-danger btn-mini'><i class='icon-remove icon-white'></i></a>#}
+
+
+                        {% else %}
+                            <a href='/pro_documentos?action=addmaterial&id={{ materia.id }}&leccion={{ leccion.id }}' class='btn btn-info btn-mini'><i class="icon-upload icon-white"></i> Subir</a>
+                        {% endif %}
+                    </td>
+
+                </tr>
+            {% endfor %}
+            {% if not leccionesgrupo %}
+                <tr>
+                    <td colspan="7">NO EXISTEN LECCIONES</td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/pro_documentos?action=deberes&id={{ materia.id }}&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

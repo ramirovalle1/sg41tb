@@ -1,0 +1,471 @@
+{% extends "layout/basebs.html" %}
+{% load sga_extras %}
+{% block more_ccs %}
+
+{% endblock %}
+{% block more_js %}
+
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+        const handleUpdateNota = (event) => {
+            const elemento = $(event.target);
+            const decimales = elemento.attr("decimales");
+            const notaminima = elemento.attr("notaminima");
+            const notamaxima = elemento.attr("notamaxima");
+            const maid = elemento.attr("maid");
+            const sel = elemento.attr("sel");
+            BaseLayout.numeric(elemento, Number(notaminima), Number(notamaxima), Number(decimales));
+            const newValor = elemento.val();
+            const oldValor = elemento.attr("old");
+            const claseBgWarning = "bg-light-warning";
+            if (elemento.hasClass(claseBgWarning)) {
+                elemento.removeClass(claseBgWarning);
+            }
+            elemento.css({"background-color": "white"});
+            AjaxLayout.post('{{ request.path }}', {action: 'changeNota', 'maid': maid, 'sel': sel, 'val': newValor}, (response) => {
+                LoadingLayout.hide();
+                if (response.isSuccess)
+                {
+                    elemento.css({"background-color": "rgba(148, 255, 183, 0.23)"});
+                    const nota_final = response.data.nota_final;
+                    const valor = response.data.valor;
+                    const estado_display = response.data.estado_display;
+                    const estado_id = response.data.estado_id;
+                    const dependientes = response.data.dependientes;
+
+                    $(`#nota_final_${maid}`).val(nota_final);
+                    $(`#ma_estado_${maid}`).html(`<b>${estado_display}</b>`);
+                    if (estado_id == 1) {
+                        $(`#ma_estado_${maid}`).css({"color": "#006400"});
+                    }
+                    if (estado_id == 2) {
+                        $(`#ma_estado_${maid}`).css({"color": "#dc143c"});
+                    }
+                    if (estado_id == 3) {
+                        $(`#ma_estado_${maid}`).css({"color": "#5D87FF"});
+                    }
+                    if (estado_id == 4) {
+                        $(`#ma_estado_${maid}`).css({"color": "#daa520"});
+                    }
+                    elemento.val(valor);
+                    if (response.data.hasOwnProperty('dependientes')) {
+                        for (i = 0; i < dependientes.length; i++) {
+                            elementonombre = dependientes[i][0];
+                            elementovalor = dependientes[i][1];
+                            elementodecimlas = dependientes[i][2];
+                            $(`#idma_${maid}_${elementonombre}`).val(parseFloat(elementovalor).toFixed(elementodecimlas));
+                        }
+                    }
+                }else{
+                    elemento.css({"background-color": "rgba(240, 128, 128, 0.21)"});
+                    elemento.val(oldValor);
+                }
+            }, () => {
+                console.log('Failed');
+                elemento.css({"background-color": "rgba(240, 128, 128, 0.21)"});
+                elemento.val(oldValor);
+            });
+        }
+
+        const handleActionChangeEstado = (event) => {
+            const elemento = $(event.target);
+            const maid = elemento.data("idma");
+            const value = elemento.hasClass("btn-danger"); /*SI TIENE ES PORQUE ESTA CERRADO SE ABRE*/
+            //const cerrado = $(this).hasClass("btn-danger");
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><p class="fw-bold text-warning">Calculando Evaluaciones</p><p class="text-warning">Espere unos segundos por favor...</p></div>`,
+            });
+            AjaxLayout.post('{{ request.path }}', {action: 'changeEstadoMateriaAsignada', 'id': maid, 'estado': ((value) ? "true" : "false")}, (response) => {
+                LoadingLayout.hide();
+                if (response.isSuccess)
+                {
+                    const cerrado = response.data.cerrado;
+                    const nota_final = response.data.nota_final;
+                    const valor = response.data.valor;
+                    const estado_display = response.data.estado_display;
+                    const estado_id = response.data.estado_id;
+                    const dependientes = response.data.dependientes;
+
+                    $(`#nota_final_${maid}`).val(nota_final);
+                    $(`#ma_estado_${maid}`).html(`<b>${estado_display}</b>`);
+                    if (estado_id == 1) {
+                        $(`#ma_estado_${maid}`).css({"color": "#006400"});
+                    }
+                    if (estado_id == 2) {
+                        $(`#ma_estado_${maid}`).css({"color": "#dc143c"});
+                    }
+                    if (estado_id == 3) {
+                        $(`#ma_estado_${maid}`).css({"color": "#5D87FF"});
+                    }
+                    if (estado_id == 4) {
+                        $(`#ma_estado_${maid}`).css({"color": "#daa520"});
+                    }
+                    if (elemento.hasClass("btn-danger")) {
+                        elemento.removeClass("btn-danger");
+                    }
+                    if (elemento.hasClass("btn-warning")) {
+                        elemento.removeClass("btn-warning");
+                    }
+                    if (cerrado) {
+                        elemento.addClass("btn-danger");
+                        elemento.html("Abrir");
+                        $(`#row_idma_${maid} input`).attr("disabled", "disabled");
+                        $(`#row_idma_${maid} input`).attr("readonly", "readonly");
+                    } else {
+                        elemento.addClass("btn-warning");
+                        elemento.html("Cerrar");
+                        if (response.data.tienedeuda) {
+                            $(`#row_idma_${maid} input`).find(".campoactivo").attr("disabled", "disabled");
+                            $(`#row_idma_${maid} input`).find(".campoactivo").attr("readonly", "readonly");
+                        } else {
+                            $(`#row_idma_${maid} input`).find(".campoactivo").removeAttr("disabled");
+                            $(`#row_idma_${maid} input`).find(".campoactivo").removeAttr("readonly");
+                        }
+                    }
+                }else{
+                    AlertLayout.danger(response.message);
+                }
+            }, () => {
+                console.log('Failed');
+            });
+
+        };
+
+        const handleActionChangeMateria = (event) => {
+            const elemento = $(event.target);
+            const id = elemento.data("id");
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><p class="fw-bold text-warning">Calculando Evaluaciones</p><p class="text-warning">Espere unos segundos por favor...</p></div>`,
+            });
+            AjaxLayout.post('{{ request.path }}', {action: 'changeEstadoMateriaTodos', 'id': id}, (response) => {
+                LoadingLayout.hide();
+                if (response.isSuccess)
+                {
+                    Swal.fire({
+                        title: 'Operación Exitosa',
+                        text: response.message,
+                        icon: 'success'
+                    }).then(function() {
+                        LoadingLayout.show();
+                        location.reload();
+                    });
+                }else{
+                    AlertLayout.danger(response.message);
+                }
+            }, () => {
+                console.log('Failed');
+            });
+
+        };
+
+        const handleActionCloseMateria = (event) => {
+            const elemento = $(event.target);
+            const id = elemento.data("id");
+            const name = elemento.data("name");
+            const question = `Al cerrar la matería no podra modificar calificaciones . <br>¿Está seguro de cerrar la matería <b class="text-info">${name}</b>?`;
+            QuestionLayout(question, ()=> {
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><p class="fw-bold text-warning">Calculando Evaluaciones</p><p class="text-warning">Estamos procesando su solicitud, espere unos segundos por favor...</p></div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {action: 'closeMateria', 'id': id}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess)
+                    {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: response.message,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.reload();
+                        });
+                    }else{
+                        AlertLayout.danger(response.message);
+                    }
+                }, () => {
+                    console.log('Failed');
+                });
+            }, ()=>{})
+        };
+
+        const handleActionGenerateActa = (event) => {
+            const elemento = $(event.target);
+            const name = elemento.data("name");
+            const rid = elemento.data("rid");
+            const rt = elemento.data("rt");
+            const materia = elemento.data("materia");
+            const question = `¿Está seguro de generar el acta de calificaciones de la materia <b class="text-info">${name}</b>?`;
+            console.log(question);
+            QuestionLayout(question, ()=> {
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><p class="fw-bold text-warning">Calculando Evaluaciones</p><p class="text-warning">Estamos procesando su solicitud, espere unos segundos por favor...</p></div>`,
+                });
+                AjaxLayout.call('GET', '{{ request.path }}', {action: 'generateActa', 'rid': rid, 'rt': rt, 'materia': materia}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess)
+                    {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: response.message,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.reload();
+                        });
+                    }else{
+                        AlertLayout.danger(response.message);
+                    }
+                }, () => {
+                    console.log('Failed');
+                });
+            }, ()=>{});
+
+        };
+
+        const handleActionFirmarActa = (event) => {
+            const elemento = $(event.target);
+            const name = elemento.data("name");
+            const id = elemento.data("id");
+            const question = `¿Está seguro de firmar el acta de calificaciones de la materia <b class="text-info">${name}</b>?`;
+            console.log(question);
+            QuestionLayout(question, ()=> {
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><p class="fw-bold text-warning">Calculando Evaluaciones</p><p class="text-warning">Estamos procesando su solicitud, espere unos segundos por favor...</p></div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {action: 'firmarActa', 'id': id}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess)
+                    {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: response.message,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.reload();
+                        });
+                    }else{
+                        AlertLayout.danger(response.message);
+                    }
+                }, () => {
+                    console.log('Failed');
+                });
+            }, ()=>{});
+
+        };
+
+        const handleOpenModal = (event) =>{
+            const elemento = $(event.target);
+            const title = elemento.data("title");
+            const action = elemento.data("action");
+            const id = elemento.data("id");
+            const modal = elemento.data("modal");
+            const data = {'action': action, 'id': id};
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Cargando...</div>`,
+            });
+            AjaxLayout.call('GET', '{{ request.path }}', data, (response) => {
+                LoadingLayout.hide();
+                if (response.isSuccess){
+                    $(".modal-title", $(`#${modal}`)).html(title);
+                    $(".modal-body", $(`#${modal}`)).html(response.html);
+                    $(`#${modal}`).modal({backdrop: 'static', keyboard: false}).modal("show");
+                }
+                else{
+                    AlertLayout.danger(response.message);
+                }
+            }, () => {
+                console.log('Failed');
+                LoadingLayout.hide();
+            });
+        }
+
+
+        const conectaControles = () => {
+            {% if not eMateria.cerrado %}
+                $(".imputNota").change(handleUpdateNota);
+                $(".imputNota").blur(handleUpdateNota);
+                $(".actionChangeEstado").click(handleActionChangeEstado);
+                $(".actionCloseMateria").click(handleActionCloseMateria);
+                $(".actionChangeMateria").click(handleActionChangeMateria);
+            {% else %}
+                $(".actionGenerateActa").click(handleActionGenerateActa);
+                $(".actionFirmarActa").click(handleActionFirmarActa);
+                $(".actionOpenModal").click(handleOpenModal);
+                //$("#abrirmateria").click(abrir_materia);
+            {% endif %}
+
+        };
+
+        const loadCuadroCalificacionMateria = (id) => {
+
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><p class="fw-bold text-warning">Calculando Evaluaciones</p><p class="text-warning">Espere unos segundos por favor...</p></div>`,
+            });
+            $(".card_segmento").hide();
+            AjaxLayout.post('{{ request.path }}', {action: 'loadSegmento', 'id': id}, (response) => {
+                LoadingLayout.hide();
+                if (response.isSuccess)
+                {
+                    $(".card_segmento").show();
+                    $("#segmento").html(`${response.html}`);
+                    conectaControles();
+                }else{
+                    AlertLayout.danger(response.message);
+                }
+            }, () => {
+                console.log('Failed');
+            });
+        };
+        $(function () {
+            $("#materia_select").change(function () {
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Espere...</div>`,
+                });
+                var id = $(this).val();
+                location.href = `{{ request.path }}?idm=${id}`
+            });
+            {% if aMensajeError %}
+                NotificationLayout.danger('{{ aMensajeError.body }}', '{{ aMensajeError.title }}');
+            {% endif %}
+            {% if habilitado_ingreso_calificaciones and eMateria %}
+                loadCuadroCalificacionMateria('{{ eMateria.id }}');
+            {% endif %}
+
+            $("#modalSeguimientoActa").on('shown.bs.modal', async function () {
+
+            });
+
+
+
+            $(".action-close", $("#modalSeguimientoActa")).click(function () {
+                $("#modalSeguimientoActa").modal("hide");
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block atras %}{{ request.path }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                    <h6>Profesor: {{ eProfesor }}</h6>
+                    <h6>Periodo: {{ ePeriodo }}</h6>
+                </div>
+            </div>
+        </div>
+        {% if utiliza_validacion_calificaciones and not habilitado_ingreso_calificaciones %}
+            <div class='row'>
+                <div class='col-12'>
+                    <div class="alert alert-warning p-4">
+                        <div class="mb-4 row align-items-center">
+                            <label class="form-label fw-semibold col-sm-12 col-md-3 col-lg-2 col-form-label" for="key_id">Clave:</label>
+                            <div class="col-sm-12 col-md-9 col-lg-10">
+                                <div class="input-group w-100">
+                                    <input class="form-control bg-white" id="key_id" type="text" value="">
+                                    <button class="btn btn-light-info text-info font-medium" type="button">
+                                        <i class="fa fa-key"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12 col-md-10 offset-md-3 col-lg-10 offset-lg-2 text-wrap">
+                                Debe generar una clave para poder ingresar calificaciones cada vez que ingrese al sistema, la misma será enviada a su correo electrónico registrado en su hoja de vida.
+                                <a href="javascript:" class="btn btn-success btn-sm tu mt-2" id="envioclave" title="Envio de clave al correo">
+                                    <i class="fa fa-envelope"></i> Generar
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="container-fluid">
+                <div class="card mb-3">
+                    <div class="card-body pb-4 pt-2">
+                        <div class="row">
+                            <div class="col-12">
+                                <label for="materia_select" class="form-label fw-semibold "><i class="fa fa-book"></i> Materia: </label>
+                                <select id='materia_select' class="form-select">
+                                    <option value="0" {% if idm == 0 %}selected="selected"{% endif %}>---</option>
+                                    {% if eMaterias %}
+                                        {% for iMateria in eMaterias %}
+                                            <option
+                                                    value='{{ iMateria.id }}'
+                                                    {% if idm == iMateria.id %}
+                                                    selected="selected"
+                                                    {% endif %}
+                                            >
+                                                {{ iMateria.nombre_display }}
+                                            </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                {% if eMateria %}
+                    <div class='card card_segmento' >
+                        <div class='card-body border-6 rounded-3'>
+                            <div id='segmento'>
+                                <div class="text-center">
+                                    <span class="parpadea"><h4>Cargando...</h4></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+
+    <div class="modal fade opacity" id="modalRecalcular" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-md modal-dialog-centered modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header bg-danger-light">
+                    <h4 class="modal-title">MIGRAR NOTAS EVA</h4>
+                </div>
+                <div class="modal-body with-padding">
+                    <div style='margin-bottom:1px; height: 20px; background-image: linear-gradient(to bottom, #dde2df, #d7e2dd)'
+                         class="progress">
+                        <div class="progress-bar bg-success" style="font-weight: bold; width: 0;" id="progressbar" aria-valuenow="25"></div>
+                    </div>
+                    <b>
+                        <div id="modalRecalcularprogresshint">
+                        </div>
+                    </b>
+                </div>
+                {#            <div class="modal-footer">#}
+                {#                <a href="javascript:void(0);" class="btn btn-danger action_yes">Si</a>#}
+                {#                <a href="javascript:void(0);" class="btn btn-primary action_not">No</a>#}
+                {#            </div>#}
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade opacity" id="modalSeguimientoActa" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-fullscreen-lg-down modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger-light">
+                    <h6 class="modal-title">Seguimiento de firma del acta de calificaciones</h6>
+                </div>
+                <div class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <a href="javascript:void(0);" class="btn bg-danger text-white action-close">Cerrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+{% endblock %}

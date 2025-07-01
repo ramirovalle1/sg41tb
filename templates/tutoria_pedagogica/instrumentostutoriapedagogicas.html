@@ -1,0 +1,361 @@
+{% extends "basenueva.html" %}
+{% block heading %}
+    <script>
+        $(function () {
+            function buscar(){
+                var term = $("#searchfield").val().toUpperCase();
+                if(term !== ''){
+                    location.href = "/pedagogica_tutoria?s=" + term +"&acc=&action=instrumentostutoriapedagogicas";
+                }else{
+                    location.href = "/pedagogica_tutoria?acc=&action=instrumentostutoriapedagogicas";
+                }
+
+            }
+
+            $("#search").click(function () {
+                if ($("#searchfield").val()){
+                    buscar();
+                }
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    buscar();
+                }
+            });
+
+            function limpiarfeedback() {
+                $(":input").removeClass('form-control-danger');
+                $('.form-control-feedback').addClass('d-none');
+            }
+
+            function limpiarmodal(){
+                $('#id_instrumentostutoriapedagogicas').val('');
+                $('#id_nombre').val('');
+                $('#id_estado').prop('checked',false);
+            }
+
+            function llenarmodaledicion(id,nombre, estado){
+                $('#id_instrumentostutoriapedagogicas').val(id);
+                $('#id_nombre').val(nombre);
+                if(estado === 'True'){
+                    $('#id_estado').prop('checked',true).trigger('change');
+                }else{
+                    $('#id_estado').prop('checked',false).trigger('change');
+                }
+            }
+
+            agginstrumentostutoriapedagogicas = function(id,nombre,estado){
+                limpiarfeedback();
+                limpiarmodal(id,nombre,estado);
+                $('#id_action').val('agregarinstrumentostutoriapedagogicas');
+                $("#modal").modal({backdrop: 'static', keyboard: false});
+                $('#modal').modal('show');
+            };
+
+
+            $("#id_guardarinstrumentostutoriapedagogicas").click(function() {
+                    swal({
+                        title: '¿Estás seguro de guardar la información ingresada?',
+                        type: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, Confirmar!',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonClass: 'btn btn-success margin-5',
+                        cancelButtonClass: 'btn btn-danger margin-5',
+                        buttonsStyling: false,
+                        allowOutsideClick: false,
+                    }).then(function(isConfirm) {
+                        if (isConfirm['dismiss'] != 'cancel' && isConfirm['dismiss'] != 'esc') {
+                            var formData = new FormData();
+                            formData.append('action', $("#id_action").val());
+                            formData.append('id', $("#id_instrumentostutoriapedagogicas").val());
+                            formData.append('nombre', $("#id_nombre").val());
+                            formData.append('estado', document.getElementById("id_estado").checked);
+                            $.ajax({
+                                url: '/pedagogica_tutoria',
+                                type: "POST",
+                                contentType: false,
+                                data: formData,
+                                processData: false,
+                                cache: false,
+                                success: function(data) {
+                                    if (data.result == "ok") {
+                                        swal("Notificación", data.message, "success");
+                                        location.reload();
+                                    } else if (data.result == 'bad') {
+                                        swal("Error", data.message, "warning");
+                                        Loader.close();
+                                    }
+                                },
+                                error: function(xhr, ajaxOptions, thrownError) {
+                                    swal("Error", "Error de conexión en el servidor", "error");
+                                    $('body').removeClass('modal-open');
+                                    $('.modal-backdrop').remove();
+                                    $('#content').html('');
+                                },
+                                complete: function() {
+                                    $("#login-modal4").remove();
+                                    $('body').removeClass('modal-open');
+                                    $('.modal-backdrop').remove();
+                                    $('#content').html('');
+                                }
+                            });
+                        }
+                    });
+
+            });
+
+            actualizarinstrumentostutoriapeda = function (id,nombre,estado){
+                limpiarfeedback();
+                llenarmodaledicion(id,nombre,estado);
+                $('#id_action').val('editarinstrumentostutoriapedagogicas');
+                $("#modal").modal({backdrop: 'static', keyboard: false});
+                $('#modal').modal('show');
+            };
+
+            eliminarinstrumentostutoriapeda =function (id, nombre, estado) {
+                id_instrumentostutoriapedagogicas=id
+                id_nombre=nombre
+                id_estado=estado
+                swal({
+                        title: '¿Estás seguro de eliminar la Informacion?',
+                        type: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, Confirmar!',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonClass: 'btn btn-success margin-5',
+                        cancelButtonClass: 'btn btn-danger margin-5',
+                        buttonsStyling: false,
+                        allowOutsideClick: false,
+                    }).then(function (isConfirm) {
+                    if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss'] != 'esc') {
+                                 Loader.open('');
+                                 var formData = new FormData();
+                                 formData.append('action', 'eliminarinstrumentostutoriapedagogicas');
+                                 formData.append('id', id_instrumentostutoriapedagogicas);
+                                 formData.append('nombre', id_nombre);
+                                 formData.append('estado', id_estado);
+
+                                 $.ajax({
+                                         url: '/pedagogica_tutoria',
+                                         type: "POST",
+                                         contentType: false,
+                                         data: formData,
+                                         processData: false,
+                                         cache: false,
+                                         success: function (data) {
+                                             if (data.result == "ok") {
+                                                 swal("Se eliminó correctamente ", "success");
+                                                 location.reload()
+                                             } else {
+                                                 swal("Error", data.message, "error");
+
+                                             }
+                                         },
+                                         error: function (xhr, ajaxOptions, thrownError) {
+                                             swal("Error", "Error Conexion en el Servidor", "error");
+
+                                         },
+                                         complete: function () {
+                                           Loader.close('');
+                                         }
+                                 });
+                            }
+                        })
+                    }
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class="pd-ltr-20 xs-pd-20-10">
+        <div class="min-height-50px">
+            <div class="page-header">
+                <div class="row">
+                    <div class="col-md-12 col-sm-12">
+                        <div class="title">>
+                        <h4>Listado de Tutorias Pedagogicas</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+            <div class="card-box mb-30">
+            <div class="pd-20">
+                <div class="row">
+                    <div class="col-md-3" style="margin-top: 5px">
+                        <div class="form-group">
+                            <label><a style="color: #d92550"></a></label>
+                            <input id="searchfield" type="text" class="form-control" value='{{ search }}'>
+                        </div>
+                    </div>
+                    <div class="col-md-7" style="margin-top: 5px">
+                        <label><a style="color: #d92550"></a></label>
+                        <div class="form-group">
+
+                            <button type="button" id="search" class="btn" style="margin-right: 10px; background-color: #184679; color: #ffffff;">
+                                <i class="icon-copy ti-search"></i> Buscar
+                            </button>
+
+                            {% if search %}
+                                <a href="/pedagogica_tutoria" class="btn" style="float: right; margin-left: 10px; background-color: #0b132b; color: #ffffff;"></a>
+                            {% endif %}
+
+                            <button type="button" id="agginstrumentostutoriapedagogicas" onclick="agginstrumentostutoriapedagogicas();" class="btn" style="margin-right: 10px; background-color: #184679; color: #ffffff;">
+                                <i class="icon-copy ion-plus"></i> Adicionar Instrumentos Pedagogicos
+                            </button>
+
+                        </div>
+                    </div>
+            <div class="col-lg-2 col-md-2 col-sm-2" style="margin-top: 5px;">
+                <a href="/pedagogica_tutoria" class="btn" style="float: right; background-color: #0b132b; color: #ffffff;">
+                    <i class="icon-copy ion-arrow-left-a"></i> Atrás
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="pb-20">
+        <div class="row">
+            <div class="col-lg-12 col-md-12">
+                <div class="table-responsive">
+                    <table class=" table stripe hover nowra">
+                            <thead>
+                                <tr>
+                                    <th >Nombre</th>
+                                    <th style="text-align: center">Estado</th>
+                                    <th style="text-align: center">Acciones</th>
+                                </tr>
+                            </thead>
+                        <tbody>
+                        {% for p in instrumentostutoriapedagogicas %}
+
+                            <tr>
+                                <td> {{ p.nombre }}</td>
+
+                                <td style="text-align: center">
+                                    {% if p.estado %}
+                                      <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% else %}
+                                       <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                    {% endif %}
+                                 </td>
+
+                                <td style="text-align:  center">
+                                    <div class="dropdown">
+
+                                        <a class="btn btn-link font-24 p-0 line-height-1 no-arrow dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                                            <i class="dw dw-more"></i>
+                                        </a>
+                                        <div class="dropdown-menu dropdown-menu-right dropdown-menu-icon-list dropup" style="width: 200px; z-index: 9999;">
+
+                                            <a class="dropdown-item" style="cursor: pointer" onclick="actualizarinstrumentostutoriapeda ('{{ p.id }}','{{ p.nombre }}','{{ p.estado}}');"> Editar </a>
+
+                                            <a class="dropdown-item" style="cursor: pointer" onclick="eliminarinstrumentostutoriapeda ('{{ p.id }}','{{ p.nombre }}','{{ p.estado}}');"> Eliminar </a>
+
+                                       </div>
+
+                                    </div>
+                                </td>
+
+                            </tr>
+                        {% endfor %}
+
+                        {% if not instrumentostutoriapedagogicas  %}
+                            <tr>
+                                <td colspan="3">
+                                    NO EXISTE REGISTRO
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+        <div >
+            <div class="text-right" style="margin-left: 10px">
+          {% if paging.num_pages > 20 %}
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination" >
+
+                        {% if paging.primera_pagina %}
+                            <li class="page-item"><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&page=1">1</a></li>
+                            <li class="page-item"><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='page-item active'{% else %}class="page-item"{% endif %}><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li class="page-item"><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}" class="active">...</a></li>
+                            <li class="page-item"><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                        <h4 class="h4" style="margin-left: 5px;color: #184679"><span class="badge badge-success">Totales Inscritos {{ totalinscrito }} </span> </h4>
+                    </ul>
+                </nav>
+          {% else %}
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination" >
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='page-item active'{% else %}class="page-item"{% endif %}><a class="page-link" href="/pedagogica_tutoria?acc={{ permisopcion.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </nav>
+          {% endif %}
+
+
+        </div>
+        </div>
+    </div>
+</div>
+        </div>
+    </div>
+
+
+<div class="modal fade" id="modal" data-backdrop="static" data-keyboard="false" aria-labelledby="myLargeModalLabel" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" >
+        <div class="modal-header">
+            <div class="login-title"
+            >
+                <label class="modal-title text-text-bold-600" id="myModalLabel33">Registrar Instrumentos Pedagogicos</label>
+            </div>
+        </div>
+        <form>
+            <div class="modal-body">
+                <input type="text" hidden="hidden" id="id_action">
+                <input type="text" hidden="hidden" id="id_instrumentostutoriapedagogicas">
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-lg-6 col-md-6" style="margin-top: 5px">
+                                <div class="form-group ">
+                                    <label class="form-control-label">Nombre:</label>
+                                    <input style="text-transform: uppercase;" name="id_nombre" id="id_nombre" class="form-control " cols="30" rows="10">
+                                    <div id="id_nombrefeedback" class="form-control-feedback text-danger d-none"></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-4">
+                                  <div class="form-group">
+                                  <label class="form-control-label ">Estado: </label>
+                                        <div class="custom-control custom-checkbox mb-5" >
+                                            <input id="id_estado" name="id_estado" type="checkbox" class="custom-control-input">
+                                            <label class="custom-control-label" for="id_estado"></label>
+
+                                        </div>
+                                  </div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+                <div class="modal-footer">
+                    <button type="button" data-dismiss="modal" class="btn btn-danger btn-min-width "><i class="icon-copy dw dw-cancel"></i> Cancelar</button>
+                    <button type="button" id="id_guardarinstrumentostutoriapedagogicas" class="btn btn-success btn-min-width "><i class="icon-copy dw dw-diskette1"></i> Guardar</button>
+                </div>
+        </form>
+    </div>
+</div>
+</div>
+
+
+
+
+
+{% endblock %}

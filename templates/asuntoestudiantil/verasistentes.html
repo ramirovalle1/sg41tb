@@ -1,0 +1,64 @@
+{% load sga_extras %}
+<script type="text/javascript">
+    $(function(){
+        $(".verdept").click(function()
+        {
+           $("#verdepartamentopanel #paneltitle2").html($(this).attr('mensaje'));
+           $.get("/incidenciaadministrativa", {'action':$(this).attr('accion'), 'idinfo': $(this).attr('idinfo'),'asigna':'3'}, function(data) {
+                $("#verdepartamentopanel .modal-body").html(data);
+                $("#verdepartamentopanel").modal({"backdrop":"static","width":"50%"});
+                $("#verdepartamentopanel").modal("show");
+           }, "html");
+           return false;
+
+        });
+
+    });
+</script>
+<div class="row-fluid">
+<div class="span12">
+    <table class="table table-condensed table-stripped">
+        <thead>
+        <tr>
+
+            <th style="text-align: center">Observaci&oacute;n</th>
+            <th style="text-align: center">Asistente</th>
+            <th style="text-align: center">Atendiendo</th>
+            <th style="text-align: center">Fecha</th>
+            <th style="text-align: center"></th>
+
+        </tr>
+        </thead>
+    <tbody>
+        {% for a in asistentes %}
+            <tr>
+
+                <td style="text-align: center"> {{ a.observacion }}</td>
+                <td style="text-align: center"> {{ a.asistenteasignado.asistente }}</td>
+                <td style="text-align: center">
+                    {% if a.atendiendo %}
+                        <img src='/static/images/16/true.png' border='0'/>
+                    {% else %}
+                        <img src='/static/images/16/false.png' border='0'/>
+                    {% endif %}
+                </td>
+                <td  style="text-align: center"> {{ a.fecha|date:'d-m-Y H:i:s' }}</td>
+                <td>
+                    {% if a.solicituinfo and a.solicituinfo|args:a.asistenteasignado.asistente.usuario|call:"departamentoasignado" %}
+                        <a style="cursor: pointer" mensaje='{{ a.solicituinfo.mensaje }}' idinfo="{{ a.solicituinfo.id }}" accion="verdepartamentos" class="verdept">Ver Departamentos</a>
+                    {% endif %}
+                    {% if a.solicitusecret and a.solicitusecret|args:a.asistenteasignado.asistente.usuario|call:"departamentoasignado" %}
+                        <a style="cursor: pointer" mensaje='{{ a.solicitusecret.descripcion }}' idinfo="{{ a.solicitusecret.id }}" accion="verdepartamentossolicitud" class="verdept">Ver Departamentos</a>
+                    {% endif %}
+                    {% if a.incidenciaadministrativo and a.incidenciaadministrativo|args:a.asistenteasignado.asistente.usuario|call:"departamentoasignado" %}
+                        <a style="cursor: pointer" mensaje='{{ a.incidenciaadministrativo.descripcion }}' idinfo="{{ a.incidenciaadministrativo.id }}" accion="verdepartamentosinciden" class="verdept">Ver Departamentos</a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>
+
+

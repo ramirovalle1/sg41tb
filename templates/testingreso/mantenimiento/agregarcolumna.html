@@ -1,0 +1,401 @@
+{% extends "basenueva.html" %}
+
+{% block heading %}
+
+<style>
+    body {
+        background-color: #eee
+    }
+    .nav-pills .nav-link.active, .nav-pills .show > .nav-link {
+      color: #fff;
+      background-color:  #184679; }
+
+
+    .custom-control-input:checked ~ .custom-control-label::before {
+      color: #fff;
+      border-color:#184679;
+      background-color: #184679;
+    }
+
+    .modal-body-agregar-paramentro  {
+      position: relative;
+      -ms-flex: 1 1 auto;
+      -webkit-box-flex: 1;
+      flex: 1 1 auto;
+      padding: 1rem;
+    }
+
+
+</style>
+
+<script>
+    $(function () {
+
+
+
+
+
+         $("#btnagregar").click(function() {
+             $("#addcolumna").modal({backdrop: 'static', keyboard: false});
+             return false;
+
+         });
+
+
+        function limpiarDatosColumna() {
+            $("#txtdescripcion").val("");
+            $("#txtnumerorden").val(0);
+
+
+
+
+        }
+
+        function limpiarHelpDatosColumna() {
+            $("#helptxtdescripcion").html("");
+            $("#helptxtnumerorden").html("");
+        }
+
+        $("#btncancelcolumna").click(function() {
+            limpiarDatosColumna();
+            $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+            $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+            $("#addparametro").modal('hide');
+        });
+
+        function validarDatosColumna() {
+
+            if ($("#txtdescripcion").val() == "") {
+                 $("#helptxtdescripcion").html("Debe ingresar descripción");
+                 return 1;
+            }
+
+
+            if ($("#txtnumerorden").val() ==0) {
+                 $("#helptxtnumerorden").html("El número orden debe ser mayor a 0 ");
+                 return 1;
+            }
+
+
+
+
+            return 0;
+
+        }
+
+
+        $("#btnguardarcolumna").click(function() {
+
+            limpiarHelpDatosColumna();
+
+            if(validarDatosColumna()==0) {
+
+                    Loader.open();
+
+                    var formData = new FormData();
+                    formData.append('action', 'agregarcolumna');
+
+                    formData.append('idtest', '{{ test.id }}');
+                    formData.append('idpregunta', '{{ idpregunta }}');
+                    formData.append('descripcion', $("#txtdescripcion").val());
+                    formData.append('orden', $("#txtnumerorden").val());
+                    formData.append('ladob',document.getElementById("checkb").checked);
+
+
+
+
+
+                    $.ajax({
+                        url: '/colummatestarrastar',
+                        type: "POST",
+                        contentType: false,
+                        data: formData,
+                        processData: false,
+                        cache: false,
+                        success: function (data) {
+                            if (data.result == "ok") {
+                                swal("! Columna", "Los datos de la columna se registrarón correctamente", "success");
+                                location.href = "/colummatestarrastar?idtest={{ test.id }}&idpregunta={{ idpregunta }}&s=" + $("#txtbusqueda").val().toUpperCase();
+
+
+                            } else {
+                                swal("Error", data.message, "error");
+
+
+                            }
+
+                        },
+                        error: function (xhr, ajaxOptions, thrownError) {
+                            swal("Error", "Error Conexion en el Servidor", "error");
+
+                        },
+                        complete: function () {
+                            Loader.close();
+                        }
+
+
+
+
+                    });
+
+
+                }
+
+
+        });
+
+        eliminar=function (idcolumna,nombre) {
+            swal({
+                title: 'Confirma eliminar la Columna?',
+                text: "Nombre: "+nombre,
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si,Eliminar!',
+                cancelButtonText: 'Cancel',
+                confirmButtonClass: 'btn btn-success margin-5',
+                cancelButtonClass: 'btn btn-danger margin-5',
+                buttonsStyling: false,
+                allowOutsideClick: false,
+            }).then(function (isConfirm) {
+
+                if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss'] != 'esc') {
+                     Loader.open();
+                     var formData = new FormData();
+                     formData.append('action', 'eliminar');
+                     formData.append('idcolumnapre', idcolumna);
+
+                     $.ajax({
+                             url: '/colummatestarrastar',
+                             type: "POST",
+                             contentType: false,
+                             data: formData,
+                             processData: false,
+                             cache: false,
+                             success: function (data) {
+                                 if (data.result == "ok") {
+                                     swal("! Columna", "Se elimino correctamente la Columna", "success");
+                                     location.href = "/colummatestarrastar?idtest={{ test.id }}&idpregunta={{ idpregunta }}&s=" + $("#txtbusqueda").val().toUpperCase();
+                                 } else {
+                                     swal("Error", data.message, "error");
+
+                                 }
+                             },
+                             error: function (xhr, ajaxOptions, thrownError) {
+                                 swal("Error", "Error Conexion en el Servidor", "error");
+
+                             },
+                             complete: function () {
+                                Loader.close();
+                             }
+                     });
+                }
+            })
+          }
+
+
+
+
+
+
+
+
+
+
+    });
+</script>
+
+{% endblock %}
+{% block canvas %}
+
+
+ <div class="mobile-menu-overlay"></div>
+
+ <div class="main-container">
+        <div class="page-header">
+            <div class="row">
+                <div class="col-md-8 col-sm-12">
+                    <div class="title">
+                        <h4>Listado de Columna</h4>
+                    </div>
+                </div>
+
+                 <div class="col-lg-2 col-md-2 col-sm-2">
+                        <div class="title">
+                            <a href="/preguntatestingreso?idtest={{ test.id }}" style="float: right;color: white;background: #0b132b" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-arrow-left-a "></i> Atrás</a>
+                        </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card-box mb-30">
+					<div class="pd-20">
+                        <div class="row">
+                            <div class="col-md-4" style="margin-top: 5px">
+                                <div class="form-group" >
+                                    <label > <a style="color: #d92550"></a></label>
+                                    <input id="txtbusqueda" type="text" class="form-control" value='{{ search }}' >
+                                </div>
+                            </div>
+                            <div class="col-md-4" style="margin-top: 5px">
+                                <label > <a style="color: #d92550"></a></label>
+                                <div class="form-group">
+                                    <button type="button" id="search" class="btn" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ti-search"></i> Buscar</button>
+                                    <button type="button" id="btnagregar" class="btn" title="Agregar Parametro" data-bgcolor="#184679" data-color="#ffffff"><i class="icon-copy ion-plus"></i></button>
+                                </div>
+                            </div>
+
+                        </div>
+					</div>
+					<div class="pb-20">
+						<table class="table table-striped">
+							<thead>
+								<tr>
+                                    <th>Orden</th>
+                                    <th>Descripción</th>
+									<th>Test</th>
+                                    <th>Lado</th>
+                                    <th style="text-align: center">Estado</th>
+									<th style="text-align: center">Acciones</th>
+								</tr>
+							</thead>
+							<tbody>
+                               {% for p in listacolumna %}
+                                    <tr>
+
+                                        <td >{{ p.orden }}</td>
+                                        <td >{{ p.descripcion }}</td>
+                                        <td >{{ p.test }} </td>
+                                        <td >
+                                            {% if p.lado == 1 %}
+                                                Izquierdo
+                                            {% else %}
+                                                Derecho
+                                            {% endif %}
+                                       </td>
+                                        <td style="text-align: center;">
+                                            {% if p.estado %}
+                                                <span class="badge badge-success">ACTIVO</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">INACTIVO</span>
+                                            {% endif %}
+                                        </td>
+
+
+                                        <td style="text-align: center">
+                                            <div class="dropdown">
+                                                <a class="btn btn-link font-24 p-0 line-height-1 no-arrow dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                                                    <i class="dw dw-more"></i>
+                                                </a>
+                                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-icon-list">
+
+                                                     <a class="dropdown-item" style="cursor:pointer" onclick="editarparamentro('{{ p.id }}')" ><i class="dw dw-edit2"></i> Editar</a>
+                                                     <a class="dropdown-item" style="cursor:pointer" onclick="eliminar('{{ p.id }}','{{ p.descripcion }}')" ><i class="dw dw-delete-3"></i> Eliminar</a>
+
+
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                               {% endfor %}
+                                {% if not listacolumna %}
+                                    <tr>
+                                        <td colspan="12">
+                                            NO EXISTEN REGISTROS
+                                        </td>
+                                    </tr>
+                                {% endif %}
+							</tbody>
+						</table>
+					</div>
+        </div>
+
+        <div class="footer-wrap pd-20 mb-20 card-box">
+				Desarrollado por Tics @todos los derechos reservados
+		</div>
+
+ </div>
+
+
+ <div  class="modal fade " id="addcolumna"  role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Agregar Calumna</h4>
+                </div>
+
+                <div class="modal-body">
+
+                     <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label >Descripción <a style="color: #d92550">(*)</a>: </label>
+                                <input id="txtdescripcion" type="text" class="form-control" >
+                                 <p id="helptxtdescripcion"  style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="row">
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label >Orden <a style="color: #d92550">(*)</a>: </label>
+                                <input id="txtnumerorden" type="text" value="0" name="demo_vertical2" class="form-control" onKeyPress="return soloNumeros2(event)">
+                                 <p id="helptxtnumerorden"  style="text-align: center;font-size: 20px;color:red;"></p>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                 <div class="custom-control custom-checkbox mb-5">
+                                    <input type="checkbox" class="custom-control-input" id="checkb">
+                                    <label class="custom-control-label" for="checkb">Lado B</label>
+                                 </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btncancelcolumna" style="background: #FA1D06;color: white" class="btn" data-bgcolor="#FA1D06" data-color="#ffffff">Cancelar</button>
+                    <button type="button" id="btnguardarcolumna" style="background: #63A836;color: white" class="btn" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>
+                </div>
+
+            </div>
+
+        </div>
+ </div>
+
+ <div  class="modal fade " id="editparametro" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Editar Paramentro</h4>
+                </div>
+
+                <div class="modal-body-agregar-paramentro">
+                </div>
+
+            </div>
+        </div>
+ </div>
+
+
+
+
+ <div class="modal fade" id="login-modal2"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="row">
+                <div id="content" class="col-lg-12">
+
+                </div>
+            </div>
+        </div>
+    </div>
+ </div>
+
+{% endblock %}

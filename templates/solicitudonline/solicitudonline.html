@@ -1,0 +1,143 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+<script src="/static/js/notificacionpanel.js"></script>
+<link type="text/css" rel="stylesheet" href="/static/css/datepicker.css"/>
+<script type='text/javascript' src='/static/js/bootstrap-datepicker.js'></script>
+
+<script type="text/javascript">
+    $(function() {
+        {% if srn %}
+            $("#solicitudespecieregpanel").modal({backdrop: 'static', keyboard: false, width: "35%", maxHeight: ($(window).height()*3)/4 });
+            $("#solicitudespecieregpanel").modal("show");
+            $("#deudapanel").modal("hide");
+        {% endif %}
+        $('#continuar').click(function(){
+            $("#modalpregunta").modal("hide");
+        });
+        $("#modalpregunta").modal({backdrop: 'static', keyboard: false,width: "30%"});
+        $("#modalpregunta").modal("show");
+
+
+        $("#solicitudespecieregpanel .btn-cerrar").click(function(){
+            location.href = '/';
+        });
+       {% if error %}
+                smoke.alert("{{ error }}");
+            {% endif %}
+        $("#materiaasignadanotaespec").change(function(){
+            $("#mensajematasi").html("");
+        });
+        $("#generaespecienot").click(function(){
+            if(parseInt($("#materiaasignadanotaespec").val()) != 0){
+                $.post("/solicitudonline", {action: 'generaespecienot', 'idmatasign':$("#materiaasignadanotaespec").val()}, function(data) {
+                    if (data.result=='ok') {
+                        $("#mensajematasi").html("<a class='alert alert-info'> La especie fue generada exitosamente, acercarse a caja para cancelar.</a>");
+                        $("#materiaasignadanotaespec").attr('disabled',true);
+                        $("#generaespecienot").hide();
+
+                    }else{
+                        $("#mensajematasi").html("<a class='alert alert-danger'>"+ data.result +"</a>");
+                    }
+
+                },'json');
+            }else{
+
+                $("#mensajematasi").html("<a class='alert alert-danger'>Seleccione la materia a asignar</a>");
+            }
+        });
+
+
+    });   {# Fin de Function#}
+
+</script>
+{% endblock %}
+{% block canvas %}
+    {% if solicitudes %}
+        <div class='row-fluid'>
+            <div class="span3"></div>
+            <div class='span6'>
+                <h2 style="text-align: center">Listado de Tr&aacute;mites</h2>
+                <hr/>
+            </div>
+            <div class='span1'>
+                <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+            </div>
+        </div>
+
+        <br/>
+        <div class="row-fluid">
+            <div class="span3"></div>
+            <div class="span6">
+                <table class="table table-condensed table-bordered">
+                    <thead>
+                        <tr class="alert alert-info">
+                            <th colspan="3" style="text-align: center; font-size: 17px;"><b>Tipos de Solicitudes</b></th>
+                        </tr>
+                        <tr class="alert alert-info">
+                            <th></th>
+                            <th style="font-size: 16px;text-align: center">Nombre</th>
+                            <th style="font-size: 16px;text-align: center" ></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in solicitudes %}
+
+                            <tr style="height: 50px;">
+                                <td class="bigger" style="text-align: center;vertical-align: middle;">
+                                    <a href='/solicitudonline?generar&id={{ s.id }}'><b>Registrar Nueva Solicitud </b></a>
+                                </td>
+                                 <td class="bigger" style="vertical-align: middle;"><b> {{ s.nombre }} </b></td>
+                                <td class="bigger" style="text-align: center;vertical-align: middle;"> <b>
+                                    {% if s.libre %}<a href="/solicitudonline?action=verlibres"> Ver Tr&aacute;mites </a>{% else %}{{ s.valor }} {% endif %}</b> </td>
+                            </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+    <div class="modal fade static" id="solicitudespecieregpanel" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">SOLICITUD DE REGISTRO DE NOTAS POR FALTA DE PAGO</h3>
+        </div>
+        <div class="modal-body">
+            <b>Seleccionar Materia</b>
+            <select id='materiaasignadanotaespec' style="width: 98%;" />
+                <option value='0'>-----</option>
+                {% for a in materias %}
+                    <option value="{{ a.id }}" >{{ a.materia.asignatura }}</option>
+                {% endfor %}
+            </select>
+            <p class="help-text" id="mensajematasi"></p>
+        </div>
+        <div class="modal-footer">
+            <a id="generaespecienot" style="cursor: pointer" class="btn btn-success"><i class="icon-share-alt"></i> Generar Especie </a>
+            <a style="cursor: pointer" class="btn btn-danger btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+{#    <div class="modal fade static" id="modalpregunta">#}
+{#    <div class="modal-header" style="word-wrap: break-word">#}
+{#        <h4 style="color: red;text-align: center">AVISO IMPORTANTE </h4><br/>#}
+{#        <h3 style="color: red">Tr&aacute;mites y Solicitudes Administrativas <a href="#" class="btn btn-warning" id='continuar'> Bandeja de Atenci&oacute;n </a></h3>#}
+{#        <p style="color: red;font-size: 15px" >Dar Click en el siguiente enlace <a href="/requersoporte" class="btn btn-success"> Ir a Mesa de Ayuda</a></p>#}
+{#        <h5 style="color: red"> Si su solicitud esta realacionada con </h5>#}
+{#        <ul>#}
+{#            <li>Usuarios de sga</li>#}
+{#            <li>Correo Electr&oacute;nico</li>#}
+{#            <li>Problemas con su equipo</li>#}
+{#            <li>Problemas con tu factura Electr&oacute;nica</li>#}
+{#            <li>Problemas de Ingreso</li>#}
+{#            <li>Problemas con el pago en linea</li>#}
+{#            <li>Llamadas Ip</li>#}
+{##}
+{#        </ul>#}
+{##}
+{##}
+{#    </div>#}
+{##}
+{#</div>#}
+{% endblock %}
+
+

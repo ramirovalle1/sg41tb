@@ -1,0 +1,133 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+     <script type="text/javascript">
+        $(function() {
+            $(".calificacion").blur(function () {
+               var idp = $(this).attr("idp");
+               var puntaje = $(this).val();
+               var obje = this;
+               $.post("/alum_tutorias",{"action": "verifica", "idp": idp ,"puntaje":puntaje },function(data) {
+                        if(data.result=='ok'){
+                            $("#hepltxt"+idp).html("");
+                            $("#dato"+idp).val(puntaje);
+                        }
+                        else{
+                           $(obje).val("");
+                           $(obje).focus();
+                           $("#dato"+idp).val("");
+                           $("#hepltxt"+idp).html("Ingrese Valores Correctos");
+
+                        }
+                },"json");
+            });
+            $(".btn-salir").click(function () {
+                location.href = '/alum_tutorias?action=verseguimiento&id={{ matricula.id }}'
+
+            });
+            $(".btn-guardar").click(function () {
+                $(".btn-guardar").hide();
+
+                var data={};
+                datosOK =true;
+                pr = '';
+                {% for p in parametros %}
+                    pr = '{{ p.id }}';
+                    if ($("#dato"+pr).val() == ''){
+                        datosOK =false;
+                    }
+                {% endfor %}
+                if (datosOK){
+                   showWaiting("Guardando el Registro", "Espere un momento... ");
+                   var idp = $(this).attr("idp");
+                   var puntaje = $(this).val();
+                   var obje = this;
+                   var valores =[];
+                   prueba = '';
+                   {% for p in parametros %}
+                       prueba = '{{ p.id }}';
+                       valores.push({'id':{{ p.id }}, 'puntaje':$("#dato"+prueba).val() });
+                    {% endfor %}
+                    data['datos'] = valores;
+                   $.post("/alum_tutorias",{"action": "guardar","data": JSON.stringify(data) ,"matricula":{{ matricula.id }},"obs":$("#obser").val() },function(data) {
+                            hideWaiting();
+                            if(data.result=='ok'){location.href = '/alum_tutorias?action=verseguimiento&id={{ matricula.id }}'
+                            }
+                            else{
+                               smoke.alert("Ocurrio un Error... Intente Nuevamente");
+                               $(".btn-guardar").show();
+
+                            }
+                    },"json");
+                } else{
+                    smoke.alert("Ingrese todos los datos");
+                    $(".btn-guardar").show();
+                }
+
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+     <div class='row-fluid' id="title">
+        <div class='span11' style="text-align: center">
+           <h3>DATOS GENERALES DEL ESTUDIANTE </h3>
+        </div>
+        <div class='span1' style="text-align: right">
+            <a href="/alum_tutorias?action=verseguimiento&id={{ matricula.id }}" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div> <br>
+    <div class="row-fluid">
+    <div class="span12">
+      <div class="span2"></div>
+        <div class="span7">
+            <table class='table'>
+                <thead>
+                <tr>
+                    <td style="font-weight: bold" >Tutor: </td><td>{{ tutor }}</td>
+                    <td style="font-weight: bold" >Estudiante: </td><td>{{  matricula.inscripcion }} </td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold" >Carrera: </td><td> {{ matricula.nivel.carrera }} </td>
+                    <td style="font-weight: bold"  >Periodo: </td><td> {{  matricula.nivel.periodo  }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold" >Nivel: </td><td> {{ matricula.nivel }}</td>
+                    <td style="font-weight: bold" >Fecha: </td><td> {{  hoy|date:'d-m-Y' }}</td>
+                    <hr>
+                </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="2"> <h4>Par&aacute;metro</h4></td>
+                        <td colspan="2"><h4>Puntuaci&oacute;n</h4></td>
+                    </tr>
+                {% for p in parametros %}
+                    <tr>
+                        <td colspan="2">{{ p.descripcion }}</td>
+                        <td colspan="2"><input type="hidden" id="dato{{ p.id }}"><input type="number" class="calificacion" cali="cali{{ p.id }}" idp="{{ p.id }}">  <p style="color: red" id="hepltxt{{ p.id }}"></p></td>
+
+                    </tr>
+                {% endfor %}
+                    <tr>
+                        <td colspan="4"> <h4>Observaciones Generales</h4></td>
+                    </tr>
+                <tr>
+                    <td colspan="4"> <textarea id="obser" rows="50" style="margin: 0px 0px 10px; width: 906px; height: 144px;" placeholder="Observaciones Generales"> </textarea></td>
+                </tr>
+                </tbody>
+            </table>
+         <div class="modal-footer">
+         <div >
+            <a style="float: left" href="#" id="cerrar" class="btn btn-success  btn-guardar">  <i  class="icon-save icon-white"></i> <b> Guardar </b></a>
+            <a style="float: left" href="#" id="cerrar" class="btn btn-danger  btn-salir">  <i  class="icon-remove icon-white"></i> <b> Salir</b></a>
+        </div>
+    </div>
+        </div>
+
+        <div class="span2"></div>
+    </div>
+
+    </div>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>{{ profesor }}</h3>
+            <h5>Asignatura: {{ materia.asignatura }}</h5>
+        </div>
+        <div class='span1'>
+            <a href="/alu_documentos" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th style="width:16%">Clases</th>
+                <th style="width:11%">Turno</th>
+                <th style="width:9%">Aula</th>
+                <th style="width:23%">Nivel-Carrera-Sede</th>
+                <th style="width:19%">Contenido</th>
+                <th style="width:19%">Observaciones</th>
+                <th style="width:8%">Deberes</th>
+                <th style="width:2%">F. Deber/F.Entrega</th>
+                <th style="text-align: center;width:6%">Mis Deberes</th>
+                <th style="text-align: center;width:6%">Subir</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for lecciongrupo in leccionesgrupo %}
+                <tr>
+                    <td>
+                        <strong>{{ lecciongrupo.materia.nombre_completo }}</strong>
+                            {{ lecciongrupo.fecha|date:"d-m-Y" }}
+                    </td>
+                    <td>
+                        {{ lecciongrupo.turno }}
+                    </td>
+                    <td>{{ lecciongrupo.aula }}</td>
+                    <td>
+                        {% for leccion in lecciongrupo.lecciones.all %}
+                            - {{ leccion.clase.materia.nivel }}<br/>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {{ lecciongrupo.contenido }}
+                    </td>
+                    <td>
+                        {{ lecciongrupo.observaciones }}
+                    </td>
+                    <td>
+                        {% if lecciongrupo.deber %}
+
+                                <a href='{{ lecciongrupo.deber.download_link }}' class='btn btn-info btn-mini'><i class='icon-download-alt icon-white'></i> Descargar</a>
+                                {% if lecciongrupo.deber.puntaje %}<a class='btn btn-warning btn-mini' style="cursor:text"><i class='icon-white'></i> {{ lecciongrupo.deber.puntaje }} Puntos</a> {% endif %}
+
+                        {% else %}
+                            Sin Deberes
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if lecciongrupo.deber %}
+                            {{ lecciongrupo.deber.fecha|date:"d-m-Y"}}  {% if lecciongrupo.deber.fechaentrega  %}    </br>{{ lecciongrupo.deber.fechaentrega|date:"d-m-Y"}} {% endif %}
+                        {% else %}
+                            --
+                        {% endif %}
+                    </td>
+                <td style="text-align: center">
+                    {% if lecciongrupo.deber %}
+                        {% if lecciongrupo|args:inscripcion|call:"tiene_deberes" %}
+                            {% with d=lecciongrupo|args:inscripcion|call:"descargar_deberes" %}
+                                    <a href='media/{{ d.archivo }}' class='btn btn-success btn-mini'><i class="icon-download icon-white"></i> Descargar</a>
+                                    </br>({{ d.fechaentrega|date:'d-m-Y' }})
+                                    </br>
+                                    {% if d.nota %}<a class='btn btn-warning btn-mini' style="cursor:text"><i class='icon-white'></i> Nota:{{ d.nota }}</a> {% endif %}
+                            {%  endwith %}
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td style="text-align: center">
+                    {% if lecciongrupo.deber %}
+                        {% if not lecciongrupo|args:inscripcion|call:"tiene_deberes" %}
+                            {% if lecciongrupo.deber.fechaentrega >= hoy or lecciongrupo.deber.fechaentrega == null %}
+                                <a href='alu_documentos?action=subir&leccion={{ lecciongrupo.id }}' class='btn btn-info btn-mini'><i class='icon-download icon-white'></i> Subir</a>
+                            {% else %}
+                                <a href='#' ><i class='icon-ban-circle'></i> No Puede Subir Archivos </a>
+                            {% endif %}
+                        {% else %}
+
+                            {% if lecciongrupo.deber.fechaentrega >= hoy or lecciongrupo.deber.fechaentrega == null %}
+                                {% with dd=lecciongrupo|args:inscripcion|call:"tiene_deberes" %}
+                                    {% if not dd.visto %}
+                                        <a href='alu_documentos?action=actualizar&id={{ lecciongrupo.id }}&insc={{ inscripcion.id }}' class='btn btn-info btn-mini'><i class='icon-refresh icon-white'></i> Reemplazar</a>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endif %}
+
+
+                        {% endif %}
+                    {% endif %}
+                </td>
+                </tr>
+            {% endfor %}
+            {% if not leccionesgrupo %}
+                <tr>
+                    <td colspan="6" align='center'>NO EXISTEN LECCIONES</td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+            {% for pagenumber in paging.page_range %}
+                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/alu_documentos?action=deberes&id={{ materia.id }}&p={{ profesor.id }}&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+            {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

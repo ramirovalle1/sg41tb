@@ -1,0 +1,325 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <script type="text/javascript">
+        $(function() {
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/atencionclientes?action=video&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $('.editar').click(function(){
+
+                var id= $(this).attr("vid");
+                var tid= $(this).attr("tit");
+                var dep= $(this).attr("dep");
+                var rep= $(this).attr("rep");
+                var tit= $(this).attr("desc");
+                var desc= $(this).attr("desc");
+
+                $('#idvideo').val(id);
+                $('#sit').val(rep);
+                $('#ver').val(dep);
+                $('#vidId').val(desc);
+                $('#vidDes').val(tid);
+
+                $('#titmodal').val('Editar Registro');
+                $('#btn_editar').removeClass('oculta');
+                $('#btn_videos').addClass('oculta');
+                $('#id_especialidad').val('');
+                $("#pnl_video").modal({backdrop: 'static'});
+                $("#pnl_video").modal("show");
+            });
+
+            $("#btn_editar").click(function(){
+                if(validar()){
+                    var id= $('#idvideo').val();
+                    var servidor= $('#sit').val();
+                    var visor=$('#ver').val();
+                    var vid=$('#vidId').val();
+                    var vidsc=$('#vidDes').val();
+
+                    $.post("/atencionclientes",{"action": "edivid","id":id,"servi": servidor, "visor": visor,"vid": vid,"videsc": vidsc },function(data) {
+                         if(data.result=='ok'){
+                             location.reload();
+                           }else{
+                            alert('Error Inesperado!')
+                         }
+                     },"json");
+
+                    $("#pnl_video").modal("hide");
+                    $('#titmodal').val('Ingrese Registro');
+                    $('#btn_videos').removeClass('oculta');
+                    $('#btn_editar').addClass('oculta');
+
+                }
+                return false;
+             });
+
+            $('.btn-success').click(function() {
+                $('#idnw').val('');
+                $('#titulo').val('');
+                $('#parrafo').val('');
+
+                $('#titmodal').val('Ingrese Registro');
+                $('#btn_videos').removeClass('oculta');
+                $('#btn_editar').addClass('oculta');
+
+                $('#id_especialidad').val('');
+                $("#pnl_video").modal({backdrop: 'static'});
+                $("#pnl_video").modal("show");
+            });
+
+             $("#btn_cerrar").click(function() {
+                $("#pnl_video").modal("hide");
+                return false;
+             });
+
+            function validar(){
+                var servidor= $('#sit').val();
+                var visor=$('#ver').val();
+                var vid=$('#vidId').val();
+                var band=true;
+                if(visor == '0' ){
+                    msj='Seleccione Vista!';
+                    band=false;
+                }
+
+                if(servidor == '0' ){
+                    msj='Seleccione Sitio!';
+                    band=false;
+                }
+
+                if(vid.length<2 ){
+                    msj='Id No valido!';
+                    band=false;
+                }
+
+                if (!band){
+                    alert(msj);
+                }
+                return band;
+            };
+
+             $("#btn_videos").click(function() {
+                 var servidor= $('#sit').val();
+                 var visor=$('#ver').val();
+                 var vid=$('#vidId').val();
+                 var vidsc=$('#vidDes').val();
+                 if(validar()){
+                     $.post("/atencionclientes",{"action": "addvid","servi": servidor, "visor": visor,"vid": vid,"videsc": vidsc },function(data) {
+                         if(data.result=='ok'){
+                             location.reload();
+                           }else{
+                            alert('Error Inesperado!')
+                         }
+                     },"json");
+                 }
+             });
+
+            $('.estado').click(function(){
+                var tid= $(this).attr("id");
+                var tip= $(this).attr("not")
+                var dep= $(this).attr("dep");
+                var mensj='';
+                if($(this).attr("est")=='no'){
+                    mensj=". Desea Activar este Video?"
+                }else{
+                    mensj=". Desea Inactivar este Video?"
+                }
+                var mensj=tip+mensj;
+                smoke.confirm(mensj, function(e){
+                    if (e){
+                        $.post("/atencionclientes",{"action": "acvid","id":tid,"depa":dep},function(data) {
+                           if(data.result=='ok'){
+                           location.reload();}
+                       },"json");
+                    }else{
+
+                    }
+                    }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                });
+            });
+
+            $(".dellv").click(function(){
+                 var vid = $(this).attr("id");
+                 mensj="Desea quitar el Video?";
+                 smoke.confirm(mensj, function(e){
+                    if (e){
+                        $.post("/atencionclientes",{"action": "dellv", "id": vid },function(data) {
+                           if(data.result=='ok'){
+                           location.reload();}
+                        },"json");
+                    }else{
+                    }
+                    }, {
+                    ok: "Si",
+                    cancel: "No",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+        });
+    </script>
+    <style>
+        .oculta {
+            display: none;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>Listado de Videos</h3>
+            <br>
+        </div>
+        <div class='span1'>
+            <a href="/atencionclientes" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span2"></div>
+        <div class='span3'>
+            <a href="#" class='btn btn-success'><i class="icon-plus icon-white"></i> Nuevo Video</a>
+        </div>
+        <div class='span3'>
+            <form class="form-search">
+                <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                {% if search %}
+                    <a href="/atencionclientes?action=video" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i>Todos</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span2'></div>
+        <div class='span8'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Descripcion</th>
+                    <th>Id_video</th>
+                    <th>Fecha</th>
+                    <th>Repositorio</th>
+                    <th>Visor</th>
+                    <th>Estado</th>
+                    <th>Eliminar</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for Video in video %}
+                <tr>
+                    <td><a href="#" class="editar" vid="{{ Video.id }}" dep="{{ Video.tipovista }}" rep="{{ Video.repositorio }}" tit="{{ Video.descripcion }}" desc="{{ Video.rutav }}">{{ Video.descripcion }}</a></td>
+                    <td>{{ Video.rutav }}</td>
+                    <td>{{ Video.fechavideo|date:'d-m-Y' }}</td>
+                    <td>
+                        {% for t in repos %}
+                            {% if t.0 == Video.repositorio %}
+                                <a id="{{ t.0 }}" class="numero">{{ t.1 }}</a>
+                           {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for t in visor %}
+                            {% if t.0 == Video.tipovista %}
+                                <a id="{{ t.0 }}" class="numero">{{ t.1 }}</a>
+                           {% endif %}
+                        {% endfor %}
+                    </td>
+                    {% if Video.estado %}
+                        <td><a href="#" class="estado" id="{{ Video.id }}" dep="{{ Video.tipovista }}" est="si" not="{{ Video.descripcion }}"><img src='/static/images/16/true.png' alt='Si' border='0'/></a></td>
+                    {% else %}
+                        <td><a href="#" class="estado" id="{{ Video.id }}" dep="{{ Video.tipovista }}" est="no" not="{{ Video.descripcion }}"><img src='/static/images/16/false.png' alt='No' border='0'/></a></td>
+                    {% endif %}
+                    <td><img class="dellv" id="{{ Video.id }}" style="cursor: pointer" src='/static/images/16/cerrar.png' title="Eliminar" alt='' border="0"/></td>
+                </tr>
+            {% endfor %}
+            {% if not video %}
+                <tr>
+                    <td colspan="4">
+                        NO HAY VIDEOS AGREGADOS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+        <div class='span2'></div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span2'></div>
+        <div class="span8">
+            <div class='pagination'>
+                <ul>
+                    {% for pagenumber in paging.page_range %}
+                        <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/newstiket?page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+         <div class='span2'></div>
+    </div>
+
+    <div class="modal fade static" id="pnl_video" style="display: none;">
+        <div class="modal-header alert-info">
+            <h3 class="paneltitle" style="color: #333333;"><span class="icon-facetime-video"></span>&nbsp; <output id="titmodal"> Ingrese Registro </output> </h3>
+        </div>
+        <div class="modal-body panelbody">
+            <div id="formulario" class='form-horizontal'>
+                <fieldset class="control-group nomargins">
+                    <output style="display: none" id="idvideo"></output>
+                    <label class="control-label" for="id">Descripci&oacute;n </label>
+                    <div class="controls">
+                        <input id="vidDes" type="text" required />
+                    </div>
+                    <br>
+                    <label class="control-label" for="id">Id Video </label>
+                    <div class="controls">
+                        <input id="vidId" type="text" required />
+                    </div>
+                    <br>
+                    <label class="control-label" for="id"><span class="icon-globe"></span> Sitio </label>
+                    <div class="controls">
+                        <select id="sit" class="form-control">
+                            <option value="0"> ----- </option>
+                            {% for r in repos %}
+                               <option value="{{ r.0 }}">
+                                  {{ r.1 }}
+                               </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <br>
+                    <label class="control-label" for="id"><span class="icon-eye-open"></span> Visto desde </label>
+                    <div class="controls">
+                        <select id="ver" class="form-control">
+                            <option value="0"> ----- </option>
+                            {% for v in visor %}
+                               <option value="{{ v.0 }}">
+                                  {{ v.1 }}
+                               </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="btn_editar" class="btn btn-atender btn-info oculta">Guardar</a>
+            <a href="#" id="btn_videos" class="btn btn-atender btn-info">Guardar</a>
+            <a href="#" id="btn_cerrar" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+{% endblock %}

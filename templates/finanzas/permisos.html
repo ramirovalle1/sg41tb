@@ -1,0 +1,90 @@
+
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/permisos_vehiculares?&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+             $(".aceliminarecibo").click(function() {
+              $("#modal_eliminarecibo").modal("hide");
+               var id = $(this).attr("iid");
+               smoke.prompt("Escriba un Motivo", function(v) {
+                    if (v) {
+                         $.post("/finanzas", {"action":"eliminarecibo",'id':id,"motivo" : v.toUpperCase()}, function(data) {
+                        if (data.result=='ok'){
+                            alert("RECIBO ELIMINADO");
+                            location.href="/finanzas?s="+nom;
+                        }else{
+                            alert("NO SE ELIMINO EL RECIBO  Error: " + data.error);
+                            $("#modal_eliminarecibo").modal("show");
+                        }
+                    }, "json");
+                    } else {
+                    }
+                });
+            });
+
+        });
+
+    </script>
+{% endblock %}
+    <div class='row-fluid'>
+     <div class="span1"></div>
+        <div class='span9'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="background-color: #49afcd;text-align: center;width: 30%"><h3>Alumno</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 30%"><h3>Carrera</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 10%"><h3>Numero</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 10%"><h3>Valor</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 10%"><h3>Fecha</h3></th>
+                        <th style="background-color: #49afcd;text-align: center;width: 10%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for per in permisos %}
+                        <tr>
+                            <td style="background-color: #c1eee1;text-align: center;width:20%">
+                                {{ per.inscripcion.persona.nombre_completo }}
+                            </td>
+                            <td style="background-color: #c1eee1;text-align: center;width:20%">
+                                {{ per.inscripcion.carrera.nombre }}
+                            </td>
+                            <td style="background-color: #c1eee1;text-align: center;width:5%">
+                                {{ per.numero }}
+                            </td>
+                            <td style="background-color: #c1eee1;text-align: center;width:5%">
+                                {{ per.valor|floatformat:2 }}
+                            </td>
+                            <td style="background-color: #c1eee1;text-align: center;width:10%">
+                                {{ per.fecha|date:"d-m-Y"  }}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if perms.sga.change_factura %}
+                                            <li><a class="aceliminarecibo"  iid="{{ per.id }}" href='#'> <i class='icon-move'></i> Eliminar </a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>

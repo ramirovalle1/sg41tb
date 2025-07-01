@@ -1,0 +1,926 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <style type="text/css">
+
+     .existecan input[ id|='dialog-input']{
+            text-transform: uppercase;
+            text-align: center;
+     }
+    </style>
+     <script type="text/javascript">
+        $(function() {
+            $("#id_dato").attr({"autocomplete":"off"});
+            $("#id_dato2").attr({"autocomplete":"off"});
+
+            $("#search").click(function() {
+                    var term = $("#searchfield").val().toUpperCase();
+                    location.href = "/convenios?s="+term;
+            });
+
+            $("#filtipo").change(function() {
+                var tipo = $("#filtipo").val();
+                location.href = "/convenios?tipo="+tipo;
+            });
+
+            $("#filcarrera").change(function() {
+                var car = $("#filcarrera").val();
+                var mod = $("#filmodalidad").val();
+                var cla = $("#filclasif").val();
+                location.href = "/convenios?car="+car+"&mod="+mod+"&cla="+cla;
+            });
+
+            $("#filmodalidad").change(function() {
+                var car = $("#filcarrera").val();
+                var mod = $("#filmodalidad").val();
+                var cla = $("#filclasif").val();
+                location.href = "/convenios?car="+car+"&mod="+mod+"&cla="+cla;
+            });
+            $("#filclasif").change(function() {
+                var car = $("#filcarrera").val();
+                var mod = $("#filmodalidad").val();
+                var cla = $("#filclasif").val();
+                location.href = "/convenios?car="+car+"&mod="+mod+"&cla="+cla;
+            });
+
+
+            $(".clasificacion").click(function(){
+                $.get("/convenios",{"action": "verclasificacion"},function(data) {
+                        $("#modal_clasificacion .modal-body").html(data);
+                        $("#modal_clasificacion #paneltitle1").html("CLASIFICACION");
+                        $("#modal_clasificacion").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "500px" });
+                        $("#modal_clasificacion").modal("show");
+                   }, "html");
+               return false;
+
+            });
+
+            $("#modal_clasificacion #adicionar").click(function(){
+                $("#modal_clasificacion").modal("hide");
+                smoke.prompt('Adicionar Clasificacion',function(e){ // como el InputBox
+                        if (e){
+                            $.post("/convenios",{"action": "addclasificacion","nombre":e.toUpperCase()},function(data) {
+                               if(data.result=='ok'){
+
+                               }else{
+                                   alert("Ocurrio un Error... Intentelo mas Tarde");
+                               }
+                            },"json");
+                        }
+                         $.get("/convenios",{"action": "verclasificacion"},function(data) {
+                                        $("#modal_clasificacion .modal-body").html(data);
+                                        $("#modal_clasificacion #paneltitle1").html("CLASIFICACION");
+                                        $("#modal_clasificacion").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "500px" });
+                                        $("#modal_clasificacion").modal("show");
+                                   }, "html");
+                               return false;
+                    }, {
+                        ok: "Guardar",
+                        cancel: "Cancelar",
+                        classname: "classpront existecan",
+                        reverseButtons: true
+                    });
+            });
+
+
+
+
+             $("#modal_clasificacion .cerrar").click(function() {
+                $("#modal_clasificacion").modal("hide");
+                 return false;
+            });
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            buscar_carrera = function(query, process) {
+                 $.get("/reportes", {'action':'data', 'model': 'Carrera',
+                    'p': 1, 'q': query, 's': 10}, function(data) {
+                    if (data.results) {
+                        if(data.results.length > 0)
+                        {
+                            $("#id_dato").get(0).results = data.results;
+                            listing = [];
+                            for (var i in data.results) {
+                                var dato = data.results[i];
+                                listing.push(dato.name);
+                            }
+                            process(listing);
+                        }
+                        else{
+                            $("#id_dato").attr("myval","");
+                            $("#id_dato").val("");
+                            $("#id_dato").attr("alias","");
+
+                        }
+                    }
+                }, 'json');
+            };
+            buscar_modalidad = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Modalidad',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    if(data.results.length > 0)
+                    {
+                        $("#id_dato2").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#id_dato2").attr("myval","");
+                        $("#id_dato2").val("");
+                        $("#id_dato2").attr("alias","");
+
+                    }
+                }
+                }, 'json');
+            };
+
+            buscar_clasificacion = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Clasificacion',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    if(data.results.length > 0)
+                    {
+                        $("#id_dato3").get(0).results = data.results;
+                        listing = [];
+                        for (var i in data.results) {
+                            var dato = data.results[i];
+                            listing.push(dato.name);
+                        }
+                        process(listing);
+                    }
+                    else{
+                        $("#id_dato3").attr("myval","");
+                        $("#id_dato3").val("");
+                        $("#id_dato3").attr("alias","");
+
+                    }
+                }
+                }, 'json');
+            };
+
+            $('#id_dato').typeahead({source: buscar_carrera, updater: function(item) {
+                var results = $("#id_dato").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_dato").attr("myval",datos.id);
+                        carrera_id=datos.id;
+
+                    }
+                }
+                return item;
+
+            }});
+
+            $('#id_dato2').typeahead({source: buscar_modalidad, updater: function(item) {
+                var results = $("#id_dato2").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_dato2").attr("myval",datos.id);
+                       modalidad_id=datos.id;
+
+                    }
+                }
+                return item;
+
+            }});
+
+            $('#id_dato3').typeahead({source: buscar_clasificacion, updater: function(item) {
+                var results = $("#id_dato3").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#id_dato3").attr("myval",datos.id);
+                       clasificacion_id=datos.id;
+
+                    }
+                }
+                return item;
+
+            }});
+            $(".clasi").click(function(){
+                idconv = $(this).attr('cid');
+                convenio = $(this).attr('convenio');
+                $.get("/convenios",{"action": "verclasificacionconvenio","id":idconv},function(data) {
+                        $("#detalle_clasificacion .modal-body").html(data);
+                        $("#detalle_clasificacion #paneltitle1").html("Clasificaciones de Convenio: " + convenio);
+                        $("#detalle_clasificacion").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                        $("#detalle_clasificacion").modal("show");
+                   }, "html");
+               return false;
+
+            });
+
+            $("#detalle_clasificacion #adicionar").click(function() {
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_clasificacion").modal("hide");
+                $("#id_dato3").val("");
+                clasificacion_id = '';
+                $("#modal_agregar_clasificacion #paneltitle1").html("Adicionar Clasificacion a convenio: " + convenio );
+                $("#modal_agregar_clasificacion").modal({width: '800px', backdrop: 'static'});
+                $("#modal_agregar_clasificacion").modal("show");
+                return false;
+            });
+
+            $("#modal_agregar_clasificacion .adicionar").click(function() {
+                if (clasificacion_id > 0){
+                    $("#modal_agregar_clasificacion").modal("hide");
+                    $.post("/convenios",{"action": "addclasificacionconvenio","id":idconv,"clasificacion":clasificacion_id},function(data) {
+                       if(data.result=='ok'){
+                            $.get("/convenios",{"action": "verclasificacionconvenio","id":idconv},function(data) {
+                            $("#detalle_clasificacion .modal-body").html(data);
+                            $("#detalle_clasificacion #paneltitle1").html(convenio);
+                            $("#detalle_clasificacion").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                            $("#detalle_clasificacion").modal("show");
+                        }, "html");
+                   return false;
+                       }else{
+                           alert("Ocurrio un Error... Intentelo mas Tarde");
+                       }
+                    },"json");
+                }else{
+                   alert("Debe Ingresar una Carrera");
+                }
+            });
+
+
+            $(".carreras").click(function(){
+                idconv = $(this).attr('cid');
+                convenio = $(this).attr('convenio');
+                $.get("/convenios",{"action": "vercarreras","id":idconv},function(data) {
+                        $("#detalle_carrera .modal-body").html(data);
+                        $("#detalle_carrera #paneltitle1").html(convenio);
+                        $("#detalle_carrera").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                        $("#detalle_carrera").modal("show");
+                   }, "html");
+               return false;
+
+            });
+
+            $("#detalle_carrera #adicionar").click(function() {
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_carrera").modal("hide");
+                $("#id_dato").val("");
+                carrera_id = '';
+                $("#agregar_carrera #paneltitle1").html("Adicionar Carrera a Convenio: " + convenio);
+                $("#agregar_carrera").modal({width: '800px', backdrop: 'static'});
+                $("#agregar_carrera").modal("show");
+            });
+
+            $("#detalle_modalidad #adicionar").click(function() {
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_modalidad").modal("hide");
+                $("#id_dato2").val("");
+                modalidad_id = '';
+                $("#agregar_modalidad #paneltitle1").html("Adicionar Modalidad a Carrera: "+ carrera );
+                $("#agregar_modalidad").modal({width: '800px', backdrop: 'static'});
+                $("#agregar_modalidad").modal("show");
+            });
+
+
+            $("#agregar_carrera .cerrar").click(function() {
+                $("#agregar_carrera").modal("hide");
+                $("#detalle_carrera").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                $("#detalle_carrera").modal("show");
+                 return false;
+
+            });
+            $("#modal_agregar_clasificacion .cerrar").click(function() {
+                $("#modal_agregar_clasificacion").modal("hide");
+                $("#detalle_clasificacion").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                $("#detalle_clasificacion").modal("show");
+                 return false;
+
+            });
+
+            $("#detalle_carrera .cerrar").click(function() {
+                $("#detalle_carrera").modal("hide");
+                 return false;
+
+            });
+
+            $("#detalle_clasificacion .cerrar").click(function() {
+                $("#detalle_clasificacion").modal("hide");
+                 return false;
+
+            });
+            $("#agregar_modalidad .cerrar").click(function() {
+
+                $("#agregar_modalidad").modal("hide");
+                $("#detalle_modalidad").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                $("#detalle_modalidad").modal("show");
+                 return false;
+
+            });
+
+            $("#detalle_modalidad .cerrar").click(function() {
+                $("#detalle_modalidad").modal("hide");
+                $("#detalle_carrera").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                $("#detalle_carrera").modal("show");
+                 return false;
+
+            });
+
+            $("#agregar_carrera .adicionar").click(function() {
+                if (carrera_id > 0){
+                    $("#agregar_carrera").modal("hide");
+                    $.post("/convenios",{"action": "addcarrera","id":idconv,"carrera":carrera_id},function(data) {
+                       if(data.result=='ok'){
+                           $.get("/convenios",{"action": "vercarreras","id":idconv},function(data) {
+                            $("#detalle_carrera .modal-body").html(data);
+                            $("#detalle_carrera #paneltitle1").html(convenio);
+                            $("#detalle_carrera").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                            $("#detalle_carrera").modal("show");
+                       }, "html");
+                   return false;
+                       }else{
+                           alert("Ocurrio un Error... Intentelo mas Tarde");
+                       }
+                    },"json");
+                }else{
+                   alert("Debe Ingresar una Carrera");
+                }
+            });
+
+            $("#agregar_modalidad .adicionar").click(function() {
+                if (modalidad_id > 0){
+                    $("#agregar_modalidad").modal("hide");
+                    $.post("/convenios",{"action": "addmodalidad","id":idconv,"modalidad":modalidad_id},function(data) {
+                       if(data.result=='ok'){
+                           $.get("/convenios",{"action": "vermodalidades","id":idconv},function(data) {
+                            $("#detalle_modalidad .modal-body").html(data);
+                             $("#detalle_modalidad #paneltitle1").html(convenio + " - " + carrera);
+                            $("#detalle_modalidad").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                            $("#detalle_modalidad").modal("show");
+                       }, "html");
+                   return false;
+                       }else{
+                           alert("Ocurrio un Error... Intentelo mas Tarde");
+                       }
+                    },"json");
+                }else{
+                   alert("Debe Ingresar una Carrera");
+                }
+            });
+
+            $(".eliminar").click(function(){
+                 var id = $(this).attr("cid");
+                 smoke.confirm('Se eliminara el registro', function(e){
+                    if (e){
+                        location.href = '/convenios?action=eliminar&id='+id;
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: "CANCELAR",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+            $(".estado").click(function() {
+              var estid = $(this).attr("idest");
+                 smoke.confirm("Va a cambiar Estado? ", function(e){
+                    if (e){
+                        $.post("/convenios",{"action": "activa","estid":estid},function(data) {
+                           if(data.result=='ok'){
+                               smoke.alert('SE REALIZO CAMBIO DE ESTADO');
+                               location.reload();
+                           }else{
+                                smoke.alert('ATENCION: ' + (data.result));
+                           }
+                        },"json");
+                    }
+                    }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+            });
+
+            // presentar ventana que permita consultar alumnos con discapacidad que hicienron vinculacion y ya tiene aprobado con 160 horas
+
+            function validarSiNumero(numero){
+              if (!/^([0-9])*$/.test(numero)){
+               $($("#dato").get(0).parentNode).find(".help-text").html("Solo número");
+                  return false;
+              }else{
+                  return true;
+              }
+
+            }
+
+             $("#btn_discapacidad").click(function() {
+                $("#discapacidad").modal({backdrop: 'static', keyboard: false, width: "20%", height: "20%"});
+                $("#discapacidad").modal("show");
+                $("#dato").val("");
+                $($("#dato").get(0).parentNode).find(".help-text").html("");
+
+            });
+
+
+              $("#discapacidad .btn-cerrar").click(function() {
+                 $("#discapacidad").modal('hide');
+                 $("#dato").val("");
+              });
+
+             $("#discapacidad .btn-consultar").click(function() {
+{#                showWaiting("Buscando requerimiento","Espere unos segundos por favor...");#}
+                 var dato = $("#dato").val();
+                     if (dato){
+                             if (validarSiNumero(dato)){
+                                     $("#discapacidad").modal("hide");
+
+                                    location.href = '/convenios?action=discapVinculacion&dato='+dato;
+{#                                     $.post("/convenios",{"action": "DiscapacidadVinculacion","dato":dato},function(data) {#}
+{#                                       if(data.result=='ok'){#}
+{#                                            $("#respuesta_discp").html("Estudiantes Discapacitados con Vinculación Aprobada :"+" "+data.num_est_aprobado);#}
+{#                                            $("#dato").val("");#}
+{#                                       }else{#}
+{#                                           alert("Error al consultar");#}
+{#                                           $("#respuesta_discp").html("");#}
+{#                                           $("#dato").val("");#}
+{#                                       }#}
+{#                                         hideWaiting();#}
+{#                                    },"json");#}
+                             }
+                     }
+              });
+
+       {#------------------------------------------------------PANTALLA VER TIPOS----------------------------------------------------------------#}
+        $(".ver_tipos").click(function() {
+            $.get("/convenios",{"action": "vertipos"},function(data) {
+                $("#ver_tipo .modal-body").html(data);
+                $("#ver_tipo #paneltitle1").html("Tipos de Convenios");
+                $("#ver_tipo").modal({"backdrop":"static","width":"40%"});
+                $("#ver_tipo").modal("show");
+           }, "html");
+        });
+
+        $("#ver_tipo .btn-cerrar").click(function(){
+            $("#ver_tipo").modal("hide");
+        });
+
+        $("#ver_tipo #agregar").click(function() {
+            $("#agregar_tipo #paneltitle2").html('Nuevo Tipo de Documento');
+            $("#agregar_tipo").modal({"backdrop":"static","width":"40%"});
+        });
+
+        $("#agregar_tipo .btn-cerrar").click(function(){
+            $("#agregar_tipo").modal("hide");
+        });
+
+{#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+        {% if error %}
+            smoke.alert('{{ error }}');
+            setInterval(function(){
+            }, 5000);
+        {% endif %}
+
+        });
+    </script>
+{% endblock %}
+
+{% block canvas %}
+     <div class='row-fluid'>
+        <div class='span7'>
+            {% if activos %} <h3>Convenios Activos </h3> {% endif %}
+            {% if inactivos %} <h3>Convenios Inactivos </h3> {% endif %}
+            {% if todos %} <h3>Convenios  </h3> {% endif %}
+            {% if not activos and not inactivos and not todos %}
+                <h3> Convenios
+                    {% if carrera_id %}{{ carrera_id.nombre }}{% endif %} {% if modalidad_id %}{{ modalidad_id.nombre }}{% endif %} {% if clasificacion_id %}<br>{{ clasificacion_id.nombre }}{% endif %}</h3> {% endif %}
+            <br>
+        </div>
+
+         {% if perms.sga.add_convenio  %}
+        <div class='span4' style="text-align: right">
+         <div class='btn-group'style="text-align: right  ">
+            <a href="/programas" class='btn btn-warning'><i class="icon-share-alt"></i> Proyectos</a>
+        </div>
+        <div class='btn-group'style="text-align: left  ">
+            <a href="/vinculacion" class='btn btn-success'><i class="icon-share-alt"></i>Actividades</a>
+        </div>
+         </div>
+         {% endif %}
+        {% if persona.pertenece_soporte or persona.pertenece_documentosvinculacion %}
+            <div class='span4' style="text-align: right">
+                <div class='btn-group'style="text-align: right  ">
+                    <a href="/programas" class='btn btn-warning'><i class="icon-share-alt"></i> Proyectos</a>
+                </div>
+                <div class='btn-group'style="text-align: left  ">
+                    <a href="/vinculacion" class='btn btn-success'><i class="icon-share-alt"></i>Actividades</a>
+                </div>
+            </div>
+        {% endif %}
+        <div class='span1'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+    {% if perms.sga.add_convenio  %}
+    <div class='row-fluid'>
+        <div class='span12'>
+            <a href="/convenios?action=add" class='btn btn-success'><i class="icon-plus"></i>Adicionar Convenio</a>
+            <a href="#" class='btn btn-info ver_tipos'><i class="icon-eye-open"></i> Ver Tipos</a>
+        </div>
+    </div> <br>
+    {% endif %}
+    <div class='row-fluid'>
+        <div class='span12'>
+            <div class='span4' style="text-align: left">
+                <form class="form-search">
+                    <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+                    <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+                    {% if search %}
+                        <a href="/convenios" id='allresults' class='btn btn-info'><i class="icon-refresh icon-white"></i> Todos</a>
+                    {% endif %}
+                </form>
+            </div>
+
+             <div class='span5' style="text-align: right">
+            <b >Tipo de Convenio </b>
+               <select id="filtipo" class="input-large bigger">
+                    <option value="">-----</option>
+                    {% for t in tipo %}
+                        <option value="{{ t.id }}" {% if tipo_id  %}{% if tipo_id.id == t.id %}selected="selected"{% endif %}{% endif %}>{{ t.nombre }}</option>
+                    {% endfor %}
+            </select>
+            </div>
+
+           <div class="span3" style="text-align: right;">
+              <a id="btn_discapacidad" class='btn btn-info' title="Indicador de Estudiantes con Discapacidad y Vinculación Aprobada ">Indicador de Discapacidad</a>
+              <a id="btn_discapacidad" class='btn btn-warning clasificacion'> Clasificaci&oacute;n</a>
+           </div>
+        </div>
+    </div>
+
+    <div  class='row-fluid'>
+            <div class="span9" style="text-align: right">
+
+                <b >Carrera </b>
+                       <select id="filcarrera" class="input-large bigger">
+                            <option value="">-----</option>
+                            {% for ca in carreras %}
+                                <option value="{{ ca.id }}" {% if carrera_id  %}{% if carrera_id.id == ca.id %}selected="selected"{% endif %}{% endif %}>{{ ca.nombre }}</option>
+                            {% endfor %}
+                    </select>
+                <b>Modalidad </b>
+                   <select id="filmodalidad" class="input-large bigger">
+                        <option value="">-----</option>
+                        {% for m in modalidad %}
+                        <option value="{{ m.id }}" {% if modalidad_id  %}{% if modalidad_id.id == m.id %}selected="selected"{% endif %}{% endif %}>{{ m.nombre }}</option>
+                        {% endfor %}
+                   </select>
+                <b>Clasificaci&oacute;n </b>
+                   <select id="filclasif" class="input-large bigger">
+                        <option value="">-----</option>
+                        {% for c in clasificacion %}
+                        <option value="{{ c.id }}"  {% if clasificacion_id  %}{% if clasificacion_id.id == m.id %}selected="selected"{% endif %}{% endif %}>{{ c.nombre }}</option>
+                        {% endfor %}
+                   </select>
+            </div>
+            <div class="span3" style="text-align: right; width: 320px;">
+                {% if activos %}
+                    <a href="/convenios?i=1" class='btn btn-danger'> Inactivos</a>
+                    <a href="/convenios?t=1" class='btn btn-success'>Todos</a>
+                {% endif %}
+                {% if inactivos %}
+                    <a href="/convenios?a=1" class='btn btn-info'>   Activos</a>
+                    <a href="/convenios?t=1" class='btn btn-success'>Todos</a>
+                {% endif %}
+                {% if todos %}
+                    <a href="/convenios?a=1" class='btn btn-info'>  Activos</a>
+                    <a href="/convenios?i=1" class='btn btn-danger'>Inactivos</a>
+                {% endif %}
+                {% if not activos and not inactivos and not todos %}
+                    <a href="/convenios?i=1" class='btn btn-danger'> Inactivos</a>
+                    <a href="/convenios?a=1" class='btn btn-info'>   Activos</a>
+                    <a href="/convenios?t=1" class='btn btn-success'>Todos</a>
+                {% endif  %}
+            </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th style="text-align: center">Instituci&oacute;n</th>
+                <th style="text-align: center">Objetivo</th>
+                <th style="text-align: center">Nacional</th>
+                <th style="text-align: center">Tiempo</th>
+                <th style="text-align: center">Administrador</th>
+                <th style="text-align: center">Datos Administrador</th>
+
+                <th style="text-align: center">Representante</th>
+                <th style="text-align: center">Datos Representante</th>
+
+                <th style="text-align: center">Pa&iacute;s</th>
+                <th style="text-align: center">Cant&oacute;n</th>
+                <th style="text-align: center">Prolonga</th>
+                <th style="text-align: center">Estado</th>
+                <th style="text-align: center">Archivo</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for c in convenio %}
+                <tr>
+                    <td>{{ c.institucion }}<br><h6 style='color:darkcyan'>{{ c.tipo.nombre }}</h6></td>
+                    <td>{{ c.objetivo }}</td>
+{#                    <td>{{ c.nacional }}</td>#}
+                    <td style="text-align: center">
+                    {%  if c.nacional %}
+                        <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                    {% else %}
+                        <img src='/static/images/16/false.png' alt='No' border='0'/>
+                    {% endif %}
+                    </td>
+                    <td style="text-align: center">{% if c.indefinido %}INDEFINIDO{% else %}{% if c.tiempo %}{{ c.tiempo }}{% endif %}<br>({{ c.inicio|date:'d-m-Y' }} - {{ c.fin|date:'d-m-Y' }}{% endif %})</td>
+                    <td>{{ c.contacto }}</td>
+                    <td style="text-align: center">{{ c.contactofono}} - {{ c.contactoemail}}  </td>
+
+                    <td> {% if c.representante %} {{ c.representante }} {% endif %}</td>
+                    <td style="text-align: center"> {% if c.representantetelefono %}{{ c.representantetelefono}} - {{ c.representanteemail}} {% endif %}  </td>
+
+                    <td>{% if c.pais  %}{{ c.pais }}{% endif %}</td>
+                    <td>{% if c.canton %}{{ c.canton }}{% endif %}</td>
+                    <td>{{ c.prolonga }}</td>
+                    <td style="text-align: center">
+                        {%  if c.activo %}
+                            <a href="#" class="estado"  idest='{{ c.id }}'><img src='/static/images/16/true.png' alt='Si' border='0'/></a>
+                        {% else %}
+                            <a href="#" class="estado"  idest='{{ c.id }}'><img src='/static/images/16/false.png' alt='Si' border='0'/></a>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center">{% if c.archivo %}<span title="Ud puede descargar el archivo"><a href="media/{{ c.archivo }}">Descargar</a></span>{% endif %}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                Acciones
+                            </a>
+                            <ul class="dropdown-menu pull-right">
+                                {%  if c.activo %}
+                                    {% if perms.sga.change_convenio  %}
+                                        <li><a  href="/convenios?action=editar&id={{ c.id }} "> <i class='icon-edit'></i> Editar </a></li>
+                                        {% if not c.puede_eliminarse %}
+                                            <li><a  href="#" class="eliminar" cid={{ c.id }} > <i class='icon-remove'></i> Eliminar </a></li>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                                <li><a  href="#" class="carreras" cid="{{ c.id }}" convenio="{{ c.institucion }}"> <i class='icon-table'></i> Carreras </a></li>
+                                <li><a  href="#" class="clasi" cid="{{ c.id }}" convenio="{{ c.institucion }}"> <i class='icon-table'></i> Clasificaci&oacute;n </a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            {% if not convenio %}
+                <tr>
+                    <td colspan="10">
+                        NO HAY REGISTROS
+                    </td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            <div class='pagination'>
+                <ul>
+                    {% if paging.num_pages > 20 %}
+                    <div class='pagination'>
+                        <ul>
+                            {% if paging.primera_pagina %}
+                                <li><a href="/convenios?page=1">1</a></li>
+                                <li><a href="/convenios?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                            {% endif %}
+                            {% for pagenumber in paging.paginas %}
+                                <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/convenios?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if carrera_id %}&car={{ carrera_id.id }}{% endif %}{% if modalidad_id %}&mod={{ modalidad_id.id }}{% endif %}{% if modalidad_id %}&cla={{ clasificacion_id.id }}{% endif %}">{{ pagenumber }}</a></li>
+                            {% endfor %}
+                            {% if paging.ultima_pagina %}
+                                <li><a href="/convenios?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}{% if carrera_id %}&car={{ carrera_id.id }}{% endif %}{% if modalidad_id %}&mod={{ modalidad_id.id }}{% endif %}{% if modalidad_id %}&cla={{ clasificacion_id.id }}{% endif %}" class="active">...</a></li>
+                                <li><a href="/convenios?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}{% if carrera_id %}&car={{ carrera_id.id }}{% endif %}{% if modalidad_id %}&mod={{ modalidad_id.id }}{% endif %}{% if modalidad_id %}&cla={{ clasificacion_id.id }}{% endif %}">{{ paging.num_pages }}</a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    {% else %}
+
+                    <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/convenios?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if carrera_id %}&car={{ carrera_id.id }}{% endif %}{% if modalidad_id %}&mod={{ modalidad_id.id }}{% endif %}{% if modalidad_id %}&cla={{ clasificacion_id.id }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="discapacidad" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese el A&ntilde;o a Consultar</h3>
+        </div>
+        <div class="modal-body " style="text-align: center">
+            <input id='dato' style="width: 40%;border-bottom: 3px;border-radius: 4px;text-align: center" > </input>
+            <p class="help-text"> </p>
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a  class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a style="cursor: pointer" class="btn btn-primary btn-consultar" > Consultar</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="detalle_carrera">
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+                <div >
+                    {% if perms.sga.change_convenio  %}
+                        <a style="float: right" href="#" id="adicionar" class="btn btn-success  btn-aceptar"> <i  class="icon-share-alt icon-white"></i> <b> ADICIONAR </b></a>
+                    {% endif %}
+                    <a style="float: left" href="#" class="btn btn-danger  btn-aceptar cerrar">  <i  class="icon-remove icon-white"></i> <b> SALIR</b></a>
+                </div>
+        </div>
+    </div>
+    <div class="modal fade static" id="detalle_clasificacion">
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                {% if perms.sga.change_convenio  %}
+                    <a style="float: right" href="#" id="adicionar" class="btn btn-success  btn-aceptar"> <i  class="icon-share-alt icon-white"></i> <b> ADICIONAR </b></a>
+                {% endif %}
+                <a style="float: left" href="#" class="btn btn-danger  btn-aceptar cerrar">  <i  class="icon-remove icon-white"></i> <b> SALIR</b></a>
+
+            </div>
+        </div>
+    </div>
+
+     <div class="modal fade static" id="modal_agregar_clasificacion"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Agregar Clasificaci&oacute;n</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in datoform3 %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar"> <i  class="icon-save icon-white"></i>  GUARDAR</a>
+            <a href="#" class="btn btn-cerrar btn btn-danger cerrar"> <i  class="icon-remove icon-white"></i> SALIR</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="agregar_carrera"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Agregar Carrera</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in datoform %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar"> <i  class="icon-save icon-white"></i>  GUARDAR</a>
+            <a href="#" class="btn btn-cerrar btn btn-danger cerrar"> <i  class="icon-remove icon-white"></i> SALIR</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_modalidad"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Agregar Modalidad</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in datoform2 %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar"> <i  class="icon-save icon-white"></i>  GUARDAR</a>
+            <a href="#" class="btn btn-cerrar btn btn-danger cerrar"> <i  class="icon-remove icon-white"></i> SALIR</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="detalle_modalidad">
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                <a style="float: right" href="#" id="adicionar" class="btn btn-success  btn-aceptar"> <i  class="icon-share-alt icon-white"></i> <b> ADICIONAR </b></a>
+                <a style="float: left" href="#" class="btn btn-danger  btn-aceptar cerrar">  <i  class="icon-remove icon-white"></i> <b> SALIR</b></a>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal fade static" id="modal_clasificacion">
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                {% if perms.sga.change_convenio  %}
+                    <a style="float: right" href="#" id="adicionar" class="btn btn-success  btn-aceptar"> <i  class="icon-share-alt icon-white"></i> <b> ADICIONAR </b></a>
+                {% endif %}
+                    <a style="float: left" href="#" class="btn btn-danger  btn-aceptar cerrar">  <i  class="icon-remove icon-white"></i> <b> SALIR</b></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="ver_tipo"   >
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+    {#        ver_docente.html#}
+        </div>
+        <div class="modal-footer">
+            <div >
+                <a style="float: left" href="#" id="agregar" class="btn btn-success">Agregar Tipo</a>
+                <a style="float: left" href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_tipo">
+        <div class="modal-header " style="word-wrap: break-word">
+            <h4  id='paneltitle2' ></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' action="/convenios" method="POST"  >
+                <input type='hidden' name='action' value='add_tipo' />
+                {% for c in formtipo %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ c.name }}">{{ c.label }}</label>
+                        <div class="controls">
+                            {{ c }}
+                            <p class="help-text">{{ c.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="btn btn-success" id="formbutton">Guardar</button>
+                <a href="#" class="btn btn-cerrar"> Cerrar</a>
+            </form>
+        </div>
+    </div>
+{% endblock  %}

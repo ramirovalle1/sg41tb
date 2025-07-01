@@ -1,0 +1,230 @@
+{% extends "formbs.html" %}
+{% block extraheading %}
+    <style>
+        #formulary table td input#id_email { text-transform: none; }
+    </style>
+{% endblock %}
+{% block javascript %}
+    $("#id_codigo,#id_nombre,#id_autor,#id_tipo,#id_anno,#id_copias,#id_palabrasclaves,#id_sede,#id_idioma").addClass("validate[required]");
+    $("#id_codigo").focus();
+    $("#id_anno").addClass("input-small");
+    $("#id_paginas, #id_copias").addClass("input-mini");
+    $("#id_codigo, #id_codigodewey").addClass("input-medium");
+    $("#id_tipo, #id_sede, #id_idioma").addClass("input-large");
+
+    $("#id_autor1").attr({"autocomplete":"off"});
+    $($("#id_autor1").get(0).parentNode.parentNode).hide();
+    $($("#id_autor1_id").get(0).parentNode.parentNode).hide();
+    $("#id_tutor1").attr({"autocomplete":"off"});
+    $($("#id_tutor1").get(0).parentNode.parentNode).hide();
+    $($("#id_tutor1_id").get(0).parentNode.parentNode).hide();
+    $("#id_carrera").attr({"autocomplete":"off"});
+    $($("#id_carrera").get(0).parentNode.parentNode).hide();
+    $($("#id_carrera_id").get(0).parentNode.parentNode).hide();
+
+    buscar_estudiante = function(query, process) {
+        $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+            'p': 1, 'q': query, 's': 10}, function(data) {
+            if (data.results) {
+                if(data.results.length > 0)
+                {
+                    $("#id_autor1").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+                else{
+                    $("#id_autor1").attr("myval","");
+                    $("#id_autor1").val("");
+                    $("#id_autor1").attr("alias","");
+
+                }
+            }
+        }, 'json');
+    };
+
+        $('#id_autor1').typeahead({source: buscar_estudiante, updater: function(item) {
+            var results = $("#id_autor1").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_autor1").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_autor1_id").val(d);
+                }
+            }
+            return item;
+        }});
+
+    buscar_tutor = function(query, process) {
+        $.get("/reportes", {'action':'data', 'model': 'Profesor',
+            'p': 1, 'q': query, 's': 10}, function(data) {
+            if (data.results) {
+                if(data.results.length > 0)
+                {
+                    $("#id_tutor1").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+                else{
+                    $("#id_tutor1").attr("myval","");
+                    $("#id_tutor1").val("");
+                    $("#id_tutor1").attr("alias","");
+
+                }
+            }
+        }, 'json');
+    };
+
+        $('#id_tutor1').typeahead({source: buscar_tutor, updater: function(item) {
+            var results = $("#id_tutor1").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_tutor1").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_tutor1_id").val(d);
+                }
+            }
+            return item;
+        }});
+
+        var tipo = $(this).val();
+        $("#id_autor1").val('');
+        $("#id_tutor1").val('');
+
+        if ({{ documento.tipo.id }}=={{ tipodoc }}){
+            $($("#id_autor1").get(0).parentNode.parentNode).show();
+            $($("#id_tutor1").get(0).parentNode.parentNode).show();
+            $("#id_autor").attr("disabled",true);
+            $("#id_tutor").attr("disabled",true);
+            {% if documento.inscripcion %}
+                 $("#id_autor1").val("{{ documento.inscripcion.persona.nombre_completo_inverso }}");
+            {% endif %}
+
+            {% if documento.docente %}
+                 $("#id_tutor1").val("{{ documento.docente.persona.nombre_completo_inverso }}");
+            {% endif %}
+        }
+        else{
+            $($("#id_autor1").get(0).parentNode.parentNode).hide();
+            $($("#id_tutor1").get(0).parentNode.parentNode).hide();
+            $("#id_autor").attr("disabled",false);
+            $("#id_tutor").attr("disabled",false);
+        };
+
+
+    buscar_carrera = function(query, process) {
+        $.get("/reportes", {'action':'data', 'model': 'Carrera',
+            'p': 1, 'q': query, 's': 10}, function(data) {
+            if (data.results) {
+                if(data.results.length > 0)
+                {
+                    $("#id_carrera").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+                else{
+                    $("#id_carrera").attr("myval","");
+                    $("#id_carrera").val("");
+                    $("#id_carrera").attr("alias","");
+
+                }
+            }
+        }, 'json');
+    };
+
+        $('#id_carrera').typeahead({source: buscar_carrera, updater: function(item) {
+            var results = $("#id_carrera").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_carrera").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_carrera_id").val(d);
+                }
+            }
+            return item;
+        }});
+
+        var tipo = $(this).val();
+        $("#id_autor1").val('');
+        $("#id_tutor1").val('');
+        $("#id_carrera").val('');
+
+        if ({{ documento.tipo.id }}=={{ tipodoc }}){
+            $($("#id_autor1").get(0).parentNode.parentNode).show();
+            $($("#id_tutor1").get(0).parentNode.parentNode).show();
+            $($("#id_carrera").get(0).parentNode.parentNode).show();
+            $("#id_autor").attr("disabled",true);
+            $("#id_tutor").attr("disabled",true);
+            {% if documento.inscripcion %}
+                 $("#id_autor1").val("{{ documento.inscripcion.persona.nombre_completo_inverso }}");
+            {% endif %}
+
+            {% if documento.docente %}
+                 $("#id_tutor1").val("{{ documento.docente.persona.nombre_completo_inverso }}");
+            {% endif %}
+
+            {% if documento.carrera %}
+                 $("#id_carrera").val("{{ documento.carrera.nombre }}");
+            {% endif %}
+        }
+        else{
+            $($("#id_autor1").get(0).parentNode.parentNode).hide();
+            $($("#id_tutor1").get(0).parentNode.parentNode).hide();
+            $($("#id_carrera").get(0).parentNode.parentNode).hide();
+            $("#id_autor").attr("disabled",false);
+            $("#id_tutor").attr("disabled",false);
+            $("#id_carrera").attr("disabled",false);
+        };
+
+
+{% endblock %}
+{% block titulo %}
+    {% if error %}
+        <div class="row-fluid">
+            <div class="span9 alert alert-error bigger">CUIDADO: ESTE C&Oacute;DIGO YA EXISTE PARA OTRO DOCUMENTO EN LA BASE DE DATOS </div>
+        </div>
+        <div class="row-fluid">
+            <div><h4>Ingrese otro c&oacute;digo si desea</h4></div>
+        </div>
+{#    {% else %}#}
+{#        Editar Documento de la Biblioteca <br/> <h4>Documento: {{ documento }}</h4>#}
+    {% endif %}
+    {% if e_edit %}
+        <div class="row-fluid">
+             <div class="span9 alert alert-error bigger">CUIDADO: Nombre de archivos NO pueden contener ñ ni caracteres especiales </div>
+        </div>
+        <div class="row-fluid">
+            <div><h4>Vuelva a editar el documento</h4></div>
+        </div>
+{#    {% else %}#}
+{#        Editar Documento de la Biblioteca <br/> <h4>Documento: {{ documento }}</h4>#}
+    {% endif %}
+     Editar Documento de la Biblioteca <br/> <h4>Documento: {{ documento }}</h4>
+    <br/>
+   {% endblock %}
+{% block formaction %}/documentos{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+
+{% block formextra %}
+    <input type='hidden' name='action' value='edit'/>
+    <input type='hidden' name='id' value='{{ documento.id }}'/>
+    <div class="row-fluid">
+        <div style="color: red; font-size: 12px; font-weight: bolder"> Nombre de archivos NO deben contener espacios,ñ ni caracteres especiales</div>
+    </div>
+{% endblock %}
+{% block formback %}/documentos{% endblock %}
+{% block buttonname %}Editar Documento{% endblock %}

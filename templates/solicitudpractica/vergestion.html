@@ -1,0 +1,140 @@
+<script type="text/javascript">
+    $(function(){
+        $(".responder").click(function()
+        {
+           $("#mensgestion").html('');
+           $("#idescehora").val($(this).attr('idescenhora'));
+           $('#observacion').val("");
+           $('#aprobado').attr("checked",false);
+           $('#finalizado').attr("checked",false);
+           $("#etiquetaenvp").html("").removeClass('alert alert-danger');
+           $("#enviarpanel").modal({"backdrop":"static"});
+           $('#enviarpanel').modal("show");
+           $("#vergestionmodal").modal("hide");
+           $("#idhoraasis").val($(this).attr("idhoraasis"));
+        });
+        {% if solictudnoaceptada %}
+            $("#nomalumn").html('<i>Solicitudes no aceptadas del Alumno {{ escenariopractica.matricula.inscripcion.persona }}<i>');
+        {% else %}
+            {% if solicitudpracticas %}
+                $("#nomalumn").html('<i>Detalle del Alumno {{ escenariopractica.matricula.inscripcion.persona }}<i>');
+            {% else %}
+                {% if aplazados %}
+                    $("#nomalumn").html('Prácticas Aplazadas del Alumno {{ inscripcion.persona }}');
+                {% endif %}
+            {% endif %}
+        {% endif %}
+
+    });
+</script>
+<div class="row-fluid">
+    <div class="span12">
+        {% if solictudnoaceptada %}
+            <table class="table table-condensed table-stripped">
+                <thead>
+                    <tr>
+                        <th style="text-align: center">Empresa</th>
+                        <th style="text-align: center">Escenario Conv.</th>
+                        <th style="text-align: center">Fecha Matricul</th>
+                        <th style="text-align: center">Fecha Solic.</th>
+                        <th style="text-align: center">Observación.</th>
+                        <th style="text-align: center">Fecha Resp.</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in solictudnoaceptada %}
+                        <tr>
+
+                            <td style="text-align: center"> {{ s.empresa }}</td>
+                            <td style="text-align: center">
+                                {% if s.escenario.convenio %}
+                                    <img src='/static/images/16/true.png' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center"> {{ s.escenario.matricula.fecha|date:'Y-m-d' }}</td>
+                            <td style="text-align: center"> {{ s.fechasolict|date:'Y-m-d H:i:s' }}</td>
+                            <td style="text-align: center"> {{ s.observacion }}</td>
+                            <td style="text-align: center"> {{ s.fecha|date:'Y-m-d H:i:s' }}</td>
+
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            {% if solicitudpracticas %}
+                <table class="table table-condensed table-stripped">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center">Asistente</th>
+                            <th style="text-align: center">Fecha Envio</th>
+                            <th style="text-align: center">Fecha No aprobada.</th>
+                            <th style="text-align: center">Observación.</th>
+                            <th style="text-align: center">Convenio.</th>
+                            <th style="text-align: center"></th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in solicitudpracticas %}
+                            <tr>
+
+                                <td style="text-align: center"> {{ s.solicitudsecretaria.personaasignada.nombre_completo }}</td>
+                                <td style="text-align: center"> {{ s.fechaenvio|date:'Y-m-d' }}</td>
+                                <td style="text-align: center"> {{ s.fecaprobada|date:'Y-m-d'  }}</td>
+                                <td style="text-align: center"> {{ s.observacion }}</td>
+                                <td style="text-align: center">
+                                    {% if s.escenariopractica.convenio %}
+                                        <img src='/static/images/16/true.png' border='0'/>
+                                    {% else %}
+                                        <img src='/static/images/16/false.png' border='0'/>
+                                    {% endif %}
+                                </td>
+                                <td>
+
+                                    <a class="btn btn-info" href="/{% if adm %}solicitud_practicasadm?action=solicitud{% else %}solicitudpracticas?{% endif %}&ides={{ s.escenariopractica.id }}&idsol={{ s.id }}" idesc="{{ e.id }}" > <i class="icon-eye-open"></i> Ver solicitud</a>
+
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                {% if aplazados %}
+                    <table class="table table-condensed table-stripped">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center"> Nivel </th>
+                                <th style="text-align: center">Fecha Matricula </th>
+                                <th style="text-align: center">Fecha Aplazamiento </th>
+                                <th style="text-align: center">Observación</th>
+                                <th style="text-align: center"></th>
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in aplazados %}
+                                {% with escen=a.existe_escenariomatri %}
+                                    <tr>
+
+                                        <td style="text-align: center">{{ a.nivel.nivelmalla }}</td>
+                                        <td style="text-align: center"> {{ a.fecha|date:'Y-m-d' }}</td>
+                                        <td style="text-align: center"> {{ a.fechaaplaza|date:'Y-m-d' }}</td>
+                                        <td style="text-align: center"> {{ a.observacionaplaza }}</td>
+                                        <td style="text-align: center">
+                                            {% if escen %}
+                                                <a class="label label-info">Tiene escenario Fecha : {{ escen.fecha|date:'Y-m-d' }}</a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    </div>
+</div>

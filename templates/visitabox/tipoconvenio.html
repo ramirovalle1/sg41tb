@@ -1,0 +1,145 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+        $(function() {
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/tipoconvenio?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+
+           $(".eliminar").click(function(){
+                 var id = $(this).attr("tcid");
+                 smoke.confirm('Se eliminara el convenio', function(e){
+                    if (e){
+                        location.href = '/tipoconvenio?action=eliminar&id='+id;
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: "CANCELAR",
+                    classname: "custom-class",
+                    reverseButtons: true
+                });
+            });
+
+        });
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+
+        <div class="span11"  >
+            <h3 >Registros de Convenio</h3></br>
+        </div>
+        <div class="span1">
+            <a href="/conveniobox" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+        <div class="span1">
+
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Convenio</a>
+            {% if search %}
+                <a href="/tipoconvenio" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span2' style="width: 9%">
+            <table class="table table-condensed table-bordered smaller2 tabla">
+               <thead>
+                <tr>
+                    <th title="Ingreso de Registro" ><a href="/tipoconvenio?action=add"><i class="icon-share-alt icon-white"></i> Nuevo Registro</a></th>
+                </tr>
+               </thead>
+            </table>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+
+        <div class='span4'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0" style="margin-top: 5%">
+
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">Descripcion</th>
+                        <th style="text-align: center;">Estado</th>
+                        <th style="text-align: center;"></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for tc in tipoconvenio %}
+                        <tr>
+                            <td style="text-align: center;" ><a href="/tipoconvenio?action=edit&id={{ tc.id }}">{{ tc.descripcion }}</a></td>
+
+                            <td style="text-align: center;">
+                                {% if tc.activo %}
+                                     <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                        <td style="text-align: center"><a title="Eliminar" class="btn btn-danger eliminar" tcid={{ tc.id }}><i class="icon-remove"></i> </td>
+
+
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+
+        <div class="span4">
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/tipoconvenio?page=1">1</a></li>
+                            <li><a href="/tipoconvenio?page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/tipoconvenio?page={{ pagenumber }}{% if todos %}&t={{ todos }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/tipoconvenio?page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/tipoconvenio?page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/suministrobox?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+{% endblock %}

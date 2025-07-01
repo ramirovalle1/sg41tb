@@ -1,0 +1,115 @@
+<script type="text/javascript">
+
+
+
+    $('.editar').click(function(){
+
+
+        $("#paneltitle1").html("Editar Registro");
+
+        $("#idmterialdocente").val($(this).attr('idmaterialdocente'));
+        $("#detalle_archivo").modal("hide");
+        $("#editararchivopanel").modal({"backdrop":"static","width":"40%"});
+        $("#editararchivopanel").modal("show");
+
+        return false;
+    });
+
+
+    aprobardocumento = function(id) {
+                $("#"+id).hide();
+                smoke.prompt("Ingrese Observaci&oacute;n", function(v) {
+              if (v) {
+                   $.post("/niveles", {"action":'aceptardocumento', "id":id,"comentario":v.toUpperCase()}, function(data) {
+                            if (data.result=='ok') {
+                                smoke.alert('Se ingreso aprobo correctamente ');
+                                setInterval(function(){
+                                    location.reload();
+                                }, 5000);
+
+
+                            }
+                            else{
+                                  smoke.alert('No se aprobo correctamente ');
+
+                                }
+
+                   }, "json");
+
+                 } else {
+                                $("#"+id).show();
+                            }
+                  });
+
+            }
+
+        noaprobardocumento = function(id) {
+                $("#"+id).hide();
+             smoke.prompt("Ingrese Observaci&oacute;n", function(v) {
+              if (v) {
+                       $.post("/niveles", {"action":'noaceptardocumento', "id":id,"comentario":v.toUpperCase()}, function(data) {
+                                if (data.result=='ok') {
+                                    smoke.alert('Se ingreso  correctamente ');
+                                    setInterval(function(){
+                                        location.reload();
+                                    }, 5000);
+
+
+                                }
+                                else{
+                                      smoke.alert('No se ingreso correctamente ');
+
+                                    }
+
+                       }, "json");
+
+                   } else {
+                                $("#"+id).show();
+                            }
+                  });
+
+            }
+
+</script>
+<div class="row-fluid">
+<div class="span12">
+    <table class="table table-condensed table-stripped">
+        <thead>
+        <tr>
+            <th style="text-align: center;width:15% ">Tipo</th>
+            <th style="text-align: center;width:20%">Fecha</th>
+            <th style="text-align: center;width:15%">Aprobar</th>
+            <th style="text-align: center;width:15%">Descargar</th>
+
+        </tr>
+        </thead>
+    <tbody>
+        {% for detarch in vermaterialdocente %}
+            <tr>
+                <td style="text-align: center"> {{ detarch.tipomaterial.descripcion }} </td>
+                <td style="text-align: center"> {{ detarch.fecha|date:'d-m-Y' }} </td>
+                {% if detarch.tiene_logmateriadocentelog  %}
+                    {% if detarch.aprobado  %}
+                        <td  style="text-align: center"><a href="#"  onclick="noaprobardocumento('{{detarch.id }}')"  class="btn  btn-danger btn-mini editar"><i class="icon-edit icon-white"></i>No Aprobar</a></td>
+                    {% else %}
+                        <td  style="text-align: center"><a href="#"  onclick="aprobardocumento('{{detarch.id }}')"  class="btn  btn-info btn-mini editar"><i class="icon-edit icon-white"></i>Aprobar</a></td>
+                    {% endif %}
+                {% else %}
+                    <td  style="text-align: center">
+                        <a href="#"  onclick="noaprobardocumento('{{detarch.id }}')"  class="btn  btn-danger btn-mini editar"><i class="icon-edit icon-white"></i>No Aprobar</a>
+                        <a href="#"  onclick="aprobardocumento('{{detarch.id }}')"  class="btn  btn-info btn-mini editar"><i class="icon-edit icon-white"></i>Aprobar</a>
+                    </td>
+
+
+                {% endif %}
+
+                <td  style="text-align: center"> {% if detarch.archivo %} <a href='{{ detarch.archivo.url }}' class='btn btn-success btn-mini'><i class="icon-download icon-white"></i>Descargar</a> {% endif %}</td>
+
+
+
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>

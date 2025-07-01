@@ -1,0 +1,299 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+        document.getElementById('id_inicio').disabled = true;
+        document.getElementById('id_fin').disabled = true;
+{#        document.getElementById('id_niveles').disabled = true;#}
+        document.getElementById("id_niveles").style.display = "none";
+        $("#id_inicio, #id_fin").datepicker({format:"dd-mm-yyyy"});
+{#        $('#id_inicio,#id_fin').datepicker({ language: 'es',autoClose: true,dateFormat:'yyyy-mm-dd'});#}
+{#        $("#chkgeneral").click(function(){#}
+{#          $("#id_carrera").val("");#}
+{#         if (document.getElementById("chkgeneral").checked){#}
+{#             document.getElementById('chkgeneral').disabled = true;#}
+{#             document.getElementById('chkfecha').disabled = true;#}
+{#             document.getElementById('id_carrera').disabled = true;#}
+{#         }else{#}
+{#            document.getElementById('chkcarrera').disabled = false;#}
+{#            document.getElementById('chkfecha').disabled = false;#}
+{#         }#}
+{#         });#}
+       $("#chkcarrera").click(function(){
+           document.getElementById("id_niveles").style.display = "block";
+          $("#id_carrera").val("");
+         if (document.getElementById("chkcarrera").checked){
+{#             document.getElementById('chkgeneral').disabled = true;#}
+             document.getElementById('chkfecha').disabled = true;
+             document.getElementById('id_carrera').disabled = false;
+         }else{
+              document.getElementById("id_niveles").style.display = "none";
+{#            document.getElementById('chkgeneral').disabled = false;#}
+            document.getElementById('chkfecha').disabled = false;
+            document.getElementById('id_carrera').disabled = true;
+         }
+     });
+        $("#chkfecha").click(function(){
+          $("#id_inicio").val("");
+          $("#id_fin").val("");
+         if (document.getElementById("chkfecha").checked){
+{#             document.getElementById('chkgeneral').disabled = true;#}
+             document.getElementById('chkcarrera').disabled = true;
+             document.getElementById('id_inicio').disabled = false;
+             document.getElementById('id_fin').disabled = false;
+         }else{
+{#            document.getElementById('chkgeneral').disabled = false;#}
+            document.getElementById('chkcarrera').disabled = false;
+             document.getElementById('id_inicio').disabled = true;
+             document.getElementById('id_fin').disabled = true;
+         }
+     });
+        $("#chknivelcerrado").click(function(){
+         if (document.getElementById("chknivelcerrado").checked){
+             document.getElementById('chknivelabierto').disabled = true;
+             document.getElementById('chknivelgeneral').disabled = true;
+         }else{
+            document.getElementById('chknivelabierto').disabled = false;
+             document.getElementById('chknivelgeneral').disabled = false;
+         }
+     });
+        $("#chknivelabierto").click(function(){
+
+         if (document.getElementById("chknivelabierto").checked){
+             document.getElementById('chknivelcerrado').disabled = true;
+             document.getElementById('chknivelgeneral').disabled = true;
+         }else{
+            document.getElementById('chknivelcerrado').disabled = false;
+             document.getElementById('chknivelgeneral').disabled = false;
+         }
+     });
+        $("#chknivelgeneral").click(function(){
+
+         if (document.getElementById("chknivelgeneral").checked){
+             document.getElementById('chknivelcerrado').disabled = true;
+             document.getElementById('chknivelabierto').disabled = true;
+         }else{
+            document.getElementById('chknivelcerrado').disabled = false;
+             document.getElementById('chknivelabierto').disabled = false;
+         }
+     });
+
+        buscar_nivel = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Carrera','p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_carrera").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+
+        $('#id_carrera').typeahead({source: buscar_nivel, updater: function(item) {
+            var results = $("#id_carrera").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+                    $("#id_carrera").removeAttr('alt');
+                    $("#id_carrera").attr('alt',datos.id);
+                }
+            }
+            idnivel=item
+            return item;
+        }});
+
+        indice = 0;
+
+        datosOK=false;
+
+        $("#generar").modal({width: '500px', backdrop: 'static'});
+        $("#generar").modal("show");
+        $("#generar #id_inicio").val("");
+        $("#generar #id_fin").val("");
+
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+            var general = $("#chkgeneral").prop('checked');
+            var chkcarrera = $("#chkcarrera").prop('checked');
+            var chkabierto = $("#chknivelcerrado").prop('checked');
+            var chkcerrado = $("#chknivelabierto").prop('checked');
+            var inicio = $("#id_inicio").val();
+            var fin = $("#id_fin").val();
+            var carrera = $("#id_carrera").attr('alt');
+            var anulada = 'False';
+
+
+            $.post("/practicas_vinculacion", {"action":"generarexcel","inicio":inicio,"fin":fin,"carrera":carrera,'general':general,'chkcarrera':chkcarrera,'chkabierto':chkabierto,'chkcerrado':chkcerrado}, function(data) {
+                if (data.result=='ok'){
+                    location.href=data.url;
+                    Swal.fire('Reporte Ejecutado','','success').then(function(){
+                                location.href = '/reporteexcel';
+{#                                location.href = '/reporteexcel';#}
+                            })
+
+
+
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json");
+{#            return false;#}
+        });
+
+        $("#generar .btn-adicionarpdf").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+            var inicio = $("#id_inicio").val();
+            var fin = $("#id_fin").val();
+            var carrera = $("#id_carrera").val();
+            var anulada = 'False';
+
+            $.post("/practicas_vinculacion", {"action":"generarpdf","inicio":inicio,"fin":fin,"carrera":carrera}, function(data) {
+
+                if (data.result=='ok'){
+
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 2500);
+                      window.open(data.reportfile);
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json");
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+    });
+
+    </script>
+
+    <style>
+
+{#    modal fade static#}
+    </style>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+
+
+    <div class="modal fade static" id="generar" style="display: none; width: 1200px" >
+{#    <div class="modal fade bs-example-modal-xl" id=generar role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">#}
+{#        <div class="modal-dialog modal-xl modal-dialog-centered">#}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="login-title">
+                        <label class="modal-title text-text-bold-600" id="myModalLabel33">Seleccione los Parametros</label>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <form id="formulario" class='form-horizontal' action="" method="POST" style="text-align:  left;">
+                        <div class='row-fluid'>
+{#                            <div class="span4">#}
+{#                                 <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">#}
+{#                                        <input type="checkbox" class="custom-control-input" id="chkgeneral">#}
+{#                                        <label class="custom-control-label" for="chkgeneral"><h4 class="form-section"><i class="icon-clipboard4"></i> General</h4></label>#}
+{#                                 </div>#}
+{#                            </div>#}
+                            <div class="span6">
+                                 <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">
+                                        <input type="checkbox" class="custom-control-input" id="chkcarrera">
+                                        <label class="custom-control-label" for="chkcarrera"><h4 class="form-section"><i class="icon-clipboard4"></i> Carrera</h4></label>
+                                 </div>
+                            </div>
+{#                            <div class="span3">#}
+{#                                 <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">#}
+{#                                        <input type="checkbox" class="custom-control-input" id="chknivel">#}
+{#                                        <label class="custom-control-label" for="chknivel"><h4 class="form-section"><i class="icon-clipboard4"></i> Niveles</h4></label>#}
+{#                                 </div>#}
+{#                            </div>#}
+                            <div class='span6'>
+                                 <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">
+                                        <input type="checkbox" class="custom-control-input" id="chkfecha">
+                                        <label class="custom-control-label" for="chkfecha"><h4 class="form-section"><i class="icon-clipboard4"></i> Rango de Fecha</h4></label>
+                                 </div>
+                            </div>
+                        </div>
+                        <br>
+
+                        <div class='row-fluid' >
+                            <div class="span12">
+                                <div class="form-group">
+                                    <b>CARRERA:</b>
+                                    <input type="text" id="id_carrera" placeholder="Ingrese la Carrera" class="form-control" value="" disabled>
+                                     <p id="helpid_carrera"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class='row-fluid' id="id_niveles">
+                            <div class="span6">
+                                 <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">
+                                        <input type="checkbox" class="custom-control-input" id="chknivelcerrado">
+                                        <label class="custom-control-label" for="chknivelcerrado"><h4 class="form-section"><i class="icon-clipboard4"></i> Nivel Cerrado</h4></label>
+                                 </div>
+                            </div>
+                            <div class="span6">
+                                 <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">
+                                        <input type="checkbox" class="custom-control-input" id="chknivelabierto">
+                                        <label class="custom-control-label" for="chknivelabierto"><h4 class="form-section"><i class="icon-clipboard4"></i> Nivel Abierto</h4></label>
+                                 </div>
+                            </div>
+{#                            <div class="span4">#}
+{#                                 <div class="custom-control custom-checkbox mb-5" style="margin-top: 15px">#}
+{#                                        <input type="checkbox" class="custom-control-input" id="chknivelgeneral">#}
+{#                                        <label class="custom-control-label" for="chknivelgeneral"><h4 class="form-section"><i class="icon-clipboard4"></i> Todos</h4></label>#}
+{#                                 </div>#}
+{#                            </div>#}
+                        </div>
+                        <br>
+                        <div class='row-fluid'>
+                            <div class="span6">
+                                <div class="form-group">
+                                    <b>Fecha Inicio:</b>
+                                    <input type="text" id="id_inicio" placeholder="" class="form-control" value="" disabled>
+                                     <p id="helptxt_inicio"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                </div>
+                            </div>
+                            <div class="span6">
+                                <div class="form-group">
+                                    <b>Fecha Fin:</b>
+                                    <input type="text" id="id_fin" placeholder="" class="form-control" value="" disabled>
+                                     <p id="helptxt_fin"  style="text-align: center;font-size: 20px;color:red;"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+
+{#                     <a href="#" id="ingresardato" class="btn btn-success"><i class=""></i> Generar Excel</a>#}
+                     <a  class="btn btn-cerrar" style="float: right;cursor: pointer;background: #FA1D06;color: white" data-bgcolor="#FA1D06" data-color="#ffffff"> Cerrar</a>
+                </div>
+            </div>
+        </div>
+{#        </div>#}
+    <div class="modal fade static" id="espera" style="display: none;"  >
+    <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}
+
+

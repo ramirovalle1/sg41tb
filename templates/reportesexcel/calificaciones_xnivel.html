@@ -1,0 +1,113 @@
+{% extends "formbs.html" %}
+{% block heading %}
+    <script>
+    $(function() {
+
+        indice = 0;
+        datosOK=false;
+        $("#id_periodo").attr({"autocomplete":"off"});
+        $("#id_carrera").attr({"autocomplete":"off"});
+
+
+        buscar_grupo = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Grupo',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#grupo").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+        $('#grupo').typeahead({source: buscar_grupo, updater: function(item) {
+                var results = $("#grupo").get(0).results;
+                for (var i in results) {
+                    var datos = results[i];
+                    if (item==datos.name) {
+                        $("#grupo").attr("myval",datos.id);
+                        $.post("/calificaciones_xnivel", {"action": "cargarNiveles", 'id': datos.id}, function (data){
+                            if (data.result == 'ok') {
+                                var niveles='';
+                                for (var x in data.nivelesMalla) {
+                                     niveles += '<option value="'+data.nivelesMalla[x].idNivelMalla+'"> '+data.nivelesMalla[x].nombreNivelMalla+'</option>';
+                                }
+                                $("#nivelMalla").html(niveles);
+                            } else {
+                               $("#helpcmbcantonedit").html("Problemas al Cargar Materias");
+                            }
+                            hideWaiting();
+                        }, 'json');
+                    }
+                }
+                return item;
+        }});
+
+        $("#generar").modal({width: '500px', backdrop: 'static'});
+        $("#generar").modal("show");
+
+        $("#generar .btn-adicionar").click(function() {
+            $("#generar").modal("hide");
+            $("#espera").modal({ backdrop: 'static'});
+            $("#espera").modal("show");
+
+            var grupo = $("#grupo").attr("myval");
+            var nivelMalla = $('#nivelMalla').val()
+
+            $.post("/calificaciones_xnivel", {"action":"generarexcel", 'grupo':grupo, 'nivelMalla':nivelMalla}, function(data) {
+                if (data.result=='ok'){
+                    $("#espera").modal("hide");
+                    setInterval(function(){
+                            location.href = '/reporteexcel';
+                    }, 250);
+                    location.href=data.url;
+                }else{
+                    smoke.alert("Error:" + data.result);
+                }
+            }, "json");
+        });
+
+        $("#generar .btn-cerrar").click(function() {
+            $("#generar").modal("hide");
+            location.href='/reporteexcel';
+            return false;
+        });
+    });
+
+    </script>
+{% endblock %}
+
+{% block canvas %}
+{% endblock %}
+
+{% block moreblock %}
+    <div class="modal fade static" id="generar" style="display: none;">
+        <div class="modal-header">
+            <h3 class="paneltitle">Calificaciones por Grupo y Nivel</h3>
+        </div>
+        <div class="modal-body ">
+            <div style="overflow-y: auto"  class='form-horizontal' >
+                   <input type="text" name="grupo" id="grupo" placeholder="Ingrese Grupo" style="width: 95%">
+            </div>
+            <div style="margin-top: 1em; width: 100%">
+                <label for="">Nivel:</label>
+                <select name="" id="nivelMalla" style="width: 100%">
+                    <option value="0">---</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-adicionar btn-success">Generar</a>
+            <a href="#" class="btn btn-cerrar">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="espera" style="display: none;"  >
+        <div class="modal-header" style="background-color: red">
+            <h3 class="paneltitle" style="text-align: center">ESPERE UN MOMENTO</h3>
+        </div>
+    </div>
+{% endblock %}
+

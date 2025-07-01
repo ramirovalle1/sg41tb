@@ -1,0 +1,189 @@
+{% extends "formbs.html" %}
+{% block javascript %}
+
+    $(function() {
+        var d =0
+        var d2 =0
+        $("#id_inscripcion,#id_responsable,#id_dirresponsable,#id_email,#id_persona").addClass("input-xxlarge");
+        $("#id_numhijos").addClass("input-small");
+        $("#id_telresponsable").addClass("input-xlarge");
+        $("#id_identificacion,#id_edadresponsable,#id_tipopersona").addClass("input-medium");
+{#        $("#id_inscripcion_id").attr({style:'display:none'});#}
+        $($("#id_inscripcion_id").get(0).parentNode.parentNode).hide();
+        $($("#id_inscripcion").get(0).parentNode.parentNode).hide();
+        $($("#id_persona").get(0).parentNode.parentNode).hide();
+        $($("#id_persona_id").get(0).parentNode.parentNode).hide();
+        $($("#id_personaext").get(0).parentNode.parentNode).hide();
+        $("#id_inscripcion").attr({"autocomplete":"off"});
+
+
+
+        deshabilitaControles = function() {
+            $("#id_responsable").attr("disabled", true);
+            $("#id_dirresponsable").attr("disabled", true);
+            $("#id_email").attr("disabled", true);
+            $("#id_numhijos").attr("disabled", true);
+            $("#id_telresponsable").attr("disabled", true);
+            $("#id_edadresponsable").attr("disabled", true);
+            $("#id_identificacion").attr("disabled", true);
+
+        };
+        habilitaControles = function() {
+            $("#id_responsable").attr("disabled", false);
+            $("#id_dirresponsable").attr("disabled", false);
+            $("#id_email").attr("disabled", false);
+            $("#id_numhijos").attr("disabled", false);
+            $("#id_telresponsable").attr("disabled", false);
+            $("#id_edadresponsable").attr("disabled", false);
+            $("#id_identificacion").attr("disabled", false);
+
+        };
+
+         $("#id_tipopersona").change(function() {
+            $("#id_inscripcion").val('');
+            $("#id_inscripcion_id").val('');
+            $("#id_persona").val('');
+            $("#id_persona_id").val('');
+            if ($("#id_tipopersona").val() == 2){
+                habilitaControles();
+                $($("#id_inscripcion").get(0).parentNode.parentNode).show();
+                $($("#id_persona").get(0).parentNode.parentNode).hide();
+                $($("#id_personaext").get(0).parentNode.parentNode).hide();
+            }else{
+                if ($("#id_tipopersona").val() == 1){
+                    habilitaControles();
+                    $($("#id_inscripcion").get(0).parentNode.parentNode).hide();
+                    $($("#id_persona").get(0).parentNode.parentNode).show();
+                    $($("#id_personaext").get(0).parentNode.parentNode).hide();
+                }else{
+
+                    if ($("#id_tipopersona").val() == 6 || $("#id_tipopersona").val() == 5){
+                        $("#id_persona_id").val(0);
+                        habilitaControles();
+                        $($("#id_inscripcion").get(0).parentNode.parentNode).hide();
+                        $($("#id_persona").get(0).parentNode.parentNode).hide();
+                        $($("#id_personaext").get(0).parentNode.parentNode).show();
+                    }
+                    else{
+                        $($("#id_inscripcion").get(0).parentNode.parentNode).hide();
+                        $($("#id_persona").get(0).parentNode.parentNode).hide();
+                        $($("#id_personaext").get(0).parentNode.parentNode).hide();
+                        deshabilitaControles();
+                    }
+                }
+            }
+
+
+         });
+
+
+        buscar_inscripcion = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Inscripcion',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_inscripcion").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+         buscar_persona = function(query, process) {
+            $.get("/reportes", {'action':'data', 'model': 'Persona',
+                'p': 1, 'q': query, 's': 10}, function(data) {
+                if (data.results) {
+                    $("#id_persona").get(0).results = data.results;
+                    listing = [];
+                    for (var i in data.results) {
+                        var dato = data.results[i];
+                        listing.push(dato.name);
+                    }
+                    process(listing);
+                }
+            }, 'json');
+        };
+
+
+        $('#id_inscripcion').typeahead({source: buscar_inscripcion, updater: function(item) {
+            var results = $("#id_inscripcion").get(0).results;
+            for (var i in results) {
+                var datos = results[i];
+                if (item==datos.name) {
+
+                    $("#id_inscripcion").attr("myval",datos.id);
+                    d=datos.id;
+                    $("#id_inscripcion_id").val(d);
+                    $("#id_persona_id").val('');
+                    $("#id_persona").val('');
+                }
+            }
+            return item;
+
+        }});
+        $('#id_persona').typeahead({source: buscar_persona, updater: function(item) {
+            var results = $("#id_persona").get(0).results;
+            for (var i in results) {
+                var datos2 = results[i];
+                if (item==datos2.name) {
+                    $("#id_persona").attr("myval",datos2.id);
+                    d2=datos2.id;
+                    $("#id_persona_id").val(d2);
+                    $("#id_inscripcion").val('');
+                    $("#id_inscripcion_id").val('');
+                }
+            }
+            return item;
+
+        }});
+
+        {% if ban == 2 %}
+            habilitaControles();
+{#            $("#id_tipopersona").attr("disabled", true);#}
+            $($("#id_tipopersona").get(0).parentNode.parentNode).hide();
+
+            {%  if insc.tipopersona.id == 2 %}
+                $("#id_inscripcion_id").val({{ insc.inscripcion.id }})
+                $($("#id_inscripcion").get(0).parentNode.parentNode).show();
+                $("#id_inscripcion").val('{{ insc.inscripcion.persona.nombre_completo_inverso }}')
+
+            {% else %}
+                {%  if insc.tipopersona.id == 5 or insc.tipopersona.id == 6 %}
+                    $($("#id_personaext").get(0).parentNode.parentNode).show();
+                    $("#id_persona_id").val({{ insc.id }})
+                    $("#id_personaext").val('{{ insc.personaext }}')
+                {% else %}
+                    $($("#id_persona").get(0).parentNode.parentNode).show();
+                    $("#id_persona_id").val({{ insc.persona.id }})
+                    $("#id_persona").val('{{ insc.persona.nombre_completo_inverso }}')
+                {% endif %}
+            {% endif %}
+            $($("#id_inscripcion").get(0).parentNode.parentNode).hide();
+            $($("#id_persona").get(0).parentNode.parentNode).hide();
+        {% else %}
+            $("#id_tipopersona").change();
+             deshabilitaControles();
+        {% endif %}
+
+
+    });
+
+{% endblock %}
+{% block titulo %}
+{{ title }}{% if ban == 2  %} <br><br>  {%  if insc.tipopersona.id == 2   %}  ALUMNO - {{  insc.inscripcion.persona.nombre_completo_inverso }} {% else %}  ADMINISTRATIVO - {{  insc.persona.nombre_completo_inverso }}  {% endif %}{% endif %}
+{% endblock %}
+
+{% block formaction %}/guarderia{% endblock %}
+{% block formtagextra %}enctype="multipart/form-data"{% endblock %}
+{% block formextra %}
+    <input type='hidden' name='action' value='add'/>
+    <input type='hidden' name='id' value='add'/>
+    <input type='hidden' name='ban' value={{ ban }}/>
+
+{% endblock %}
+
+{% block formback %}/guarderia{% endblock %}
+{% block buttonname %}Guardar y Continuar{% endblock %}

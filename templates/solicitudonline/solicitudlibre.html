@@ -1,0 +1,300 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+<script src="/static/js/notificacionpanel.js"></script>
+<link type="text/css" rel="stylesheet" href="/static/css/datepicker.css"/>
+<script type='text/javascript' src='/static/js/bootstrap-datepicker.js'></script>
+
+<script type="text/javascript">
+
+
+
+    $(function() {
+        $(".ver").click(function(){
+            var obs = $(this).attr('resolucion');
+            smoke.alert(obs);
+        });
+        $(".verobs").click(function(){
+            var obs = $(this).attr('observacion');
+            smoke.alert(obs);
+        });
+
+        $(".vergestiondocente").click(function(){
+            var respt = $(this).attr('respuesta');
+            smoke.alert(respt);
+        });
+
+        var idreqcal = 0;
+
+        calificpanel = function (idreqc){
+            idreqcal =  idreqc;
+            $.post("/solicitudonline", {action: 'busqreq','idsol':idreqc }, function(data) {
+
+                if (data.result=='ok') {
+                    $("#calific").val(0);
+                    $("#pcalif").html("");
+                    $("#observacion").val("");
+                    $("#pobservacion").html("");
+                    $("#califipanel").modal({width: '40%', backdrop: 'static'});
+                    $("#califipanel").modal("show");
+                    $("#headcalif").html(data.html);
+                }else{
+                    smoke.alert('OCURRIO UN ERROR')
+                }
+            },'json');
+        };
+
+        {% if solic %}
+            calificpanel({{ solic.id }});
+
+        {% endif %}
+
+        $("#califipanel .btn-cerrar").click(function(){
+            $("#califipanel").modal("hide");
+            return false;
+        });
+
+        $("#califipanel .btn-guardar").click(function(){
+            var valida = true;
+            $("#califipanel .btn-guardar").hide();
+            if(parseInt($("#calific").val()) == 0){
+                $("#pcalif").html('Debe ingresar la calificación');
+                valida = false;
+            }
+            if(valida){
+                $.post("/solicitudonline", {action: 'guardcalif','idsol':idreqcal,'calific':$("#calific").val() ,'observacion':$("#observacion").val() }, function(data) {
+                    if (data.result=='ok') {
+                        $("#califipanel").modal("hide");
+                        smoke.alert('Ingreso Exitoso');
+                        setInterval(function(){
+                            $.unblockUI();
+                            location.href='/solicitudonline?action=verlibres';
+                        }, 4000)
+                    }else{
+                        $("#califipanel .btn-guardar").show();
+                        $("#pobservacion").html('Ocurrio un error, intentelo nuevamente');
+                    }
+
+                },'json');
+            }else{
+                $("#califipanel .btn-guardar").show();
+            }
+        });
+
+
+    });   {# Fin de Function#}
+
+</script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class="span3"></div>
+        <div class='span6'>
+            <h2 style="text-align: center">Listado de Tr&aacute;mites Solicitados</h2>
+            <hr/>
+        </div>
+        <div class='span1'>
+            <a href="/solicitudonline" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <br/>
+    <div class="row-fluid">
+
+        <div class="span12">
+            <table class="table table-condensed table-bordered">
+                <thead>
+                    <tr class="alert alert-info">
+                        <th colspan="16" style="text-align: center; font-size: 17px;"><b> LISTADO DE TR&Aacute;MITES</b></th>
+                    </tr>
+                    <tr class="alert alert-info">
+                        <th></th>
+                        <th style="font-size: 16px;text-align: center"> Fecha </th>
+                        <th style="font-size: 16px;text-align: center"> Tipo </th>
+
+                        <th style="font-size: 16px;text-align: center"> Observaci&oacute;n </th>
+                        <th style="font-size: 16px;text-align: center"> Departamento Asignado </th>
+                        <th style="font-size: 16px;text-align: center"> Tr&aacute;mite Asignado </th>
+
+                        <th style="font-size: 16px;text-align: center"> Serie </th>
+
+                        <th style="font-size: 16px;text-align: center"> Pagado </th>
+
+                        <th style="font-size: 16px;text-align: center"> Autorizada </th>
+                        <th style="font-size: 16px;text-align: center"> Resoluci&oacute;n </th>
+                        <th style="font-size: 16px;text-align: center"> Aplicada </th>
+                        <th style="font-size: 16px;text-align: center"> Observacion Final </th>
+
+                        <th></th>
+                        <th style="font-size: 16px;text-align: center">Calificaci&oacute;n </th>
+                        <th></th>
+{#                        <th style="font-size: 16px;text-align: center"> Ver </th>#}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in solicitudes %}
+                    {% with solicitud=s.es_solicitud %}
+                    <tr style="height: 50px;">
+                        {% with especie=s.rubro.especie_valorada   %}
+                        <td style="text-align: center; vertical-align: middle;">
+                            {% if not solicitud %}
+                            <a href='/solicitudonline?action=verespecie&id={{ s.id }}' ><img src="/static/images/circle_arrow1.png" class="modimage"/></a>&nbsp;&nbsp;
+                            {% endif %}
+                        </td>
+                            <td class="bigger" style="vertical-align: middle;text-align: center">{{ s.fecha|date:'d-m-Y' }}</td>
+                         <td class="bigger" style="vertical-align: middle;"> {{ s.tipoe.nombre }}{% if solicitud %}{% if solicitud.comprobante %}<a href='{{  solicitud.descargar }}' title="Descargar"> <img src="/static/images/16/down_document.png"></a>{% endif %}{% endif %}</td>
+                         <td  style="vertical-align: middle;font-size: 12px"> {{ s.observacion }} </td>
+                        <td style="vertical-align: middle;text-align: center">
+{#                             {% if s.rubro.especie_valorada.tipoespecie.relaciodocente%}#}
+{#                             {% if s.rubro.especie_valorada.tipoespecie.id == ESPECIE_JUSTIFICA_FALTA_AU %}#}
+{#                                  {{ s.profesor.persona.nombre_completo_inverso }}#}
+{#                             {% else %}#}
+                             {% if especie  %}
+                                 {{ especie.dptoactual }}
+{#                          {% endif %}#}
+                          {% endif %}
+                            {% if solicitud %}
+                                {{  solicitud.dptoactual  }}
+                            {% endif %}
+                           </td>
+                        <td style="vertical-align: middle;text-align: center">
+{#                             {% if s.rubro.especie_valorada.tipoespecie.relaciodocente%}#}
+{#                             {% if s.rubro.especie_valorada.tipoespecie.id == ESPECIE_JUSTIFICA_FALTA_AU %}#}
+{#                                  {{ s.profesor.persona.nombre_completo_inverso }}#}
+{#                             {% else %}#}
+                             {% if especie.usuarioasignado  %}
+                                 {{ especie.usuarioasignado }}
+{#                          {% endif %}#}
+                          {% endif %}
+                            {% if solicitud %}
+                                {{  solicitud.personaasignada.nombre_completo_inverso  }}
+                            {% endif %}
+                           </td>
+                         <td class="bigger" style="vertical-align: middle;"> {% if solicitud %}{{ solicitud.id }}{% else %}{{ especie.serie }} {% endif %}</td>
+                         <td style="vertical-align: middle;text-align: center">
+                         {% if s.rubro %}
+                             {% if not s.rubro.cancelado %}
+                                    <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                 {% else %}
+                                     <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                 {% endif %}
+                         {% else %}
+                             Libre
+                         {% endif %}
+                         </td>
+
+                         <td class="bigger" style="vertical-align: middle;text-align: center;" >
+                         {% if s.tipoe.es_especie %}
+                             {% if especie.autorizado %}<img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                 {% else %}<img src='/static/images/16/false.png' alt='Si' border='0'/>
+                             {% endif %}
+                         {% else%}
+                             <img src='/static/images/16/true.png' alt='Si' border='0'/>
+
+                             {% endif %}
+                         </td>
+                         <td class="bigger" style="vertical-align: middle;text-align: center;cursor: pointer" >
+                             {% if especie.obsautorizar %} <a class="ver"  resolucion="{{  especie.obsautorizar  }}">Ver Resoluci&oacute;n</a> {% endif %}
+                             {% if solicitud.observacion %} <a class="ver"  resolucion="{{  solicitud.observacion   }}">Ver Resoluci&oacute;n</a> {% endif %}
+                         </td>
+                         <td class="bigger" style="vertical-align: middle;text-align: center;" >
+{#                             {% if s.rubro.especie_valorada.materia  %}#}
+{#                                 {% if s.rubro.especie_valorada.disponible %}#}
+{#                                    <img src='/static/images/16/false.png' alt='Si' border='0'/>#}
+{#                                 {% else %}#}
+{#                                     <img src='/static/images/16/true.png' alt='Si' border='0'/>#}
+{#                                 {% endif %}#}
+{#                            {% else%}#}
+                                {% if especie.aplicada %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                    {% if especie.archivo %}
+                                        <br>   <a href='{{  especie.descargar }}' title="Descargar"> <img src="/static/images/16/down_document.png">Descargar Archivo</a>
+
+                                    {% endif %}
+                                    {% else %}
+                                        {% if not solicitud %}
+                                            <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                        {% endif %}
+                                {% endif %}
+                                 {% if solicitud %}
+                                     {% if solicitud.cerrada %}
+                                         <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                     {% else %}
+                                         <img src='/static/images/16/false.png' alt='Si' border='0'/>
+                                     {% endif %}
+                                     {% endif %}
+{#                            {% endif %}#}
+                         </td>
+                        <td class="bigger" style="vertical-align: middle;text-align: center;" >
+                            {% if especie.aplicada %}
+                                {% if especie.observaciones %} <a class="verobs"  observacion="{{ especie.observaciones  }}">Ver Observaci&oacute;n</a> {% endif %}
+                            {% endif %}
+                             {% if solicitud.resolucion %} <a class="verobs"  observacion="{{  solicitud.resolucion   }}">Ver Observaci&oacute;n</a> {% endif %}<br>
+                             {% if especie.tienegestion_docente %} <a class="vergestiondocente"  respuesta="{{  especie.tienegestion_docente.respuesta   }} "style="color: green;">Ver Respuesta Docente</a> {% endif %}
+
+                         </td>
+{#                         <td class="bigger" style="vertical-align: middle;text-align: center;" ><a target="_blank" href="/solicitudonline?action=verespecie&id={{ s.id }}"> <img src="/static/images/16/report.png"></a></td>#}
+                            <td class="bigger" style="vertical-align: middle;text-align: center;width: 25px;height: 25px" >
+                                {% if s.rubro.puede_eliminarse %}
+                                    {% if s.rubro.verificafechaactual %}
+                                        <a href="/solicitudonline?action=eliminarespecie&id={{ s.id }}"> <i><img src="/static/images/16/delete2.png"></i></a>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        {#  OCastillo 24-11-2021 calificar atencion y ver calificacion  #}
+                         <td>{% if s.calificacion %}{{ s.calificacion }}{% endif %}</td>
+                         <td>
+                            <div class="btn-group">
+                                <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                    <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                     {% if especie.aplicada and not s.calificacion %}
+                                        <li><a style="cursor: pointer" onclick="calificpanel({{ s.id }})"><i class="icon-star-empty"></i> Calificar </a></li>
+                                     {% endif %}
+                                     {% if solicitud.cerrada %}
+                                        {% if solicitud and not solicitud.solicitudestudiante.calificacion %}
+                                            <li><a style="cursor: pointer" onclick="calificpanel({{ s.id }})"><i class="icon-star-empty"></i> Calificar </a></li>
+                                        {% endif %}
+                                     {% endif %}
+                                </ul>
+                            </div>
+                         </td>
+                        {% endwith %}
+                    </tr>
+                    {% endwith %}    
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+
+    <div class="modal fade static" id="califipanel" style="display: none;">
+        <div class="modal-header" id="headcalif">
+        </div>
+
+        <div class="modal-body">
+            <b>Calificación: </b>
+            <select id='calific' class="input-xlarge bigger"/>
+                <option value='0'>-----</option>
+                {% for c in calificaciones %}
+                    <option value="{{ c.id }}" >{{ c.descripcion }}</option>
+                {% endfor %}
+            </select>
+            <p id="pcalif" style="color: red"></p><br>
+            <b>Observación:</b> <textarea type='text' id='observacion' style="width:70%;" rows="6" cols="50" > </textarea>
+            <p id="pobservacion" style="color: red"></p><br/><br/>
+            <input type='hidden' id='action' value='addcalifi'/>
+        </div>
+        <div class="modal-footer">
+            <a  style="cursor: pointer;" id="calfcerrar" class="btn btn-cerrar">Cerrar</a>
+            <a style="cursor: pointer;" id="ingresarcalf" class="btn btn-primary btn-guardar"> Calificar</a>
+        </div>
+    </div>
+
+{% endblock %}
+
+

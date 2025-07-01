@@ -1,0 +1,85 @@
+<script type="text/javascript">
+    var idinscripexam = 0;
+    $('.validar').click(function(){
+        $("#examencondu_panel").modal('hide');
+        $("#idinscripexamval").val($(this).attr('idinscripexam'));
+        $("#validaexamendesac_panel").modal({"backdrop":"static", width: "40%"});
+        $("#validaexamendesac_panel").modal("show");
+
+        return false;
+    });
+
+    $(".verexamen").click(function(){
+        window.open('/inscripciones?action=examen&id='+$(this).attr('idti')+'&idins='+$(this).attr('idins'),"Examen", 'width='+(screen.availWidth)+',height ='+(screen.availHeight)+',fullscreen=yes,menubar=yes,location=yes,resizable=yes,scrollbars=yes,status=no');
+    });
+    $(".detavaliexa").click(function(){
+        $("#examencondu_panel").modal('hide');
+        var nombreconduc = $(this).attr('nombreconduc');
+        $.get("/inscripciones",{"action": "detavaliexa","id":$(this).attr('idinscripex')},function(data) {
+            $("#detallevalid_panel .modal-body").html(data);
+            $("#detallevalid_panel #paneltitle1").html(" Alumno:   "+nombreconduc);
+            $("#detallevalid_panel").modal({"backdrop":"static", keyboard: 'false', width: "60%", height: "200px" });
+            $("#detallevalid_panel").modal("show");
+        }, "html");
+        return false;
+    });
+
+
+
+</script>
+<div class="row-fluid">
+<div class="span12 ">
+    <table class="table table-condensed ">
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Exam&eacute;n</th>
+                <th>Asignatura</th>
+                <th>Puntaje</th>
+                <th>Valido</th>
+                <th>Consulta</th>
+                <th>Ver Examen</th>
+            </tr>
+        </thead>
+    <tbody>
+        {% for i in inscripcionexamen %}
+            <tr>
+                <td >
+                    {% if i.tituloexamencondu.convalida %}
+                        <span class="label label-info">Convalidación</span>
+                    {% else %}
+                        <span class="label label-info">Grado</span>
+                    {% endif %}
+                </td>
+                <td > {{ i.tituloexamencondu.tituloexamen }}
+                    {% if i.finalizado %}
+                        {% if   i.puntaje < nota_examen %} <span class="label label-important">Reprobado</span>{% else %} <span class="label label-success">Aprobado</span> {% endif %}
+                    {% else %}
+                        <span class="label label-warning">Realizando</span>
+                    {% endif %}
+                </td>
+                <td > {{ i.tituloexamencondu.asignatura }}</td>
+                <td > {{ i.puntaje }}</td>
+                <td id="valida{{ i.id }}">
+                    {% if i.valida %}
+                        <a idinscripexam="{{ i.id }}" style="cursor: pointer" activ="{{ i.valida }}" class="validar"> <img src='/static/images/16/true.png' alt='' border="0"/> </a>
+                    {% else %}
+                        <a idinscripexam="{{ i.id }}" style="cursor: pointer" activ="{{ i.valida }}" class="validar"> <img src='/static/images/16/false.png' alt='' border="0"/> </a>
+                    {% endif %}
+                </td>
+                <td>{% if i.detallevalidaexist %}<a style="cursor: pointer" idinscripex="{{ i.id }}" nombreconduc="{{ i.inscripcion.persona.nombre_completo }}" class="btn btn-info detavaliexa">Detalle</a>{% endif %}</td>
+                <td>{% if i.finalizado and i.valida %}<a class="btn btn-success verexamen" idti="{{ i.id }}" idins="{{ i.inscripcion.id }}">Ver examen</a>{% endif %}</td>
+            </tr>
+        {% endfor %}
+        {% if not inscripcionexamen %}
+            <tr>
+                <td > NO EXISTEN REGISTROS
+
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+</div>
+</div>
+

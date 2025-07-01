@@ -1,0 +1,360 @@
+
+<style>
+
+
+
+
+.wizard>.actions>ul>li>a{background-color:#63A836;font-weight:600}.wizard-content .wizard>.actions>ul>li>a[href="#previous"]{border-color:#63A836;border-width:2px;color:#fff}.wizard-content .wizard>.actions>ul>li.disabled>a[href="#previous"]{border-color:#63A836}
+
+.modal-body-ejeresp {
+  position: relative;
+  -ms-flex: 1 1 auto;
+  -webkit-box-flex: 1;
+  flex: 1 1 auto;
+  padding: 1rem;
+}
+
+
+
+</style>
+
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+     $(function () {
+         $("#txtdescripcion").addClass("input-small");
+
+            $("#btncancelaeje").click(function() {
+                location.reload();
+
+            });
+            $(".agregaejereseva").click(function() {
+
+                $("#ingresarejesres").modal({"backdrop":"static","width":'40%'});
+{#                $('#verejerespuesta').modal('hide');#}
+                $('#ingresarejesres').modal('show');
+
+
+            });
+     function buscar() {
+
+        $.post("/evaluaciondocenteman", {
+                "action": "filtrarejeres",
+               "eje": $("#buscareje").val(),
+
+                {#id:idmallaasi#}
+
+            }, function (data) {
+                if (data.result == 'ok') {
+                        hideWaiting();
+
+                        llenarformacion(data)
+                }
+                hideWaiting();
+         }, 'json');
+    }
+    $("#buscareje").change(function () {
+           buscar();
+        });
+     cambiaestadoejerespuesta=function (idejeres) {
+            swal.fire({
+            title: 'Está Seguro que desea cambiar el estado  ',
+            type: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Si',
+            cancelButtonText: 'Cancel',
+            confirmButtonClass: 'btn btn-success margin-5',
+            cancelButtonClass: 'btn btn-danger margin-5'
+            }).then(function (isConfirm) {
+
+            if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+
+                 {#$("#login-modal4").modal({backdrop: 'static', keyboard: false});#}
+                 {#$('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../ube/static/imagen/loader.gif"/><br/> Eliminando el eje espere un momento...</div>');#}
+                 var formData = new FormData();
+                 formData.append('action', 'cambiaestadoejerespuesta');
+                 formData.append('idejeres', idejeres);
+                  alert(3)
+             $.ajax({
+                     url: '/evaluaciondocenteman',
+                     type: "POST",
+                     contentType: false,
+                     data: formData,
+                     processData: false,
+                     cache: false,
+                     success: function (data) {
+                         if (data.result == "ok") {alert(4)
+                             swal.fire("!Notificación", "Se cambio estado correctamente", "success");
+                             llenarformacion(data);
+                         } else {
+                             swal("Error", data.message, "error");
+                             $("#login-modal4").remove();//ocultamos el modal
+                             $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                             $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                             $('#content').html('');
+                         }
+                     },
+                     error: function (xhr, ajaxOptions, thrownError) {
+                         swal("Error", "Error Conexion en el Servidor", "error");
+                         {#$("#login-modal4").remove();//ocultamos el modal#}
+                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                         $('#content').html('');
+                     },
+
+                     complete: function () {
+                     {#$("#login-modal4").remove();//ocultamos el modal#}
+                     $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                     $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                     $('#content').html('');
+
+                     }
+
+             });
+
+                            }
+                        }) }
+    function llenarformacion(data) {
+         $("#tablaejeres").html("");
+         for (var m in data.lisFormacion) {
+              var ver ='';
+                 if (data.lisFormacion[m].estado == true){
+                 ver = "<td style='text-align: center'><a href='#' onclick='cambiaestadoejerespuesta("+data.lisFormacion[m].id +")'>" +
+                     "<img src='/static/images/16/true.png' alt='Si' border='0'/></a></td>'"
+                 }else{
+                     ver = "<td style='text-align: center'><a href='#' onclick='cambiaestadoejerespuesta("+data.lisFormacion[m].id +")'>" +
+                     "<img src='/static/images/16/false.png'  alt='No' border='0'/></a></td>'"
+                 }
+             $("#tablaejeres").append("<tr>" +
+                 "<td>"+data.lisFormacion[m].eje +"</td>" +
+                 "<td>"+data.lisFormacion[m].nombre +"</td>" +
+                 ver+
+
+
+                 "<td>"+
+             "<button type='button'  onclick='eliminarejerespuesta("+data.lisFormacion[m].id+")' class='btn' style='background: #FA1D06;color: white' data-bgcolor='#FA1D06' data-color='#ffffff'><i class='icon-remove' ></i></button></td></tr>");
+         }
+
+    }
+
+            eliminarejerespuesta=function (idejerespuesta) {
+                swal.fire({
+                title: 'Está Seguro que desea eliminar la respuesta  ',
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si,Eliminar!',
+                cancelButtonText: 'Cancel',
+                confirmButtonClass: 'btn btn-success margin-5',
+                cancelButtonClass: 'btn btn-danger margin-5'
+                }).then(function (isConfirm) {
+
+                    if (isConfirm['dismiss']!='cancel' && isConfirm['dismiss']!='esc' ) {
+
+                             {#$("#login-modal4").modal({backdrop: 'static', keyboard: false});#}
+                             {#$('#content').html('<div class="loading" style="border: 0px solid #ccc;padding: 0 1rem;margin: 1rem;top:30%"><img src="../../ube/static/imagen/loader.gif"/><br/> Eliminando la carrera espere un momento...</div>');#}
+                             var formData = new FormData();
+                             formData.append('action', 'quitarejerespuesta');
+                             formData.append('idejerespuesta', idejerespuesta);
+
+                             $.ajax({
+                                     url: '/evaluaciondocenteman',
+                                     type: "POST",
+                                     contentType: false,
+                                     data: formData,
+                                     processData: false,
+                                     cache: false,
+                                     success: function (data) {
+                                         if (data.result == "ok") {
+                                             swal.fire("!Notificación", "Se eliminó el registro correctamente", "success");
+                                             llenarformacion(data);
+                                         } else {
+                                             swal("Error", data.message, "error");
+                                             {#$("#login-modal4").remove();//ocultamos el modal#}
+                                             $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                             $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                             $('#content').html('');
+                                         }
+
+                                     },
+                                     error: function (xhr, ajaxOptions, thrownError) {
+                                         swal("Error", "Error Conexion en el Servidor", "error");
+                                         {#$("#login-modal4").remove();//ocultamos el modal#}
+                                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                         $('#content').html('');
+                                     },
+
+                                     complete: function () {
+                                     $("#login-modal4").remove();//ocultamos el modal
+                                     $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll
+                                     $('.modal-backdrop').remove();//eliminamos el backdrop del modal
+                                     $('#content').html('');
+
+                                     }
+
+                             });
+
+                    }
+                })
+
+            }
+
+
+  $(".btnguarrespuestaeje").click(function() {
+        var respuesta = $("#respuestasel").val();
+        var eje = $("#ejesselec").val();
+         $.post("/evaluaciondocenteman", {
+                "action": "addrespuestaeje",
+               "respuesta": respuesta,
+                "eje":eje
+
+            }, function (data) {
+                if (data.result == 'ok') {
+                        Swal.fire('Notificacion !','Informacion Agregada Correctamente', 'success')
+                        $("#ejesselec").val("");
+                        $("#respuestasel").val("");
+{#                        swal("Notificacion", "Pregunta y eje registrada correctamente ", "success");#}
+                        $("#ingresarejesres").modal('hide');
+                        llenarformacion(data)
+                        $("#verejerespuesta").modal({"backdrop":"static","width":'55%'});
+                        $("#verejerespuesta").modal('show');
+
+
+
+                }else{
+{#                    swal("Error", data.error, "error");#}
+                                                     {#$("#login-modal4").remove();//ocultamos el modal#}
+{#                         $('body').removeClass('modal-open');//eliminamos la clase del body para poder hacer scroll#}
+{#                         $('.modal-backdrop').remove();//eliminamos el backdrop del modal#}
+{#                         $('#content').html('');#}
+                     }
+
+
+         }, 'json');
+             });
+
+            });
+
+</script>
+
+{#<div class="row">#}
+{#    <div class="col-md-12">#}
+{#           <label style="font-size: 20px;color:black;"> <strong>  </strong> </label>#}
+{#    </div>#}
+{#</div>#}
+
+<div class="row-fluid">
+    <div class="span12">
+        <a href="#" class="btn btn-success agregaejereseva"><i class="icon-copy fa fa-plus"></i> </a>
+{#        <button type="button"  onclick="agregaejereseva()" title="" class="btn" style="background: #63A836;color: white" data-bgcolor="#63A836" data-color="#ffffff"><i class="icon-copy fa fa-plus" ></i></button>#}
+   </div>
+</div>
+<br>
+    <div class="row-fluid">
+        <div class="span12">
+        <div class="form-group">
+            <select id="buscareje" style="width: 100%"   class="custom-select2  form-control">
+                <option  value="">-----</option>
+                {% for c in eje %}'
+                    <option style="width: 100%"   {% if c.id == eje.id %}selected="selected"{% endif %} value="{{ c.id }}" >{{ c.descripcion }}</option>
+                {% endfor %}
+             </select>
+{#                <input type="text"  id='searchfield_perfil' placeholder="Buscar por Perfil" class="form-control round" value='{{ search }}'>#}
+        </div>
+    </div>
+<br>
+ <div class='row-fluid'>
+
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th >Eje</th>
+                        <th >Respuestas</th>
+                        <th >Estado</th>
+{#                        <th style="text-align: center;" colspan="5">Estado</th>#}
+                        <th ></th>
+                    </tr>
+                </thead>
+                <tbody id="tablaejeres">
+                {% for d in ejeres %}
+                    <tr>
+                        <td >{{ d.eje.descripcion }}</td>
+                        <td >{{ d.respuesta.nombre }}</td>
+                        <td style="text-align: center" ><a href="#" onclick="cambiaestadoejerespuesta('{{ d.id }}')">
+                            {% if d.estado  %}
+                               <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                            {% else %}
+                              <img src='/static/images/16/false.png'  alt='No' border='0'/>
+                            {% endif %}
+                         </td>
+                     <td> <button type="button"  onclick="eliminarejerespuesta('{{ d.id }}')" class="btn" style="background: #FA1D06;color: white" data-bgcolor="#FA1D06" data-color="#ffffff"><i class="icon-remove" ></i></button></td>
+
+                </tr>
+
+            {% endfor %}
+
+        </tbody>
+            </table>
+        </div>
+
+
+    </div>
+
+<section>
+<div class="modal fade static" id="ingresarejesres">
+{#<div  class="modal fade " id="ingresarejesres" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">#}
+{#        <div class="modal-dialog modal-lg modal-dialog-centered">#}
+            <div class="modal-content" >
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myLargeModalLabel">Ingresar Ejes y respuestas</h4>
+                </div>
+                <div class="modal-body-ejeresp" >
+                       <div class="row-fluid">
+                            <div class="span12">
+                            <div class="form-group">
+                                <label>Eje (*): </label>
+                                <select id="ejesselec" style="width: 100%"   class="custom-select2  form-control">
+                                        <option  value="">-----</option>
+                                        {% for c in eje %}'
+                                            <option style="width: 100%"   {% if c.id == eje.id %}selected="selected"{% endif %} value="{{ c.id }}" >{{ c.descripcion }}</option>
+                                        {% endfor %}
+                                     </select>
+                            </div>
+                        </div>
+                     </div>
+                     <div class="row-fluid">
+                    <div class="span12">
+                            <div class="form-group">
+                                <label>Respuesta (*): </label>
+                                <select id="respuestasel" style="width: 100%"   class="custom-select2  form-control">
+                                        <option  value="">-----</option>
+                                        {% for re in respuesta %}'
+                                            <option style="width: 100%"   {% if re.id == respuesta.id %}selected="selected"{% endif %} value="{{ re.id }}" >{{ re.nombre }} {% if re.respuestadirectivo %} - ({{ re.respuestadirectivo.descripcion }}){% endif %}</option>
+                                        {% endfor %}
+                                     </select>
+                            </div>
+                        </div>
+                 </div>
+                </div>
+                <div class="modal-footer">
+                <button type="button" id="btncancelaeje" class="btn btn-danger btn-min-width "><i class="icon-exit icon-white"></i> Salir</button>
+                    <button type="button"  class="btn btn-success btn-min-width btnguarrespuestaeje" ><i class="icon-floppy-disk icon-white"></i> Guardar </button>
+{#                   <button type="button" id="btningresargestionespecie" class="btn" style="background: #63A836;color: white" data-bgcolor="#63A836" data-color="#ffffff">Guardar</button>#}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section>
+<div class="modal fade" id="login-modal4"  tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center">
+                <div class="row">
+                    <div id="content" class="col-lg-12">
+                        Enviando la Información espere un momento...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

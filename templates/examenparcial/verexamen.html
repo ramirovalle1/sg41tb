@@ -1,0 +1,180 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+
+    <script type="text/javascript">
+        var cronometro;
+        $(function() {
+
+            $("#cerrarexam").click(function(){window.close();});
+
+        });
+
+
+    </script>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' style="text-align: center" >
+        <div class="offset2 span8" >
+            <h3>Alumno: {{ examenparcial.matricula.inscripcion.persona.nombre_completo }}</h3>
+            <h4>{{ examenparcial.tituloexamenparcial.tituloexamen }}</h4>
+            <h5>{% if examenparcial.tituloexamenparcial.subtituloexamen %}{{ examenparcial.tituloexamenparcial.subtituloexamen }}{% endif %}</h5>
+            <br/>
+        </div>
+
+
+    </div>
+
+
+        <div class='row-fluid'>
+        <div class='offset2 span8' >
+            <form class='form' method="POST">
+                <table class='table' cellpadding="0" cellspacing="0" id="tablepregunto">
+                    {% for p in preguntaexamen %}
+                        {% with num=forloop.counter %}
+                                    <thead num="{{ num }}" id="cabecera{{ num }}">
+                                        <tr>
+                                            <th colspan="4">
+                                                <h4  style="white-space: pre-wrap;text-align: justify;">{{ forloop.counter }}.- {{ p.preguntaasigrespuesta.preguntaasignatura.pregunta }} <br><span style="float: right">Puntaje: {{ p.preguntaasigrespuesta.preguntaasignatura.puntos }}</span>
+                                               </h4>
+                                            </th>
+                                        </tr>
+                                        {% if p.preguntaasigrespuesta.preguntaasignatura.imagen %}
+                                            <tr>
+                                                <td colspan="{% if examenparcial.finalizado %}3{% else %} 2{% endif %}">
+
+                                                        <div class="thumbnail" style="height: 150px">
+
+                                                            <img src="{{ p.preguntaasigrespuesta.preguntaasignatura.imagen.url }}" alt="" style="width: 150px;height: 150px">
+
+                                                        </div>
+
+                                                </td>
+                                                <td>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+
+                                        {% for r in p.preguntarespuesta %}
+                                            <tr
+                                                {% if p.fecha and p.preguntaasigrespuesta.id == r.id %}
+                                                   {% if r.valida %} style="background: rgba(0, 128, 0, 0.28);"{% endif %}
+                                                {% endif %}
+                                                {% if p.preguntaasigrespuesta.id != r.id and r.valida %}
+                                                    style="background: rgba(0, 128, 0, 0.28);"
+                                                {% endif %}
+                                            >
+                                                <td style="width: 5%">
+                                                    {% if p.fecha and p.preguntaasigrespuesta.id == r.id %}
+                                                           {% if r.valida %} <a style="float: left;"><img src='/static/images/16/check.png' alt='' border="0"/></a>{% else %}<a style="float: left"><img src='/static/images/16/delete2.png' alt='' border="0"/></a>{% endif %}
+                                                    {% endif %}
+                                                    {% if p.preguntaasigrespuesta.id != r.id and r.valida %}
+                                                        <a style="float: left"><img src='/static/images/16/check.png' alt='' border="0"/></a>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b style="color: red">R{{ forloop.counter }}.-</b> {{ r.respuesta }}
+                                                </td>
+                                                <td>
+                                                    {% if r.imagen %}
+                                                        <div class="thumbnail" style="height: 50px;"  >
+                                                            <img src="{{ r.imagen.url }}" alt="" style="width: 50px;height: 50px">
+                                                        </div>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <input style="float: right;width: 8%;height: 3em" class="form-check-input"  type="checkbox" respid="{{ r.id }}" class="elegir" numero="{{ num }}" data-id="{{ num }}{{ forloop.counter }}"
+                                                           name='respuesta{{ num }}{{ forloop.counter }}' id="respuesta{{ num }}{{ forloop.counter }}"
+                                                           {% if p.fecha %} checked
+                                                           {% endif %}
+                                                            disabled />
+                                                            {% if p.fecha and p.preguntaasigrespuesta.id == r.id %}
+                                                                {% if not p.preguntaasigrespuesta.valida %}
+                                                                        <br><span style="float: left" class="label label-warning">Respuesta seleccionada Incorrecta</span>
+                                                                {% else %}
+                                                                    <br><span style="float: left" class="label label-info">La Respuesta seleccionada es correcta</span>
+                                                                {% endif %}
+                                                            {% endif %}
+                                                            {% if not p.fecha %}
+                                                                &nbsp;<a style="float: right"><img src='/static/images/16/delete2.png' alt='' border="0"/></a>
+                                                                {% if forloop.last %}
+                                                                    <br><span style="float: left" class="label label-important">No selecciono ninguna respuesta</span>
+                                                                {% endif %}
+                                                            {% endif %}
+
+                                                </td>
+
+                                            </tr>
+                                        {% endfor %}
+                                    </thead>
+                        {% endwith %}
+                    {% endfor %}
+
+
+                </table>
+                <a id="cerrarexam"  class="btn btn-danger" >Cerrar</a>
+            </form>
+        </div>
+        {% if examenparcial.finalizado %}
+            <div class='span1'>
+                <h3>PUNTOS:</h3><a class="btn btn-large btn-block" style="font-size: 32px">
+                    {% if examenparcial.puntaje %}{{ examenparcial.puntaje }}{% else %}0.0{% endif %}
+                </a>
+                {% with cantpregunt=examenparcial.cantpregunta %}
+                    <h3>Respuestas Correctas:</h3><a class="btn btn-large btn-info" style="font-size: 32px">
+                        {{ examenparcial.cantidadresp }}/{{ cantpregunt }}
+                    </a>
+                    <h3>Respuestas Incorrectas:</h3><a class="btn btn-large  btn-warning" style="font-size: 32px">
+                        {{ examenparcial.cantidadrespincorr }}/{{ cantpregunt }}
+                    </a>
+                    <h3>Sin contestar:</h3><a class="btn btn-large  btn-danger" style="font-size: 32px">
+                        {{ examenparcial.cantidadrespsincont }}/{{ cantpregunt }}
+                    </a>
+                {% endwith %}
+
+            </div>
+        {% endif %}
+{#        <a id="verifica"  class="btn btn-success">cerrar</a>#}
+    </div>
+
+    <div class='row-fluid'>
+        <div class="offset2 span8">
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul >
+                        {% if paging.primera_pagina %}
+                            <li><a href="/inscrexamenparcial?action=examen&id={{ examenparcial.tituloexamenparcial.id }}&page=1">1</a></li>
+                            <li><a href="/inscrexamenparcial?action=examen&id={{ examenparcial.tituloexamenparcial.id }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/inscrexamenparcial?action=examen&id={{ examenparcial.tituloexamenparcial.id }}&page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/inscrexamenparcial?action=examen&id={{ examenparcial.tituloexamenparcial.id }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/inscrexamenparcial?action=examen&id={{ examenparcial.tituloexamenparcial.id }}&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/inscrexamenparcial?action=examen&id={{ examenparcial.tituloexamenparcial.id }}&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+
+{% endblock %}

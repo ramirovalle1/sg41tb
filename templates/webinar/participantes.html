@@ -1,0 +1,124 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html"
+        xmlns="http://www.w3.org/1999/html">
+    $(function() {
+        $("#search").click(function() {
+            var term = $("#searchfield").val().toUpperCase();
+            location.href = "/webinar?action=ver_participantes&id={{ webinar.id }}&s="+term;
+        });
+
+        $('#searchfield').keyup(function(e) {
+            if(e.keyCode == 13) {
+                $("#search").trigger("click");
+            }
+        });
+
+
+    {#------------------------------------------------------ ERROR ----------------------------------------------------------------#}
+    {% if info %}
+        smoke.alert('{{ info }}');
+        setInterval(function(){
+        }, 5000);
+    {% endif %}
+
+    });
+</script>
+
+<style>
+    .oculta{
+        display: none;
+    }
+    .aparece{
+        display: block;
+    }
+</style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid' xmlns="http://www.w3.org/1999/html">
+        <div class="span2"></div>
+        <div class="span7"  >
+            <h3 >{{ webinar.nombre|upper }}</h3></br>
+        </div>
+        <div class="span1" style="text-align: right">
+            <a href="/webinar" class='btn'><i class='icon-arrow-left'></i> Atr&aacute;s</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span4'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/webinar?action=ver_participantes&id={{ webinar.id }}" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class="span2"></div>
+        <div class='span8'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th style="text-align: left"> Identificaci&oacute;n</th>
+                        <th style="text-align: left"> Nombre</th>
+                        <th style="text-align: left"> Correo</th>
+                        <th style="text-align: center"> Telefono</th>
+                        <th style="text-align: center"> Certificado Generado</th>
+                        <th style="width: 50px"> </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for p in participantes %}
+                        <tr>
+                            <td style="text-align: left"> {% if p.participante.identificacion %} {{ p.participante.identificacion }} {% endif %} </td>
+                            <td style="text-align: left"> {{ p.participante.apellidos|upper }}  {{ p.participante.nombres|upper }} </td>
+                            <td style="text-align: left"> {{ p.participante.correo }} </td>
+                            <td style="text-align: center"> {{ p.participante.telefono }} </td>
+                            <td style="text-align: center">
+                                {% if p.tiene_certificado %}
+                                    <img src='/static/images/16/true.png' alt='Si' border='0'/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='No' border='0'/>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if p.webinar.certificados_generados_totalparticipantes %}
+                                            <li><a style="cursor: pointer" href="/webinar?action=enviar_certificado&wid={{ p.webinar.id }}&pid={{ p.participante.id }}"><i class="icon-share-alt"></i>  Enviar Certificado por Correo</a></li>
+                                        {% endif %}
+                                        {% if p.certificado %}
+                                            <li><a style="cursor: pointer" target="_blank" href="media/{{ p.certificado }}"><i class="icon-print"></i> Imprimir Certificado</a></li>
+                                        {% else %}
+                                            <li><a style="cursor: pointer" target="_blank" href="/reportes?action=run&direct=true&n=certificado_webinar&rt=pdf&participante={{ p.participante.id }}&webinar={{ p.webinar.id }}"><i class="icon-print"></i> Imprimir Certificado</a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if not participantes %}
+                        <tr>
+                            <td colspan="10">
+                                NO EXISTE REGISTRO
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

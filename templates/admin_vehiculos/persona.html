@@ -1,0 +1,204 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script type="text/javascript">
+
+        $(function() {
+            var polizaid =0;
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+
+
+            $(".editpersona").click(function() {
+               var id = $(this).attr("id");
+               location.href = "/admin_vehiculos?action=personas&editpersona&id="+id;
+            });
+
+            $(".delpersona").click(function() {
+                var id = $(this).attr("id");
+                smoke.confirm("Eliminar Persona? ", function(e){
+                    if (e){
+                        $.post("/admin_vehiculos",{"action": "delpersona","id":id},function(data) {
+                           if(data.result=='ok'){
+                              smoke.alert("Registro Eliminado");
+                              location.reload();
+                           }
+                        },"json");
+                    }
+                    }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+            });
+
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/admin_vehiculos?action=personas&s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+            $(".tl").tooltip({placement:"right"});
+
+        });
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span6'>
+            <h3>
+              Registro de Persona
+            </h3>
+
+            <br>
+        </div>
+        <div class='span1'>
+            <div class='atright'>
+                <a href="/admin_vehiculos" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            </div>
+        </div>
+
+    </div>
+
+     <div class="row-fluid">
+        <div class='span5'>
+            <form class="form-search">
+            <input class='searchinput input-large search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+              {% if search %}
+                <a href="/admin_vehiculos?action=personas" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class='span2' style="text-align: right">
+            <a href="/admin_vehiculos?action=personas&addpersona" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Persona</a>
+        </div>
+    </div>
+
+    <div class='row-fluid'>
+        <div class='span7'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th style="text-align: center">Identificaci&oacute;n</th>
+                <th style="text-align: center">Nombres</th>
+                <th style="text-align: center">Tel&eacute;fono</th>
+                <th style="text-align: center">Email</th>
+                <th style="text-align: center">Categor&iacute;a</th>
+                <th style="text-align: center" >Chofer </th>
+                <th style="text-align: center" >Archivo </th>
+                <th style="width: 20px"> </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for p in personas %}
+                    <tr>
+                        <td>{{ p.identificacion }}</td>
+                        <td style="text-align: center">{{ p.nombres }}</td>
+                        <td>{{ p.telefono }}</td>
+                        <td>{{ p.email }}</td>
+                        <td style="text-align: center">{% if p.categorialicencia %}{{ p.categorialicencia }} {% endif %}</td>
+                        <td style="text-align: center">
+                            {%  if p.chofer %}
+                                <img src='/static/images/16/true.png' width="14px" alt='' border="0"/>
+                            {% else %}
+                                <img src='/static/images/16/false.png' width="14px" alt='' border="0"/>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center">{% if p.licencia %}<a href="#">Descargar</a> {% endif %}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a  class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                    Acciones
+                                </a>
+                                <ul class="dropdown-menu pull-right">
+                                        <li><a class="editpersona" id="{{ p.id }}" href='#'> <i class='icon-edit'></i> Editar</a></li>
+{#                                        {% if not  p.tiene_vehiculo %}#}
+                                            <li><a class="delpersona"  id="{{ p.id }}" href='#'> <i class='icon-remove'></i> Eliminar </a></li>
+{#                                        {% endif %}#}
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+            {% endfor %}
+            {% if not personas %}
+                <tr>
+                    <td colspan="7">NO HAY REGISTROS</td>
+                </tr>
+            {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+     <div class='row-fluid'>
+    <div class="span7" style="text-align: right">
+        <a href="/admin_vehiculos?action=personas&addpersona" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Persona</a>
+    </div>
+    </div>
+    <div class='row-fluid'>
+
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/admin_vehiculos?&page=1">1</a></li>
+                            <li><a href="/admin_vehiculos?&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_vehiculos?&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/admin_vehiculos?&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/admin_vehiculos?&page={{ paging.num_pages }}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admin_vehiculos?&{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="modal fade static" id="agregar_vehic"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Agregar Vehiculo</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formvehic %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+{% endblock %}

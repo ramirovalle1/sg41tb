@@ -1,0 +1,246 @@
+{% extends "layout/basebs.html" %}
+{% load sga_extras %}
+{% block more_ccs %}
+    <link rel="stylesheet" href="/static/modernize/dist/libs/select2/dist/css/select2.min.css?v={{ version }}">
+{% endblock %}
+{% block more_js %}
+    <script src="/static/modernize/dist/libs/select2/dist/js/select2.full.min.js?v={{ version }}"></script>
+    <script src="/static/modernize/dist/libs/select2/dist/js/select2.min.js?v={{ version }}"></script>
+{% endblock %}
+{% block more_javascript %}
+    <script type="text/javascript">
+
+        const listPersonas = (tipo, id, action) => {
+            const data = {'action': action, 'tipo': tipo, 'id': id};
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Cargando...</div>`,
+            });
+            AjaxLayout.call('GET', '{{ request.path }}', data, (response) => {
+                console.log('Success');
+                LoadingLayout.hide();
+                const $responsableSelect = $("#id_responsable", $("#modalResponsable"));
+                $responsableSelect.empty();  // Vacía el select
+                if (response.isSuccess){
+                    // Iterar sobre los resultados y añadir opciones al select
+                    response.results.forEach(persona => {
+                        const option = new Option(persona.name, persona.id, false, false);
+                        $responsableSelect.append(option);
+                    });
+                    // Si hay opciones disponibles, seleccionar la primera como predeterminada
+                    if (response.results.length > 0) {
+                        $responsableSelect.val(response.results[0].id).trigger('change');
+                    }
+                }
+                else{
+                    AlertLayout.danger(response.message);
+                }
+
+            }, () => {
+                console.log('Failed');
+                LoadingLayout.hide();
+                AlertLayout.danger('Error al cargar los datos.');
+            });
+        }
+
+        const openModal = (id, idm, action, title) =>{
+            const data = {'action': action, 'id': id, 'idm': idm};
+            LoadingLayout.show({
+                message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Cargando...</div>`,
+            });
+            AjaxLayout.call('GET', '{{ request.path }}', data, (response) => {
+                console.log('Success');
+                LoadingLayout.hide();
+                if (response.isSuccess){
+                    $(".modal-title", $("#modalResponsable")).html(title);
+                    $(".modal-body", $("#modalResponsable")).html(response.html);
+                    $("#modalResponsable").modal({backdrop: 'static', keyboard: false}).modal("show");
+                }
+                else{
+                    AlertLayout.danger(response.message);
+
+                }
+
+            }, () => {
+                console.log('Failed');
+                LoadingLayout.hide();
+            });
+        }
+
+        const actionDelete = (name, id, action) => {
+            const question = `Al eliminar el registro no podra volver a recuperar los datos. <br>¿Está seguro de eliminar el registro <span class="badge bg-info">${name}</span>?`;
+            QuestionLayout(question, ()=> {
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.post('{{ request.path }}', {'action': action, 'id': id}, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess) {
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: `${response.message}`,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.reload();
+                        });
+                    } else {
+                        AlertLayout.danger(`${response.message}`);
+                    }
+                });
+            }, ()=>{})
+        }
+
+
+        $(function () {
+
+            $("#modalResponsable").on('shown.bs.modal', async function () {
+
+            });
+
+
+
+            $(".action-close", $("#modalResponsable")).click(function () {
+                $("#modalResponsable").modal("hide");
+            });
+
+            $(".action-save", $("#modalResponsable")).click(function () {
+                const data = formGetData('frmFirmaActaCalificacion', 'modalResponsable');
+                LoadingLayout.show({
+                    message: `<div class="m-3 bg-light rounded p-3"><span class="spinner-border spinner-border-sm me-3" role="status" aria-hidden="true"></span> Procesando solicitud...</div>`,
+                });
+                AjaxLayout.multipart('POST', '{{ request.path }}', data, (response) => {
+                    LoadingLayout.hide();
+                    if (response.isSuccess){
+                        Swal.fire({
+                            title: 'Operación Exitosa',
+                            text: `${response.message}`,
+                            icon: 'success'
+                        }).then(function() {
+                            LoadingLayout.show();
+                            location.reload();
+                        });
+                    }
+                    else{
+                        AlertLayout.danger(response.message);
+                        if (response.forms?.errors){
+                            formSetErrors(response.forms.errors, 'modalResponsable');
+                        }
+                    }
+
+                }, () => {
+                    console.log('Failed');
+                    LoadingLayout.hide();
+                });
+            });
+        });
+    </script>
+{% endblock %}
+{% block atras %}{{ request.path }}?action=materias&id={{ eMateria.nivel_id }}{% endblock %}
+{% block canvas %}
+    <div class="container-fluid">
+        <div class='row mb-4'>
+            <div class='col-12'>
+                <div class="page_title">
+                    <h3 class="fw-semibold">{{ title }}</h3>
+                    <h5>Materia: {% if eMateria.identificacion %}{{ eMateria.identificacion }}{% else %}###{% endif %}-{{ eMateria.asignatura }}</h5>
+                    <h5>Carrera: {% if eMateria.nivel.carrera %}{{ eMateria.nivel.carrera }}{% else %}{{ eMateria.nivel.coordinacion }}{% endif %}</h5>
+                    <h5>Periodo: {{ eMateria.nivel.periodo.nombre }}</h5>
+                </div>
+            </div>
+        </div>
+        <div class='widget-content searchable-container list'>
+            <div class="card card-body">
+                <div class="row">
+                    <div class="col-md-4 col-xl-3">
+                        <form class="position-relative">
+                            <input type="text" class="form-control product-search ps-5" id="input-search" placeholder="Buscar Responsable...">
+                            <i class="ti ti-search position-absolute top-50 start-0 translate-middle-y fs-6 text-dark ms-3"></i>
+                        </form>
+                    </div>
+                    <div class="col-md-8 col-xl-9 text-end d-flex justify-content-md-end justify-content-center mt-3 mt-md-0">
+                        {#                  <div class="action-btn show-btn">#}
+                        {#                    <a href="javascript:void(0)" class="delete-multiple bg-danger-subtle btn me-2 text-danger d-flex align-items-center ">#}
+                        {#                      <i class="ti ti-trash me-1 fs-5"></i> Delete All Row#}
+                        {#                    </a>#}
+                        {#                  </div>#}
+                        <a href="javascript:void(0)" onclick="openModal(0, {{ eMateria.id }}, 'loadFormFirma', 'Adicionar responsable de firma')" class="btn btn-primary d-flex align-items-center">
+                            <i class="ti ti-users text-white me-1 fs-5"></i> Adicionar responsable
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class='card card-body'>
+                <div class="table-responsive">
+                    <table class='table search-table align-middle text-nowrap'>
+                        <thead class="header-item">
+                        <tr>
+                            <th class="align-middle text-center" style="width: 10% !important;">Ordén</th>
+                            <th class="align-middle text-center" style="width: 30% !important;">Responsable</th>
+                            <th class="align-middle text-center" style="width: 30% !important;">Cargo</th>
+                            <th class="align-middle text-center" style="width: 20% !important;">Estado</th>
+                            <th class="align-middle text-center" style="width: 10% !important;">Acciones</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for eFirmaActaCalificacion in eMateria.firma_acta_calificacion %}
+                            <tr class="search-items">
+                                <td class="align-middle text-center">{{ eFirmaActaCalificacion.orden }}</td>
+                                <td class="align-middle text-left">{{ eFirmaActaCalificacion.responsable.nombre_completo_inverso }}</td>
+                                <td class="align-middle text-center">{{ eFirmaActaCalificacion.get_cargo_display }}</td>
+                                <td class="align-middle text-center">
+                                    {% if eFirmaActaCalificacion.subido %}
+                                        <span class="badge text-bg-primary">Legalizado</span> <br/>
+                                        <span class="badge text-bg-light text-dark fw-semibold fs-2 gap-1 d-inline-flex align-items-center">
+                                            <i class="ti ti-clock-hour-4 fs-3"></i>{{ eFirmaActaCalificacion.fecha|date:"d-m-Y H:i a" }}
+                                        </span><br/>
+                                        <a href="{{ eFirmaActaCalificacion.archivo.archivo.url }}" target="_blank" class="text-success">
+                                            <i class="ti ti-cloud-down fs-5"></i>
+                                        </a>
+                                    {% else %}
+                                        <span class="badge text-bg-warning">Pendiente</span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle text-center">
+                                    <div class="action-btn">
+                                        <a href="javascript:void(0)" onclick="openModal({{ eFirmaActaCalificacion.id }}, {{ eMateria.id }}, 'loadFormFirma', 'Editar responsable {{ eFirmaActaCalificacion.responsable.nombre_completo_inverso }}')" class="text-primary edit">
+                                            <i class="ti ti-pencil fs-5"></i>
+                                        </a>
+                                        <a href="javascript:void(0)" onclick="actionDelete('{{ eFirmaActaCalificacion.responsable.nombre_completo_inverso }}', {{ eFirmaActaCalificacion.id }}, 'deleteFirmaActaCalificacion')" class="text-dark delete ms-2">
+                                            <i class="ti ti-trash fs-5"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">No hay registro de responsable</td>
+                            </tr>
+
+                        {% endfor %}
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade opacity" id="modalResponsable" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger-light">
+                    <h4 class="modal-title">Secuencia de firma</h4>
+                </div>
+                <div class="modal-body">
+
+                </div>
+                <div class="modal-footer">
+                    <a href="javascript:void(0);" class="btn bg-success text-white action-save">Guardar</a>
+                    <a href="javascript:void(0);" class="btn bg-danger text-white action-close">Cerrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "basebs.html" %}
+{% block heading %}
+    <link type="text/css" rel="stylesheet" href="/static/css/jquery.flexbox.css"/>
+    <script type='text/javascript' src='/static/js/jquery.flexbox.js'></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+        google.load("visualization", "1", {packages:["corechart"]});
+        google.setOnLoadCallback(drawChart);
+
+        carreras = [{% for carrera in carreras %}
+            {"id":"{{ carrera.id }}","nombre":"{{ carrera.nombre }}","becas": {{ carrera.cantidad_matriculados_beca }}, "discapacidad": {{ carrera.cantidad_matriculados_discapacidad }}}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        ];
+
+        function drawChart() {
+            var elements_becados = [];
+            var elements_discapacidad = [];
+
+            elements_becados.push(['Carrera', 'Becados']);
+            elements_discapacidad.push(['Carrera', 'Discapacitados']);
+
+            for (var i in carreras) {
+                var carrera = carreras[i];
+                elements_becados.push([carrera.nombre, carrera.becas]);
+                elements_discapacidad.push([carrera.nombre, carrera.discapacidad]);
+            }
+            var databecas = google.visualization.arrayToDataTable(elements_becados);
+            var datadiscapacidad = google.visualization.arrayToDataTable(elements_discapacidad);
+
+            var optionsbecados = {
+                title: 'BECADOS MATRICULADOS (Total: {{ total_matriculados_beca }})',
+                'is3D':true,
+                'legend': {position: 'bottom', textStyle: {color: 'black', fontSize: 10}},
+                'width':480,
+                'height':350
+
+            };
+
+            var optionsdiscapacidad = {
+                title: 'DISCAPACITADOS MATRICULADOS (Total: {{ total_matriculados_discapacidad }})',
+                'is3D':true,
+                'legend': {position: 'bottom', textStyle: {color: 'black', fontSize: 10}},
+                'width':480,
+                'height':350
+
+            };
+
+            var chartbecados = new google.visualization.PieChart(document.getElementById('piechart_becados'));
+            var chartdiscapacitados = new google.visualization.PieChart(document.getElementById('piechart_discapacitados'));
+
+            chartbecados.draw(databecas, optionsbecados);
+            chartdiscapacitados.draw(datadiscapacidad, optionsdiscapacidad);
+        }
+
+
+
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span12'>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th colspan="3" style="text-align: center;">
+                        <h2>Gr&aacute;ficos por Carreras</h2>
+                        <h3>Total de Estudiantes Matriculados: {{ total_matriculados }}</h3>
+                    </th>
+
+                </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><div class="span4" id="piechart_becados"></div></td>
+                        <td><div class="span4" id="piechart_discapacitados"></div></td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

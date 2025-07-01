@@ -1,0 +1,217 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+{% block heading %}
+    <script src="/static/js/smoke.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/solicitud_practicasadm?s="+term;
+            });
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/solicitud_practicasadm?g='+id;
+                }else{
+                    location.href = '/solicitud_practicasadm';
+                }
+            });
+            $("#carrerasel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/solicitud_practicasadm?c='+id;
+                }else{
+                    location.href = '/solicitud_practicasadm';
+                }
+            });
+            $("#filtroselec").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/solicitud_practicasadm?filt='+id;
+                }else{
+                    location.href = '/solicitud_practicasadm';
+                }
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+                Lista de alumnos con escenario de prácticas.
+            </h3>
+
+            <br>
+        </div>
+        <div class='atright'>
+            <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span2' style="width: 95%">
+            <form class="form-search"> <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/solicitud_practicasadm" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+        <div class="span4">
+            <b>Carrera</b>:
+            <select id='carrerasel' class="input-medium bigger" style="width: 85%"/>
+                <option value=''>-----</option>
+                {% for c in carreras %}
+                    <option value="{{ c.id }}" {% if carreraid == c.id %}selected="selected"{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="span2">
+            <b>Grupos</b>:
+            <select id='gruposel' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for g in grupos %}
+                    <option value="{{ g.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ g.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class='row-fluid'><br/>
+{#        <b>Filtros: </b>#}
+{#        <select id='filtroselec' class="input-large bigger"/>#}
+{#            <option value=''>-----</option>#}
+{#            <option value="enviad" {% if 'enviad' == filtro %}selected="selected"{% endif %}> Escenarios por Revisar </option>#}
+{#            <option value="poracep" {% if 'enviad' == filtro %}selected="selected"{% endif %}> Practicas por Aceptar </option>#}
+{#            <option value="aceptad" {% if 'enviad' == filtro %}selected="selected"{% endif %}> Practicas Aceptadas </option>#}
+{#        </select> &nbsp;&nbsp;&nbsp;#}
+        {% if perms.sga.add_escenariopractica  %}
+            <a href="/solicitud_practicasadm?conven=1" class="btn btn-info"><i class="icon-eye-open"></i> Con Convenio </a>
+            {% if idescenhorasis %}
+                <a href="/solicitud_practicasadm?sinconven=1" class="btn btn-warning"><i class="icon-eye-open"></i> Sin Convenio </a>
+            {% endif %}
+{#            <a href="/solicitud_practicasadm?aplazam=1" class="btn btn-danger" style="float: right"><i class="icon-eye-open"></i> Aplazados </a>#}
+        {% endif %}
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'><br/>
+            <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th> N° </th>
+                        <th> Carrera </th>
+                        <th> Nombre </th>
+                        <th>Tel&eacute;fonos</th>
+                        <th>Emails</th>
+                        <th>Fecha Matri.</th>
+                        <th>Fecha Ult. Escenario.</th>
+                        <th>Estado Práctica. </th>
+                        <th> </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in inscripciones %}
+                        {% with matri=i.matricula e=i.escenario_existe%}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ i.carrera }}</td>
+                                <td>{{ i.persona }}</td>
+                                <td>{{ i.persona.telefono }} - {{ i.persona.telefono_conv }}</td>
+                                <td>{{ i.persona.email }}<br>
+                                    {{ i.persona.email1 }}<br>
+                                    {{ i.persona.email2 }}<br>
+                                    {{ i.persona.emailinst }}<br>
+                                </td>
+                                <td><a class="label label-info">{% if matri %}{{ matri.fecha|date:'Y-m-d' }} {% else %} No esta Matriculado {% endif %} </a></td>
+                                <td><a class="label label-info">{% if e %}{{ e.fecha|date:'Y-m-d' }} {% else %} No tiene escenario {% endif %} </a></td>
+                                <td>
+                                    {% with soliprac=e.exis_solipracticas %}
+                                        <a class="label label-important">{% if e.convenio %} CONVENIO {% else %} SIN CONVENIO {% endif %}</a>
+                                        {% if not e.fechaenvio %}
+                                            <a class="label label-info"> Sin Iniciar </a>
+                                        {% else %}
+                                            {% if not e.solicitudestudiante and not e.fechafinaliza and not soliprac %} {# ya cambiado #}
+                                                <a class="label label-info"> Escenario Creado </a>
+                                            {% else %}
+                                                {% if not e.fechafinaliza  and soliprac and not soliprac.fecaprobada and not e.convenio %}
+                                                    <a class="label label-info">Solicitud Enviada</a>
+                                                {% else %}
+                                                    {% if soliprac and soliprac.fecaprobada and not e.convenio and not soliprac.aprobada %}
+                                                        <a class="label label-important"> Solicitud No Aprobada  </a>
+                                                    {% else %}
+                                                        {% if soliprac and soliprac.fecaprobada and e.convenio and not soliprac.enviada   %}
+                                                            <a class="label label-warning"> Solicitud de convenio creado SIN ENVIAR </a>
+                                                        {% else %}
+                                                            {% if soliprac and not soliprac.fechaacepta and soliprac.fecaprobada and soliprac.aprobada and soliprac.enviada %}
+                                                                <a class="label label-warning"> En espera que el alumno acepte la practica con convenio  </a>
+                                                            {% else %}
+                                                                {% if soliprac and not soliprac.fechaacepta and not soliprac.fecaprobada %}
+                                                                    <a class="label label-important"> Solicitud en espera de aprobación  </a>
+                                                                {% else %}
+                                                                    {% if soliprac and soliprac.fechaacepta and soliprac.acepto and soliprac.fecaprobada and soliprac.aprobada %}
+                                                                        {% if soliprac.fecfinaliza   %}
+                                                                            {% if soliprac.rechazado   %}
+                                                                                <a class="label label-important">Practica Rechazada </a>
+                                                                            {% else %}
+                                                                                <a class="label label-success">Practica Realizada </a>
+                                                                            {% endif %}
+                                                                        {% else %}
+                                                                            {% if not soliprac.rubroespecie.aplicada   %}
+                                                                                {% if e.convenio   %}
+                                                                                    <a class="label label-warning">Solicitud aceptada, en espera que se autorice y aplique la especie, para  iniciar la práctica. </a>
+                                                                                {% else %}
+                                                                                     <a class="label label-warning">Solicitud aprobada, en espera que se autorice y aplique la especie, para  iniciar la práctica. </a>
+                                                                                {% endif %}
+                                                                            {% else %}
+                                                                                {% if not soliprac.fechestudfinal   %}
+                                                                                    <a class="label label-info">Práctica en Proceso </a>
+                                                                                {% else %}
+                                                                                    <a class="label label-warning">Práctica realizada enviada, esperando finalización </a>
+                                                                                {% endif %}
+                                                                            {% endif %}
+                                                                        {% endif %}
+{#                                                                                <a class="label label-success"> Solicitud con convenio aceptada  </a>#}
+                                                                    {% else %}
+                                                                        {% if e.convenio %}
+                                                                            <a class="label label-important"> Solicitud  con convenio no Aceptada  </a>
+                                                                        {% endif %}
+                                                                    {% endif %}
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                            Acciones
+                                            <span class="caret"></span>
+                                        </a>
+                                        <ul class="dropdown-menu pull-right">
+                                            {% if i|args:persona.usuario.id|call:"existehorarioasisten" or perms.sga.add_escenariopractica and e.convenio or es_supervisor%}
+{#                                            {% if i|args:persona.usuario.id|call:"existehorarioasisten" or perms.sga.add_escenariopractica %}#}
+                                                <li><a href="/solicitud_practicasadm?action=escenarios&id={{ i.id }}"><i class="icon-eye-open"></i> Ver Escenarios </a></li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

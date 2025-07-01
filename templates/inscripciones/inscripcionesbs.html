@@ -1,0 +1,2915 @@
+{% extends "basebs.html" %}
+{% load sga_extras %}
+
+{% block heading %}
+    <script src="/static/js/smoke.min.js"></script>
+    <script type="text/javascript">
+        $(function() {
+            $('#id_nivel').css("width", "540px");
+            $('#id_asignatura').css("width", "540px");
+            {% if error %}
+                smoke.alert('{{ error }}');
+            {% endif %}
+
+            {% if info %}
+                smoke.alert('{{ info }}');
+            {% endif %}
+        $("#id_inicio, #id_fin, #id_fechatitulo").datepicker({format:"dd-mm-yyyy"});
+        $("#id_valorplagio").addClass("input-small");
+
+        $(".veryentregar").click(function(){
+            idinscr = $(this).attr("iid");
+            nombre = $(this).attr("nom");
+            fechatitulo = $(this).attr("fechatitulo");
+            titulo = $(this).attr("titulo");
+            usuarioentrega = $(this).attr("usuarioentrega");
+            fechaentregatitulo = $(this).attr("fechaentregatitulo");
+            recibetit = $(this).attr("recibetit");
+            var msj='';
+            $("#entregar_titulo_panel #paneltitle1").html("Inscripcion: "+nombre+" "+'<br>');
+            if (fechatitulo) {
+                msj = '<b>Fecha Recibido: </b>' + fechatitulo
+            }
+            if (titulo) {
+                 if ($(this).attr('opc')=='sec')
+               {
+                   msj = msj + '<br><b>Archivo: </b> <a href="http://secretaria.itb.edu.ec/media/'+ titulo+'">Descargar</a>'
+               }
+               else{
+                    msj = msj + '<br><b>Archivo: </b> <a href="/media/'+ titulo+'">Descargar</a>'
+
+               }
+
+            }
+            if (fechaentregatitulo) {
+                $("#entregar_titulo_panel .btn-success").hide();
+                $($("#entregar_titulo_panel #id_recibetit").get(0).parentNode.parentNode).hide();
+                msj = msj + '<br><b> Fecha Entrega: </b>' + fechaentregatitulo
+            }
+
+            if (recibetit) {
+                $("#entregar_titulo_panel .btn-success").hide();
+                $($("#entregar_titulo_panel #id_recibetit").get(0).parentNode.parentNode).hide();
+                msj = msj + '<br>  <b>Recibe: </b>' + recibetit
+            }
+            if (usuarioentrega) {
+                $("#entregar_titulo_panel .btn-success").hide();
+                $($("#entregar_titulo_panel #id_recibetit").get(0).parentNode.parentNode).hide();
+                msj = msj + '<br>  <b>Usuario Entrega: </b>' + usuarioentrega
+            }
+            $("#entregar_titulo_panel #texto").html(msj+" "+'<br>');
+            $("#entregar_titulo_panel").modal({width: '800px', backdrop: 'static'});
+            $("#entregar_titulo_panel").modal("show");
+
+        });
+
+        $("#entregar_titulo_panel .btn-cerrar").click(function(){
+                $("#entregar_titulo_panel").modal("hide");
+                return false;
+        });
+
+        $("#entregar_titulo_panel .btn-success").click(function(){
+                $("#entregar_titulo_panel").modal("hide");
+                var recibe = $("#entregar_titulo_panel #id_recibetit").val();
+                $.post("/inscripciones",{"action": "addrecibetit","id":idinscr,"recibe":recibe},function(data) {
+                   if(data.result=='ok'){
+                       alert("REGISTRO AGREGADO");
+                       location.reload();
+{#                   return false;#}
+                   }else{
+                       alert("Ocurrio un Error... Intentelo mas Tarde");
+                   }
+                },"json");
+        });
+        $(".agregartitulo").click(function(){
+                idinscr = $(this).attr("iid");
+                nombre = $(this).attr("nom");
+                $("#titulo_panel #paneltitle1").html("Inscripcion: "+nombre+" "+'<br>');
+                $("#titulo_panel").modal({width: '800px', backdrop: 'static'});
+                $("#titulo_panel").modal("show");
+                $("#titulo_panel  #id_insc_id").val(idinscr);
+                $($("#titulo_panel #id_insc_id").get(0).parentNode.parentNode).hide();
+
+            });
+        $("#titulo_panel .btn-cerrar").click(function(){
+            $("#titulo_panel").modal("hide");
+            return false;
+         });
+
+        {% if docu %}
+            smoke.confirm('Va a realizar impresion entrega de documentos', function(e){
+            if (e){
+                  window.open('/reportes?action=run&direct=true&n=documentos&rt=pdf&inscripcion={{ ins }}&usuario={{ usr_imp }}');
+                  location.href = "/inscripciones?s={{ identidad }}";
+            }else{
+                  location.href = "/inscripciones?s={{ identidad }}";
+            }
+
+            }, {
+            ok: "SI",
+            cancel: 'CANCELAR',
+            classname: "custom-class",
+            reverseButtons: true
+            });
+        {% endif %}
+
+        {% if docu2 %}
+            var id = $(this).attr("aid");
+            smoke.confirm('Va a realizar impresion entrega de documentos', function(e){
+            if (e){
+                window.open('/reportes?action=run&direct=true&n=documentos_edit&rt=pdf&inscripcion={{ ins }}&usuario={{ usr_imp }}&cedula={{ cedula }}&acta={{ acta }}&fotos={{ fotos }}&titulo={{ titulo }}&votacion={{ votacion }}&actaconv={{ actaconv }}&partidanacimiento={{ partidanacimiento }}');
+                location.href = "/inscripciones?s={{ identidad }}";
+            }else{
+                location.href = "/inscripciones?s={{ identidad }}";
+            }
+            }, {
+            ok: "SI",
+            cancel: 'CANCELAR',
+            classname: "custom-class",
+            reverseButtons: true
+            });
+        {% endif %}
+
+            var idinscr = 0;
+            var opc = 0;
+            var opcionpl = 0;
+            var valor = 0;
+            var nombre= "";
+            var inscsusp = 0;
+            var cerrardeta = 0;
+            var persona ;
+            $("#id_fechasus").datepicker({format:"dd-mm-yyyy"});
+            $("#idsuspens").hide();
+            $('#idsuspens').val(inscsusp);
+            $(".btn-cerrar").click(function() {
+                $("#desactivacion").modal('hide');
+                $("#resetear").modal('hide');
+            });
+            $(".aplicar").click(function(){
+                 $("#descuento").modal("hide");
+                   var ins = $(this).attr("pid");
+                    smoke.confirm("Se aplicara el descuento a las cuotas pendientes", function(e){
+                    if (e){
+                        $.post("/alu_referidos",{"action": "aplicar","id":ins },function(data) {
+                            if(data.result=='ok'){
+                                smoke.alert('registro exitoso ' );
+                            }
+                            else{
+                                $("#espera").modal("hide");
+                                 alert("OCURRIERON ERRORES");
+                            }
+                            },"json");
+                        }else{
+                        }
+                        }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+            });
+            $("#vendedores .salir").click(function(){
+                $("#vendedores").modal("hide");
+            });
+            $("#vendedores .guardar").click(function(){
+                 $("#vendedores").modal("hide");
+                $("#espera").modal("show");
+                   var idven = $("#selectvendedores").val();
+                    smoke.confirm("Esta seguro de Cambiar el usuario de venta", function(e){
+                    if (e){
+                        $.post("/inscripciones",{"action": "cambiarvendedor","id":inscripcion_id,"usu_id":idven },function(data) {
+                            if(data.result=='ok'){
+                                $("#espera").modal("hide");
+{#                                smoke.alert('registro exitoso');#}
+                                location.reload()
+                            }
+                            else{
+                                $("#espera").modal("hide");
+                                 alert("OCURRIERON ERRORES");
+                            }
+                            },"json");
+                        }else{
+                        }
+                        }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+            });
+            {% if info %}
+                 smoke.alert("{{ info }}");
+            {% endif %}
+            $(".btn-desactivar").click(function() {
+                var ins = $(this).attr("ins");
+                location.href = '/inscripciones?action=desactivar&id='+ins;
+            });
+
+            $(".cambiausuario").click(function() {
+                $("#vendedores").modal({"backdrop":"static", keyboard: 'false', width: "350px", height: "200px" });
+                inscripcion_id = $(this).attr("idins");
+                $("#vendedores").modal("show");
+                $("#selectvendedores").val("");
+
+            });
+            $(".desactivarinscripcion").click(function() {
+                var ins = $(this).attr("ins");
+                $(".btn-desactivar").attr("ins",ins);
+                $("#desactivacion").modal("show");
+            });
+            $(".resetearusuario").click(function() {
+                var ins = $(this).attr("ins");
+                $(".btn-resetear").attr("ins",ins);
+                $("#resetear").modal("show");
+            });
+            $(".btn-resetear").click(function() {
+                var ins = $(this).attr("ins");
+                location.href = '/inscripciones?action=resetear&id='+ins;
+            });
+            $("#search").click(function() {
+                var term = $("#searchfield").val().toUpperCase();
+                location.href = "/inscripciones?s="+term;
+            });
+            $("#cerrar").click(function() {
+{#                    alert (1)#}
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#motivodesactivacion").modal("hide");
+            });
+            $(".agregarkit").click(function(){
+                $("#kit_panel #id_observacion").val("");
+                idinscr = $(this).attr("iid");
+                obs = $(this).attr("obs");
+                var msj='';
+                valor = $(this).attr("valor");
+                nombre = $(this).attr("nom");
+                if (obs=='1'){
+                    msj = '<span class="label label-important" style="font-size:14pxs"> Docente del Ministerio.. Costo del Kit 6$.. El proceso debe ser realizado en caja </span'
+                }
+                if (valor == 0){
+                    $("#kit_panel #paneltitle1").html("Entrega de Kit a "+nombre+" "+'<br>' + msj);
+                }else{
+                    $("#kit_panel #paneltitle1").html("Entrega de Kit a "+nombre+" "+'<br>'+"Pagado: $"+valor);
+                }
+
+                $("#kit_panel").modal({width: '800px', backdrop: 'static'});
+                $("#kit_panel").modal("show");
+
+            });
+
+
+            $("#kit_panel .btn-cerrar").click(function() {
+              $("#kit_panel").modal("hide");
+              return false;
+            });
+
+            function cargarDatosIngreso(data){
+
+
+
+                var nivel=nivel+'<option  value=0> Seleccionar el Nivel</option>';
+
+                 for (var i in data.listaniveles) {
+                 {#for (var i in data.listaasgnaturaeube) {#}
+                  nivel=nivel+'<option  value="'+data.listaniveles[i].id+'"> '+data.listaniveles[i].nivel+'</option>';
+                }
+
+
+
+
+                $("#id_nivel").html(nivel);
+{#                $("#id_nivel").select2({dropdownParent: $("#kit_panel_uniforme .modal-content .modal-body")});#}
+
+
+
+             }
+
+            var id_estu=0
+
+
+            $(".agregar_kit_panel_uniforme").click(function() {
+                 idinscr= $(this).attr("iid");
+                 nombre = $(this).attr("nombre_in");
+                 factura = $(this).attr("numerofactura");
+                 fecha = $(this).attr("fechapago");
+                 $("#kit_panel_uniforme #paneltitle1").html("Entrega de Uniforme  a "+nombre );
+
+{#                 showWaiting("Cargando formulario","Espere unos segundos..");#}
+                 $.post("/inscripciones", {
+                        "action": "buscarnivel",
+                     idinscripcion: idinscr
+                    }, function (data) {
+                        if (data.result == 'ok') {
+
+                               cargarDatosIngreso(data);
+
+
+                               $("#kit_panel_uniforme").modal({backdrop: 'static',keyboard: false});
+                               $("#kit_panel_uniforme").modal("show");
+{#                               hideWaiting();#}
+                        } else {
+{#                           hideWaiting();#}
+                           smoke.alert(data.message);
+                        }
+
+                 }, 'json').fail(function() {
+                        hideWaiting();
+                        smoke.alert('Error de conexi&oacute;n vuelva a intentarlo');
+                  });
+
+             });
+        $(".cerrarniveles").click(function(){
+                $("#modalveniveles").modal("hide");
+            });
+        verniveles =function (id) {
+                idinscr=id
+               $.get("/inscripciones", {'action':'vernivelesuniforme', 'idinscripcion': idinscr}, function(data) {
+
+
+                 $("#modalveniveles .modal-body").html(data);
+                 $("#modalveniveles").modal({backdrop: 'static', keyboard: false});
+             }, "html");
+             return false;
+
+         }
+
+             $("#kit_panel_uniforme .btn-cerrar").click(function() {
+              $("#kit_panel_uniforme").modal("hide");
+
+            });
+
+            $("#kit_panel_uniforme .btn-guardar").click(function() {
+            $("#kit_panel_uniforme").modal("hide");
+            var obs= $("#kit_panel_uniforme #id_observacion").val();
+            var nivel = $("#id_nivel").val();
+            $.post("/inscripciones",{"action": "adduniformemunicipio","id":idinscr,"obs":obs,"nivel":nivel},function(data) {
+                   if(data.result=='ok'){
+                       Swal.fire('Registro Agregado Correctamente','','success').then(function(){
+                                location.reload()
+                            })
+
+                   }else{
+                       Swal.fire( 'Error',
+                                      'ya se encuentra recibido el uniforme para ese nivel, vuelva a intentarlo.',
+                                      'error')
+                   }
+                },"json");
+
+            });
+
+            {#Teleclinica inicio #}
+            function cargarInfoAsignaturas(data){
+                var asignatura=asignatura+'<option  value=0> Seleccionar la Asignatura</option>';
+                 for (var i in data.listaasignaturas) {
+                  asignatura=asignatura+'<option  value="'+data.listaasignaturas[i].id+'"> '+data.listaasignaturas[i].asignatura+'</option>';
+                }
+                $("#id_asignatura").html(asignatura);
+            }
+            
+            
+            $(".agregar_teleclinica").click(function() {
+                 idinscr= $(this).attr("iid");
+                 nombre = $(this).attr("estudiante");                 
+                 $("#teleclinica_panel #paneltitle1").html("Ingreso de Horas Telecl&iacute;nica  a "+nombre );
+                 $.post("/inscripciones", {"action": "buscarteleclinica", idinscripcion: idinscr}, function (data) {
+                        if (data.result == 'ok') {
+                               cargarInfoAsignaturas(data);
+                               $("#teleclinica_panel").modal({backdrop: 'static',keyboard: false});
+                               $("#teleclinica_panel #id_horas").val("");
+                               $("#teleclinica_panel").modal("show");
+                        } else {
+                           Swal.fire("Error! vuelva a intentarlo", data.message, "error");
+                        }
+                 }, 'json').fail(function() {
+                        hideWaiting();                      
+                        Swal.fire( 'Error', 'Error de conexi&oacute;n vuelva a intentarlo', 'error')
+                  });
+            });
+                     
+            $("#teleclinica_panel .btn-cerrar").click(function() {
+              $("#teleclinica_panel").modal("hide");
+
+            });
+
+            $("#teleclinica_panel .btn-guardar").click(function() {
+                $("#teleclinica_panel").modal("hide");
+                var horas= $("#teleclinica_panel #id_horas").val();
+                var asignatura = $("#id_asignatura").val();
+                var valido=false;
+                if (asignatura=='' || horas==''){
+                    Swal.fire( 'Error', 'Debe seleccionar asignatura e indicar horas ', 'error')
+                    }
+                else {
+                    valido=true;
+                }
+                if (valido){
+                    $.post("/inscripciones",{"action": "addhorasteleclinica","id":idinscr,"horas":horas,"asignatura":asignatura},function(data) {
+                           if(data.result=='ok'){
+                               Swal.fire('Horas agregadas correctamente','','success').then(function(){location.reload()})
+                           }else{
+                               Swal.fire( 'Error', 'Ya se encuentran registradas las horas en esa asignatura.', 'error')
+                           }
+                        },"json");
+                }
+            });
+            {#Teleclinica fin #}
+                 
+             $(".agregar_kit_panel_juguete").click(function(){
+                 idinscr= $(this).attr("iid");
+                 nombre = $(this).attr("nombre_in");
+
+                $("#kit_panel_entrega_juguete #paneltitle1").html("Entrega de Juguete o Canasta "+nombre );
+
+                $("#kit_panel_entrega_juguete").modal({width: '800px', backdrop: 'static'});
+                $("#kit_panel_entrega_juguete").modal("show");
+
+             });
+
+             $("#kit_panel_entrega_juguete .btn-cerrar").click(function() {
+              $("#kit_panel_entrega_juguete").modal("hide");
+
+             });
+
+
+            $("#kit_panel_entrega_juguete .btn-guardar").click(function() {
+
+             $($("#kit_panel_entrega_juguete").get(0).parentNode).find(".help-text").html("");
+            var obs= $("#kit_panel_entrega_juguete #id_observacion").val();
+
+
+              if ($("#id_tipoentrega").val()>0){
+
+                   if (obs != ''){
+                        $("#kit_panel_entrega_juguete").modal("hide");
+                        smoke.confirm("Esta seguro que desea guardar la entrega?", function(e){
+                        if (e){
+                           showWaiting("Entrega de Juguete o Canasta","Espere unos segundos por favor...");
+
+                               $.post("/inscripciones",{"action": "addentregajuguetecanasta","id":idinscr,"obs":obs,"tipoentrega":$("#id_tipoentrega").val()},function(data) {
+                               if(data.result=='ok'){
+                                   location.reload();
+                               }else{
+                                   alert("Ocurrio un Error... Intentelo mas Tarde");
+                               }
+
+                               hideWaiting();
+                               },"json");
+                        }
+                        }, {
+                        ok: "SI",
+                        cancel: "NO",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+                   }else{
+                       $($("#kit_panel_entrega_juguete").get(0).parentNode).find(".help-text").html("<h4 class='alert alert-danger'>Ingresar el Comentario</h4>");
+                   }
+
+
+              }else{
+                  $($("#kit_panel_entrega_juguete").get(0).parentNode).find(".help-text").html("<h4 class='alert alert-danger'>Seleccione un Tipo de Entrega</h4>");
+              }
+
+            });
+
+
+
+            $(".verkitUniformeMunicipio").click(function(){
+
+
+                observacionmuni = $(this).attr("observacionbea");
+                fecharegistro = $(this).attr("fehcaentrega");
+                alumno= $(this).attr("alumno");
+                usuarioregistro= $(this).attr("usuarioregistro");
+
+
+                $("#txtobuniforme").html(observacionmuni);
+                $("#txtfechaentrega").html(fecharegistro);
+                $("#txtalumno").html(alumno);
+                $("#txtusuarioregistro").html(usuarioregistro);
+
+
+                $("#ver_kit_panel_uniforme").modal({width: '500px', backdrop: 'static'});
+                $("#ver_kit_panel_uniforme").modal("show");
+
+            });
+
+            $("#ver_kit_panel_uniforme .btn-cerrar").click(function() {
+              $("#ver_kit_panel_uniforme").modal("hide");
+
+            });
+
+
+            $(".verentregadejueguecanasta").click(function(){
+
+
+                observacionjuegue = $(this).attr("observacionjuegue");
+                fecharegistrojuegue = $(this).attr("fehcaentregajuegue");
+                alumnojueguete= $(this).attr("alumnojueguete");
+                usuarioregistrojuegue= $(this).attr("usuarioregistrojuegue");
+                tipoentregajugue= $(this).attr("tipoentregajueguete");
+
+
+                $("#txtobjueguecanasta").html(observacionjuegue);
+                $("#txtfechaentregajuegue").html(fecharegistrojuegue);
+                $("#txtalumnojuegue").html(alumnojueguete);
+                $("#txtusuarioregistrojueguete").html(usuarioregistrojuegue);
+                $("#txttipoentrega").html(tipoentregajugue);
+
+
+
+                $("#ver_entrega_juegue").modal({width: '500px', backdrop: 'static'});
+                $("#ver_entrega_juegue").modal("show");
+
+            });
+
+            $("#ver_entrega_juegue .btn-cerrar").click(function() {
+              $("#ver_entrega_juegue").modal("hide");
+
+            });
+
+
+
+
+
+
+
+            $("#detalle_panel #cerrar").click(function() {
+{#                var ins = $(this).attr("ins");#}
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#detalle_panel").modal("hide");
+            });
+
+            $("#detalle_panel #adicionar").click(function() {
+                var ins = $(this).attr("pid");
+{#                $(".btn-cerrar").attr("ins",ins);#}
+                $("#agregar_panel #paneltitle1").html("Adicionar Panel a "+persona);
+                $("#agregar_panel").modal({width: '800px', backdrop: 'static'});
+                $("#agregar_panel").modal("show");
+            });
+             $(".panel").click(function(){
+                idinscr = $(this).attr('pid');
+                persona = $(this).attr("nombre");
+                $.get("/inscripciones",{"action": "verpanel","id":idinscr},function(data) {
+                        $("#detalle_panel .modal-body").html(data);
+                        $("#detalle_panel #paneltitle1").html(" PANELES QUE PUEDE PARTICIPAR  "+persona);
+                        $("#detalle_panel").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                        $("#detalle_panel").modal("show");
+                   }, "html");
+               return false;
+
+            });
+            $(".agregarvendedor").click(function(){
+                $("#vendedor_panel #id_vendedor").val("");
+                idinscr = $(this).attr("iid");
+                nombre = $(this).attr("nom");
+                opcion = $(this).attr("op");
+                $("#vendedor_panel #paneltitle1").html("Inscripcion: "+nombre+" "+'<br>');
+                $("#vendedor_panel").modal({width: '800px', backdrop: 'static'});
+                $("#vendedor_panel").modal("show");
+
+            });
+            $("#vendedor_panel .btn-cerrar").click(function() {
+                $("#vendedor_panel #id_vendedor").val("");
+                $("#vendedor_panel").modal("hide");
+                return false;
+            });
+
+            $("#vendedor_panel .btn-buscar").click(function() {
+                $("#vendedor_panel").modal("hide");
+                var vendedor = $("#vendedor_panel #id_vendedor").val();
+                $.post("/inscripciones",{"action": "addvendedor","id":idinscr,"vendedor":vendedor,"opcion":opcion},function(data) {
+                   if(data.result=='ok'){
+                       if(data.op=='1'){
+                          alert("REGISTRO AGREGADO");
+                       }
+                       else {
+                           alert("REGISTRO MODIFICADO");
+                       }
+                       location.reload();
+{#                   return false;#}
+                   }else{
+                       alert("Ocurrio un Error... Intentelo mas Tarde");
+                   }
+                },"json");
+            });
+           {#--------- agregar promocion----------------------#}
+           $(".agregarpromocion").click(function(){
+                $("#promocion_panel #id_promocion").val("");
+                idinscr = $(this).attr("iid");
+                nombre = $(this).attr("nom");
+                opcion = $(this).attr("op");
+                $("#promocion_panel #paneltitle1").html("Inscripcion: "+nombre+" "+'<br>');
+                $("#promocion_panel").modal({width: '800px', backdrop: 'static'});
+                $("#promocion_panel").modal("show");
+
+            });
+           $("#promocion_panel .btn-cerrar").click(function() {
+                $("#promocion_panel #id_promocion").val("");
+                $("#promocion_panel").modal("hide");
+                return false;
+           });
+
+           $("#promocion_panel .btn-buscar").click(function() {
+                $("#promocion_panel").modal("hide");
+                var promocion = $("#promocion_panel #id_promocion").val();
+                $.post("/inscripciones",{"action": "addpromocion","id":idinscr,"promocion":promocion},function(data) {
+                   if(data.result=='ok'){
+                       alert("REGISTRO AGREGADO");
+                       location.reload();
+                   }else{
+                       alert("Ocurrio un Error... Intentelo mas Tarde");
+                   }
+                },"json");
+           });
+
+{#-------------------------------------------#}
+
+            $(".precon").click(function(){
+                idinscr = $(this).attr('pid');
+{#                persona = $(this).attr("nombre");#}
+                $("#agregar_precongreso").modal({width: '800px', backdrop: 'static'});
+                $("#agregar_precongreso").modal("show");
+               return false;
+            });
+
+            $("#agregar_precongreso .cerrar").click(function() {
+                $("#agregar_precongreso").modal("hide");
+                 return false;
+
+            });
+
+            $("#agregar_precongreso .adicionar").click(function() {
+                $("#agregar_precongreso").modal("hide");
+
+
+                var precon = $("#agregar_precongreso #id_precongreso").val();
+                $.get("/inscripciones",{"action": "addprecon","id":idinscr,"precon":precon},function(data) {
+                   if(data.result=='ok'){
+                       alert('REGISTRO GUARDADO');
+{#                       setInterval(function(){#}
+                        location.reload();
+{#                        }, 1000);#}
+
+                   }if(data.result=='cupo'){
+                       smoke.alert('NO HAY CUPO');
+                   }if(data.result=='matri'){
+                       smoke.alert('NO ESTA MATRICULADO');
+                   }if(data.result=='matri'){
+                       smoke.alert('NO ESTA MATRICULADO');
+                   }if(data.result=='bad'){
+                       smoke.alert('OCURRIO UN ERROR');
+                   }if(data.result=='inscrito'){
+                       smoke.alert('YA SE ENCUENTRA INSCRITO');
+                   }
+                },"json");
+            });
+
+            $("#agregar_panel .adicionar").click(function() {
+                $("#agregar_panel").modal("hide");
+                var panel = $("#agregar_panel #id_panel").val();
+                $.post("/inscripciones",{"action": "addpanel","id":idinscr,"panel":panel},function(data) {
+                   if(data.result=='ok'){
+                       $.get("/inscripciones",{"action": "verpanel","id":idinscr},function(data) {
+                        $("#detalle_panel .modal-body").html(data);
+                        $("#detalle_panel #paneltitle1").html(" PANELES QUE PUEDE PARTICIPAR  "+persona);
+                        $("#detalle_panel").modal({"backdrop":"static", keyboard: 'false', width: "550px", height: "200px" });
+                        $("#detalle_panel").modal("show");
+                   }, "html");
+               return false;
+                   }else{
+                       alert("Ocurrio un Error... Intentelo mas Tarde");
+                   }
+                },"json");
+            });
+
+
+            $("#agregar_panel .cerrar").click(function() {
+                $("#agregar_panel").modal("hide");
+                 return false;
+
+            });
+
+        $("#kit_panel .btn-buscar").click(function() {
+            $("#kit_panel").modal("hide");
+            var obs= $("#kit_panel #id_observacion").val();
+            $.post("/inscripciones",{"action": "addkit","id":idinscr,"obs":obs},function(data) {
+                   if(data.result=='ok'){
+                       location.reload();
+                   }else{
+                       alert("Ocurrio un Error... Intentelo mas Tarde");
+                   }
+                },"json");
+            });
+
+            $("#btnatender").click(function() {
+                var msj='';
+                smoke.confirm("Atender el siguiente turno?", function(e){
+                    if (e){
+                        $.post("/atencionclientes",{"action": "atender"},function(data) {
+                           if(data.result=='ok'){
+                               var audio = document.createElement("audio");
+                               if (audio != null && audio.canPlayType && audio.canPlayType("audio/mpeg"))
+                               {
+                                  audio.src = "/static/images/next.mp3";
+                                  audio.play();
+                               }
+                              smoke.alert(data.msjs);
+                           }
+                        },"json");
+                    }else{
+
+                    }
+                    }, {
+                        ok: "Si",
+                        cancel: "No",
+                        classname: "custom-class",
+                        reverseButtons: true
+                    });
+
+            });
+
+            $(".motivodesactivacion").click(function() {
+
+                $("#motivodesactivacion_modal" ).modal('show');
+                $(".modal-footer").hide();
+                 var id = $(this).attr("ins");
+                $.get("/inscripciones", {'action':'motivoanula', "id": id}, function(data) {
+                    $("#motivodesactivacion_modal .modal-body").html(data);
+                    $('#motivodesactivacion_modal').show();
+                }, "html");
+
+                return false;
+            });
+
+             $("#estudianteegresado").click(function() {
+
+                $("#egresado" ).modal('show');
+                $(".modal-footer").hide();
+                $(".modal-body").html("Este proceso puede tardar.. Sea Paciente!!");
+{#                 var id = $(this).attr("ins");#}
+                $.post("/inscripciones",{"action": "egresados", "ban": 0 },function(data) {
+                    if(data.result=='ok'){
+                        $("#egresado" ).modal('hide');
+                        location.href = '/inscripciones?action=egresados&ban=0';
+                    }
+                    else{
+                        $("#egresado").modal('hide');
+                        smoke.alert(data.result)
+                    }
+                },"json");
+
+            });
+
+             $("#estudiantegraduado").click(function() {
+
+                $("#graduarcondu" ).modal('show');
+                $(".modal-footer").hide();
+                $(".modal-body").html("Este proceso puede tardar hasta 10 minutos.. Sea Paciente!!");
+                 var id = $(this).attr("ins");
+                $.post("/inscripciones",{"action": "graduarcondu", "ban": 0 },function(data) {
+                    if (data.result=="ok"){
+                          $("#graduarcondu" ).modal('hide');
+                        location.href = '/inscripciones?action=graduarcondu';
+                    } else {
+                          $("#graduarcondu" ).modal('hide');
+                        alert(data.result);
+
+{#                        location.href = '/inscripciones?action=graduarcondu&ban=0';#}
+                    }
+
+                },"json");
+
+            });
+
+
+            $('#searchfield').keyup(function(e) {
+                if(e.keyCode == 13) {
+                    $("#search").trigger("click");
+                }
+            });
+
+            $(".tl").tooltip({placement:"right"});
+
+            $("#gruposel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/inscripciones?g='+id;
+                }else{
+                    location.href = '/inscripciones';
+                }
+            });
+
+            $("#carrerasel").change(function() {
+                var id = $(this).val();
+                if (id){
+                    location.href = '/inscripciones?c='+id;
+                }else{
+                    location.href = '/inscripciones';
+                }
+            });
+
+        $("#kit_panel_uniforme .btn-guardar").hide()
+            $("#id_nivel").change(function() {
+               nivel=$("#id_nivel").val();
+                if (nivel > 0){
+                    $.post("/inscripciones",{"action": "consultanivel","id":nivel },function(data) {
+
+                   if(data.result=='ok'){
+                    $("#kit_panel_uniforme #paneltitle2").html("#Factura: "+data.fac + "<br> Fecha de Pago: "+ data.fech );
+                    $("#kit_panel_uniforme .pagado").show()
+                    $("#kit_panel_uniforme .btn-guardar").show()
+
+                   }else{
+                       $("#kit_panel_uniforme #paneltitle2").html("No se encontro pago" );
+                       $("#kit_panel_uniforme .pagado").hide()
+                       $("#kit_panel_uniforme .btn-guardar").hide()
+                   }
+                },"json");
+                }else{
+                     $("#kit_panel_uniforme #paneltitle2").html("" );
+                       $("#kit_panel_uniforme .pagado").hide()
+                    $("#kit_panel_uniforme .btn-guardar").hide()
+                }
+
+
+
+            });
+
+            $(".suspencion").click(function() {
+                $("#id_tiposuspension").addClass("input-xlarge");
+                $("#suspension #id_observacion").addClass("input-xlarge");
+                $('#fecha').html("");
+                $($("#id_tiposuspension").get(0).parentNode.parentNode).show();
+                $("#id_fechasus").attr("disabled",false);
+                $("#suspension #id_observacion").val("");
+                $("#id_tiposuspension").val("");
+                $("#id_motivosuspension").val("");
+                $("#id_motivosuspension").css("width", '90%');
+                $("#suspension #id_observacion").css("width", '90%');
+                $("#suspension").modal({backdrop: 'static' , width:'45%'});
+                $("#suspension .paneltitle").html('Ingresar Suspensión');
+                $("#suspension").modal("show");
+                opc = $(this).attr('opc');
+                $("#suspension #id_observacion").attr("readonly",false);
+                $("#id_tiposuspension").attr("disabled",false);
+                $("#id_motivosuspension").attr("disabled",false);
+                $("#suspension .btn-quitar").hide();
+                $("#suspension .btn-editar").hide();
+                $("#suspension .btn-adicionar").show();
+                idinscr =  $(this).attr("id");
+                cerrardeta = 0;
+                return false;
+            });
+
+            $(".addcofia").click(function(){
+                $("#modalcofia #id_observacion").val("");
+                idinscr = $(this).attr("iid");
+                nombre = $(this).attr("nom");
+
+                $("#modalcofia #paneltitle1").html("Agregar Asistencia a "+nombre+" "+'<br>');
+                $("#modalcofia").modal({width: '800px', backdrop: 'static'});
+                $("#modalcofia").modal("show");
+
+            });
+            $("#modalcofia .btn-buscar").click(function() {
+            $("#modalcofia").modal("hide");
+            var obs= $("#modalcofia #id_observacion").val();
+            $.post("/inscripciones",{"action": "addcofia","id":idinscr,"obs":obs},function(data) {
+                   if(data.result=='ok'){
+                       alert("Asistencia Registrada");
+                       location.reload();
+                   }else{
+                       alert("Ocurrio un Error... Intentelo mas Tarde");
+                   }
+                },"json");
+            });
+        $(".vercarnet").click(function(){
+        var id = $(this).attr("inscripcion_id");
+        var estado = $(this).attr("estado");
+        if (estado == 'False'){
+            est = 'entregar el';
+        }else{
+            est = 'eliminar entrega de ';
+        }
+        smoke.confirm('Esta seguro que desea '+est+'carnet', function(e){
+
+        if (e){
+            $.post("/inscripciones",{"action":"entregacarnet","idinsc":id},function(data) {
+                if(data.result=='ok'){
+                    alert("Se entrego el carnet correctamente");
+               }else{
+                    alert(data.result);
+               }
+               location.reload()
+            },"json");
+        }else{
+        }
+        }, {
+        ok: "Si",
+        cancel: "No",
+        classname: "custom-class",
+        reverseButtons: true
+        });
+    });
+            $("#modalcofia .btn-cerrar").click(function() {
+                $("#modalcofia").modal("hide");
+                return false;
+            });
+
+            var numerosdec="0123456789.";
+
+            function solo_numerosdec(texto){
+               var num = 0;
+               for(i=0; i<texto.length; i++){
+                  if (numerosdec.indexOf(texto.charAt(i),0)!=-1){
+                      num = num +1;
+                  }
+               }
+               return num;
+            }
+
+            $("#id_valorplagio").blur(function(){
+                var num = $(this).val();
+                if($("#id_valorplagio").val() == 0){
+                    $($(this).get(0).parentNode).find(".help-text").html("<h6 style='color:red' >El valor no puede ser 0</h6>");
+                    $(this).val("");
+                    $(this).focus();
+                }
+                else{
+                    if($("#id_valorplagio").val() != ""){
+                        if (solo_numerosdec(num) != num.length){
+                            $($(this).get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Ingrese Solo Numeros</h6>");
+                            $(this).val("");
+                            $(this).focus();
+                        }
+                        else{
+                            $($(this).get(0).parentNode).find(".help-text").html("");
+                        }
+                    }
+                        else{
+                            $($(this).get(0).parentNode).find(".help-text").html("<h6 style='color:red' >Debe ingresar valor</h6>");
+                            $(this).focus();
+                        }
+                }
+            });
+
+            $(".addplagio").click(function(){
+                $("#modalplagio #id_observacion").val("");
+                $("#modalplagio #id_soporte").val("");
+                idinscr = $(this).attr("iid");
+                nombre = $(this).attr("nom");
+                opcionpl = $(this).attr("opcionpl");
+                $("#modalplagio #id_valorplagio").val({{ valorplagio }});
+                $("#modalplagio #paneltitle1").html("Agregar Observaci&oacute;n por Fraude con Tarjetas a "+nombre+" "+'<br>');
+                $("#modalplagio").modal({width: '800px', backdrop: 'static'});
+                $("#modalplagio #paneltitle2").html("<h3 style='color:red' >Se va a generar un rubro de multa por el valor de: ${{ valorplagio }} </h3>" +'<br>');
+                $("#modalplagio").modal("show");
+            });
+
+            $("#modalplagio .btn-buscar").click(function() {
+                opcionpl = opcionpl;
+                $("#modalplagio").modal("hide");
+                $($("#id_valorplagio").get(0).parentNode.parentNode).show();
+                var obs= $("#modalplagio #id_observacion").val();
+                var vplagio = $("#id_valorplagio").val();
+                var data = new FormData();
+                var inputFileImage = document.getElementById("id_soporte");
+                var file = inputFileImage.files[0];
+                data.append('soporte',file);
+                data.append('action','addplagio');
+                data.append('id',idinscr);
+                data.append('obs',obs);
+                data.append('opcion',opcionpl);
+                data.append('rubroplagio',vplagio);
+                var url = "/inscripciones";
+                $.ajax({
+                url:url,
+                type:"POST",
+                contentType:false,
+                data:data,
+                processData:false,
+                cache:false,
+                success: function(data){
+                    if(data.result=="ok"){
+                        alert("Observación Registrada");
+                        location.reload();
+                    }else
+                    {
+                        alert("Ocurrio un Error... Intentelo mas Tarde");
+                    }
+                   }
+                });
+            });
+
+            $("#modalplagio .btn-cerrar").click(function() {
+                $("#modalplagio").modal("hide");
+                return false;
+            });
+
+            $(".obsplagio").click(function() {
+               $("#modalplagio #id_soporte").val("");
+               $("#modalplagio #id_observacion").val("");
+                idinscr = $(this).attr("iid");
+                nombre = $(this).attr("nom");
+                obs = $(this).attr("obspl");
+                opcionpl = $(this).attr("opcionpl");
+                $("#modalplagio #paneltitle1").html("Inscripcion: "+nombre+" "+'<br>');
+                $("#modalplagio").modal({width: '800px', backdrop: 'static'});
+                $($("#id_valorplagio").get(0).parentNode.parentNode).hide();
+                $("#modalplagio #id_observacion").val(obs);
+                $("#modalplagio").modal("show");
+            });
+
+            $(".obsplagio2").click(function() {
+               idinscr = $(this).attr("id");
+               $.get("/inscripciones", {'action':'obsplagio', 'id': idinscr}, function(data) {
+                   if(data.result=='ok'){
+                       smoke.alert( data.plagio );
+                   }else{
+                        alert("Ocurrio un Error... Intentelo mas Tarde");
+                   }
+                },"json");
+            });
+
+            $(".obsquitarplagio").click(function() {
+               idinscr = $(this).attr("id");
+               $.get("/inscripciones", {'action':'obsquitarplagio', 'id': idinscr}, function(data) {
+                   if(data.result=='ok'){
+                       smoke.alert( data.plagio );
+                   }else{
+                        alert("Ocurrio un Error... Intentelo mas Tarde");
+                   }
+                },"json");
+            });
+
+            $(".quitarplagio").click(function() {
+                $("#modalquitarplagio #id_observacion").val("");
+                idinscr = $(this).attr("id");
+                nombre = $(this).attr("nom");
+
+                $("#modalquitarplagio #paneltitle1").html("Agregar Observaci&oacute;n por quitar Fraude con tarjetas a "+nombre+" "+'<br>');
+                $("#modalquitarplagio").modal({width: '800px', backdrop: 'static'});
+                $("#modalquitarplagio").modal("show");
+            });
+
+            $("#modalquitarplagio .btn-buscar").click(function() {
+                $("#modalquitarplagio").modal("hide");
+                var obs= $("#modalquitarplagio #id_observacion").val();
+                $.post("/inscripciones",{"action": "quitarplagio","id":idinscr,"obs":obs},function(data) {
+                       if(data.result=='ok'){
+                           alert("Observación Registrada");
+                           location.reload();
+                       }else{
+                           alert("Ocurrio un Error... Intentelo mas Tarde");
+                       }
+                },"json");
+            });
+
+            $("#modalquitarplagio .btn-cerrar").click(function() {
+                $("#modalquitarplagio").modal("hide");
+                return false;
+            });
+
+            $("#suspension .btn-editar").click(function() {
+                $("#id_tiposuspension").addClass("input-xlarge");
+                $("#suspension #id_observacion").attr("readonly",false);
+                $("#id_fechasus").attr("disabled",false);
+                $("#id_tiposuspension").attr("disabled",false);
+                $("#id_motivosuspension").css("width", '90%');
+                $("#suspension #id_observacion").css("width", '90%');
+                $("#id_motivosuspension").attr("disabled",false);
+                $("#suspension .btn-quitar").hide();
+                $("#suspension .btn-editar").hide();
+                $("#suspension .btn-adicionar").show();
+                $("#suspension .paneltitle").html("Modificar Suspensión");
+                opc = 2;
+                cerrardeta = 2;
+                document.getElementById('suspend').innerHTML = "Ingresar";
+                return false;
+            });
+
+            $("#suspension .btn-adicionar").click(function() {
+
+                var tiposuspension = $("#id_tiposuspension").val();
+                var motivosuspension = $("#id_motivosuspension").val();
+                var observacion = $("#suspension #id_observacion").val();
+                var fechasus = $("#id_fechasus").val();
+                inscsusp = $('#idsuspens').val();
+                if (tiposuspension != '' && motivosuspension != '' && observacion != '' && idinscr != 0)
+                {
+                    $.post("/inscripciones",{"action": "addsuspension","id" : idinscr,"fechasus" : fechasus, "inscsusp": inscsusp ,"opc": opc,"observacion": observacion, "motivosuspension": motivosuspension ,"tiposuspension": tiposuspension },function(data) {
+                        if (data.result=="ok"){
+
+                            $("#suspension" ).modal('hide');
+{#                            alert(opc);#}
+                            if (opc == 1){
+                                location.href = '/inscripciones';
+                            }
+                            else
+                            {
+                                cerrardeta = 1;
+                                $.get("/inscripciones", {'action':'detallesusp', 'id': idinscr}, function(data) {
+                                    $("#detalle_suspension").modal({"backdrop":"static",width:'50%'});
+                                    $("#detalle_suspension .modal-body").html(data);
+                                    $("#detalle_suspension").modal("show");
+                                }, "html");
+
+                            }
+
+                        } else {
+                            $("#suspension" ).modal('hide');
+                            smoke.alert('Error intentelo nuevamente');
+                        }
+
+                    },"json");
+                }
+
+                return false;
+            });
+
+
+            $("#suspension .btn-quitar").click(function() {
+                var observacion = $("#suspension  #id_observacion").val();
+                var motivosuspension = $("#id_motivosuspension").val();
+                inscsusp = $('#idsuspens').val();
+                var fechasus = $("#id_fechasus").val();
+                if (observacion != '' && idinscr != 0)
+                {
+                    $.post("/inscripciones",{"action": "addsuspension","fechasus" : fechasus,  "motivosuspension": motivosuspension , "id" : idinscr, "inscsusp": inscsusp ,"opc": 3,"observacion": observacion},function(data) {
+                        if (data.result=="ok"){
+                            $("#suspension" ).modal('hide');
+                            $.get("/inscripciones", {'action':'detallesusp', 'id': idinscr}, function(data) {
+                                    $("#detalle_suspension").modal({"backdrop":"static",width:'50%'});
+                                    $("#detalle_suspension .modal-body").html(data);
+                                    $("#detalle_suspension").modal("show");
+                            }, "html");
+                        } else {
+                            $("#suspension" ).modal('hide');
+                            smoke.alert('Error intentelo nuevamente');
+                        }
+
+                    },"json");
+                }
+                return false;
+            });
+
+
+            $(".detallesusp").click(function() {
+               idinscr = $(this).attr("id");
+               cerrardeta = 1;
+               $.get("/inscripciones", {'action':'detallesusp', 'id': idinscr}, function(data) {
+                    $("#detalle_suspension .modal-body").html(data);
+                    $("#detalle_suspension").modal({"backdrop":"static",width:'50%'});
+                    $("#detalle_suspension").modal("show");
+               }, "html");
+               return false;
+            });
+
+
+            $("#suspension .btn-cerrar").click(function() {
+                if (cerrardeta == 0){
+                    $("#suspension").modal("hide");
+                    location.href = '/inscripciones';
+                }
+                else
+                {
+                    if (cerrardeta == 1){
+                        $("#suspension").modal("hide");
+                            $.get("/inscripciones", {'action':'detallesusp', 'id': idinscr}, function(data) {
+                                $("#detalle_suspension").modal({"backdrop":"static",width:'50%'});
+                                $("#detalle_suspension .modal-body").html(data);
+                                $("#detalle_suspension").modal("show");
+                        }, "html");
+                    }
+                    else
+                    {
+                        cerrardeta = 1;
+                        $("#suspension #id_observacion").attr("readonly",true);
+                        $("#suspension .paneltitle").html("Suspensión");
+                        $("#id_tiposuspension").attr("disabled",true);
+                        $("#id_motivosuspension").css("width", '90%');
+                        $("#suspension #id_observacion").css("width", '90%');
+                        $("#id_motivosuspension").attr("disabled",true);
+                        $("#id_fechasus").attr("disabled",true);
+                        $("#suspension .btn-eliminar").show();
+                        $("#suspension .btn-adicionar").hide();
+                        $("#suspension .btn-editar").show();
+                        $("#suspension").modal({backdrop: 'static' , width:'35%' });
+                        $("#suspension").modal("show");
+                    }
+                }
+                return false;
+             });
+
+            $('#detalle_suspension .btn-cerrar').click(function(){
+                $("#detallsuspetext").html("<i>Suspension</i>");
+                $("#detalle_suspension").modal("hide");
+                location.reload();
+            });
+
+            $('#editarss').click(function(){
+                $("#detalle_suspension").modal("hide");
+            });
+
+            $("#estadistica").click(function() {
+                accion = $(this).attr("ac");
+                $("#id_inicio").val('');
+                $("#id_fin").val('');
+{#                $($("#dato").get(0).parentNode).find(".help-text").html("");#}
+                $("#pregunta").modal({backdrop: 'static', keyboard: false, width: "15%", height: "15%"});
+                $("#pregunta").modal("show");
+
+            });
+
+            $("#pregunta .btn-cerrar").click(function() {
+                $("#pregunta").modal('hide');
+
+            });
+
+            $("#pregunta .btn-consultar").click(function() {
+                var inicio = $("#id_inicio").val();
+                var fin = $("#id_fin").val();
+                if (inicio && fin){
+                    $("#pregunta").modal("hide");
+                    window.open('/inscripciones?action=estadistica'+'&inicio='+inicio + '&fin='+fin);
+                }
+            });
+            var idinscrconduc =0;
+            var nombreconduc = 0;
+
+
+            $(".conducexamen").click(function(){
+                idinscrconduc = $(this).attr('idinscripexamen');
+                nombreconduc = $(this).attr("nombre");
+                modalexamenconduc();
+               return false;
+
+            });
+            {% if inscripexam %}
+                idinscrconduc = '{{ inscripexam.inscripcion.id }}';
+                nombreconduc = '{{ inscripexam.inscripcion.persona.nombre_completo }}';
+                modalexamenconduc();
+            {% endif %}
+
+            function modalexamenconduc(){
+                $.get("/inscripciones",{"action": "inscripcionexamen","id":idinscrconduc},function(data) {
+                        $("#examencondu_panel .modal-body").html(data);
+                        $("#examencondu_panel #paneltitle1").html(" Alumno:   "+nombreconduc);
+                        $("#examencondu_panel").modal({"backdrop":"static", keyboard: 'false', width: "60%" });
+                        $("#examencondu_panel").modal("show");
+               }, "html");
+               return false;
+            }
+
+
+
+
+            $("#cerrarexamenconduc").click(function() {
+                $("#examencondu_panel").modal('hide');
+            });
+
+            $("#cerrardetvalexa").click(function() {
+                $("#detallevalid_panel").modal('hide');
+                modalexamenconduc();
+            });
+
+
+            $("#validaexamendesac_panel #cerrarvalidaexa").click(function() {
+
+                $("#validaexamendesac_panel").modal('hide');
+                $.get("/inscripciones",{"action": "inscripcionexamen","id":idinscrconduc},function(data) {
+                    $("#examencondu_panel .modal-body").html(data);
+                    $("#examencondu_panel #paneltitle1").html(" Alumno:   "+nombreconduc);
+                    $("#examencondu_panel").modal({"backdrop":"static", keyboard: 'false', width: "75%", height: "200px" });
+                    $("#examencondu_panel").modal("show");
+               }, "html");
+               return false;
+            });
+
+            $('#validaexamendesac_panel #validar').click(function(){
+                var observacionvali = $("#observalidadesac").val();
+                var idinscripexam = $('#idinscripexamval').val();
+                $.post("/inscripciones",{'idinscripexam':$('#idinscripexamval').val(),'observacionvali':observacionvali, 'action': 'validoexamen'}, function(data) {
+                    if (data.result=='ok'){
+                        location.href="/inscripciones?idinscripexam="+idinscripexam;
+                    }
+
+                }, "json");
+            });
+
+             $(".conductest").click(function(){
+
+                idinscrconduc = $(this).attr('idinscriptest');
+                nombreconduc = $(this).attr("nombre");
+                modaltestconduc();
+               return false;
+
+            });
+
+            function modaltestconduc(){
+                $.get("/inscripciones",{"action": "inscriptest","id":idinscrconduc},function(data) {
+                        $("#testcondu_panel .modal-body").html(data);
+                        $("#testcondu_panel #paneltitle1").html(" Alumno:   "+nombreconduc);
+                        $("#testcondu_panel").modal({"backdrop":"static", keyboard: 'false', width: "60%" });
+                        $("#testcondu_panel").modal("show");
+               }, "html");
+               return false;
+            }
+
+            $("#cerrartestconduc").click(function() {
+                $("#testcondu_panel").modal('hide');
+            });
+            $(".vercomprobantes").click(function(){
+                var idins = $(this).attr('idins');
+                $("#detallsuspetext").html("Comprobantes del alumno");
+                $.get("/inscripciones", {'action':'verarcomprobante', 'id': idins}, function(data) {
+                    $("#detalle_suspension .modal-body").html(data);
+                    $("#detalle_suspension").modal({"backdrop":"static","width":"50%"});
+                    $("#detalle_suspension").modal("show");
+                }, "html");
+            });
+
+            let idInscripcion = null
+            uniformesAdmisiones = (event, id, nombreInscripcion) => {
+                $.post("/inscripciones",{"action": "obtenerUniformeAdmision", "id":id},function(response) {
+                   if(response.result === 'ok'){
+                       document.querySelector('#slcTalla').value = response.data.talla
+                       if (response.data.entregado === '1') {
+                           document.querySelector('#chkEntregado').checked = true
+                       }
+                       let html = '<strong>Alumno: </strong>'+nombreInscripcion +
+                            '<br><strong>Fecha resgistro: </strong>'+response.data.fecha +
+                            '<br><strong>Usuario resgistro: </strong>'+response.data.usuario +
+                            '<br><strong>Fecha entrega: </strong>'+response.data.fechaEntrega +
+                            '<br><strong>Usuario entrega: </strong>'+response.data.usuarioEntrega +
+                            '<br><div style="display: flex; justify-content: end"><a href="/media/'+response.data.foto+'" class="btn btn-info" target="_blank"><span class="icon-download-alt"></span> Ver imagen</a></div>'
+                       document.querySelector('#uniformesAdmisionesModalInfo').innerHTML = html
+                   }
+                },"json");
+
+                idInscripcion = id
+                event.preventDefault()
+                $("#uniformesAdmisionesModal").modal({"backdrop":"static","width":"500px"});
+                $("#uniformesAdmisionesModal").modal("show");
+            }
+
+            saveUniformeAdmisiones = () => {
+                let talla = document.querySelector('#slcTalla').value
+                let file = document.querySelector('#fileFoto').files[0]
+                let entregado = '0'
+                if (document.querySelector('#chkEntregado').checked) {
+                    entregado = '1'
+                }
+
+                var data = new FormData();
+                data.append('action', 'addUniformeAdmisiones');
+                data.append('foto', file);
+                data.append('id', idInscripcion);
+                data.append('talla', talla);
+                data.append('entregado', entregado);
+                var url = "/inscripciones";
+                showWaiting("Guardando datos", "Espere unos segundos..")
+                $.ajax({
+                    url:url,
+                    type:"POST",
+                    contentType:false,
+                    data:data,
+                    processData:false,
+                    cache:false,
+                    success: function(response) {
+                        if(response.result === "ok") {
+                            hideWaiting()
+                            swal.fire('Registro creado', '', 'info').then(() => {
+                                location.reload()
+                            })
+                        } else {
+                            hideWaiting()
+                            swal.fire('Error', response.mensaje, 'warning')
+                        }
+                    }
+                });
+            }
+
+            closeModal = (modalName) => {
+                $("#"+modalName).modal("hide");
+            }
+        });
+    </script>
+
+    <style>
+        .upload-file {
+                font-size: 14px;
+                background: white;
+                border-radius: 5px;
+                border: 1px solid #d6d6d6;
+                padding: 2px 10px 6px 2px;
+            }
+
+            ::-webkit-file-upload-button {
+                color: white;
+                background: #5A7EC7;
+                padding: 10px;
+                border: none;
+                cursor: pointer;
+            }
+
+            .checkbox-container {
+              display: block;
+              position: relative;
+              padding-left: 35px;
+              margin: 0;
+              cursor: pointer;
+              font-size: 18px;
+              user-select: none;
+            }
+
+            .checkbox-container input {
+              position: absolute;
+              opacity: 0;
+              cursor: pointer;
+              height: 0;
+              width: 0;
+            }
+
+            .checkmark {
+              position: absolute;
+              top: 0;
+              left: 0;
+              height: 25px;
+              width: 25px;
+              background-color: #eee;
+            }
+
+            .checkbox-container:hover input ~ .checkmark {
+              background-color: #ccc;
+            }
+
+            .checkbox-container input:checked ~ .checkmark {
+              background-color: #5A7EC7;
+            }
+
+            .checkmark:after {
+              content: "";
+              position: absolute;
+              display: none;
+            }
+
+            .checkbox-container input:checked ~ .checkmark:after {
+              display: block;
+            }
+
+            .checkbox-container .checkmark:after {
+              left: 9px;
+              top: 5px;
+              width: 5px;
+              height: 10px;
+              border: solid white;
+              border-width: 0 3px 3px 0;
+              transform: rotate(45deg);
+            }
+
+            .selectbox {
+                cursor: pointer;
+                outline:0;
+                color: #333333;
+                padding: 2px 10px;
+                height: 35px;
+                border-radius: 5px;
+                border: 1px solid #d6d6d6;
+                background-color: #ffffff;
+            }
+            .selectbox:hover, .selectbox:focus {
+                background-color: #ffffff;
+                color: #000000;
+                border: 1px solid #969696;
+            }
+    </style>
+
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span11'>
+            <h3>
+
+                {% if not activos and not inactivos and not todos %} Inscripciones - Estudiantes ACTIVOS{% endif %}
+
+                {% if activos %}Listado de Estudiantes ACTIVOS {% endif %}
+                {% if inactivos %}Listado de Estudiantes INACTIVOS{% endif %}
+                {% if todos %}Listado de Inscripciones (TODOS) {% endif %}
+            </h3>
+            <h3>
+                Alumnos con Discapacidad:  {{ discapacitados }} <br>
+            </h3>
+            <input type="text" id='idsuspens'/>
+            {% if grupo %}
+                <h3> Grupo: {{ grupo.nombre }}</h3>
+                <h3>Inscritos: {{ grupo.miembros.count }} </h3>
+            {% endif %}
+            <br>
+        </div>
+        <div class='atright'>
+            {% if grupo %}
+                <a href="/adm_grupos" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% else %}
+                <a href="/" class='btn'><i class="icon-arrow-left"></i> Atras</a>
+            {% endif %}
+
+        </div>
+    </div>
+    <div class="row-fluid" >
+        {% if perms.sga.change_inscripcion or perms.sga.add_inscripcionvendedor %}
+            <div class='span2' style="max-width: 160px">
+                {% if clave != 'itb' %}
+                    <a href="/inscripciones?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Inscripci&oacute;n</a>
+                {% else %}
+                    {% if perms.auth.add_group %}
+                            <a href="/inscripciones?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Inscripci&oacute;n</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+          {% if not gruposc  %}
+            <div class="span2" style="max-width:170px;">
+{#                <a href="/inscripciones?action=egresados&ban=0" class='btn btn-success' id='estudianteegresado'><i class="icon-plus icon-white"></i> Lista de Egresados</a>#}
+                {% if perms.sga.change_egresado and not centroexterno %}
+                    {% if not inscripcion_conduccion %}
+                        <a style="cursor: pointer" class='btn btn-success' id='estudianteegresado'><i class="icon-refresh icon-white"> </i> Buscar Egresados</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+          {% endif %}
+        {% endif %}
+        {#                          Boton para realizar la atencion al cliente                                       #}
+        {% if atiende %}
+            <div class='span2' style="width: 160px">
+                <a href="#" id='btnatender' class='btn btn-danger'><i class="icon-bell icon-white"></i> Atender </a>
+            </div>
+        {% endif %}
+
+        <div class='span2' style="width: 400px">
+            <form class="form-search"> <input class='searchinput input-medium search-query' type='text' id='searchfield' value='{{ search }}'/>
+            <a href="#" id='search' class='btn btn-info'><i class="icon-search icon-white"></i> Buscar</a>
+            {% if search %}
+                <a href="/inscripciones" id='allresults' class='btn btn-primary'><i class="icon-refresh icon-white"></i> Todos</a>
+            {% endif %}
+            </form>
+        </div>
+
+        <div class="span2">
+            Grupos:
+            <select id='gruposel' class="input-medium bigger"/>
+                <option value=''>-----</option>
+                {% for g in grupos %}
+                    <option value="{{ g.id }}" {% if grupoid == g.id %}selected="selected"{% endif %}>{{ g.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="row-fluid" >
+        {% if not gruposc  %}
+            <div class="span6">
+                Carreras:
+                <select id='carrerasel' class="input-large bigger" style="width:100%;" />
+                    <option value=''>-----</option>
+                    {% for c in carreras %}
+                        <option value="{{ c.id }}" {% if carreraid == c.id %}selected="selected"{% endif %}>{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+
+        <div class="span6" style="text-align: right;">
+        {% if not centroexterno %}
+            {% if not gruposc  %}
+                {% if activos %}
+                    <a href="/inscripciones?i=1" class='btn btn-danger'> Inactivos</a>
+                    <a href="/inscripciones?t=1" class='btn'> Todos</a>
+                {% endif %}
+                {% if inactivos %}
+                    <a href="/inscripciones?a=1" class='btn btn-success'> Activos</a>
+                    <a href="/inscripciones?t=1" class='btn btn-info'> Todos</a>
+                {% endif %}
+                {% if todos %}
+                    <a href="/inscripciones?a=1" class='btn btn-success'> Activos</a>
+                    <a href="/inscripciones?i=1" class='btn btn-warning'> Inactivos</a>
+                {% endif %}
+                {% if not activos and not inactivos and not todos %}
+                    <a href="/inscripciones?i=1" class='btn btn-warning'> Inactivos</a>
+                    <a href="/inscripciones?t=1" class='btn btn-info'> Todos</a>
+                {% endif  %}
+                {% if not administrativo.pertenececonvenioapol %}
+                    <a href="#" id='estadistica' class='btn btn-danger'> Estad&iacute;stica</a>
+                {% endif  %}
+                {% if not administrativo.pertenecesoporte and not administrativo.pertenecepracticas and not administrativo.pertenececonvenioapol %}
+                     <a href="/citas?p=1"  class='btn btn-success'> Citas</a>
+                {% endif  %}
+            {% endif  %}
+        {% endif  %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+            {% if not gruposc  %}
+                {% if not administrativo.pertenece_practicas and not administrativo.pertenece_convenioapol %}
+                    <a href="/colegio?p=1" class='btn btn-primary'><i class="icon-pencil icon-white"></i> Colegio</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class='span12'>
+        <table class='table table-bordered table-striped' cellpadding="0" cellspacing="0">
+            <thead>
+            <tr>
+                <th>Nombre</th>
+                {% if utiliza_grupos_alumnos %}
+                    <th>Grupo - Nivel</th>
+                {% endif %}
+                <th>Cedula/Pasap</th>
+                {% if not centroexterno %}
+                    <th>Usuario</th>
+                    <th>#Mat/Archivo</th>
+                {% endif %}
+                <th>Tel&eacute;fonos</th>
+                <th>Emails</th>
+                <th>Fecha</th>
+                <th>Carrera</th>
+                <th style="width: 50px"></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for inscripcion in inscripciones %}
+                {% with nombre_completo=inscripcion.nombrecompleto nombre_completo_inverso=inscripcion.nombrecompletoinverso tipo_beneficio=inscripcion.tipobeneficio %}
+                    <tr>
+                        <td>
+                            {% if not centroexterno %}
+                                {% if inscripcion.tienediscapacidad %}
+                                    <img src='/static/images/discapacidad.png' alt="Discapacidad"/>
+                                {% endif %}
+
+                                {% if not inscripcion.persona.usuario.is_active  %}
+                                    <img src='/static/images/16/false.png' width="14px" alt='' border="0"/>
+                                {% endif %}
+                                {% if tipo_beneficio %}
+                                    {% if tipo_beneficio == 'A' %}
+                                            <span class="label label-success larger"> A</span> {% else %} <span class="label label-info larger"> B</span>
+                                    {% endif %}
+                                {% endif %}
+                                {% if perms.sga.change_inscripcion or perms.sga.change_matricula or perms.sga.add_inscripcionvendedor %}
+                                    {% if not gruposc %}
+                                      <a  href='/inscripciones?action=edit&id={{ inscripcion.id }}'>{{ inscripcion.persona  }} {% if inscripcion.persona.foto %}<img src='/static/images/camera.png'  alt="Discapacidad"/>{% endif %}</a>
+                                    {%else %}
+                                        <a href='/inscripciones?action=datos&id={{ inscripcion.id }}'>{{ inscripcion.persona  }}  {% if inscripcion.persona.foto %}<img src='/static/images/camera.png'  alt="Discapacidad"/>{% endif %}</a>
+                                    {% endif %}
+                                {% else %}
+                                    <a href='/inscripciones?action=datos&id={{ inscripcion.id }}'>{{ inscripcion.persona  }}  {% if inscripcion.persona.foto %}<img src='/static/images/camera.png'  alt="Discapacidad"/>{% endif %}</a>
+                                {% endif %}
+                                <br/>
+                                {% if not inscripcion.alumnoestado %}
+                                    {% if inscripcion.datosincompletos or not inscripcion.raza %}<span class="label label-important tl" title="Datos Incompletos">DI</span>{% endif %}
+                                {% else %}
+                                    <span class="label label-info">{% if inscripcion.persona.sexo_id == 1 %}EGRESADA{% else %}EGRESADO{% endif %} </span>
+                                {% endif %}
+                                {% if inscripcion.datosmedicosincompletos and usafichamedica %}
+                                    <span class="label tl" title="Datos Medicos Incompletos">DMI</span>
+                                {% endif %}
+                                {% if inscripcion.plagiotarjeta %}
+                                    <span class="label label-success" title="Marcado con fraude tarjetas">FT</span>
+                                {% endif %}
+                                {% if inscripcion.valoracionmedicaincompleta and usafichamedica %}
+                                    <span class="label label-warning tl" title="Valoración Medica Incompleta">VMI</span>
+                                {% endif %}
+                                {% if inscripcion.empresaconvenio %}
+                                    <span class="label label tl" title="Convenio: {{ inscripcion.empresaconvenio.nombre }}">C</span>
+                                {% endif %}
+                                {% if inscripcion.carnet  %}
+                                     <span class="label label tl">Carnet Entregado</span>
+                                {% endif %}
+                                {% if inscripcion.becasenescyt.tienebeca %}
+                                    <span class="label label-success tl" title="BECA SENESCYT">Beca Senescyt</span>
+                                {% endif %}
+                                {% if inscripcion.becaasignadaobj %}
+                                    <span class="label label-success tl" title="Beca Asignada [{{ inscripcion.becaasignadaobj.tipobeca }}]">Becario</span>
+                                {% endif %}
+                                {% if inscripcion.tieneprocesosolicitudbecafun %}
+                                    <span class="label label-success tl" >Proceso de Solicitud de Beca</span>
+                                {% endif %}
+                                {% if inscripcion.tieneprocesodobe %}<span class="label label-important tl" title="Proceso Dobe">PD</span>{% endif %}
+                                {% if inscripcion.tieneprocesodoblematricula %}<span class="label label-info tl" title="Proceso Doble Matricula">DM</span>{% endif %}
+                                {% if inscripcion.estaretiradoper %}
+                                       <span class="label label-important tl" title="Retirado/a ">R</span>
+                                {% endif %}
+                                {% if inscripcion.suspension %}
+                                    <span class="label label-important tl" title="Suspensión">(S)</span>
+                                {% endif %}
+                                {% if inscripcion.carrera.validacionprofesional %}
+                                        <span class="label label-info tl" title="{{ inscripcion.tieneaprobadoexamen }}">{{ inscripcion.tieneaprobadoexamen }}</span>
+                                {% endif %}
+                                {% if inscripcion.tienedeuda %}
+                                    <span class="label label-important tl">DEUDA: ${{ inscripcion.adeudaalafecha|floatformat:2 }}</span>
+                                {% endif %}
+
+                            {% else %}
+                                <a href='/inscripciones?action=datos&id={{ inscripcion.id }}'>{{ inscripcion.persona  }}</a>
+                            {% endif %}
+                            {% if inscripcion.tienetesthecho and inscripcion_conduccion %}
+                               <span ><a style="cursor: pointer" class="conductest" idinscriptest="{{ inscripcion.id }}" nombre="{{ nombre_completo }}"> <span class="label label-success larger">Test</span> </a></span>
+                            {% endif %}
+                            {% if inscripcion.asistente %}
+                                <span class="label label-inverse">Gestor: {{ inscripcion.asistente.asistente.usuario.username }}</span>
+                            {% endif %}
+                        </td >
+                        {% if not centroexterno %}
+                            {% if utiliza_grupos_alumnos %}
+                                <td nowrap style="color:#002a80 ">
+{#                                {% with matriculado=inscripcion|args:periodo|call:"matriculado_periodo" %}#}
+                                    {% if inscripcion.matriculaperiodo %}
+{#                                        {% with matricula=inscripcion|args:periodo|call:"matricula_periodo" %}#}
+                                            {{ inscripcion.matriculaperiodo.nivel.paralelo }} - {{ inscripcion.matriculaperiodo.nivel.nivelmalla }}<br>
+                                            <span class="smaller"> ({{ inscripcion.matriculaperiodo.nivel.inicio|date:'d-m-Y' }} - {{ inscripcion.matriculaperiodo.nivel.fin|date:'d-m-Y' }})</span>
+{#                                        {% endwith %}#}
+                                    {% else %}
+                                        {{ inscripcion.grupofun.nombre }}
+                                    {% endif %}
+{#                                {% endwith %}#}
+                                </td>
+                            {% endif %}
+                        {% endif %}
+{#                        <td>{{ inscripcion.persona.cedula }} <br/> {% if inscripcion.persona.pasaporte %}{{ inscripcion.persona.pasaporte }}{% endif %}</td>#}
+{#                        OCU para presentar etiqueta que indique si estudiante es extranjero#}
+                        <td>{{ inscripcion.persona.cedula }} <br/>
+                        {% if inscripcion.persona.extranjero %}
+                            {% if inscripcion.persona.pasaporte %}{{ inscripcion.persona.pasaporte }}<br/><span class="label label-important">{{ 'Extranjero' }}</span> {% endif %}</td>
+                        {% endif %}
+                        {% if not centroexterno %}
+                            <td>{{ inscripcion.persona.usuario }}</td>
+                            <td style="text-align: center">
+                                {% if inscripcion.numeromstring %}
+                                    <span style="color: #002a80"> {{ inscripcion.numeromstring }}</span>
+                                {% endif %}
+                                {% if inscripcion.identificador %}
+                                    <br/><span class="label label-info">{{ inscripcion.identificador }}</span>
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                        <td>
+                            {% if inscripcion.persona.telefono %}{{ inscripcion.persona.telefono }}{% endif %}
+                            <br/>{% if inscripcion.persona.telefono_conv %}{{ inscripcion.persona.telefono_conv }}{% endif %}
+                        </td>
+                        <td>
+                            {% if inscripcion.persona.emailinst %}
+                                <h6><a href="mailto:{{ inscripcion.persona.emailinst }}" style="color: #003bb3">
+                                    {{ inscripcion.persona.emailinst }}
+                                </a></h6>
+                            {% else %}
+                                {% if inscripcion.persona.email %}
+                                    <h6><a href="mailto:{{ inscripcion.persona.email }}" style="color: #003bb3">
+                                        {{ inscripcion.persona.email }}</a></h6>
+                                {% else %}
+                                    {% if inscripcion.persona.email1 %}
+                                        <h6><a href="mailto:{{ inscripcion.persona.email1 }}" style="color: #003bb3">
+                                            {{ inscripcion.persona.email1 }}</a></h6>
+                                    {% else %}
+                                        {% if inscripcion.persona.email2 %}
+                                            <h6><a href="mailto:{{ inscripcion.persona.email2 }}" style="color: #003bb3">
+                                                {{ inscripcion.persona.email2 }}</a></h6>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+{#                            <br/>{{ inscripcion.persona.emails }}#}
+                        </td>
+                        <td style="font-size: 11px" nowrap>{{ inscripcion.fecha|date:"d-m-Y"  }} <br>
+
+                        {# OCastillo 28-03-2018 presenta el usuario que inscribio #}
+                            <span style="color: orangered"> <a style="cursor: pointer" {% if perms.sga.change_inscripcionvendedor %} class="cambiausuario" idins="{{ inscripcion.id }}"{% endif %} >{% if inscripcion.user %} {{ inscripcion.user }} {% endif %}</a> </span>
+
+                        </td>
+                        <td nowrap>{{ inscripcion.carrera.alias }}{% if inscripcion.tieneobsnombramiento %}<br><span class="label label-important"> DOCENTE NOMBRAMIENTO </span>{% endif %}</td>
+
+                        <td>
+                            {% if inscripcion.alumnoestado %}
+                                <span class="label label-info">
+                                {% if inscripcion.persona.sexo_id == 1 %}EGRESADA{% else %}EGRESADO{% endif %}
+                                </span>
+                            {% endif %}
+                            {% if not gruposc %}
+                            <div class="btn-group">
+
+                                {% if not centroexterno  %}
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                        {% if inscripcion.titulo %}
+                                            <li><a href="#"iid='{{ inscripcion.id }}'  nom='{{ nombre_completo }}'  titulo='{{ inscripcion.titulo }}'
+                                                fechatitulo='{% if inscripcion.fechatitulo  %} {{ inscripcion.fechatitulo|date:'d-m-Y' }} {% endif %}'
+                                                   usuarioentrega='{% if  inscripcion.usuarioentrega  %}{{ inscripcion.usuarioentrega }} {% endif %}'
+                                                   {% if not inscripcion.existe_titulo %}   opc= 'sec' {% else %} opc='sga'  {% endif %}
+                                                   fechaentregatitulo='{% if  inscripcion.fechaentregatitulo %}{{ inscripcion.fechaentregatitulo|date:'d-m-Y' }} {% endif %}'
+                                                   recibetit='{% if  inscripcion.recibetit %}{{ inscripcion.recibetit }} {% endif %}'
+                                                   class='veryentregar' ><i class="icon-certificate"></i> Ver/Entregar T&iacute;tulo </a></li>
+                                        {% else %}
+                                            {% if not administrativo.pertenecesoporte and not administrativo.pertenecepracticas and not administrativo.pertenececonvenioapol %}
+                                                <li><a href="#"iid='{{ inscripcion.id }}'  nom='{{ nombre_completo }}' class='agregartitulo' ><i class="icon-certificate"></i> Registrar t&iacute;tulo </a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if perms.sga.add_entregauniforme %}
+                                            {% if not inscripcion.entregauniformepagado and inscripcion.existeuniforme%}
+{#                                                {% if inscripcion.entregaruniforme %}#}
+{#                                                     <li><a href="#"iid='{{ inscripcion.id }}' observacionbea = '{{ inscripcion.verentregakituniforme.observacion }}' fehcaentrega='{{ inscripcion.verentregakituniforme.fecha }}' alumno='{{ nombre_completo_inverso  }}' usuarioregistro='{{ inscripcion.verentregakituniforme.usuario }}'  class='verkitUniformeMunicipio' ><i class="icon-certificate"></i> Ver Datos Entregar Uniforme </a></li>#}
+{#                                                {% else %}#}
+                                                         <li><a href="#" iid='{{ inscripcion.id }}' {% if inscripcion.facturauniforme %}numerofactura='{{ inscripcion.facturauniforme.0 }}' fechapago='{{ inscripcion.facturauniforme.1|date:'Y-m-d' }}'{% else %}numerofactura='1'{% endif %} nombre_in='{{ inscripcion }}' class="agregar_kit_panel_uniforme" ><i class="icon-certificate"></i>Registro de Uniforme </a></li>
+                                                          {% if inscripcion.verentregauniforme %}
+                                                            <li><a   onclick="verniveles('{{ inscripcion.id }}');"><i class="icon-copy dw dw-eye"></i> Ver Entrega de Uniforme</a></li>
+                                                        {% endif %}
+{#                                                     <li><a href="#" iid='{{ inscripcion.id }}'  nombre_in='{{ inscripcion }}' onclick="agregar_kit_panel_uniforme('{{ inscripcion.id }}','{{ inscripcion.persona.nombre_completo_inverso }}');" ><i class="icon-certificate"></i>Entrega Uniforme </a></li>#}
+{#                                                {% endif %}#}
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if not perms.sga.add_entregauniforme or   administrativo.usuario.is_superuser %}
+                                        {% if not administrativo.pertenecepracticas and not administrativo.pertenececonvenioapol %}
+                                            {% if inscripcion.kitestaentregado %}
+                                                <li><a href="#"><i class="icon-certificate"></i>kit Entregado ({{ inscripcion.kitentregado.usuario }}) </a></li>
+                                            {% else %}
+    {#                                                {% if not inscripcion.tiene_deuda and  'CONGRESO' in inscripcion.grupo.carrera.nombre   %}#}
+    {#                                                {% if not inscripcion.tiene_deuda   %}#}
+                                                    {% if not administrativo.pertenecesoporte %}
+                                                        <li><a href="#"iid='{{ inscripcion.id }}' valor='{{ inscripcion.kitcongresovalor  }}' obs={% if inscripcion.tieneobsnombramiento %}1{% else %}0{% endif %} nom='{{ nombre_completo }}' class='agregarkit' ><i class="icon-certificate"></i> Entregar Kit {% if inscripcion.kitcongresovalor  %}(Pagado: ${{ inscripcion.kitcongresovalor }}){% endif %}</a></li>
+                                                    {% endif %}
+    {#                                                {% endif %}#}
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if perms.sga.add_tipoentrega %}
+                                            {% if not inscripcion.entregajuguetecanastas %}
+                                                <li><a href="#" iid='{{ inscripcion.id }}'  nombre_in='{{ inscripcion }}' class="agregar_kit_panel_juguete" ><i class="icon-certificate"></i>Entrega Juguete o Canasta </a></li>
+                                            {% else %}
+                                                <li><a href="#"iid='{{ inscripcion.id }}' observacionjuegue = '{{ inscripcion.verentregajuegutecanasta.observacion }}' fehcaentregajuegue='{{ inscripcion.verentregajuegutecanasta.fecha|date:'d-m-Y' }}' alumnojueguete='{{ nombre_completo_inverso  }}' usuarioregistrojuegue='{{ inscripcion.verentregajuegutecanasta.usuario }}' tipoentregajueguete='{{ inscripcion.verentregajuegutecanasta.tipoentrega.observacion }}'  class='verentregadejueguecanasta' ><i class="icon-certificate"></i> Ver Datos Entregar Juguete o Canasta </a></li>
+                                            {% endif %}
+                                        {% endif %}
+
+                                            {% if perms.sga.add_inscripcionvendedor %}
+                                                 {% if inscripcion.vendedorfun %}
+                                                    <li><a href="#"><i class="icon-check"></i>Vendedor ({{ inscripcion.vendedorfun.vendedor.nombres }}) </a></li>
+                                                    <li><a href="#"iid='{{ inscripcion.id }}'  nom='{{ nombre_completo }}' class='agregarvendedor' op='2' ><i class="icon-list"></i> Cambiar Vendedor </a></li>
+                                                {% else %}
+                                                    <li><a href="#"iid='{{ inscripcion.id }}'  nom='{{ nombre_completo }}' class='agregarvendedor' op='1'><i class="icon-certificate"></i> Agregar Vendedor </a></li>
+                                                {% endif %}
+                                                {% if not inscripcion.promocion %}
+                                                    <li><a href="#"iid='{{ inscripcion.id }}'  nom='{{ nombre_completo }}' class='agregarpromocion'><i class="icon-money"></i> Agregar Promoci&oacute;n </a></li>
+                                                {% endif %}
+                                            {% endif %}
+
+                                        {% if clave == 'itb' %}
+                                            {% if not administrativo.pertenecepracticas and not administrativo.pertenecesoporte and not administrativo.pertenececonvenioapol %}
+                                                {% if inscripcion.asistiocofia %}
+                                                    <li><a href="#"><i class="icon-cogs"></i> Asistencia Registrada ({{ inscripcion.asistenciacofia.usuario }}) </a></li>
+                                                {% else %}
+                                                    <li><a href="#"iid='{{ inscripcion.id }}'  nom='{{ nombre_completo }}' class='addcofia' ><i class="icon-cogs"></i> Asistencia Cofia </a></li>
+                                                {% endif %}
+                                                
+                                                <li><a href="#" iid='{{ inscripcion.id }}'  estudiante='{{ inscripcion }}' class="agregar_teleclinica" ><i class="icon-time"></i> Horas Telecl&iacute;nica </a></li>
+                                                
+                                                {% if perms.sga.delete_inscripcion %}
+{#                                                    <li><a href="#"iid='{{ inscripcion.id }}' nom='{{ nombre_completo }}' opcionpl='1' class='addplagio'><i class="icon-money"></i> Fraude Tarjeta</a></li>#}
+{#                                                    {% if inscripcion.plagiotarjeta %}#}
+{#                                                        <li><a href="#" id='{{ inscripcion.id }}' nom='{{ nombre_completo }}' class='quitarplagio'><i class="icon-remove"></i>Quitar Fraude Tarjeta</a></li>#}
+{#                                                    {% endif %}#}
+                                                    <li><a href="/inscripciones?action=versoportefraude&id={{ inscripcion.id }}" ><i class="icon-money"></i> Fraude Tarjeta</a></li>
+{#                                                    {% endif %}#}
+                                                {% else %}
+                                                    {% if inscripcion.plagiotarjeta %}
+                                                        <li><a href="#" id='{{ inscripcion.id }}' class='obsplagio2'><i class="icon-adjust icon-eye-open"></i>Ver Obs Fraude</a></li>
+                                                    {% endif %}
+                                                {% endif %}
+
+{#                                                <li><a href="/inscripciones?action=estudio&id={{ inscripcion.id }}"><i class="icon-book"></i> Estudios</a></li>#}
+{#                                                <li><a href="/inscripciones?action=trabajo&id={{ inscripcion.id }}"><i class="icon-leaf"></i> Empresas</a></li>#}
+                                                {% if inscripcion.inscripcionexamenfun and clave != "itb" %}
+                                                    <li><a style="cursor: pointer" class="conducexamen" idinscripexamen="{{ inscripcion.id }}" nombre="{{ nombre_completo }}"><i class="icon-eye-open"></i> Ver Examenes </a></li>
+                                                {% endif %}
+
+                                                {% if inscripcion.solicitudsecrefun %}
+                                                    <li><a href="/inscripciones?action=vercomprobante&id={{ inscripcion.id }}" ><i class="icon-eye-open"></i> Ver Comprobantes Pago</a></li>
+                                                {% endif %}
+{#                                                <li><a href="/reportes?action=run&direct=true&n=ficha_inscripcion&rt=pdf&inscripcion={{ inscripcion.id }}&clave={{ clave }}"><i class="icon-print"></i> Imprimir Ficha Inscrip.</a> </li>#}
+{#                                                <li><a href="/reportes?action=run&direct=true&n=fichasocioeconomica&rt=pdf&inscripcion.persona={{ inscripcion.persona.id }}"><i class="icon-print"></i> Imprimir Ficha SocioEcon.</a> </li>#}
+{#                                                <li><a href="/reportes?action=run&direct=true&n=certificado_inscripcion&rt=pdf&inscripcion={{ inscripcion.id }}&clave={{ clave }}"><i class="icon-print"></i> Imprimir Certificado Inscrip.</a> </li>#}
+{#                                                <li><a href="/reportes?action=run&direct=true&n=certificado_taller&rt=pdf&inscripcion={{ inscripcion.id }}"><i class="icon-print"></i> Imprimir Certificado Taller</a> </li>#}
+                                            {% endif %}
+{#                                            <li><a href="/inscripciones?action=practicas&id={{ inscripcion.id }}"><i class="icon-briefcase"></i> Pr&aacute;cticas {% if inscripcion.tiene_practicas %}({{ inscripcion.h_practicas_vinculacion }}h){% endif %}</a></li>#}
+                                        {% endif %}
+{#                                        {% if not inscripcion.tiene_deuda  %}#}
+                                        {% if not administrativo.pertenecepracticas and not administrativo.pertenececonvenioapol %}
+                                            {% if 'CONGRESO' in inscripcion.grupofun.carrera.nombre  and not inscripcion.tieneprecongreso %}
+                                                <li><a href='#'  pid='{{ inscripcion.id }}' nombre='{{ nombre_completo }}' class="precon" ><i class="icon-list-alt"></i>Adicionar Precongreso</a></li>
+{#                                            <li><a href='#'  pid='{{ inscripcion.id }}' nombre='{{ nombre_completo }}' class="precon" ><i class="icon-list-alt"></i>Adicionar Taller</a></li>#}
+                                            {% else %}
+                                                {% if  inscripcion.tieneprecongreso %}
+                                                    <li><a href="#"><i class="icon-list-alt"></i> PreCongreso ({{ inscripcion.tieneprecongreso.gruposeminario.id }}) </a></li>
+                                                {% endif %}
+                                            {% endif %}
+
+                                            {% if  not inscripcion.tienedeudacertificadocongreso > 0 %}
+                                                   <li><a href='/reportes?action=run&direct=true&n=certificado_inscrito_congreso&rt=pdf&inscripcion={{ inscripcion.id }}'><i class="icon-print icon-white"></i> Asistencia Congreso</a></li>
+                            {#                    <td><a href="/seminario?action=eliminarins&id={{ i.id }}" class="btn btn-danger">Eliminar</a></td>#}
+                                            {% endif %}
+                                            <li><a href="/inscripciones?action=historico&id={{ inscripcion.id }}"><i class="icon-flag"></i> Hist&oacute;rico</a></li>
+                                        {% endif %}
+
+                                        {% if perms.sga.change_perfilinscripcion %}
+                                            {% if inscripcion.tienediscapacidad  or inscripcion.persona.extranjero and not 'CONGRESO' in inscripcion.grupofun.carrera.nombre   %}
+                                                <li><a href="/inscripciones?action=proceso&id={{ inscripcion.id }}"><i class="icon-folder-open"></i> Proceso DOBE</a></li>
+                                            {% endif %}
+                                            {% if inscripcion.doblematricula %}
+                                                <li><a href="/inscripciones?action=procesodm&id={{ inscripcion.id }}"><i class="icon-folder-open"></i> Proceso Doble Matricula</a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                        <!-- Matricula -->
+{#                                        {% with matriculado=inscripcion|args:periodo|call:"matriculado_periodo" %}#}
+                                            {% if inscripcion.matriculaperiodo %}
+{#                                                {% with matricula=inscripcion|args:periodo|call:"matricula_periodo" %}#}
+                                                    {% if perms.sga.change_matricula %}
+{#                                                        {% if matriculaperiodo %}#}
+                                                            <li><a href="/matriculas?action=materias&id={{ inscripcion.matriculaperiodo.id }}"><i class="icon-th-list"></i> Matr&iacute;cula</a></li>
+{#                                                        {% endif %}#}
+                                                    {% endif %}
+{#                                                {% endwith %}#}
+                                            {% endif %}
+{#                                        {% endwith %}#}
+                                        <!-- Foto -->
+                                        {% if perms.sga.change_inscripcion %}
+                                            {% if inscripcion.persona and inscripcion.persona.foto %}
+                                                {% if inscripcion.inscripcionexamenfun and clave != "itb" %}
+                                                    <li><a style="cursor: pointer" class="conducexamen" idinscripexamen="{{ inscripcion.id }}" nombre="{{ nombre_completo }}"><i class="icon-eye-open"></i> Ver Examenes </a></li>
+                                                {% endif %}
+                                                <li><a href="/inscripciones?action=verfoto&id={{ inscripcion.id }}"><i class="icon-camera"></i> Ver Foto</a></li>
+                                                {% if not administrativo.pertenecesoporte %}
+                                                    <li><a href="/inscripciones?action=cargarfoto&id={{ inscripcion.id }}"><i class="icon-camera"></i> Cambiar Foto</a></li>
+                                                {% endif %}
+                                            {% else %}
+                                                {% if inscripcion.inscripcionexamenfun and clave != "itb" %}
+                                                    <li><a style="cursor: pointer" class="conducexamen" idinscripexamen="{{ inscripcion.id }}" nombre="{{ nombre_completo }}"><i class="icon-eye-open"></i> Ver Examenes </a></li>
+                                                {% endif %}
+                                                {% if not administrativo.pertenecesoporte %}
+                                                    <li><a href="/inscripciones?action=cargarfoto&id={{ inscripcion.id }}"><i class="icon-camera"></i> Subir Foto</a></li>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% else %}
+                                            {% if not administrativo.pertenecepracticas %}
+                                                {% if inscripcion.persona.foto %}
+                                                    {% if inscripcion.inscripcionexamenfun and clave != "itb" %}
+                                                        <li><a style="cursor: pointer" class="conducexamen" idinscripexamen="{{ inscripcion.id }}" nombre="{{ nombre_completo }}"><i class="icon-eye-open"></i> Ver Examenes </a></li>
+                                                    {% endif %}
+                                                    <li><a href="/inscripciones?action=verfoto&id={{ inscripcion.id }}"><i class="icon-camera"></i> Ver Foto </a></li>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if inscripcion.downloadfoto %}
+                                            <li><a href="{{ inscripcion.downloadfoto }}" target="_blank"><i class="icon-camera"></i> Descargar Foto Inst</a></li>
+                                        {% endif %}
+
+                                        <!-- Trabajo y Estudio -->
+                                        {% if perms.sga.change_inscripcion %}
+                                        <li><a href="/inscripciones?action=estudio&id={{ inscripcion.id }}"><i class="icon-book"></i> Estudios</a></li>
+                                        <li><a href="/inscripciones?action=trabajo&id={{ inscripcion.id }}"><i class="icon-leaf"></i> Empresas</a></li>
+                                        {% endif %}
+                                        {% if perms.sga.change_inscripcionpracticas %}
+{#                                        <li><a href="/inscripciones?action=practicas&id={{ inscripcion.id }}"><i class="icon-briefcase"></i> Pr&aacute;cticas {% if inscripcion.tiene_practicas %}({{ inscripcion.horas_practicas }}h){% endif %}</a></li>#}
+                                            <li><a href="/inscripciones?action=practicas&id={{ inscripcion.id }}"><i class="icon-briefcase"></i> Pr&aacute;cticas {% if inscripcion.tienepracticas %}({{ inscripcion.hpracticasvinculacion }}h){% endif %}</a></li>
+                                        {% else %}
+                                            {#  Solo condulta de practicas #}
+                                            {% if not administrativo.pertenececonvenioapol %}
+                                                <li><a href="/inscripciones?action=practicas&id={{ inscripcion.id }}"><i class="icon-briefcase"></i> Pr&aacute;cticas {% if inscripcion.tienepracticas %}({{ inscripcion.hpracticasvinculacion }}h){% endif %}</a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if perms.sga.add_aprobacionvinculacion %}
+                                            {% if inscripcion.tienevinculacion  %}
+{#                                                {% if inscripcion.horas_vinculacion >= h_vinculacion  and not inscripcion.existe_vinculacion %}#}
+{#                                                    {% if not inscripcion.tiene_aprobadavinculacion %}#}
+                                                        <li><a href="/inscripciones?action=verificarvinculacion&id={{ inscripcion.id }}"><i class="icon-check"></i> Aprobar Vinculaci&oacute;n </a></li>
+{#                                                    {% else %}#}
+{#                                                    {% endif %}#}
+
+{#                                                {% if inscripcion.tiene_aprobadavinculacion %}#}
+{#                                                        <li><a href="/inscripciones?action=veraprobacionvinculacion&id={{ inscripcion.id }}"><i class="icon-eye-open"></i> Ver Aprobacion Vinculaci&oacute;n </a></li>#}
+{#                                                {% endif %}#}
+                                            {% endif %}
+                                        {% endif %}
+                                        <!-- Documentos -->
+                                        {% if perms.sga.change_inscripcion %}
+                                            <li><a href="/inscripciones?action=documentos&id={{ inscripcion.id }}"><i class="icon-folder-open"></i> Documentos</a></li>
+                                        {% endif %}
+
+                                        <!-- DOBE -->
+                                        {% if perms.sga.change_perfilinscripcion %}
+                                            <li><a href="/dobe?action=add&inscripcion={{ inscripcion.id }}"><i class="icon-folder-open"></i> DOBE</a></li>
+                                        {% endif %}
+
+                                        <!-- Imprimir Ficha -->
+                                        {% if perms.sga.change_inscripcion or perms.sga.add_inscripcionvendedor %}
+                                            <li><a href="/reportes?action=run&direct=true&n=ficha_inscripcion&rt=pdf&inscripcion={{ inscripcion.id }}&clave={{ clave }}"><i class="icon-print"></i> Imprimir Ficha Inscrip.</a> </li>
+
+                                        <!-- Imprimir Certificado -->
+                                            <li><a href="/reportes?action=run&direct=true&n=certificado_inscripcion&rt=pdf&inscripcion={{ inscripcion.id }}&clave={% if ACTIVA_ADD_EDIT_AD %}{{ NEW_PASSWORD }}{% else %} {{ clave }}{% endif %}"><i class="icon-print"></i> Imprimir Certificado Inscrip.</a> </li>
+                                            <li><a href="/reportes?action=run&direct=true&n=certificado_taller&rt=pdf&inscripcion={{ inscripcion.id }}"><i class="icon-print"></i> Imprimir Certificado Taller</a> </li>
+                                            {% if inscripcion.becamunicipio %}
+                                                <li><a href="/reportes?action=run&direct=true&n=certificado_municipio&rt=pdf&inscripcion={{ inscripcion.id }}"><i class="icon-print"></i> Imprimir Certificado Municipio</a> </li>
+                                            {% endif %}
+
+                                        <!-- Imprimir Ficha SocioEconomica -->
+                                            <li><a href="/reportes?action=run&direct=true&n=fichasocioeconomica&rt=pdf&persona={{ inscripcion.persona.id }}"><i class="icon-print"></i> Imprimir Ficha SocioEcon.</a> </li>
+                                        {% endif %}
+
+                                        <!-- Ver el cumplimiento de la malla -->
+                                        {% if not administrativo.pertenececonvenioapol %}
+                                            <li><a href="/inscripciones?action=alumalla&id={{ inscripcion.id }}"><i class="icon-share-alt"></i> Su Malla</a> </li>
+                                        {% endif %}
+                                        <!-- Ver Tutorias -->
+                                        {% if not administrativo.pertenecepracticas and not administrativo.pertenececonvenioapol %}
+                                            <li><a href="/inscripciones?action=vertutorias&id={{ inscripcion.id }}"><i class="icon-eye-open"></i> Ver Tutor&iacute;as</a></li>
+                                        {% endif %}
+
+                                        {% if administrativo.pertenecesecretaria %}
+                                            <!-- Egresar estudiante -->
+                                            {% if not inscripcion.egresadofun and perms.sga.change_inscripcion %}
+                                                <li><a href="/inscripciones?action=egresar&id={{ inscripcion.id }}"><i class="icon-plus"></i> Egresar</a> </li>
+                                            {% endif %}
+                                            <!-- Retirar estudiante -->
+                                            {% if perms.sga.change_inscripcion and not inscripcion.retiradofun and not inscripcion.matriculadofun %}
+                                                <li><a href="/inscripciones?action=retirar&id={{ inscripcion.id }}"><i class="icon-remove-circle"></i> Retirar Estudiante</a> </li>
+                                            {% endif %}
+                                        {% endif %}
+
+                                        <!-- Resetear Contraseña del usuario -->
+                                        {% if not administrativo.pertenecepracticas and not administrativo.pertenececonvenioapol %}
+                                            <li><a href="#" ins='{{ inscripcion.id }}' class="resetearusuario"><i class="icon-user"></i> Resetear Clave Usuario</a> </li>
+                                            {% if perms.sga.add_solicitudestudiante %}
+    {#                                            <li><a href="#" ins='{{ inscripcion.id }}' class="resetearusuario"><i class="icon-user"></i> Resetear Clave Usuario</a> </li>#}
+                                                <li><a style="cursor:pointer;" href="/inscripciones?action=ingresacomprobante&idins={{ inscripcion.id }}"><i class="icon-download"></i> Subir Comprobante Pago</a></li>
+                                                {% if inscripcion.solicitudsecre %}
+                                                    <li><a href="/inscripciones?action=vercomprobante&id={{ inscripcion.id }}" ><i class="icon-eye-open"></i> Ver Comprobantes Pago</a></li>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if administrativo.pertenecesoporte %}
+                                            <li><a href='/cu?id={{ inscripcion.persona.usuario.id }}'><i class='icon-user'></i> Entrar como este usuario</li>
+                                        {% endif %}
+
+                                        <!-- Activar o Desactivar Usuario -->
+                                        {% if  administrativo.pertenecesecretaria or administrativo.pertenecejefeadmision or administrativo.perteneceasuntos or administrativo.perteneceadmision or administrativo.usuario.is_superuser %}
+                                            {% if perms.sga.change_inscripcion or perms.sga.change_tipoconsulta %}
+                                                {% if inscripcion.persona.usuario.is_active %}
+                                                    <li><a href="#" ins='{{ inscripcion.id }}' class="desactivarinscripcion"><i class="icon-remove"></i> Desactivar Usuario</a> </li>
+                                                {% else %}
+                                                    {% if not inscripcion.tieneprocesodobe  and not inscripcion.persona.extranjero and not inscripcion.tienediscapacidad or inscripcion.tieneprocesodobeaprobado %}
+                                                        <li><a href="/inscripciones?action=activar&id={{ inscripcion.id }}"><i class="icon-ok"></i> Activar Usuario</a> </li>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endif %}
+                                             <!-- Motivo de desactivacion -->
+                                            {% if perms.sga.change_inscripcion %}
+    {#                                            {% if not persona.usuario.is_active %}#}
+                                                    {% if inscripcion.tieneinactivacion %}
+                                                            <li><a href="#" ins='{{ inscripcion.id }}' class="motivodesactivacion">
+                                                             <i class="icon-book"></i> Motivo de Activacion(Des)</a> </li>
+                                                    {% endif %}
+    {#                                            {% else %}#}
+    {#                                            {% endif %}#}
+                                            {% endif %}
+                                        {% endif %}
+
+                                        <!-- Generar Clave a los Padres -->
+                                        {% if perms.sga.change_padreclave %}
+                                            {% if inscripcion.clavepadrefun %}
+                                                <li><a href="/inscripciones?action=borrarclave&id={{ inscripcion.id }}"><i class="icon-resize-full"></i> Quitar Clave Padres ({{ inscripcion.clavepadrefun.clave }})</a> </li>
+                                            {% else %}
+                                                <li><a href="/inscripciones?action=generarclave&id={{ inscripcion.id }}"><i class="icon-resize-small"></i> Generar Clave Padres</a> </li>
+                                            {% endif %}
+                                        {% endif %}
+
+{#                                        <!-- Asignarle o Editar una Beca Senescyt, con esta accion el estudiante no genera rubros de pagos en ninguna matricula -->#}
+{#                                            {% if perms.sga.change_inscripcion and perms.sga.change_inscripcionbecario %}#}
+{#                                                    <li><a href="/inscripciones?action=becasenescyt&id={{ inscripcion.id }}">{% if inscripcion.beca_senescyt.tienebeca %}<b style="color:red"><i class="icon-share-alt"></i> Editar Beca Senescyt </b>{% else %} <b style="color:blue"><i class="icon-plus"></i> Asignar Beca Senescyt{% endif %}</b></a></li>#}
+{#                                            {% endif %}#}
+{##}
+{#                                        <!-- Asignarle una Beca al estudiante para siempre -->#}
+{#                                            {% if perms.sga.change_inscripcionbecario %}#}
+{#                                                <li><a href="/inscripciones?action=asignarbeca&id={{ inscripcion.id }}">{% if not inscripcion.beca_asignada %} <b><i class="icon-plus"></i> Asignar Beca {% endif %}</b></a></li>#}
+{#                                            {% endif %}#}
+
+                                        <!-- Ir a las Finanzas del estudiante -->
+                                        {% if not administrativo.pertenecepracticas and not administrativo.pertenececonvenioapol %}
+                                            <li><a href="/finanzas?action=rubros&id={{ inscripcion.id }}&ret=1"><i class="icon-money"></i> Finanzas</a></li>
+                                        {% endif %}
+
+                                        {% if administrativo.usuario.is_superuser %}
+                                            <li><a href='/cu?id={{ inscripcion.persona.usuario.id }}'><i class='icon-user'></i> Entrar como este usuario</li>
+                                        {% endif %}
+                                        {% if matriculalibre %}
+                                            <li><a href='/inscripciones?action=recalcular&id={{ inscripcion.id }}'>Recalcular Pagos</a></li>
+                                        {% endif %}
+
+                                        <!-- Observaciones estudiantes -->
+                                        {% if perms.sga.change_perfilinscripcion %}
+                                            <li><a href="/inscripciones?action=observaciones&id={{ inscripcion.id }}"><i class="icon-adjust icon-white"></i> Observaciones {% if inscripcion.cantidadobservaciones %}({{ inscripcion.cantidadobservaciones }}){% endif %}</a></li>
+                                        {% endif %}
+
+                                        {% if inscripcion_conduccion %}
+                                            <li><a href="/alumnopractica?action=ingreso&id={{ inscripcion.id }}"><i class="icon-adjust icon-edit"></i> Practicas Conduccion </a></li>
+                                            {% if not inscripcion.historicopract %}
+                                                <li><a href="/practicasconduc?action=nota&id={{ inscripcion.id }}"><i class="icon-adjust icon-signin"></i>Ingreso de Notas de Practica</a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if perms.sga.change_persona %}
+                                            {% if not inscripcion.suspension %}
+                                                <li><a href="#" id='{{ inscripcion.id }}' opc='1' class='suspencion'><i class="icon-adjust icon-signout"></i>Suspender</a></li>
+                                                {% if inscripcion.inscripcionsuspenexisfun %}
+                                                    <li><a href="#" id='{{ inscripcion.id }}' opc='2' class='detallesusp'><i class="icon-adjust icon-signout"></i>Ver Suspensi&oacute;n</a></li>
+                                                {% endif %}
+                                            {% else %}
+                                                <li><a href="#" id='{{ inscripcion.id }}' opc='2' id='{{ inscripcion.id }}' class='detallesusp'><i class="icon-adjust icon-signout"></i>Ver Suspensi&oacute;n</a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if perms.sga.change_tipoconsulta and inscripcion.matriculafun %}
+                                            <li><a href="/absentismo?action=add&id={{ inscripcion.id }}" ><i class="icon-adjust icon-signout"></i>Agregar Absentismo</a></li>
+                                        {% endif %}
+
+{#                                    {% if perms.sga.change_inscripcionflags %}#}
+{#                                        <li><a href="#" id='{{ inscripcion.id }}' pid='{{ inscripcion.id }}' nombre='{{ nombre_completo }}' class="panel" ><i class="icon-adjust icon-screenshot"></i>Panel</a></li>#}
+{#                                    {% endif %}#}
+                                    {% if inscripcion.posponerdesc and perms.sga.change_matricula %}
+                                        <li><a href="#" id='{{ inscripcion.id }}' pid='{{ inscripcion.id }}' nombre='{{ nombre_completo }}' class="aplicar" ><i class="icon-adjust icon-money"></i>Aplicar Descuento</a></li>
+                                    {% endif %}
+                                    {% if not administrativo.pertenecepracticas and not administrativo.pertenececonvenioapol %}
+                                        <li><a href="/inscripciones?action=certificados&id={{ inscripcion.id }}"><i class="icon-adjust icon-certificate"></i>Certificados</a></li>
+                                    {% endif %}
+                                    {% if perms.sga.add_perfilinscripcion %}
+                                        {#OCastillo 13-07-2022 se verifica que no exista solicitud de beca aprobada #}
+                                        {% if inscripcion.totalpagado == 0 and not inscripcion.tienesolicitudbeca %}
+                                            <li><a href="/inscripciones?action=eliminarinscripcion&id={{ inscripcion.id }}"><i class="icon-remove"></i>Elimina Inscripcion</a></li>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if not administrativo.pertenecepracticas %}
+                                        {% if inscripcion.carrera.validacionprofesional %}
+                                            <li><a href="/inscripciones?action=verexamening&id={{ inscripcion.id }}"><i class="icon-eye-open"></i>Ver Examen de Ingreso</a></li>
+                                        {% endif %}
+                                    {% endif %}
+
+                                    {# OCastillo 18-nov-2021 agregar accion para generar tramites y solicitudes                                        #}
+                                    {% if perms.sga.change_solicitudestudiante %}
+                                        <li><a style="cursor:pointer;" href="/inscripciones?action=generartramite&id={{ inscripcion.id }}"><i class="icon-download"></i> Generar Tr&aacute;mite BA</a></li>
+                                    {% endif %}
+                                    {% if administrativo.pertenece_asuntos or inscripcion.persona.usuario.is_superuser %}
+                                        {% if not inscripcion.tienedeuda %}
+                                            <li><a style="cursor:pointer;" href="/inscripciones?action=generarespecieasuntos&id={{ inscripcion.id }}&tipoespecie=asentamiento"><i class="icon-check"></i> Especies AE</a></li>
+                                        {% endif %}
+                                    {% endif %}
+                                        <li><a style="cursor: pointer" inscripcion_id="{{ inscripcion.id }}" estado="{{ inscripcion.carnet }}" class="vercarnet"><i class="icon-remove"></i>  Carnet </a></li>
+                                {% endif %}
+{#                                        <li><a href="/tutoria?id={{ inscripcion.id }}"><i class="icon-file"></i> Tutorias</a> </li>#}
+                                    {% if inscripcion.promocion and perms.sga.change_inscripcion %}
+                                        {% if inscripcion.promocion.descuentomaterial %}
+                                            <li>
+                                                <a style="cursor: pointer"
+                                                   onclick="uniformesAdmisiones(event,{{ inscripcion.id }}, '{{ inscripcion.persona.nombre_completo_inverso }}')">
+                                                    <i class="icon-share-alt"></i> Entrega Uniformes Admisiones
+                                                </a></li>
+                                        {% endif %}
+                                    {% endif %}
+                                    </ul>
+                                {% else %}
+                                    <a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">
+                                        Acciones
+                                        <span class="caret"></span>
+                                    </a>
+                                    <ul class="dropdown-menu pull-right">
+                                    <li><a href="/inscripciones?action=adicionamateria&id={{ inscripcion.id }}"><i class="icon-book"></i> Incluir en Materia</a></li>
+                                    <li><a href="/inscripcionescurso?action=agregar&id={{ inscripcion.id }}"><i class="icon-book"></i> Agregar Cursos</a></li>
+                                    </ul>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endwith %}
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <div class='row-fluid'>
+        <div class="span12">
+            {% if perms.sga.change_inscripcion or perms.sga.add_inscripcionvendedor %}
+                {% if clave != 'itb' %}
+                    <a href="/inscripciones?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Inscripci&oacute;n</a>
+                {% else %}
+                    {% if perms.auth.add_group %}
+                            <a href="/inscripciones?action=add" class='btn btn-success'><i class="icon-plus icon-white"></i> Nueva Inscripci&oacute;n</a>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+
+            {% if paging.num_pages > 20 %}
+                <div class='pagination'>
+                    <ul>
+                        {% if paging.primera_pagina %}
+                            <li><a href="/inscripciones?page=1{% if search %}&s={{ search }}{% endif %}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if carreraid %}&c={{ carreraid }}{% endif %}">1</a></li>
+                            <li><a href="/inscripciones?page={{ paging.ellipsis_izquierda }}{% if search %}&s={{ search }}{% endif %}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if carreraid %}&c={{ carreraid }}{% endif %}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/inscripciones?page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if search %}&s={{ search }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if carreraid %}&c={{ carreraid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/inscripciones?page={{ paging.ellipsis_derecha }}{% if search %}&s={{ search }}{% endif %}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if carreraid %}&c={{ carreraid }}{% endif %}" class="active">...</a></li>
+                            <li><a href="/inscripciones?page={{ paging.num_pages }}{% if search %}&s={{ search }}{% endif %}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if carreraid %}&c={{ carreraid }}{% endif %}">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/inscripciones?{% if search %}s={{ search }}&{% endif %}page={{ pagenumber }}{% if activos %}&a={{ activos }}{% endif %}{% if inactivos %}&i={{ inactivos }}{% endif %}{% if todos %}&t={{ todos }}{% endif %}{% if grupoid %}&g={{ grupoid }}{% endif %}{% if carreraid %}&c={{ carreraid }}{% endif %}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="desactivacion" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> ¿Est&aacute; seguro de inactivar a este alumno?</h3>
+        </div>
+        <div class="modal-body">
+            <p> Este usuario no podr&aacute; ingresar al sistema ...</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-desactivar"> Desactivar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="motivodesactivacion_modal" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> Cambios de Estado de Usuario</h3>
+        </div>
+        <div class="modal-body">
+{#            {% if inscripcion.tiene_inactivacion %}#}
+{#                  <p> dkajdkjsadkjsafhkjdsfhksjdf}</p>#}
+            {{ inscripcion }}
+{#            {% endif %}#}
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>
+
+        </div>
+    </div>
+
+     <div class="modal fade static" id="graduarcondu" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> Obteniendo lista de Estudiantes a Graduar</h3>
+        </div>
+        <div class="modal-body">
+            {{ inscripcion }}
+        </div>
+        <div class="modal-footer">
+{#            <a href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>#}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="resetear" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle1"> ¿Desea Resetear la Clave al Usuario?</h3>
+        </div>
+        <div class="modal-body">
+            <p> El usuario ingresar&aacute; nuevamente al sistema con la clave por defecto {% if ACTIVA_ADD_EDIT_AD %} <b>{{ NEW_PASSWORD }}</b> {% else %} {% if clave %}<b>{{ clave }}</b>{% endif %}{% endif %}</p>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-resetear"> Resetear</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="suspension" style="display: none;">
+        <div class="modal-header alert-info" style="text-align: center">
+            <h3 class="paneltitle"></h3>
+{#            <h3></h3>#}
+        </div>
+        <div class="modal-body panelbody">
+            <h4 id='fecha'></h4><br>
+            <form id="formulario3" class='form-horizontal' action="" method="POST">
+
+                {% for field in form %}
+                    <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}"><h4>{{ field.label }}</h4></label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+                {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-quitar btn-success">aceptar</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <a href="#" id='suspend' class="btn btn-adicionar btn-success">Suspender</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <a href="#" class="btn btn-editar btn-success">Editar</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <a href="#" class="btn btn-cerrar">Cerrar</a>
+        </div>
+    </div>
+
+
+    <div class="modal fade static " id="detalle_suspension" style="margin-left: -500px"  >
+        <div class="row-fluid modal-header" style="text-align: center">
+            <h4 id="detallsuspetext"><i> Suspension </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div style="float: right">
+                <a href="#" id="cerrar" class="btn btn-cerrar  btn-aceptar">Cerrar</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="kit_panel"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Entrega de Kit</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formkit %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="vendedor_panel"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Agregar Vendedor</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in frmvend %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_panel"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Agregar Panel</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formpanel %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Agregar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="agregar_precongreso">
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Agregar Precongreso</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formprecongreso %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success adicionar">Agregar</a>
+            <a href="#" class="btn btn-cerrar btn-info cerrar">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="detalle_panel"   >
+    <div class="row-fluid modal-header">
+         <h4  id='paneltitle1'><i> </i></h4>
+        <h5></h5>
+    </div>
+    <div class="modal-body" >
+
+    </div>
+    <div class="modal-footer">
+        <div >
+            <a style="float: right" href="#" id="adicionar" class="btn btn-success  btn-aceptar"> <i  class="icon-share-alt icon-white"></i> <b> ADICIONAR </b></a>
+            <a style="float: left" href="#" id="cerrar" class="btn btn-danger  btn-aceptar">  <i  class="icon-remove icon-white"></i> <b> SALIR</b></a>
+
+        </div>
+    </div>
+    </div>
+    <div class="modal fade static" id="pregunta" style="display: none; width: 25%">
+        <div class="modal-header">
+            <h3 id="paneltitle1" style="text-align: center"> Ingrese las Fechas</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formestd %}
+               <fieldset class="control-group nomargins">
+                        <label class="control-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                        <div class="controls">
+                            {{ field }}
+                            <p class="help-text">{{ field.help_text }} </p>
+                        </div>
+                    </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer" style="text-align: center">
+            <a href="#" class="btn btn-danger btn-cerrar ">Cerrar</a>
+            <a href="#" class="btn btn-primary btn-consultar"> Consultar</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="examencondu_panel"   >
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                <a style="float: left"  id="cerrarexamenconduc" class="btn btn-danger  btn-aceptar">   <b> SALIR</b></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="validaexamendesac_panel"   >
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i>Ingrese Observaci&oacute;n</i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+            <input type='hidden' name='idinscripexamval' id="idinscripexamval" value='0'/>
+            <textarea type='text' id='observalidadesac' style="width:98%;" rows="6" cols="50" > </textarea><br/><br/>
+        </div>
+        <div class="modal-footer">
+            <a style="float: left;cursor: pointer" id="cerrarvalidaexa"  class="btn btn-danger">   <b> Cancelar</b></a>
+            <a style="float: left;cursor: pointer"  id="validar" class="btn btn-success">   <b> Enviar</b></a>
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="modalcofia"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Registrar Asistencia</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formkit %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modalplagio">
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Registrar Observaci&oacute;n Fraude Tarjetas</i></h4>
+            <h3  id='paneltitle2'><i> </i></h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <div>
+                <label for=""></label>
+                <textarea name="" id="" cols="30" rows="10"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="modalquitarplagio">
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Registrar Observaci&oacute;n Quitar Fraude Tarjetas</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formkit %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="detallevalid_panel"   >
+        <div class="row-fluid modal-header">
+            <h4  id='paneltitle2'><i>Detalle de Desactivaci&oacute;n y Activaci&oacute;n del Ex&aacute;men</i></h4>
+            <h5 id='paneltitle1'></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                <a style="float: left"  id="cerrardetvalexa" class="btn btn-danger  btn-aceptar">   <b> SALIR</b></a>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade static" id="entregar_titulo_panel"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Ver/Entregar T&iacute;tulo</i></h4>
+            <p  id='texto'></p>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario6"  action="" method="POST">
+            {% for field in frmentregartit %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 40%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+     <div class="modal fade static" id="titulo_panel"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Registrar  T&iacute;tulo</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario" style="overflow-y: auto"  class='well' action="/inscripciones" method="POST" enctype="multipart/form-data" >
+                <input type='hidden' name='action' value='addtitulo' />
+            {% for field in frmtitulo %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 40%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+              <button type="{% block buttontype %}submit{% endblock %}" class="btn btn-success" id="formbutton">{% block buttonname %}Guardar{% endblock %}</button>
+                {% block extrabuttons %}
+                    <a href="#" class="btn btn-cerrar"> Cerrar</a>
+                {% endblock %}
+            </form>
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="egresado" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> Obteniendo lista de Estudiantes a Egresar</h3>
+        </div>
+        <div class="modal-body">
+            {{ inscripcion }}
+        </div>
+        <div class="modal-footer">
+{#            <a href="#" id="cerrar" class="btn btn-cerrar">Cerrar</a>#}
+        </div>
+    </div>
+    <div class="modal fade static" id="vendedores" style="display: none;">
+        <div class="modal-header">
+            <h3 id="paneltitle"> Cambiar Usuario Vendedor </h3>
+        </div>
+        <div style="margin-left: 4%">
+            <select id="selectvendedores" class="input-large bigger">
+                <option value="">-----</option>
+                {% for v in vendedores %}
+                <option value="{{ v.id }}">{{ v.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn guardar btn-success"> Cambiar</a>
+            <a href="#" class="btn salir btn-warning"> Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="testcondu_panel"   >
+        <div class="row-fluid modal-header">
+             <h4  id='paneltitle1'><i> </i></h4>
+            <h5></h5>
+        </div>
+        <div class="modal-body" >
+
+        </div>
+        <div class="modal-footer">
+            <div >
+                <a style="float: left"  id="cerrartestconduc" class="btn btn-danger  btn-aceptar">   <b> SALIR</b></a>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade static" id="kit_panel_entrega_juguete"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Entrega de Juguete</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in formentregaJuguete %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+
+                    </div>
+                </fieldset>
+            {% endfor %}
+            <p class="help-text">{{ field.help_text }} </p>
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-guardar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="kit_panel_uniforme"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Entrega de Uniforme</i></h4><br>
+            <h4  id='paneltitle2'><i> </i></h4><br>
+            <span class='btn btn-danger pagado' style="display: None"><i>PAGADO </i></span><br>
+
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+                        <div class='row-fluid'>
+                <div class="span12">
+                    <a style="font-weight: bold;color: black;" >Niveles: </a>
+                    <select id='id_nivel' class="input-medium bigger"/>
+                        <option value=''>-----</option>
+
+                    </select>
+                </div>
+            </div>
+            <div class='row-fluid'>
+                <div class="span12">
+                    <b>Observación:</b> <br>
+                    <textarea id="id_observacion" rows="10" style="width: 100% ; text-transform: uppercase; " ></textarea>
+                </div>
+            </div>
+{#            {% for field in formkitUniforme %}#}
+{#                <fieldset class="control-group nomargins">#}
+{#                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>#}
+{#                    <div class="controls" style="width: 98%">#}
+{#                        {{ field }}#}
+{#                        <p class="help-text">{{ field.help_text }} </p>#}
+{#                    </div>#}
+{#                </fieldset>#}
+{#            {% endfor %}#}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-guardar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="ver_kit_panel_uniforme"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Ver Información Entrega de Uniforme</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+
+              <label style="text-align: left;font-size: 16px"><b>Alumno:</b></label>
+              <p class="help-text" id="txtalumno"></p>
+
+              <label style="text-align: left;font-size: 16px"><b>Fecha de Entrega:</b></label>
+              <p class="help-text" id="txtfechaentrega"></p>
+
+              <label style="text-align: left;width: 10%;font-size: 16px"><b>Obvervación:</b></label>
+              <p class="help-text" id="txtobuniforme"></p>
+
+               <label style="text-align: left;width: 10%;font-size: 16px"><b>Usuario:</b></label>
+               <p class="help-text" id="txtusuarioregistro"></p>
+
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+
+    <div class="modal fade static" id="ver_entrega_juegue"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Ver Información Entrega de Juegue o Canasta</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+
+              <label style="text-align: left;font-size: 16px"><b>Alumno:</b></label>
+              <p class="help-text" id="txtalumnojuegue"></p>
+
+              <label style="text-align: left;font-size: 16px"><b>Fecha de Entrega:</b></label>
+              <p class="help-text" id="txtfechaentregajuegue"></p>
+
+              <label style="text-align: left;font-size: 16px"><b>Tipo de Entrega:</b></label>
+              <p class="help-text" id="txttipoentrega"></p>
+
+              <label style="text-align: left;width: 10%;font-size: 16px"><b>Obvervación:</b></label>
+              <p class="help-text" id="txtobjueguecanasta"></p>
+
+               <label style="text-align: left;width: 10%;font-size: 16px"><b>Usuario:</b></label>
+               <p class="help-text" id="txtusuarioregistrojueguete"></p>
+
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+    
+    <div class="modal fade static" id="teleclinica_panel"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Registrar Telecl&iacute;nica </i></h4><br>
+            <h4  id='paneltitle2'><i> </i></h4><br>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+                <div class='row-fluid'>
+                    <div class="span12">
+                        <a style="font-weight: bold;color: black;" >Asignatura: </a>
+                        <select id='id_asignatura' class="input-medium bigger"/>
+                            <option value=''>-----</option>
+                        </select>
+                    </div>
+                </div>
+                <div class='row-fluid'>
+                    <div class="span12">
+                        Horas: <input id='id_horas' style="height: 20px; width: 50px;"/>&nbsp;
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-guardar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+    
+    <div class="modal fade static" id="promocion_panel"   >
+        <div class="modal-header">
+            <h4  id='paneltitle1'><i> Agregar Promoci&oacute;n</i></h4>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form id="formulario5"  action="" method="POST">
+            {% for field in frmpromocion %}
+                <fieldset class="control-group nomargins">
+                <label style="text-align: left;width: 10%;font-size: 16px"  for="id_{{ field.name }}"><b>{{ field.label }}:</b></label>
+                    <div class="controls" style="width: 98%">
+                        {{ field }}
+                        <p class="help-text">{{ field.help_text }} </p>
+                    </div>
+                </fieldset>
+            {% endfor %}
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <a href="#" class="btn btn-buscar btn-success">Guardar</a>
+            <a href="#" class="btn btn-cerrar btn-warning">Salir</a>
+        </div>
+    </div>
+    <div class="modal fade static" id="modalveniveles"   >
+        <div class="modal-header">
+        </div>
+        <div class="modal-body" style="text-align: left">
+
+
+        </div>
+        <div class="modal-footer">
+
+            <a href="#" class="btn cerrarniveles btn-warning">Salir</a>
+        </div>
+    </div>
+    
+    <div class="modal fade static" id="uniformesAdmisionesModal" style="position: relative">
+        <a style="position: absolute; right: .2em; top: .5em; cursor: pointer;" onclick="closeModal('uniformesAdmisionesModal')">
+            <span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="5" height="5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x" style="width: 25px; height: 25px;">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M18 6l-12 12" />
+                  <path d="M6 6l12 12" />
+                </svg>
+            </span>
+        </a>
+        <div class="modal-header">
+            <h3>Entrega de uniformes (Admisiones)</h3>
+        </div>
+        <div class="modal-body" style="text-align: left">
+            <form style="display: flex; flex-direction: column;gap: 1em">
+                <div style="background: #efefef; padding: .5em 1em" id="uniformesAdmisionesModalInfo">
+
+                </div>
+                <div style="background: #efefef; padding: .2em 1em">
+                    <label for="slcTalla">Talla</label>
+                    <select class="selectbox" style="width: 100%" id="slcTalla">
+                        <option value="0">---</option>
+                        {% for x in tallaUniforme %}
+                            <option value="{{ x.id }}">{{ x.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="background: #efefef; padding: .2em 1em">
+                    <label for="fileFoto">Foto</label>
+                    <input type="file" class="upload-file" id="fileFoto" style="width: 97%; margin-bottom: 1em"/>
+                </div>
+                <label class="checkbox-container">Entregado?
+                    <input type="checkbox" id="chkEntregado">
+                    <span class="checkmark"></span>
+                </label>
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" onclick="saveUniformeAdmisiones()"><span class="icon-save"></span> Guardar</button>
+        </div>
+    </div>
+
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends "basebs.html" %}
+{% block heading %}
+
+    <script src='/static/js/jquery.validationEngine.js' type="text/javascript"></script>
+    <script src='/static/js/jquery.validationEngine-es.js' type="text/javascript"></script>
+    <link type='text/css' rel='stylesheet' href="/static/css/validationEngine.jquery.css"/>
+    <script type="text/javascript">
+        $(function() {
+{#            $('form').validationEngine();#}
+
+            $('form').validationEngine();
+            $('#numero,#pregunta').addClass('validate[required]');
+
+            $(".editar").click(function(){
+                if($(this).attr('activo') == 'True')
+                {
+                    $("#activo").attr('checked',true);
+                }
+                else{
+                    $("#activo").attr('checked',false);
+                }
+                $("#idpregunexamen").val($(this).attr('idpregunta'));
+
+                $("#numero").val($(this).attr('numero'));
+                $("#pregunta").val($(this).attr('pregunta'));
+                $("#idtest").val('{{ idtipotes }}');
+
+                $("#preguntapanel").modal({"backdrop":"static","width":"50%"});
+                $("#preguntapanel").modal("show");
+                $("#preguntapanel .help-text").html('');
+
+            });
+
+
+
+            $("#preguntapanel .btn-cerrar").click(function(){
+                $("#preguntapanel").modal("hide");
+                for (i = 0; i < parseInt($("#cantresp").val()); i++) {
+                    var newid = parseInt(i)+1;
+                    $('a[name=elimina'+newid+']').closest("div").remove();
+
+                }
+                $("#cantresp").val(0);
+                $("#addrespt").val(0);
+                $("#addrespuesta").addClass('hidden');
+                $("#pregunta").attr('readonly',false);
+
+                $("#numero").attr('readonly',false);
+
+                $("#imagenpr").attr('disabled',false);
+                $("#activo").attr('disabled',false);
+                $("#activo").attr('checked',false);
+                $("#pregunta").val('');
+                $(".formError").removeClass('aparece');
+                $(".formError").addClass('oculta');
+                $("#editar").val('0');
+                $("input[name=action]").val('editarpreg');
+                $("#titulopreguntapanel").html("Editar Preguntas");
+                return false;
+            });
+
+
+
+
+
+
+
+
+
+            $(".eliminpre").click(function(){
+                var idpregunta = $(this).attr("idpregunta");
+                var accion = $(this).attr("accion");
+                smoke.confirm( 'Esta seguro de eliminar la Pregunta?', function(e){
+                if (e){
+                        location.href = "/admintest?action=eliminpreg&id="+ idpregunta;
+{#                        alert(idresp)#}
+                    }else{
+                    }
+                    }, {
+                    ok: "CONTINUAR",
+                    cancel: 'CANCELAR',
+                    classname: "custom-class",
+                    reverseButtons: true
+                    });
+            });
+
+
+            $(".addpregu").click(function(){
+                $("#activo").attr('checked',true);
+                $("input[name=action]").val('guardarpreg');
+                $("#idpregunexamen").val($(this).attr('idtitut'));
+                $("#numero").val($(this).attr('numero'));
+                $("#idtest").val('{{ idtipotes }}');
+                $("#titulopreguntapanel").html('Ingresar Pregunta');
+
+
+                $("#preguntapanel").modal({"backdrop":"static","width":"50%"});
+                $("#preguntapanel").modal("show");
+                $("#preguntapanel .help-text").html('');
+
+                $("#addrespuesta").removeClass('hidden');
+            });
+
+
+
+        });
+    </script>
+    <style>
+        .oculta{
+            display: none;
+        }
+        .aparece{
+            display: block;
+        }
+    </style>
+{% endblock %}
+{% block canvas %}
+    <div class='row-fluid'>
+        <div class='span1'>
+            <a href="/admintest" class='btn'><i class="icon-arrow-left"></i> Atr&aacute;s</a>
+        </div>
+    </div><br/>
+    {% if perms.sga.add_preguntatest %}
+        <div class='row-fluid'>
+            <div class="span3">
+                <a class="btn btn-info addpregu" idtitut="{{ registrotest.id }}"  style="cursor: pointer"><b><span class="icon-plus"></span> Agregar Pregunta</b></a>
+            </div>
+        </div><br/>
+    {% endif %}
+    <div class="row-fluid" >
+        <div class="span11" style="">
+            <table class='table' cellpadding="0" cellspacing="0" id="tablepregunto">
+                <thead>
+                <tr>
+                    <th ><h4>Preguntas</h4></th>
+                    <th ><h4>Estado</h4></th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for p in lispregunta %}
+                        <tr >
+                            <td >
+                                <h4 >{{ p.orden }}.- {{ p.pregunta }}</h4>
+                                {% if not e.valida_editar %}
+                                    <li style="cursor: pointer;float: right" idpregunta="{{ p.id }}"  title="Eliminar Preguntar" class="label label-important eliminpre"><span class="icon-remove"></span>eliminar</li>
+                                    <li style="cursor: pointer;float: right" idpregunta="{{ p.id }}" activo="{{ p.estado }}" numero="{{ p.orden }}" pregunta="{{ p.pregunta }}" title="Editar Preguntar" class="label label-info editar"><span class="icon-edit"></span>editar</li>
+                                {% endif %}
+
+
+                            </td>
+
+                            <td>
+                                {% if p.estado %}
+                                    <img src='/static/images/16/true.png' alt='' border="0"/>
+                                {% else %}
+                                    <img src='/static/images/16/false.png' alt='' border="0"/>
+                                {% endif %}
+                            </td>
+
+                        </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+
+
+    <div class='row-fluid'>
+        <div class="span11" style="">
+            {% if paging.num_pages > 10 %}
+                <div class='pagination'>
+                    <ul >
+                        {% if paging.primera_pagina %}
+                            <li><a href="/admintest?action=verpregunta&id={{ idtipotes }}&page=1">1</a></li>
+                            <li><a href="/admintest?action=verpregunta&id={{ idtipotes }}&page={{ paging.ellipsis_izquierda }}" class="active">...</a></li>
+                        {% endif %}
+                        {% for pagenumber in paging.paginas %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admintest?action=verpregunta&id={{ examenexterno.id }}&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                        {% if paging.ultima_pagina %}
+                            <li><a href="/admintest?action=verpregunta&id={{ idtipotes }}&page={{ paging.ellipsis_derecha }}" class="active">...</a></li>
+                            <li><a href="/admintest?action=verpregunta&id={{ idtipotes }}&page={{ paging.num_pages }}{">{{ paging.num_pages }}</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% else %}
+
+                <div class='pagination'>
+                    <ul>
+                        {% for pagenumber in paging.page_range %}
+                            <li {% if pagenumber == page.number %}class='active'{% endif %}><a href="/admintest?action=verpregunta&id={{ idtipotes }}&page={{ pagenumber }}">{{ pagenumber }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="modal fade static" id="preguntapanel">
+        <div class="modal-header" style="word-wrap: break-word;text-align: center">
+            <h3 id="titulopreguntapanel">Editar Preguntas </h3><br/>
+            <h5 id='paneltitle2' ></h5>
+        </div>
+        <div class="modal-body" >
+            <form id="formulario" style="overflow-y: auto"  class='well form-horizontal' enctype="multipart/form-data" action="/admintest" method="POST"  >
+                <input type='hidden' id='action' name='action' value='editarpreg'/>
+                <input type='hidden' name='idpregunexamen' id='idpregunexamen' />
+                <input type='hidden' name='idtest' id='idtest' />
+
+
+                <div class="controls" style="margin-left: 1%">
+                    <b>N&uacute;mero:</b> <input type="text" name='numero' id="numero" style="width: 5%" {% if preguntaex %} value="{{ preguntaex }}" {% endif %}/>
+                    <p class="help-textnum">{{ field.help_text }} </p>
+                    <b>Pregunta:</b>  <textarea type="text" name='pregunta' id="pregunta" rows="6" cols="50"  style="text-transform: none" ></textarea><br/>
+
+                    <b>Activo:</b> <input style="width:10%;" type="checkbox" name='activo' id="activo" checked/>
+
+                    <p class="help-text">{{ field.help_text }} </p>
+                    <br/><br/><hr style="border: 1px ridge #ebe4eb;">
+                </div>
+
+                <br/><br/><button type="submit" class="btn btn-success" id="guardarbutt" style="float: right" >Guardar</button>&nbsp;&nbsp;
+{#                <button type="submit" class="btn btn-warning hidden guardar1" style="float: right" name="continuar">Guardar y continuar</button>&nbsp;&nbsp;#}
+                <a  class="btn btn-cerrar" style="float: right;cursor: pointer"> Cerrar</a>
+
+            </form>
+        </div>
+    </div>
+{% endblock %}
